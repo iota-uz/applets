@@ -64,7 +64,7 @@ export function SessionArtifactPreviewModal({
       await onRename(artifact, nextName)
       setIsEditingName(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('artifacts.renameFailed'))
+      setError(err instanceof Error ? err.message : t('Artifacts.RenameFailed'))
     } finally {
       setSubmittingRename(false)
     }
@@ -74,7 +74,7 @@ export function SessionArtifactPreviewModal({
     if (!artifact || !onDelete) {
       return
     }
-    if (!window.confirm(t('artifacts.deleteConfirm'))) {
+    if (!window.confirm(t('Artifacts.DeleteConfirm'))) {
       return
     }
 
@@ -84,7 +84,7 @@ export function SessionArtifactPreviewModal({
       await onDelete(artifact)
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('artifacts.deleteFailed'))
+      setError(err instanceof Error ? err.message : t('Artifacts.DeleteFailed'))
     } finally {
       setSubmittingDelete(false)
     }
@@ -120,7 +120,7 @@ export function SessionArtifactPreviewModal({
                         }
                       }}
                       className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                      aria-label={t('artifacts.rename')}
+                      aria-label={t('Artifacts.Rename')}
                       autoFocus
                     />
                     <button
@@ -132,7 +132,7 @@ export function SessionArtifactPreviewModal({
                       className="cursor-pointer inline-flex items-center gap-1 rounded-lg bg-primary-600 px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <FloppyDisk className="h-3.5 w-3.5" weight="bold" />
-                      {t('message.save')}
+                      {t('Message.Save')}
                     </button>
                     <button
                       type="button"
@@ -143,7 +143,7 @@ export function SessionArtifactPreviewModal({
                       disabled={submittingRename}
                       className="cursor-pointer rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
                     >
-                      {t('message.cancel')}
+                      {t('Message.Cancel')}
                     </button>
                   </div>
                 ) : (
@@ -167,8 +167,8 @@ export function SessionArtifactPreviewModal({
                       setIsEditingName(true)
                     }}
                     className="cursor-pointer rounded-lg border border-gray-200 p-2 text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
-                    aria-label={t('artifacts.rename')}
-                    title={t('artifacts.rename')}
+                    aria-label={t('Artifacts.Rename')}
+                    title={t('Artifacts.Rename')}
                   >
                     <PencilSimple className="h-4 w-4" weight="regular" />
                   </button>
@@ -181,8 +181,8 @@ export function SessionArtifactPreviewModal({
                     }}
                     disabled={submittingDelete}
                     className="cursor-pointer rounded-lg border border-red-200 p-2 text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/30 dark:hover:text-red-300"
-                    aria-label={t('artifacts.delete')}
-                    title={t('artifacts.delete')}
+                    aria-label={t('Artifacts.Delete')}
+                    title={t('Artifacts.Delete')}
                   >
                     <Trash className="h-4 w-4" weight="regular" />
                   </button>
@@ -191,8 +191,8 @@ export function SessionArtifactPreviewModal({
                   type="button"
                   onClick={handleClose}
                   className="cursor-pointer rounded-lg border border-gray-200 p-2 text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
-                  aria-label={t('common.close')}
-                  title={t('common.close')}
+                  aria-label={t('Common.Close')}
+                  title={t('Common.Close')}
                 >
                   <X className="h-4 w-4" weight="bold" />
                 </button>

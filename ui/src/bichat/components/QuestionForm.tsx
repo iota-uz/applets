@@ -82,7 +82,7 @@ export default function QuestionForm({
       await onSubmit(answers)
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : t('error.generic')
+        err instanceof Error ? err.message : t('Error.Generic')
       setError(errorMessage)
       setIsSubmitting(false)
     }
@@ -108,7 +108,7 @@ export default function QuestionForm({
               onClick={onCancel}
               disabled={isSubmitting}
               className="cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50"
-              aria-label={t('common.close')}
+              aria-label={t('Common.Close')}
             >
               <X className="w-6 h-6" />
             </button>
@@ -172,7 +172,7 @@ export default function QuestionForm({
                 disabled={isSubmitting}
                 className="cursor-pointer px-6 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 font-medium transition-colors"
               >
-                {t('message.cancel')}
+                {t('Message.Cancel')}
               </button>
 
               {/* Submit Button */}

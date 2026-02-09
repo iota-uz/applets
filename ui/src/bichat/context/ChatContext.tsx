@@ -460,7 +460,7 @@ export function ChatSessionProvider({
 
         setTurns((prev) => prev.filter((t) => t.id !== tempTurn.id))
 
-        const errorMessage = err instanceof Error ? err.message : 'error.networkError'
+        const errorMessage = err instanceof Error ? err.message : 'Error.NetworkError'
         setInputError(errorMessage)
         console.error('Send message error:', err)
       } finally {

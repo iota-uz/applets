@@ -38,7 +38,7 @@ export function ChartCard({ chartData }: ChartCardProps) {
       <div className="rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm dark:border-gray-700/60 dark:bg-gray-800">
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {title && <span className="font-medium">{title}: </span>}
-          {t('chart.noData')}
+          {t('Chart.NoData')}
         </p>
       </div>
     )
@@ -133,14 +133,14 @@ export function ChartCard({ chartData }: ChartCardProps) {
           onClick={handleExportPNG}
           disabled={isExporting}
           className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-400 opacity-0 transition-all duration-150 hover:bg-gray-100 hover:text-gray-600 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 group-hover/chart:opacity-100 disabled:opacity-50 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-          title={t('chart.download')}
+          title={t('Chart.Download')}
         >
           {isExporting ? (
-            <span className="text-gray-500 dark:text-gray-400">{t('chart.exporting')}</span>
+            <span className="text-gray-500 dark:text-gray-400">{t('Chart.Exporting')}</span>
           ) : (
             <>
               <DownloadSimple className="h-3.5 w-3.5" weight="bold" />
-              <span>{t('chart.downloadPNG')}</span>
+              <span>{t('Chart.DownloadPNG')}</span>
             </>
           )}
         </button>

@@ -17,11 +17,11 @@ interface SessionArtifactListProps {
 }
 
 const TYPE_LABEL_KEYS: Record<string, string> = {
-  chart: 'artifacts.groupCharts',
-  code_output: 'artifacts.groupCodeOutputs',
-  export: 'artifacts.groupExports',
-  attachment: 'artifacts.groupAttachments',
-  other: 'artifacts.groupOther',
+  chart: 'Artifacts.GroupCharts',
+  code_output: 'Artifacts.GroupCodeOutputs',
+  export: 'Artifacts.GroupExports',
+  attachment: 'Artifacts.GroupAttachments',
+  other: 'Artifacts.GroupOther',
 }
 
 function getGroupIcon(type: string): ReactNode {
@@ -115,10 +115,10 @@ export function SessionArtifactList({
         </div>
         <div>
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            {t('artifacts.empty')}
+            {t('Artifacts.Empty')}
           </p>
           <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
-            {t('artifacts.emptySubtitle')}
+            {t('Artifacts.EmptySubtitle')}
           </p>
         </div>
       </div>

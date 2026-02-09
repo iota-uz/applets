@@ -67,7 +67,7 @@ function UserFilter({ users, selectedUser, onUserChange, loading }: UserFilterPr
                       onUserChange(null)
                     }}
                     className="cursor-pointer p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-smooth"
-                    aria-label={t('common.clear')}
+                    aria-label={t('Common.Clear')}
                   >
                     <X size={14} className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
                   </button>

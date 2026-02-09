@@ -182,7 +182,7 @@ function ChatSessionCore({
   if (fetching) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="text-gray-500 dark:text-gray-400">{t('input.processing')}</div>
+        <div className="text-gray-500 dark:text-gray-400">{t('Input.Processing')}</div>
       </div>
     )
   }
@@ -191,7 +191,7 @@ function ChatSessionCore({
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-red-500 dark:text-red-400">
-          {t('error.generic')}: {error}
+          {t('Error.Generic')}: {error}
         </div>
       </div>
     )
@@ -239,11 +239,11 @@ function ChatSessionCore({
             ? 'bg-primary-50 text-primary-700 hover:bg-primary-100 dark:bg-primary-950/30 dark:text-primary-300 dark:hover:bg-primary-900/40'
             : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200',
         ].join(' ')}
-        aria-label={artifactsPanelExpanded ? t('artifacts.toggleHide') : t('artifacts.toggleShow')}
-        title={artifactsPanelExpanded ? t('artifacts.toggleHide') : t('artifacts.toggleShow')}
+        aria-label={artifactsPanelExpanded ? t('Artifacts.ToggleHide') : t('Artifacts.ToggleShow')}
+        title={artifactsPanelExpanded ? t('Artifacts.ToggleHide') : t('Artifacts.ToggleShow')}
       >
         <Sidebar className="h-4 w-4" weight={artifactsPanelExpanded ? 'duotone' : 'regular'} />
-        {t('artifacts.title')}
+        {t('Artifacts.Title')}
       </button>
       {actionsSlot}
     </>
@@ -296,7 +296,7 @@ function ChatSessionCore({
                     />
                   )}
                   <p className="mt-4 pb-1 text-center text-xs text-gray-500 dark:text-gray-400">
-                    {t('welcome.disclaimer')}
+                    {t('Welcome.Disclaimer')}
                   </p>
                 </div>
               </div>
@@ -351,7 +351,7 @@ function ChatSessionCore({
             >
               <div
                 role="separator"
-                aria-label={t('artifacts.resize')}
+                aria-label={t('Artifacts.Resize')}
                 onMouseDown={handleArtifactsResizeStart}
                 className="relative flex shrink-0 cursor-col-resize touch-none items-center justify-center w-2 transition-colors lg:flex group/resize after:absolute after:inset-y-0 after:left-0 after:w-0.5 after:bg-gray-300 dark:after:bg-gray-600 after:transition-colors group-hover/resize:after:bg-primary-400 dark:group-hover/resize:after:bg-primary-500"
               >
@@ -387,7 +387,7 @@ function ChatSessionCore({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={handleToggleArtifactsPanel}
-                aria-label={t('common.close')}
+                aria-label={t('Common.Close')}
               />
               <SessionArtifactsPanel
                 dataSource={dataSource}

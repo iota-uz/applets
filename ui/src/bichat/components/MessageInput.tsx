@@ -87,7 +87,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
     const [viewingImageIndex, setViewingImageIndex] = useState<number | null>(null)
 
     // Use override or translation
-    const placeholder = placeholderOverride || t('input.placeholder')
+    const placeholder = placeholderOverride || t('Input.Placeholder')
 
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -100,9 +100,9 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
 
     const slashCommands = useMemo(
       () => [
-        { name: '/clear', description: t('slash.clearDescription') },
-        { name: '/debug', description: t('slash.debugDescription') },
-        { name: '/compact', description: t('slash.compactDescription') },
+        { name: '/clear', description: t('Slash.ClearDescription') },
+        { name: '/debug', description: t('Slash.DebugDescription') },
+        { name: '/compact', description: t('Slash.CompactDescription') },
       ],
       [t]
     )
@@ -451,7 +451,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                   onClearCommandError?.()
                 }}
                 className="cursor-pointer ml-2 p-1 hover:bg-red-100 dark:hover:bg-red-800 rounded transition-colors"
-                aria-label={t('input.dismissError')}
+                aria-label={t('Input.DismissError')}
               >
                 <X size={14} />
               </button>
@@ -462,7 +462,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
           {messageQueue.length > 0 && (
             <div className="mb-3 text-xs text-gray-500 dark:text-gray-400">
               <span className="px-2.5 py-1 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded font-medium">
-                {t('input.messagesQueued', { count: messageQueue.length })}
+                {t('Input.MessagesQueued', { count: messageQueue.length })}
               </span>
             </div>
           )}
@@ -476,7 +476,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
                 </span>
                 <Bug size={12} />
-                {t('slash.debugBadge')}
+                {t('Slash.DebugBadge')}
               </span>
 
               {/* Stats container */}
@@ -486,7 +486,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                     <div className="flex flex-col items-center gap-1 py-2 rounded-lg bg-white dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/30">
                       <div className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500">
                         <ArrowUp size={10} weight="bold" className="text-blue-500 dark:text-blue-400" />
-                        {t('slash.debugPromptTokens')}
+                        {t('Slash.DebugPromptTokens')}
                       </div>
                       <span className="font-mono font-semibold text-xs text-gray-900 dark:text-gray-100 tabular-nums">
                         {formatTokens(sessionPromptTokens)}
@@ -495,7 +495,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                     <div className="flex flex-col items-center gap-1 py-2 rounded-lg bg-white dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/30">
                       <div className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500">
                         <ArrowDown size={10} weight="bold" className="text-indigo-500 dark:text-indigo-400" />
-                        {t('slash.debugCompletionTokens')}
+                        {t('Slash.DebugCompletionTokens')}
                       </div>
                       <span className="font-mono font-semibold text-xs text-gray-900 dark:text-gray-100 tabular-nums">
                         {formatTokens(sessionCompletionTokens)}
@@ -504,7 +504,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                     <div className="flex flex-col items-center gap-1 py-2 rounded-lg bg-white dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/30">
                       <div className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500">
                         <Stack size={10} weight="bold" className="text-violet-500 dark:text-violet-400" />
-                        {t('slash.debugTotalTokens')}
+                        {t('Slash.DebugTotalTokens')}
                       </div>
                       <span className="font-mono font-semibold text-xs text-gray-900 dark:text-gray-100 tabular-nums">
                         {formatTokens(sessionTotalTokens)}
@@ -513,7 +513,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                   </div>
                 ) : (
                   <p className="text-[11px] text-gray-400 dark:text-gray-500 text-center py-1">
-                    {t('slash.debugSessionUsageUnavailable')}
+                    {t('Slash.DebugSessionUsageUnavailable')}
                   </p>
                 )}
 
@@ -521,7 +521,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                   <div className="grid grid-cols-3 gap-1.5">
                     <div className="flex flex-col gap-1 py-2 px-2 rounded-lg bg-white dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/30">
                       <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                        {t('slash.debugPolicyMaxContextWindow')}
+                        {t('Slash.DebugPolicyMaxContextWindow')}
                       </span>
                       <span className="font-mono font-semibold text-xs text-gray-900 dark:text-gray-100 tabular-nums">
                         {formatTokens(policyMaxTokens)}
@@ -529,7 +529,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                     </div>
                     <div className="flex flex-col gap-1 py-2 px-2 rounded-lg bg-white dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/30">
                       <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                        {t('slash.debugModelMaxContextWindow')}
+                        {t('Slash.DebugModelMaxContextWindow')}
                       </span>
                       <span className="font-mono font-semibold text-xs text-gray-900 dark:text-gray-100 tabular-nums">
                         {formatTokens(modelMaxTokens)}
@@ -537,7 +537,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                     </div>
                     <div className="flex flex-col gap-1 py-2 px-2 rounded-lg bg-white dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/30">
                       <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                        {t('slash.debugEffectiveContextWindow')}
+                        {t('Slash.DebugEffectiveContextWindow')}
                       </span>
                       <span className="font-mono font-semibold text-xs text-gray-900 dark:text-gray-100 tabular-nums">
                         {formatTokens(effectiveMaxTokens)}
@@ -550,7 +550,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                        {t('slash.debugContextUsage')}
+                        {t('Slash.DebugContextUsage')}
                       </span>
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-[10px] text-gray-400 dark:text-gray-500 tabular-nums">
@@ -618,7 +618,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                     <Paperclip size={20} className="text-primary-600 dark:text-primary-400" />
                   </div>
                   <span className="text-sm text-primary-700 dark:text-primary-300 font-medium">
-                    {t('input.dropFiles')}
+                    {t('Input.DropFiles')}
                   </span>
                 </div>
               </div>
@@ -628,7 +628,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
             {dropSuccess && (
               <div className="absolute inset-0 z-10 bg-green-50/95 dark:bg-green-900/90 border-2 border-green-400 rounded-2xl flex items-center justify-center animate-pulse pointer-events-none">
                 <span className="text-sm text-green-700 dark:text-green-300 font-medium">
-                  {t('input.filesAdded')}
+                  {t('Input.FilesAdded')}
                 </span>
               </div>
             )}
@@ -647,8 +647,8 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                 onClick={() => fileInputRef.current?.click()}
                 disabled={loading || disabled || attachments.length >= maxFiles}
                 className="cursor-pointer flex-shrink-0 self-center p-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                aria-label={t('input.attachFiles')}
-                title={t('input.attachFiles')}
+                aria-label={t('Input.AttachFiles')}
+                title={t('Input.AttachFiles')}
               >
                 <Paperclip size={20} />
               </button>
@@ -661,7 +661,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                 multiple
                 onChange={handleFileInputChange}
                 className="hidden"
-                aria-label={t('input.fileInput')}
+                aria-label={t('Input.FileInput')}
               />
 
               {/* Textarea */}
@@ -691,7 +691,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                   rows={1}
                   disabled={loading || disabled}
                   aria-busy={loading}
-                  aria-label={t('input.messageInput')}
+                  aria-label={t('Input.MessageInput')}
                 />
               </div>
 
@@ -700,7 +700,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                 type="submit"
                 disabled={!canSubmit}
                 className="cursor-pointer flex-shrink-0 self-center p-2 rounded-lg bg-primary-600 hover:bg-primary-700 active:bg-primary-800 active:scale-95 text-white shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-primary-600"
-                aria-label={loading ? t('input.processing') : t('input.sendMessage')}
+                aria-label={loading ? t('Input.Processing') : t('Input.SendMessage')}
               >
                 {loading ? (
                   <div className="w-[18px] h-[18px] border-2 border-white/60 border-t-transparent rounded-full animate-spin" />
@@ -713,14 +713,14 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
             {/* Keyboard hint */}
             {isFocused && !message && !loading && (
               <span className="hidden sm:block absolute -bottom-5 left-14 text-[10px] text-gray-400 dark:text-gray-500 select-none animate-fade-in">
-                {t('input.shiftEnterHint')}
+                {t('Input.ShiftEnterHint')}
               </span>
             )}
 
             {isCommandListVisible && (
               <div className="absolute left-0 right-0 bottom-full mb-1.5 z-20 overflow-hidden rounded-lg border border-gray-200/70 bg-white/98 shadow-md backdrop-blur-xl dark:border-gray-700/70 dark:bg-gray-900/98 dark:shadow-black/20">
                 {filteredCommands.length > 0 ? (
-                  <ul role="listbox" aria-label={t('slash.commandsList')} className="py-1 px-1">
+                  <ul role="listbox" aria-label={t('Slash.CommandsList')} className="py-1 px-1">
                     {filteredCommands.map((command, index) => {
                       const isActive = index === activeCommandIndex
                       return (
@@ -755,7 +755,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                 ) : (
                   <div className="px-3 py-2.5 text-center">
                     <p className="text-[11px] text-gray-400 dark:text-gray-500">
-                      {t('slash.noMatches')}
+                      {t('Slash.NoMatches')}
                     </p>
                   </div>
                 )}

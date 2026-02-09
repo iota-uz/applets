@@ -101,7 +101,7 @@ function Alert({
                     onClick={onRetry}
                     className={`mt-2 text-xs px-3 py-1.5 rounded ${styles.retryButton} transition-colors font-medium`}
                   >
-                    {t('chat.retry')}
+                    {t('Chat.Retry')}
                   </button>
                 )}
               </div>
@@ -112,7 +112,7 @@ function Alert({
               <button
                 onClick={onDismiss}
                 className={`${styles.button} transition-colors flex-shrink-0`}
-                aria-label={t('chat.dismissNotification')}
+                aria-label={t('Chat.DismissNotification')}
               >
                 <X size={20} className="w-5 h-5" />
               </button>

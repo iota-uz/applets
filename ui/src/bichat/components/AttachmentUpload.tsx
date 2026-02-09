@@ -63,7 +63,7 @@ const AttachmentUpload = memo<AttachmentUploadProps>(
         try {
           // Validate file count
           if (files.length > maxAttachments) {
-            toast.error(t('error.maxFiles', { max: maxAttachments, selected: files.length }))
+            toast.error(t('Error.MaxFiles', { max: maxAttachments, selected: files.length }))
             setIsLoading(false)
             return
           }
@@ -116,11 +116,11 @@ const AttachmentUpload = memo<AttachmentUploadProps>(
             onAttachmentsSelected(attachments)
             const message =
               attachments.length === 1
-                ? t('attachment.fileAdded', { size: formatFileSize(attachments[0].sizeBytes) })
-                : t('attachment.fileAdded', { size: `${attachments.length} files` })
+                ? t('Attachment.FileAdded', { size: formatFileSize(attachments[0].sizeBytes) })
+                : t('Attachment.FileAdded', { size: `${attachments.length} files` })
             toast.success(message)
           } else if (errors.length > 0) {
-            toast.error(t('attachment.invalidFile'))
+            toast.error(t('Attachment.InvalidFile'))
           }
         } finally {
           setIsLoading(false)
@@ -149,7 +149,7 @@ const AttachmentUpload = memo<AttachmentUploadProps>(
           onChange={handleFileSelect}
           disabled={isDisabled}
           className="sr-only"
-          aria-label={t('attachment.selectFiles')}
+          aria-label={t('Attachment.SelectFiles')}
         />
 
         {/* Trigger Button */}
@@ -171,7 +171,7 @@ const AttachmentUpload = memo<AttachmentUploadProps>(
             active:scale-95
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50
           "
-          aria-label={t('attachment.selectFiles')}
+          aria-label={t('Attachment.SelectFiles')}
           aria-busy={isLoading}
         >
           {isLoading ? (

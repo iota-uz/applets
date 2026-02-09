@@ -87,10 +87,10 @@ export default function ArchivedChatList({
     try {
       await dataSource.unarchiveSession(sessionToRestore)
       setRefreshKey((k) => k + 1)
-      toast.success(t('archived.chatRestoredSuccessfully'))
+      toast.success(t('Archived.ChatRestoredSuccessfully'))
     } catch (err) {
       console.error('Failed to restore session:', err)
-      toast.error(t('archived.failedToRestoreChat'))
+      toast.error(t('Archived.FailedToRestoreChat'))
     } finally {
       setShowConfirm(false)
       setSessionToRestore(null)
@@ -100,11 +100,11 @@ export default function ArchivedChatList({
   const handleRenameSession = async (sessionId: string, newTitle: string) => {
     try {
       await dataSource.renameSession(sessionId, newTitle)
-      toast.success(t('sidebar.chatRenamedSuccessfully'))
+      toast.success(t('Sidebar.ChatRenamedSuccessfully'))
       setRefreshKey((k) => k + 1)
     } catch (err) {
       console.error('Failed to update session title:', err)
-      toast.error(t('sidebar.failedToRenameChat'))
+      toast.error(t('Sidebar.FailedToRenameChat'))
     }
   }
 
@@ -139,10 +139,10 @@ export default function ArchivedChatList({
           <button
             onClick={onBack}
             className="inline-flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400"
-            aria-label={t('archived.backToChats')}
+            aria-label={t('Archived.BackToChats')}
           >
             <ArrowLeft size={20} className="w-5 h-5" />
-            {t('common.back')}
+            {t('Common.Back')}
           </button>
         </div>
 
@@ -152,7 +152,7 @@ export default function ArchivedChatList({
             className="w-6 h-6 text-gray-600 dark:text-gray-400"
           />
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {t('archived.title')}
+            {t('Archived.Title')}
           </h1>
         </div>
 
@@ -160,7 +160,7 @@ export default function ArchivedChatList({
         <SearchInput
           value={searchQuery}
           onChange={setSearchQuery}
-          placeholder={t('archived.searchArchivedChats')}
+          placeholder={t('Archived.SearchArchivedChats')}
         />
       </div>
 
@@ -179,8 +179,8 @@ export default function ArchivedChatList({
                   className="text-gray-400 dark:text-gray-500"
                 />
               }
-              title={t('archived.noArchivedChats')}
-              description={t('archived.noArchivedChatsDescription')}
+              title={t('Archived.NoArchivedChats')}
+              description={t('Archived.NoArchivedChatsDescription')}
             />
           </div>
         ) : isEmptyAfterSearch ? (
@@ -192,8 +192,8 @@ export default function ArchivedChatList({
                   className="text-gray-400 dark:text-gray-500"
                 />
               }
-              title={t('archived.noResults')}
-              description={t('archived.noResultsDescription', {
+              title={t('Archived.NoResults')}
+              description={t('Archived.NoResultsDescription', {
                 query: searchQuery,
               })}
             />
@@ -237,10 +237,10 @@ export default function ArchivedChatList({
       {/* Confirm Restore Modal */}
       <ConfirmModal
         isOpen={showConfirm}
-        title={t('archived.restoreChat')}
-        message={t('archived.restoreChatMessage')}
-        confirmText={t('archived.restoreButton')}
-        cancelText={t('common.cancel')}
+        title={t('Archived.RestoreChat')}
+        message={t('Archived.RestoreChatMessage')}
+        confirmText={t('Archived.RestoreButton')}
+        cancelText={t('Common.Cancel')}
         isDanger={false}
         onConfirm={confirmRestore}
         onCancel={() => {

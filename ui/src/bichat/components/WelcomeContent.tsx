@@ -107,8 +107,8 @@ function WelcomeContent({
 }: WelcomeContentProps) {
   const { t } = useTranslation()
   const shouldReduceMotion = useReducedMotion()
-  const resolvedTitle = title || t('welcome.title')
-  const resolvedDescription = description || t('welcome.description')
+  const resolvedTitle = title || t('Welcome.Title')
+  const resolvedDescription = description || t('Welcome.Description')
 
   const handlePromptClick = (prompt: string) => {
     if (onPromptSelect && !disabled) {
@@ -155,7 +155,7 @@ function WelcomeContent({
         <div className="flex items-center gap-4 mb-5">
           <div className="h-px flex-1 bg-gradient-to-r from-transparent to-gray-200 dark:to-gray-700/70" />
           <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500 select-none">
-            {t('welcome.quickStart')}
+            {t('Welcome.QuickStart')}
           </span>
           <div className="h-px flex-1 bg-gradient-to-l from-transparent to-gray-200 dark:to-gray-700/70" />
         </div>

@@ -103,7 +103,7 @@ export function SystemMessage({
             <div className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500">
               <ClockCounterClockwise size={13} weight="bold" />
               <span className="text-[11px] font-semibold uppercase tracking-wider">
-                {t('system.conversationSummary')}
+                {t('System.ConversationSummary')}
               </span>
             </div>
 
@@ -127,7 +127,7 @@ export function SystemMessage({
                   }
                 `}
                 aria-label="Copy message"
-                title={isCopied ? t('message.copied') : t('message.copy')}
+                title={isCopied ? t('Message.Copied') : t('Message.Copy')}
               >
                 {isCopied ? <Check size={13} weight="bold" /> : <Copy size={13} weight="regular" />}
               </button>
@@ -148,7 +148,7 @@ export function SystemMessage({
                 fallback={
                   <div className="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500 py-2">
                     <div className="w-3.5 h-3.5 border-[1.5px] border-gray-300 dark:border-gray-600 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-xs">{t('system.loadingSummary')}</span>
+                    <span className="text-xs">{t('System.LoadingSummary')}</span>
                   </div>
                 }
               >
@@ -171,7 +171,7 @@ export function SystemMessage({
                 aria-expanded={isExpanded}
                 className="cursor-pointer group/toggle inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200/60 dark:hover:bg-gray-700/50 transition-colors duration-150"
               >
-                <span>{isExpanded ? t('system.showLess') : t('system.showMore')}</span>
+                <span>{isExpanded ? t('System.ShowLess') : t('System.ShowMore')}</span>
                 <CaretDown
                   size={11}
                   weight="bold"

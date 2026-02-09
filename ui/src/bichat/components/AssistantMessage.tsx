@@ -419,7 +419,7 @@ export function AssistantMessage({
                           d="M9 5l7 7-7 7"
                         />
                       </svg>
-                      <span className="font-medium">{t('assistant.explanation')}</span>
+                      <span className="font-medium">{t('Assistant.Explanation')}</span>
                     </button>
                     {explanationExpanded && (
                       <div className="pt-3 text-sm text-gray-600 dark:text-gray-400">
@@ -468,7 +468,7 @@ export function AssistantMessage({
                   onClick={handleCopyClick}
                   className={`cursor-pointer ${classes.actionButton} ${isCopied ? 'text-green-600 dark:text-green-400' : ''}`}
                   aria-label="Copy message"
-                  title={isCopied ? t('message.copied') : t('message.copy')}
+                  title={isCopied ? t('Message.Copied') : t('Message.Copy')}
                 >
                   {isCopied ? <Check size={14} weight="bold" /> : <Copy size={14} weight="regular" />}
                 </button>

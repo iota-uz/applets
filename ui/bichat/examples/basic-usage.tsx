@@ -38,11 +38,11 @@ const biChatConfig: BiChatConfig = {
   locale: {
     language: 'en',
     translations: {
-      'chat.title': 'Chat Assistant',
-      'chat.placeholder': 'Type your message here...',
-      'chat.send': 'Send',
-      'chat.cancel': 'Cancel',
-      'chat.error': 'An error occurred',
+      'Chat.Title': 'Chat Assistant',
+      'Chat.Placeholder': 'Type your message here...',
+      'Chat.Send': 'Send',
+      'Chat.Cancel': 'Cancel',
+      'Chat.Error': 'An error occurred',
     },
   },
   endpoints: {

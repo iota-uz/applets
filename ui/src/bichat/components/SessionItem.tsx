@@ -58,10 +58,10 @@ const SessionItem = memo<SessionItemProps>(
     }, [])
 
     // Check if title is being generated (null, empty, or "New Chat")
-    const isTitleGenerating = !session.title || session.title === t('chat.newChat')
+    const isTitleGenerating = !session.title || session.title === t('Chat.NewChat')
 
     // Generate title from session (use existing title or show generating state)
-    const displayTitle = isTitleGenerating ? t('common.generating') : (session.title ?? t('common.untitled'))
+    const displayTitle = isTitleGenerating ? t('Common.Generating') : (session.title ?? t('Common.Untitled'))
 
     // Long press handlers for touch devices
     const { handlers: longPressHandlers } = useLongPress({
@@ -99,13 +99,13 @@ const SessionItem = memo<SessionItemProps>(
       ? [
         ...(onRestore ? [{
           id: 'restore',
-          label: t('archived.restoreButton'),
+          label: t('Archived.RestoreButton'),
           icon: <ArrowUUpLeft size={20} />,
           onClick: () => onRestore(),
         }] : []),
         ...(onRename ? [{
           id: 'rename',
-          label: t('sidebar.renameChat'),
+          label: t('Sidebar.RenameChat'),
           icon: <PencilSimple size={20} />,
           onClick: () => editableTitleRef.current?.startEditing(),
         }] : []),
@@ -113,32 +113,32 @@ const SessionItem = memo<SessionItemProps>(
       : [
         ...(onPin ? [{
           id: 'pin',
-          label: session.pinned ? t('sidebar.unpinChat') : t('sidebar.pinChat'),
+          label: session.pinned ? t('Sidebar.UnpinChat') : t('Sidebar.PinChat'),
           icon: session.pinned ? <Check size={20} /> : <Bookmark size={20} />,
           onClick: () => onPin(),
         }] : []),
         ...(onRename ? [{
           id: 'rename',
-          label: t('sidebar.renameChat'),
+          label: t('Sidebar.RenameChat'),
           icon: <PencilSimple size={20} />,
           onClick: () => editableTitleRef.current?.startEditing(),
         }] : []),
         ...(onRegenerateTitle ? [{
           id: 'regenerate',
-          label: t('sidebar.regenerateTitle'),
+          label: t('Sidebar.RegenerateTitle'),
           icon: <ArrowsClockwise size={20} />,
           onClick: () => onRegenerateTitle(),
         }] : []),
         ...(onArchive ? [{
           id: 'archive',
-          label: t('sidebar.archiveChat'),
+          label: t('Sidebar.ArchiveChat'),
           icon: <Archive size={20} />,
           onClick: () => onArchive(),
           variant: 'danger' as const,
         }] : []),
         ...(onDelete ? [{
           id: 'delete',
-          label: t('sidebar.deleteChat'),
+          label: t('Sidebar.DeleteChat'),
           icon: <Trash size={20} />,
           onClick: () => onDelete(),
           variant: 'danger' as const,
@@ -187,7 +187,7 @@ const SessionItem = memo<SessionItemProps>(
                       e.stopPropagation()
                     }}
                     className="opacity-0 group-hover:opacity-100 p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-smooth flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
-                    aria-label={t('sidebar.chatOptions')}
+                    aria-label={t('Sidebar.ChatOptions')}
                     data-testid={`${testIdPrefix}-session-options-${session.id}`}
                   >
                     <DotsThree size={16} className="w-4 h-4" weight="bold" />
@@ -210,7 +210,7 @@ const SessionItem = memo<SessionItemProps>(
                                 ? 'bg-gray-100 dark:bg-gray-800/70 ring-1 ring-gray-200/80 dark:ring-gray-700/80'
                                 : 'hover:bg-gray-50 dark:hover:bg-gray-800'
                             }`}
-                            aria-label={session.pinned ? t('sidebar.unpinChat') : t('sidebar.pinChat')}
+                            aria-label={session.pinned ? t('Sidebar.UnpinChat') : t('Sidebar.PinChat')}
                             data-testid={`${testIdPrefix}-session-pin-${session.id}`}
                           >
                             {session.pinned ? (
@@ -218,7 +218,7 @@ const SessionItem = memo<SessionItemProps>(
                             ) : (
                               <Bookmark size={16} className="w-4 h-4" />
                             )}
-                            {session.pinned ? t('sidebar.unpinChat') : t('sidebar.pinChat')}
+                            {session.pinned ? t('Sidebar.UnpinChat') : t('Sidebar.PinChat')}
                           </button>
                         )}
                       </MenuItem>
@@ -238,11 +238,11 @@ const SessionItem = memo<SessionItemProps>(
                                 ? 'bg-gray-100 dark:bg-gray-800/70 ring-1 ring-gray-200/80 dark:ring-gray-700/80'
                                 : 'hover:bg-gray-50 dark:hover:bg-gray-800'
                             }`}
-                            aria-label={t('sidebar.renameChat')}
+                            aria-label={t('Sidebar.RenameChat')}
                             data-testid={`${testIdPrefix}-session-rename-${session.id}`}
                           >
                             <PencilSimple size={16} className="w-4 h-4" />
-                            {t('sidebar.renameChat')}
+                            {t('Sidebar.RenameChat')}
                           </button>
                         )}
                       </MenuItem>
@@ -262,11 +262,11 @@ const SessionItem = memo<SessionItemProps>(
                                 ? 'bg-gray-100 dark:bg-gray-800/70 ring-1 ring-gray-200/80 dark:ring-gray-700/80'
                                 : 'hover:bg-gray-50 dark:hover:bg-gray-800'
                             }`}
-                            aria-label={t('sidebar.regenerateTitle')}
+                            aria-label={t('Sidebar.RegenerateTitle')}
                             data-testid={`${testIdPrefix}-session-regenerate-${session.id}`}
                           >
                             <ArrowsClockwise size={16} className="w-4 h-4" />
-                            {t('sidebar.regenerateTitle')}
+                            {t('Sidebar.RegenerateTitle')}
                           </button>
                         )}
                       </MenuItem>
@@ -285,11 +285,11 @@ const SessionItem = memo<SessionItemProps>(
                                 ? 'text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/20 ring-1 ring-green-200/70 dark:ring-green-500/30'
                                 : 'text-green-700 dark:text-green-300 hover:bg-green-50/70 dark:hover:bg-green-900/10'
                             }`}
-                            aria-label={t('archived.restoreButton')}
+                            aria-label={t('Archived.RestoreButton')}
                             data-testid={`${testIdPrefix}-session-restore-${session.id}`}
                           >
                             <ArrowUUpLeft size={16} className="w-4 h-4" />
-                            {t('archived.restoreButton')}
+                            {t('Archived.RestoreButton')}
                           </button>
                         )}
                       </MenuItem>
@@ -308,11 +308,11 @@ const SessionItem = memo<SessionItemProps>(
                                 ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 ring-1 ring-amber-200/70 dark:ring-amber-500/30'
                                 : 'text-amber-600 dark:text-amber-400 hover:bg-amber-50/70 dark:hover:bg-amber-900/10'
                             }`}
-                            aria-label={t('sidebar.archiveChat')}
+                            aria-label={t('Sidebar.ArchiveChat')}
                             data-testid={`${testIdPrefix}-session-archive-${session.id}`}
                           >
                             <Archive size={16} className="w-4 h-4" />
-                            {t('sidebar.archiveChat')}
+                            {t('Sidebar.ArchiveChat')}
                           </button>
                         )}
                       </MenuItem>
@@ -331,11 +331,11 @@ const SessionItem = memo<SessionItemProps>(
                                 ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 ring-1 ring-red-200/70 dark:ring-red-500/30'
                                 : 'text-red-600 dark:text-red-400 hover:bg-red-50/70 dark:hover:bg-red-900/10'
                             }`}
-                            aria-label={t('sidebar.deleteChat')}
+                            aria-label={t('Sidebar.DeleteChat')}
                             data-testid={`${testIdPrefix}-session-delete-${session.id}`}
                           >
                             <Trash size={16} className="w-4 h-4" />
-                            {t('sidebar.deleteChat')}
+                            {t('Sidebar.DeleteChat')}
                           </button>
                         )}
                       </MenuItem>

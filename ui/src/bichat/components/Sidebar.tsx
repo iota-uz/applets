@@ -82,9 +82,9 @@ export default function Sidebar({
 
   // Build tab items
   const tabs = useMemo(() => {
-    const items = [{ id: 'my-chats', label: t('sidebar.myChats') }]
+    const items = [{ id: 'my-chats', label: t('Sidebar.MyChats') }]
     if (showAllChatsTab) {
-      items.push({ id: 'all-chats', label: t('sidebar.allChats') })
+      items.push({ id: 'all-chats', label: t('Sidebar.AllChats') })
     }
     return items
   }, [showAllChatsTab, t])
@@ -98,7 +98,7 @@ export default function Sidebar({
       setSessions(result.sessions)
     } catch (err) {
       console.error('Failed to load sessions:', err)
-      setError(t('sidebar.failedToLoadSessions'))
+      setError(t('Sidebar.FailedToLoadSessions'))
     } finally {
       setLoading(false)
     }
@@ -117,7 +117,7 @@ export default function Sidebar({
   useEffect(() => {
     if (!Array.isArray(sessions) || sessions.length === 0) return
 
-    const newChatLabel = t('chat.newChat')
+    const newChatLabel = t('Chat.NewChat')
 
     const sessionsWithPlaceholderTitles = sessions.filter(
       (s) => s && (!s.title || s.title === newChatLabel)
@@ -164,7 +164,7 @@ export default function Sidebar({
       }
     } catch (err) {
       console.error('Failed to archive session:', err)
-      toast.error(t('sidebar.failedToArchiveChat'))
+      toast.error(t('Sidebar.FailedToArchiveChat'))
     } finally {
       setShowConfirm(false)
       setSessionToArchive(null)
@@ -184,29 +184,29 @@ export default function Sidebar({
       setRefreshKey((k) => k + 1)
     } catch (err) {
       console.error('Failed to toggle pin:', err)
-      toast.error(t('sidebar.failedToTogglePin'))
+      toast.error(t('Sidebar.FailedToTogglePin'))
     }
   }
 
   const handleRenameSession = async (sessionId: string, newTitle: string) => {
     try {
       await dataSource.renameSession(sessionId, newTitle)
-      toast.success(t('sidebar.chatRenamedSuccessfully'))
+      toast.success(t('Sidebar.ChatRenamedSuccessfully'))
       setRefreshKey((k) => k + 1)
     } catch (err) {
       console.error('Failed to update session title:', err)
-      toast.error(t('sidebar.failedToRenameChat'))
+      toast.error(t('Sidebar.FailedToRenameChat'))
     }
   }
 
   const handleRegenerateTitle = async (sessionId: string) => {
     try {
       await dataSource.regenerateSessionTitle(sessionId)
-      toast.success(t('sidebar.titleRegenerated'))
+      toast.success(t('Sidebar.TitleRegenerated'))
       setRefreshKey((k) => k + 1)
     } catch (err) {
       console.error('Failed to regenerate title:', err)
-      toast.error(t('sidebar.failedToRegenerateTitle'))
+      toast.error(t('Sidebar.FailedToRegenerateTitle'))
     }
   }
 
@@ -290,7 +290,7 @@ export default function Sidebar({
       <aside
         className={`w-64 bg-surface-300 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-full min-h-0 flex flex-col overflow-hidden ${className}`}
         role="navigation"
-        aria-label={t('sidebar.chatSessions')}
+        aria-label={t('Sidebar.ChatSessions')}
       >
         {/* Header */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
@@ -299,8 +299,8 @@ export default function Sidebar({
             <motion.button
               onClick={onClose}
               className="cursor-pointer p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-smooth text-gray-600 dark:text-gray-400"
-              title={t('sidebar.closeSidebar')}
-              aria-label={t('sidebar.closeSidebar')}
+              title={t('Sidebar.CloseSidebar')}
+              aria-label={t('Sidebar.CloseSidebar')}
               whileHover="hover"
               whileTap="tap"
               variants={buttonVariants}
@@ -333,7 +333,7 @@ export default function Sidebar({
               <SearchInput
                 value={searchQuery}
                 onChange={setSearchQuery}
-                placeholder={t('sidebar.searchChats')}
+                placeholder={t('Sidebar.SearchChats')}
               />
             </div>
 
@@ -343,8 +343,8 @@ export default function Sidebar({
                 onClick={onNewChat}
                 disabled={creating || loading}
                 className="cursor-pointer w-full px-4 py-3 bg-primary-600 dark:bg-primary-700 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-800 transition-smooth font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                title={t('chat.newChat')}
-                aria-label={t('sidebar.createNewChat')}
+                title={t('Chat.NewChat')}
+                aria-label={t('Sidebar.CreateNewChat')}
                 whileHover={shouldReduceMotion ? {} : { scale: 1.02 }}
                 whileTap={shouldReduceMotion ? {} : { scale: 0.95 }}
               >
@@ -353,7 +353,7 @@ export default function Sidebar({
                 ) : (
                   <>
                     <Plus size={20} className="w-5 h-5" />
-                    <span className="ml-2">{t('chat.newChat')}</span>
+                    <span className="ml-2">{t('Chat.NewChat')}</span>
                   </>
                 )}
               </motion.button>
@@ -365,10 +365,10 @@ export default function Sidebar({
                 <button
                   onClick={onArchivedView}
                   className="cursor-pointer flex items-center gap-2 px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-smooth text-sm font-medium w-full"
-                  title={t('sidebar.archivedChats')}
+                  title={t('Sidebar.ArchivedChats')}
                 >
                   <Archive size={18} className="w-4.5 h-4.5" />
-                  <span>{t('sidebar.archivedChats')}</span>
+                  <span>{t('Sidebar.ArchivedChats')}</span>
                 </button>
               </div>
             )}
@@ -388,7 +388,7 @@ export default function Sidebar({
                   {pinnedSessions.length > 0 && (
                     <div className="mb-4">
                       <DateGroupHeader
-                        groupName={t('common.pinned')}
+                        groupName={t('Common.Pinned')}
                         count={pinnedSessions.length}
                       />
                       <motion.div
@@ -397,7 +397,7 @@ export default function Sidebar({
                         initial="hidden"
                         animate="visible"
                         role="list"
-                        aria-label={t('sidebar.pinnedChats')}
+                        aria-label={t('Sidebar.PinnedChats')}
                       >
                         {pinnedSessions.map((session) => (
                           <SessionItem
@@ -468,13 +468,13 @@ export default function Sidebar({
                     <EmptyState
                       title={
                         searchQuery
-                          ? t('sidebar.noChatsFound', { query: searchQuery })
-                          : t('sidebar.noChatsYet')
+                          ? t('Sidebar.NoChatsFound', { query: searchQuery })
+                          : t('Sidebar.NoChatsYet')
                       }
                       description={
                         searchQuery
                           ? undefined
-                          : t('sidebar.createOneToGetStarted')
+                          : t('Sidebar.CreateOneToGetStarted')
                       }
                       action={
                         searchQuery ? (
@@ -482,7 +482,7 @@ export default function Sidebar({
                             onClick={() => setSearchQuery('')}
                             className="cursor-pointer text-sm text-primary-600 dark:text-primary-400 hover:underline"
                           >
-                            {t('common.clear')}
+                            {t('Common.Clear')}
                           </button>
                         ) : undefined
                       }
@@ -509,10 +509,10 @@ export default function Sidebar({
       {/* Confirm Archive Modal */}
       <ConfirmModal
         isOpen={showConfirm}
-        title={t('sidebar.archiveChatSession')}
-        message={t('sidebar.archiveChatMessage')}
-        confirmText={t('sidebar.archiveButton')}
-        cancelText={t('common.cancel')}
+        title={t('Sidebar.ArchiveChatSession')}
+        message={t('Sidebar.ArchiveChatMessage')}
+        confirmText={t('Sidebar.ArchiveButton')}
+        cancelText={t('Common.Cancel')}
         isDanger={false}
         onConfirm={confirmArchive}
         onCancel={() => {

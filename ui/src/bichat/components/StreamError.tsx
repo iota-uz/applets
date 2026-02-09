@@ -40,7 +40,7 @@ export function StreamError({
       />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-red-800 dark:text-red-200">
-          {t('error.generic')}
+          {t('Error.Generic')}
         </p>
         <p className="text-sm text-red-600 dark:text-red-300 break-words">
           {error}
