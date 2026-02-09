@@ -1,0 +1,4 @@
+/applet
+*.exe
+dist/
+node_modules/
