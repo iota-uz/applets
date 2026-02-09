@@ -2,3 +2,16 @@
 *.exe
 dist/
 node_modules/
+
+# Build artifacts
+tailwind/
+ui/.storybook/preview.generated.css
+storybook-static/
+
+# Env and IDE
+.DS_Store
+.env
+.env.local
+*.log
+go.work
+go.work.sum
