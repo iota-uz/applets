@@ -19,15 +19,23 @@ Short reference for contributors working in this repo. Full applet and SDK docum
 
 ## Applet CLI
 
-Run from the repo that contains the applet (iota-sdk or eai):
+**Install** (recommended; no clone needed, ensure `$GOBIN` is on PATH):
 
 ```bash
-go run github.com/iota-uz/applets/cmd/applet rpc gen --name bichat
-go run github.com/iota-uz/applets/cmd/applet rpc check --name bichat
-go run github.com/iota-uz/applets/cmd/applet deps check
+go install github.com/iota-uz/applets/cmd/applet@latest
 ```
 
-Or build the binary: `go build -o applet ./cmd/applet` then `./applet rpc gen --name bichat`.
+Then from the repo that contains the applet (iota-sdk or eai):
+
+```bash
+applet rpc gen --name bichat
+applet rpc check --name bichat
+applet deps check
+```
+
+To use a specific version: `go install github.com/iota-uz/applets/cmd/applet@v0.4.0`.
+
+**Alternatives:** From a clone, `go run ./cmd/applet rpc gen --name bichat` or `go run github.com/iota-uz/applets/cmd/applet rpc gen --name bichat`; or `go build -o applet ./cmd/applet` then `./applet rpc gen --name bichat`.
 
 ## Full docs
 
