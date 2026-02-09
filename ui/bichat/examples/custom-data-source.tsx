@@ -15,7 +15,6 @@ import {
   Attachment,
   StreamChunk,
   QuestionAnswers,
-  MessageRole,
   SessionListResult,
 } from '@iota-uz/sdk/bichat'
 
@@ -523,7 +522,7 @@ export class SimpleMockDataSource implements ChatDataSource {
   async *sendMessage(
     sessionId: string,
     content: string,
-    attachments: Attachment[] = [],
+    _attachments: Attachment[] = [],
     signal?: AbortSignal
   ): AsyncGenerator<StreamChunk> {
     yield { type: 'user_message', sessionId }
@@ -555,29 +554,29 @@ export class SimpleMockDataSource implements ChatDataSource {
     return { sessions: [], total: 0, hasMore: false }
   }
 
-  async archiveSession(sessionId: string): Promise<Session> {
+  async archiveSession(_sessionId: string): Promise<Session> {
     return this.createSession()
   }
 
-  async unarchiveSession(sessionId: string): Promise<Session> {
+  async unarchiveSession(_sessionId: string): Promise<Session> {
     return this.createSession()
   }
 
-  async pinSession(sessionId: string): Promise<Session> {
+  async pinSession(_sessionId: string): Promise<Session> {
     return this.createSession()
   }
 
-  async unpinSession(sessionId: string): Promise<Session> {
+  async unpinSession(_sessionId: string): Promise<Session> {
     return this.createSession()
   }
 
   async deleteSession(): Promise<void> {}
 
-  async renameSession(sessionId: string, title: string): Promise<Session> {
+  async renameSession(_sessionId: string, _title: string): Promise<Session> {
     return this.createSession()
   }
 
-  async regenerateSessionTitle(sessionId: string): Promise<Session> {
+  async regenerateSessionTitle(_sessionId: string): Promise<Session> {
     return this.createSession()
   }
 

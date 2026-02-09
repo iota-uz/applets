@@ -54,6 +54,10 @@ jobs:
         working-directory: applets
         run: pnpm run typecheck
 
+      - name: Lint
+        working-directory: applets
+        run: pnpm run lint
+
       - name: Build package
         working-directory: applets
         run: pnpm run build

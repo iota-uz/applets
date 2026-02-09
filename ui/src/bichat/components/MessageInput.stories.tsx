@@ -13,23 +13,25 @@ const meta: Meta<typeof MessageInput> = {
 export default meta
 type Story = StoryObj<typeof MessageInput>
 
+function PlaygroundStory(args: React.ComponentProps<typeof MessageInput>) {
+  const [message, setMessage] = useState('')
+  return (
+    <div className="max-w-2xl mx-auto p-4 border rounded bg-gray-50">
+      <MessageInput
+        {...args}
+        message={message}
+        onMessageChange={setMessage}
+        onSubmit={(_e, atts) => {
+          alert(`Submit: "${message}" with ${atts.length} images`)
+          setMessage('')
+        }}
+      />
+    </div>
+  )
+}
+
 export const Playground: Story = {
-  render: (args) => {
-    const [message, setMessage] = useState('')
-    return (
-      <div className="max-w-2xl mx-auto p-4 border rounded bg-gray-50">
-        <MessageInput
-          {...args}
-          message={message}
-          onMessageChange={setMessage}
-          onSubmit={(_e, atts) => {
-            alert(`Submit: "${message}" with ${atts.length} images`)
-            setMessage('')
-          }}
-        />
-      </div>
-    )
-  },
+  render: (args) => <PlaygroundStory {...args} />,
   args: {
     loading: false,
   },

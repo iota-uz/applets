@@ -60,7 +60,7 @@ export function SourcesPanel({ citations }: SourcesPanelProps) {
                         </a>
                       )}
                       {citation.excerpt && (
-                        <div className="mt-1 text-gray-600 dark:text-gray-400 italic">"{citation.excerpt}"</div>
+                        <div className="mt-1 text-gray-600 dark:text-gray-400 italic">&quot;{citation.excerpt}&quot;</div>
                       )}
                     </div>
                   </div>

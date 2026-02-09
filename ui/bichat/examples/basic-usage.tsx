@@ -70,7 +70,8 @@ const rateLimiter = new RateLimiter({
   windowMs: 60000,
 })
 
-// 4. Custom Chat Interface Component
+// 4. Custom Chat Interface Component (example component for reference)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- example component
 function CustomChatInterface() {
   const { error } = useChatSession()
   const { turns, loading, isStreaming, streamingContent, cancel } = useChatMessaging()
