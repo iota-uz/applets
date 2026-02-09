@@ -36,7 +36,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: "9.15.0"
+          version: "10.19.0"
 
       - name: Download Go dependencies
         working-directory: applets
@@ -49,6 +49,10 @@ jobs:
       - name: Install JS dependencies
         working-directory: applets
         run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        working-directory: applets
+        run: pnpm run typecheck
 
       - name: Build package
         working-directory: applets

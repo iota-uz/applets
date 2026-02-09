@@ -46,7 +46,7 @@ export interface UserTurn {
  */
 export interface AssistantTurn {
   id: string
-  role?: MessageRole
+  role: MessageRole
   content: string
   explanation?: string
   citations: Citation[]
@@ -109,12 +109,11 @@ export interface Citation {
   endIndex: number
   /** Optional excerpt from the source */
   excerpt?: string
-  /** Legacy: source name (for backward compatibility) */
-  source?: string
 }
 
 export interface Attachment {
   id?: string
+  clientKey: string
   filename: string
   mimeType: string
   sizeBytes: number

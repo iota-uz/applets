@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/gorilla/csrf"
-	"github.com/iota-uz/iota-sdk/pkg/composables"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -195,7 +194,7 @@ func TestStreamContextBuilder_Build_Success(t *testing.T) {
 		},
 	}
 
-	builder := NewStreamContextBuilder(config, sessionConfig, logger)
+	builder := NewStreamContextBuilder(config, sessionConfig, logger, &testHostServices{})
 
 	ctx := createTestContext(t,
 		withUserID(42),
@@ -245,9 +244,9 @@ func TestStreamContextBuilder_Build_MissingUser(t *testing.T) {
 	sessionConfig := DefaultSessionConfig
 
 	config := Config{}
-	builder := NewStreamContextBuilder(config, sessionConfig, logger)
+	builder := NewStreamContextBuilder(config, sessionConfig, logger, &testHostServices{})
 
-	// Context without user
+	// Context without user — extractor will fail
 	ctx := context.Background()
 	r := httptest.NewRequest(http.MethodGet, "/stream", nil)
 
@@ -266,15 +265,16 @@ func TestStreamContextBuilder_Build_MissingTenant(t *testing.T) {
 	sessionConfig := DefaultSessionConfig
 
 	config := Config{}
-	builder := NewStreamContextBuilder(config, sessionConfig, logger)
+	builder := NewStreamContextBuilder(config, sessionConfig, logger, &testHostServices{})
 
-	// Create context with user but no tenant (Background so tenant extraction fails)
-	ctx := context.Background()
-	ctx = composables.WithUser(ctx, &mockUser{
+	// Create context with user but no tenant (tenant extractor will fail)
+	mockU := &mockUser{
 		id:        123,
 		firstName: "John",
 		lastName:  "Doe",
-	})
+	}
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, testUserKey, AppletUser(mockU))
 
 	r := httptest.NewRequest(http.MethodGet, "/stream", nil)
 
@@ -301,7 +301,7 @@ func TestStreamContextBuilder_Build_WithCustomContext(t *testing.T) {
 		},
 	}
 
-	builder := NewStreamContextBuilder(config, sessionConfig, logger)
+	builder := NewStreamContextBuilder(config, sessionConfig, logger, &testHostServices{})
 
 	ctx := createTestContext(t, withUserID(42))
 	r := httptest.NewRequest(http.MethodGet, "/stream", nil)
@@ -338,7 +338,7 @@ func TestStreamContextBuilder_Build_Performance(t *testing.T) {
 	sessionConfig := DefaultSessionConfig
 
 	config := Config{}
-	builder := NewStreamContextBuilder(config, sessionConfig, logger)
+	builder := NewStreamContextBuilder(config, sessionConfig, logger, &testHostServices{})
 
 	ctx := createTestContext(t,
 		withUserID(42),
@@ -382,7 +382,7 @@ func TestStreamContextBuilder_Build_WithCustomContextError(t *testing.T) {
 		},
 	}
 
-	builder := NewStreamContextBuilder(config, sessionConfig, logger)
+	builder := NewStreamContextBuilder(config, sessionConfig, logger, &testHostServices{})
 
 	ctx := createTestContext(t, withUserID(42))
 	r := httptest.NewRequest(http.MethodGet, "/stream", nil)
@@ -418,7 +418,7 @@ func TestStreamContextBuilder_VerifyLightweight(t *testing.T) {
 	sessionConfig := DefaultSessionConfig
 
 	config := Config{}
-	builder := NewStreamContextBuilder(config, sessionConfig, logger)
+	builder := NewStreamContextBuilder(config, sessionConfig, logger, &testHostServices{})
 
 	ctx := createTestContext(t,
 		withUserID(42),

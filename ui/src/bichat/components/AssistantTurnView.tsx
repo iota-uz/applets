@@ -8,7 +8,7 @@
  * For more customization, use the AssistantMessage component directly with slots.
  */
 
-import { useChat } from '../context/ChatContext'
+import { useChatSession, useChatMessaging } from '../context/ChatContext'
 import { AssistantMessage, type AssistantMessageSlots, type AssistantMessageClassNames } from './AssistantMessage'
 import { SystemMessage } from './SystemMessage'
 import type { ConversationTurn } from '../types'
@@ -42,7 +42,8 @@ export function AssistantTurnView({
   hideActions,
   hideTimestamp,
 }: AssistantTurnViewProps) {
-  const { handleCopy, handleRegenerate, pendingQuestion, sendMessage, loading, debugMode } = useChat()
+  const { debugMode } = useChatSession()
+  const { handleCopy, handleRegenerate, pendingQuestion, sendMessage, loading } = useChatMessaging()
 
   const assistantTurn = turn.assistantTurn
   if (!assistantTurn) return null

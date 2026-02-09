@@ -3,22 +3,15 @@ package applet
 import (
 	"context"
 	"fmt"
-	"maps"
 	"net/http"
 	"path"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/gorilla/csrf"
 	"github.com/iota-uz/go-i18n/v2/i18n"
-	"github.com/iota-uz/iota-sdk/modules/core/domain/aggregates/user"
-	"github.com/iota-uz/iota-sdk/pkg/composables"
-	"github.com/iota-uz/iota-sdk/pkg/serrors"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/text/language"
 )
 
 // ContextBuilder builds InitialContext for applets by extracting
@@ -29,6 +22,7 @@ type ContextBuilder struct {
 	sessionConfig      SessionConfig
 	logger             *logrus.Logger
 	metrics            MetricsRecorder
+	host               HostServices
 	tenantNameResolver TenantNameResolver
 	errorEnricher      ErrorContextEnricher
 	sessionStore       SessionStore
@@ -38,7 +32,6 @@ type ContextBuilder struct {
 }
 
 // NewContextBuilder creates a new ContextBuilder with required dependencies.
-// All parameters are required except opts which provide optional customization.
 //
 // Required parameters:
 //   - config: Applet configuration (endpoints, router, custom context)
@@ -46,6 +39,7 @@ type ContextBuilder struct {
 //   - sessionConfig: Session expiry and refresh configuration
 //   - logger: Structured logger for operations
 //   - metrics: Metrics recorder for performance tracking
+//   - host: Host services for extracting user, tenant, pool, locale
 //
 // Optional via BuilderOption:
 //   - WithTenantNameResolver: Custom tenant name resolution
@@ -57,6 +51,7 @@ func NewContextBuilder(
 	sessionConfig SessionConfig,
 	logger *logrus.Logger,
 	metrics MetricsRecorder,
+	host HostServices,
 	opts ...BuilderOption,
 ) *ContextBuilder {
 	b := &ContextBuilder{
@@ -65,6 +60,7 @@ func NewContextBuilder(
 		sessionConfig:     sessionConfig,
 		logger:            logger,
 		metrics:           metrics,
+		host:              host,
 		translationsCache: make(map[string]map[string]string),
 	}
 
@@ -79,36 +75,31 @@ func NewContextBuilder(
 // It extracts all necessary information from the request context and
 // serializes it for JSON injection into the frontend application.
 //
-// Performance target: <20ms for typical request
-// Logs: Entry/exit with user/tenant/duration
-// Metrics: build_duration, translation_load_time, tenant_resolution_time
-//
 // basePath is the applet's base path (e.g., "/bi-chat") used for route parsing.
 func (b *ContextBuilder) Build(ctx context.Context, r *http.Request, basePath string) (*InitialContext, error) {
-	const op serrors.Op = "ContextBuilder.Build"
+	const op = "ContextBuilder.Build"
 	start := time.Now()
 
 	// Extract user
-	user, err := composables.UseUser(ctx)
+	user, err := b.host.ExtractUser(ctx)
 	if err != nil {
 		if b.logger != nil {
 			b.logger.WithError(err).Error("Failed to extract user for applet context")
 		}
-		return nil, serrors.E(op, serrors.Internal, "user extraction failed", err)
+		return nil, fmt.Errorf("%s: %w: user extraction failed: %w", op, ErrInternal, err)
 	}
 
 	// Extract tenant ID
-	tenantID, err := composables.UseTenantID(ctx)
+	tenantID, err := b.host.ExtractTenantID(ctx)
 	if err != nil {
 		if b.logger != nil {
 			b.logger.WithError(err).WithField("user_id", user.ID()).Error("Failed to extract tenant ID")
 		}
-		return nil, serrors.E(op, serrors.Internal, "tenant extraction failed", err)
+		return nil, fmt.Errorf("%s: %w: tenant extraction failed: %w", op, ErrInternal, err)
 	}
 
-	// Extract page context for locale
-	pageCtx := composables.UsePageCtx(ctx)
-	userLocale := pageCtx.GetLocale()
+	// Extract page locale
+	userLocale := b.host.ExtractPageLocale(ctx)
 
 	// Log build start
 	if b.logger != nil {
@@ -120,7 +111,7 @@ func (b *ContextBuilder) Build(ctx context.Context, r *http.Request, basePath st
 	}
 
 	// Get all user permissions (validated)
-	permissions := getUserPermissions(ctx)
+	permissions := collectUserPermissionNames(user)
 	permissions = validatePermissions(permissions)
 
 	// Load all translations for user's locale
@@ -133,7 +124,7 @@ func (b *ContextBuilder) Build(ctx context.Context, r *http.Request, basePath st
 		})
 	}
 
-	// Get tenant name (3-layer fallback)
+	// Get tenant name (multi-layer fallback)
 	tenantResolveStart := time.Now()
 	tenantName := b.getTenantName(ctx, tenantID)
 	tenantResolveDuration := time.Since(tenantResolveStart)
@@ -181,14 +172,21 @@ func (b *ContextBuilder) Build(ctx context.Context, r *http.Request, basePath st
 		rpcPath = path.Join("/", strings.TrimPrefix(basePath, "/"), strings.TrimPrefix(rpcPath, "/"))
 	}
 
+	// Build user context — use DetailedUser for richer fields when available
+	userCtx := UserContext{
+		ID:          int64(user.ID()),
+		Permissions: permissions,
+	}
+	if du, ok := user.(DetailedUser); ok {
+		userCtx.Email = du.Email()
+		userCtx.FirstName = du.FirstName()
+		userCtx.LastName = du.LastName()
+	} else {
+		userCtx.FirstName = user.DisplayName()
+	}
+
 	initialContext := &InitialContext{
-		User: UserContext{
-			ID:          int64(user.ID()),
-			Email:       user.Email().Value(),
-			FirstName:   user.FirstName(),
-			LastName:    user.LastName(),
-			Permissions: permissions,
-		},
+		User: userCtx,
 		Tenant: TenantContext{
 			ID:   tenantID.String(),
 			Name: tenantName,
@@ -246,215 +244,10 @@ func (b *ContextBuilder) Build(ctx context.Context, r *http.Request, basePath st
 	return initialContext, nil
 }
 
-// getUserPermissions extracts all permission IDs the user has.
-// Returns ALL permissions (not filtered by applet).
-// Returns empty slice if user extraction fails.
-func getUserPermissions(ctx context.Context) []string {
-	user, err := composables.UseUser(ctx)
-	if err != nil {
-		return []string{}
-	}
-	return collectUserPermissionNames(user)
-}
-
-func collectUserPermissionNames(u user.User) []string {
-	if u == nil {
-		return []string{}
-	}
-
-	perms := make([]string, 0, len(u.Permissions()))
-	seen := make(map[string]struct{}, len(u.Permissions()))
-
-	add := func(name string) {
-		normalized := normalizePermissionName(name)
-		if normalized == "" {
-			return
-		}
-		if _, ok := seen[normalized]; ok {
-			return
-		}
-		seen[normalized] = struct{}{}
-		perms = append(perms, normalized)
-	}
-
-	for _, perm := range u.Permissions() {
-		add(perm.Name())
-	}
-	for _, role := range u.Roles() {
-		for _, perm := range role.Permissions() {
-			add(perm.Name())
-		}
-	}
-	return perms
-}
-
-// getAllTranslations returns applet translation key/value pairs for the provided locale.
-// Results are cached per locale and shaped by the configured I18n mode:
-//   - all: include all translation keys
-//   - prefixes: include only keys matching configured prefixes
-//   - none: include no translations
-//
-// The returned map is safe to mutate (it is a copy of the cached data).
-func (b *ContextBuilder) getAllTranslations(locale language.Tag) map[string]string {
-	localeKey := locale.String()
-
-	b.translationsMu.RLock()
-	if cached, ok := b.translationsCache[localeKey]; ok {
-		b.translationsMu.RUnlock()
-		return maps.Clone(cached)
-	}
-	b.translationsMu.RUnlock()
-
-	b.translationsMu.Lock()
-	if cached, ok := b.translationsCache[localeKey]; ok {
-		b.translationsMu.Unlock()
-		return maps.Clone(cached)
-	}
-	defer b.translationsMu.Unlock()
-
-	mode := b.config.I18n.Mode
-	if mode == "" {
-		mode = TranslationModeAll
-	}
-	if mode == TranslationModeNone {
-		out := make(map[string]string)
-		b.translationsCache[localeKey] = out
-		return maps.Clone(out)
-	}
-
-	prefixes := make([]string, 0, len(b.config.I18n.Prefixes))
-	if mode == TranslationModePrefixes {
-		for _, p := range b.config.I18n.Prefixes {
-			p = strings.TrimSpace(p)
-			if p == "" {
-				continue
-			}
-			prefixes = append(prefixes, p)
-		}
-		if len(prefixes) == 0 {
-			out := make(map[string]string)
-			b.translationsCache[localeKey] = out
-			return maps.Clone(out)
-		}
-	}
-
-	if b.bundle == nil {
-		out := make(map[string]string)
-		b.translationsCache[localeKey] = out
-		return maps.Clone(out)
-	}
-
-	// Get all messages for the user's locale
-	messages := b.bundle.Messages()
-	localeMessages, exists := messages[locale]
-	if !exists {
-		// Locale not found, return empty map
-		if b.logger != nil {
-			b.logger.WithField("locale", locale.String()).Warn("No translations found for locale")
-		}
-		out := make(map[string]string)
-		b.translationsCache[localeKey] = out
-		return maps.Clone(out)
-	}
-
-	translations := make(map[string]string, len(localeMessages))
-	if mode == TranslationModePrefixes {
-		translations = make(map[string]string)
-	}
-
-	// Create localizer for the user's locale
-	localizer := i18n.NewLocalizer(b.bundle, locale.String())
-
-	// Iterate all message IDs and localize. Use Localize (not MustLocalize) so that
-	// parent/category keys (e.g. List.Meta with only nested Description) that have
-	// no direct string value are skipped instead of panicking.
-	for messageID := range localeMessages {
-		if mode == TranslationModePrefixes {
-			match := false
-			for _, p := range prefixes {
-				if strings.HasPrefix(messageID, p) {
-					match = true
-					break
-				}
-			}
-			if !match {
-				continue
-			}
-		}
-		translation, err := localizer.Localize(&i18n.LocalizeConfig{
-			MessageID: messageID,
-		})
-		if err != nil {
-			if b.logger != nil {
-				b.logger.WithError(err).WithField("message_id", messageID).Debug("Skipping message ID with no direct string (e.g. parent key)")
-			}
-			continue
-		}
-		translations[messageID] = translation
-	}
-
-	b.translationsCache[localeKey] = translations
-	return maps.Clone(translations)
-}
-
-// getTenantName returns the tenant name using multi-layer fallback:
-// 1. Try TenantNameResolver (if provided via WithTenantNameResolver)
-// 2. Try direct database query (if pool available in context)
-// 3. Fall back to "Tenant {short-uuid}" format (first 8 chars)
-//
-// Logs warnings on resolver/database failures but always returns a valid name.
-func (b *ContextBuilder) getTenantName(ctx context.Context, tenantID uuid.UUID) string {
-	tenantIDStr := tenantID.String()
-
-	// Layer 1: Custom resolver
-	if b.tenantNameResolver != nil {
-		name, err := b.tenantNameResolver.ResolveTenantName(tenantIDStr)
-		if err == nil && name != "" {
-			return name
-		}
-		if b.logger != nil {
-			b.logger.WithError(err).WithField("tenant_id", tenantIDStr).Warn("Tenant resolver failed, trying database")
-		}
-	}
-
-	// Layer 2: Direct database query
-	pool, err := composables.UsePool(ctx)
-	if err == nil {
-		name := queryTenantNameFromDB(ctx, pool, tenantID)
-		if name != "" {
-			return name
-		}
-		if b.logger != nil {
-			b.logger.WithField("tenant_id", tenantIDStr).Warn("Database tenant query failed, using fallback")
-		}
-	}
-
-	// Layer 3: Default format with short UUID (first 8 chars)
-	return fmt.Sprintf("Tenant %s", tenantIDStr[:8])
-}
-
-// queryTenantNameFromDB queries tenant name directly from database.
-// Returns empty string on error (caller will use fallback).
-func queryTenantNameFromDB(ctx context.Context, pool *pgxpool.Pool, tenantID uuid.UUID) string {
-	const query = "SELECT name FROM tenants WHERE id = $1"
-	var name string
-	if err := pool.QueryRow(ctx, query, tenantID).Scan(&name); err != nil {
-		return ""
-	}
-	return name
-}
-
 // buildSessionContext creates SessionContext from request and session configuration.
-// Uses actual session expiry from SessionStore if available, otherwise falls back to
-// configured ExpiryDuration.
-//
-// Fallback strategy:
-//  1. Try reading from session store (if provided)
-//  2. Use configured duration if store not available or returns zero time
 func buildSessionContext(r *http.Request, config SessionConfig, store SessionStore) SessionContext {
 	var expiresAt time.Time
 
-	// Try reading actual expiry from session store
 	if store != nil {
 		storeExpiry := store.GetSessionExpiry(r)
 		if !storeExpiry.IsZero() {
@@ -462,7 +255,6 @@ func buildSessionContext(r *http.Request, config SessionConfig, store SessionSto
 		}
 	}
 
-	// Fallback to configured duration if no store or zero time returned
 	if expiresAt.IsZero() {
 		expiresAt = time.Now().Add(config.ExpiryDuration)
 	}
@@ -475,20 +267,17 @@ func buildSessionContext(r *http.Request, config SessionConfig, store SessionSto
 }
 
 // buildErrorContext builds ErrorContext using optional ErrorContextEnricher.
-// Returns minimal defaults if enricher not provided or fails.
 func (b *ContextBuilder) buildErrorContext(ctx context.Context, r *http.Request) (*ErrorContext, error) {
-	const op serrors.Op = "ContextBuilder.buildErrorContext"
+	const op = "ContextBuilder.buildErrorContext"
 
-	// If enricher provided, use it
 	if b.errorEnricher != nil {
 		errorCtx, err := b.errorEnricher.EnrichContext(ctx, r)
 		if err != nil {
-			return nil, serrors.E(op, err)
+			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 		return errorCtx, nil
 	}
 
-	// Default minimal error context
 	return &ErrorContext{
 		DebugMode: false,
 	}, nil

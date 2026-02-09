@@ -10,8 +10,9 @@ import type {
   Question,
   Session,
   UserTurn,
+  ImageAttachment,
 } from '../../src/bichat/types'
-import type { ImageAttachment } from '../../src/bichat/types'
+import { MessageRole } from '../../src/bichat/types'
 
 import { base64FromDataUrl, largeImageDataUrl, smallImageDataUrl } from './imageFixtures'
 import { flowingMarkdown, largeText, veryLargeText } from './textFixtures'
@@ -40,7 +41,6 @@ export function makeCitation(partial?: Partial<Citation>): Citation {
     startIndex: partial?.startIndex ?? 0,
     endIndex: partial?.endIndex ?? 10,
     excerpt: partial?.excerpt,
-    source: partial?.source,
   }
 }
 
@@ -103,7 +103,8 @@ export function makeArtifacts(): Artifact[] {
 
 export function makeAttachment(partial?: Partial<Attachment>): Attachment {
   return {
-    id: partial?.id ?? `att-${Math.random().toString(36).slice(2)}`,
+    clientKey: partial?.clientKey ?? crypto.randomUUID(),
+    id: partial?.id,
     filename: partial?.filename ?? 'image.png',
     mimeType: partial?.mimeType ?? 'image/svg+xml',
     sizeBytes: partial?.sizeBytes ?? 12345,
@@ -114,6 +115,8 @@ export function makeAttachment(partial?: Partial<Attachment>): Attachment {
 export function makeImageAttachment(partial?: Partial<ImageAttachment>): ImageAttachment {
   const preview = partial?.preview ?? smallImageDataUrl
   return {
+    clientKey: partial?.clientKey ?? crypto.randomUUID(),
+    id: partial?.id,
     filename: partial?.filename ?? 'preview.svg',
     mimeType: partial?.mimeType ?? 'image/svg+xml',
     sizeBytes: partial?.sizeBytes ?? 12345,
@@ -136,6 +139,7 @@ export function makeAssistantTurn(partial?: Partial<AssistantTurn>): AssistantTu
   const now = isoNow(-1000 * 60 * 2)
   return {
     id: partial?.id ?? `asst-${Math.random().toString(36).slice(2)}`,
+    role: partial?.role ?? MessageRole.Assistant,
     content: partial?.content ?? flowingMarkdown,
     explanation: partial?.explanation,
     citations: partial?.citations ?? [makeCitation(), makeCitation({ title: 'Internal dashboard', url: '#' })],

@@ -18,14 +18,14 @@ import {
   X,
 } from '@phosphor-icons/react'
 import { PendingQuestion, QuestionAnswers } from '../types'
-import { useChat } from '../context/ChatContext'
+import { useChatMessaging } from '../context/ChatContext'
 
 interface InlineQuestionFormProps {
   pendingQuestion: PendingQuestion
 }
 
 export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps) {
-  const { handleSubmitQuestionAnswers, handleRejectPendingQuestion, loading } = useChat()
+  const { handleSubmitQuestionAnswers, handleRejectPendingQuestion, loading } = useChatMessaging()
   const [currentStep, setCurrentStep] = useState(0)
   const [answers, setAnswers] = useState<QuestionAnswers>({})
   const [otherTexts, setOtherTexts] = useState<Record<string, string>>({})

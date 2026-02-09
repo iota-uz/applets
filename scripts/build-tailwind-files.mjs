@@ -17,6 +17,9 @@ await writeFile(
   'utf8',
 )
 
+const sdkThemePath = path.join(outDir, 'sdk-theme.cjs')
+await cp(path.join(repoRoot, 'ui/tailwind/sdk-theme.cjs'), sdkThemePath)
+
 const createConfigPath = path.join(outDir, 'create-config.cjs')
 await cp(
   path.join(repoRoot, 'ui/tailwind/create-config.cjs'),

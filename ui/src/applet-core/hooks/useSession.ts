@@ -2,6 +2,10 @@ import { useMemo } from 'react'
 import { useAppletContext } from '../context/AppletContext'
 import type { SessionHook } from '../types'
 
+export interface UseSessionOptions {
+  loginPath?: string
+}
+
 /**
  * useSession provides session and authentication handling utilities.
  *
@@ -18,8 +22,9 @@ import type { SessionHook } from '../types'
  *   headers: { 'X-CSRF-Token': csrfToken }
  * })
  */
-export function useSession(): SessionHook {
+export function useSession(options?: UseSessionOptions): SessionHook {
   const { session } = useAppletContext()
+  const loginPath = options?.loginPath ?? '/login'
 
   // Check if session is expiring soon (5 minute buffer)
   const isExpiringSoon = useMemo(() => {
@@ -38,7 +43,7 @@ export function useSession(): SessionHook {
     if (!response.ok) {
       // Session refresh failed - redirect to login with return URL
       const returnUrl = encodeURIComponent(window.location.pathname)
-      window.location.href = `/login?redirect=${returnUrl}`
+      window.location.href = `${loginPath}?redirect=${returnUrl}`
       return
     }
 

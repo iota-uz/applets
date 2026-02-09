@@ -37,6 +37,8 @@ type TypeRef struct {
 	Union []TypeRef `json:"union,omitempty"`
 }
 
+const maxDescribeDepth = 32
+
 func DescribeTypedRPCRouter(r *TypedRPCRouter) (*TypedRouterDescription, error) {
 	if r == nil {
 		return nil, fmt.Errorf("router is nil")
@@ -47,8 +49,8 @@ func DescribeTypedRPCRouter(r *TypedRPCRouter) (*TypedRouterDescription, error) 
 
 	methods := make([]TypedMethodDescription, 0, len(r.procs))
 	for _, p := range r.procs {
-		params := describeType(p.paramType, defs, seen)
-		result := describeType(p.resultType, defs, seen)
+		params := describeType(p.paramType, defs, seen, 0)
+		result := describeType(p.resultType, defs, seen, 0)
 		methods = append(methods, TypedMethodDescription{
 			Name:               p.name,
 			RequirePermissions: append([]string(nil), p.requirePermissions...),
@@ -65,14 +67,14 @@ func DescribeTypedRPCRouter(r *TypedRPCRouter) (*TypedRouterDescription, error) 
 	}, nil
 }
 
-func describeType(t reflect.Type, defs map[string]TypedTypeObject, seen map[reflect.Type]bool) TypeRef {
-	if t == nil {
+func describeType(t reflect.Type, defs map[string]TypedTypeObject, seen map[reflect.Type]bool, depth int) TypeRef {
+	if t == nil || depth > maxDescribeDepth {
 		return TypeRef{Kind: "unknown"}
 	}
 
 	for t.Kind() == reflect.Pointer {
 		elem := t.Elem()
-		ref := describeType(elem, defs, seen)
+		ref := describeType(elem, defs, seen, depth+1)
 		return TypeRef{
 			Kind: "union",
 			Union: []TypeRef{
@@ -102,13 +104,13 @@ func describeType(t reflect.Type, defs map[string]TypedTypeObject, seen map[refl
 		reflect.Float32, reflect.Float64:
 		return TypeRef{Kind: "number"}
 	case reflect.Slice, reflect.Array:
-		elem := describeType(t.Elem(), defs, seen)
+		elem := describeType(t.Elem(), defs, seen, depth+1)
 		return TypeRef{Kind: "array", Elem: &elem}
 	case reflect.Map:
 		if t.Key().Kind() != reflect.String {
 			return TypeRef{Kind: "unknown"}
 		}
-		value := describeType(t.Elem(), defs, seen)
+		value := describeType(t.Elem(), defs, seen, depth+1)
 		return TypeRef{Kind: "record", Value: &value}
 	case reflect.Struct:
 		if t.Name() == "" {
@@ -119,7 +121,7 @@ func describeType(t reflect.Type, defs map[string]TypedTypeObject, seen map[refl
 		if !seen[t] {
 			seen[t] = true
 			defs[name] = TypedTypeObject{
-				Fields: describeStructFields(t, defs, seen),
+				Fields: describeStructFields(t, defs, seen, depth+1),
 			}
 		}
 
@@ -129,7 +131,7 @@ func describeType(t reflect.Type, defs map[string]TypedTypeObject, seen map[refl
 	}
 }
 
-func describeStructFields(t reflect.Type, defs map[string]TypedTypeObject, seen map[reflect.Type]bool) []TypedField {
+func describeStructFields(t reflect.Type, defs map[string]TypedTypeObject, seen map[reflect.Type]bool, depth int) []TypedField {
 	fields := make([]TypedField, 0, t.NumField())
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
@@ -145,7 +147,7 @@ func describeStructFields(t reflect.Type, defs map[string]TypedTypeObject, seen 
 			continue
 		}
 
-		ref := describeType(f.Type, defs, seen)
+		ref := describeType(f.Type, defs, seen, depth)
 		fields = append(fields, TypedField{
 			Name:     jsonName,
 			Optional: optional,

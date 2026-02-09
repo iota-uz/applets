@@ -7,7 +7,7 @@
 import './styles.css'
 
 // =============================================================================
-// Layer 4: Full Components (Backward Compatible API)
+// Layer 4: Full Components
 // =============================================================================
 
 export { ChatSession } from './components/ChatSession'
@@ -188,13 +188,12 @@ export * from './animations'
 // Context
 // =============================================================================
 
-export { ChatSessionProvider, useChat, useChatSession, useChatMessaging, useOptionalChatMessaging, useChatInput } from './context/ChatContext'
+export { ChatSessionProvider, useChatSession, useChatMessaging, useOptionalChatMessaging, useChatInput } from './context/ChatContext'
 export { IotaContextProvider, useIotaContext, hasPermission } from './context/IotaContext'
 export {
   ConfigProvider,
   useConfig,
   useRequiredConfig,
-  hasPermission as hasConfigPermission,
 } from './config/ConfigContext'
 
 // =============================================================================
@@ -223,12 +222,7 @@ export type { BichatRPC } from './data/rpc.generated'
 
 export { RateLimiter } from './utils/RateLimiter'
 export * from './utils/fileUtils'
-export { processCitations, type ProcessedContent } from './utils/citationProcessor'
-export { normalizeStreamingMarkdown } from './utils/markdownStream'
-export { parseSSEStream, type SSEEvent } from './utils/sseParser'
 export { groupSessionsByDate } from './utils/sessionGrouping'
-export { formatRelativeTime } from './utils/dateFormatting'
-export { isQuestionAnswered, validateAnswers } from './utils/questionFormUtils'
 
 // =============================================================================
 // Types

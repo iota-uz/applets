@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"reflect"
-
-	"github.com/iota-uz/iota-sdk/pkg/serrors"
+	"strings"
 )
 
 type Procedure[P any, R any] struct {
@@ -31,11 +31,18 @@ func NewTypedRPCRouter() *TypedRPCRouter {
 	return &TypedRPCRouter{procs: make([]*typedProcedure, 0)}
 }
 
-func AddProcedure[P any, R any](r *TypedRPCRouter, name string, p Procedure[P, R]) {
-	const op serrors.Op = "TypedRPCRouter.Add"
+func AddProcedure[P any, R any](r *TypedRPCRouter, name string, p Procedure[P, R]) error {
+	const op = "TypedRPCRouter.Add"
 
 	if r == nil {
-		panic("TypedRPCRouter is nil")
+		return fmt.Errorf("%s: %w: TypedRPCRouter is nil", op, ErrInvalid)
+	}
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return fmt.Errorf("%s: %w: procedure name is empty", op, ErrInvalid)
+	}
+	if p.Handler == nil {
+		return fmt.Errorf("%s: %w: procedure handler is nil", op, ErrInvalid)
 	}
 
 	paramType := reflect.TypeOf((*P)(nil)).Elem()
@@ -50,10 +57,10 @@ func AddProcedure[P any, R any](r *TypedRPCRouter, name string, p Procedure[P, R
 				dec := json.NewDecoder(bytes.NewReader(trimmed))
 				dec.DisallowUnknownFields()
 				if err := dec.Decode(&decoded); err != nil {
-					return nil, serrors.E(op, serrors.Invalid, "invalid params", err)
+					return nil, fmt.Errorf("%s: %w: invalid params: %w", op, ErrInvalid, err)
 				}
 				if err := dec.Decode(&struct{}{}); err != io.EOF {
-					return nil, serrors.E(op, serrors.Invalid, "invalid params", err)
+					return nil, fmt.Errorf("%s: %w: invalid params: %w", op, ErrInvalid, err)
 				}
 			}
 			res, err := p.Handler(ctx, decoded)
@@ -71,6 +78,7 @@ func AddProcedure[P any, R any](r *TypedRPCRouter, name string, p Procedure[P, R
 		resultType:         resultType,
 		method:             method,
 	})
+	return nil
 }
 
 func (r *TypedRPCRouter) Config() *RPCConfig {

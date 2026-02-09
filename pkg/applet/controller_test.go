@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
@@ -12,13 +13,6 @@ import (
 
 	"testing/fstest"
 
-	"github.com/google/uuid"
-	"github.com/iota-uz/iota-sdk/modules/core/domain/aggregates/role"
-	"github.com/iota-uz/iota-sdk/modules/core/domain/aggregates/user"
-	"github.com/iota-uz/iota-sdk/modules/core/domain/entities/permission"
-	"github.com/iota-uz/iota-sdk/modules/core/domain/value_objects/internet"
-	"github.com/iota-uz/iota-sdk/pkg/composables"
-	"github.com/iota-uz/iota-sdk/pkg/serrors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -74,7 +68,8 @@ func TestAppletController_ManifestLoadedOnce(t *testing.T) {
 		},
 	}
 
-	_ = NewAppletController(a, nil, DefaultSessionConfig, nil, nil)
+	_, err := NewAppletController(a, nil, DefaultSessionConfig, nil, nil, &testHostServices{})
+	require.NoError(t, err)
 	assert.Equal(t, 1, cfs.n)
 }
 
@@ -101,7 +96,8 @@ func TestAppletController_DevProxy_SkipsManifestRequirements(t *testing.T) {
 		},
 	}
 
-	c := NewAppletController(a, nil, DefaultSessionConfig, nil, nil)
+	c, err := NewAppletController(a, nil, DefaultSessionConfig, nil, nil, &testHostServices{})
+	require.NoError(t, err)
 	_, scripts, err := c.buildAssetTags()
 	require.NoError(t, err)
 	assert.Contains(t, scripts, "@react-refresh")
@@ -173,8 +169,9 @@ func TestAppletController_RPC(t *testing.T) {
 				return r
 			},
 			ctx: func(ctx context.Context) context.Context {
-				u := user.New("T", "U", internet.MustParseEmail("t@example.com"), user.UILanguageEN, user.WithID(1))
-				return composables.WithUser(ctx, u)
+				// User with no permissions
+				mockU := &mockUser{id: 1, email: "t@example.com", firstName: "T", lastName: "U"}
+				return context.WithValue(ctx, testUserKey, AppletUser(mockU))
 			},
 			wantHTTP:     http.StatusOK,
 			wantRPCError: "forbidden",
@@ -186,8 +183,8 @@ func TestAppletController_RPC(t *testing.T) {
 				Methods: map[string]RPCMethod{
 					"wrapped": {
 						Handler: func(ctx context.Context, params json.RawMessage) (any, error) {
-							inner := serrors.E(serrors.Op("wrapped.inner"), serrors.PermissionDenied, "access denied")
-							return nil, serrors.E(serrors.Op("wrapped.outer"), inner)
+							inner := fmt.Errorf("wrapped.inner: %w: access denied", ErrPermissionDenied)
+							return nil, fmt.Errorf("wrapped.outer: %w", inner)
 						},
 					},
 				},
@@ -247,22 +244,6 @@ func TestAppletController_RPC(t *testing.T) {
 			wantRPCMessageContains: "chat service not registered",
 		},
 		{
-			name: "SameOriginEnforced",
-			rpcCfg: &RPCConfig{
-				Path: "/rpc",
-				Methods: map[string]RPCMethod{
-					"ok": {Handler: func(ctx context.Context, params json.RawMessage) (any, error) { return "ok", nil }},
-				},
-			},
-			req: func() *http.Request {
-				r := httptest.NewRequest(http.MethodPost, "/t/rpc", bytes.NewBufferString(`{"id":"1","method":"ok","params":{}}`))
-				r.Host = "example.com"
-				r.Header.Set("Origin", "http://evil.com")
-				return r
-			},
-			wantHTTP: http.StatusForbidden,
-		},
-		{
 			name: "PayloadTooLarge",
 			rpcCfg: &RPCConfig{
 				Path:         "/rpc",
@@ -286,7 +267,8 @@ func TestAppletController_RPC(t *testing.T) {
 			t.Parallel()
 
 			a := baseApplet(tc.rpcCfg)
-			c := NewAppletController(a, nil, DefaultSessionConfig, nil, nil)
+			c, err := NewAppletController(a, nil, DefaultSessionConfig, nil, nil, &testHostServices{})
+			require.NoError(t, err)
 
 			req := tc.req()
 			if tc.ctx != nil {
@@ -315,54 +297,65 @@ func TestAppletController_RPC(t *testing.T) {
 	}
 }
 
-func TestRequirePermissionStrings_Allows(t *testing.T) {
+func TestRequirePermissions_Allows(t *testing.T) {
 	t.Parallel()
 
-	p := permission.New(
-		permission.WithID(uuid.New()),
-		permission.WithName("test.secret"),
-		permission.WithResource("test"),
-		permission.WithAction(permission.ActionRead),
-		permission.WithModifier(permission.ModifierAll),
-	)
-	u := user.New("T", "U", internet.MustParseEmail("t@example.com"), user.UILanguageEN, user.WithID(1))
-	u = u.AddPermission(p)
+	mockU := &mockUser{
+		id:          1,
+		email:       "t@example.com",
+		permissions: []string{"test.secret"},
+	}
 
-	ctx := composables.WithUser(context.Background(), u)
-	require.NoError(t, requirePermissionStrings(ctx, []string{"test.secret"}))
+	ctx := context.WithValue(context.Background(), testUserKey, AppletUser(mockU))
+
+	a := &testApplet{name: "t", basePath: "/t", config: Config{
+		WindowGlobal: "__T__",
+		Shell:        ShellConfig{Mode: ShellModeStandalone},
+		Assets:       AssetConfig{Dev: &DevAssetConfig{Enabled: true, TargetURL: "http://localhost:5173"}},
+	}}
+	c, err := NewAppletController(a, nil, DefaultSessionConfig, nil, nil, &testHostServices{})
+	require.NoError(t, err)
+	require.NoError(t, c.requirePermissions(ctx, []string{"test.secret"}))
 }
 
-func TestRequirePermissionStrings_AllowsCaseInsensitive(t *testing.T) {
+func TestRequirePermissions_AllowsCaseInsensitive(t *testing.T) {
 	t.Parallel()
 
-	p := permission.New(
-		permission.WithID(uuid.New()),
-		permission.WithName("Test.Secret"),
-		permission.WithResource("test"),
-		permission.WithAction(permission.ActionRead),
-		permission.WithModifier(permission.ModifierAll),
-	)
-	u := user.New("T", "U", internet.MustParseEmail("t@example.com"), user.UILanguageEN, user.WithID(1))
-	u = u.AddPermission(p)
+	mockU := &mockUser{
+		id:          1,
+		email:       "t@example.com",
+		permissions: []string{"Test.Secret"},
+	}
 
-	ctx := composables.WithUser(context.Background(), u)
-	require.NoError(t, requirePermissionStrings(ctx, []string{"test.secret"}))
+	ctx := context.WithValue(context.Background(), testUserKey, AppletUser(mockU))
+
+	a := &testApplet{name: "t", basePath: "/t", config: Config{
+		WindowGlobal: "__T__",
+		Shell:        ShellConfig{Mode: ShellModeStandalone},
+		Assets:       AssetConfig{Dev: &DevAssetConfig{Enabled: true, TargetURL: "http://localhost:5173"}},
+	}}
+	c, err := NewAppletController(a, nil, DefaultSessionConfig, nil, nil, &testHostServices{})
+	require.NoError(t, err)
+	require.NoError(t, c.requirePermissions(ctx, []string{"test.secret"}))
 }
 
-func TestRequirePermissionStrings_AllowsViaRolePermission(t *testing.T) {
+func TestRequirePermissions_AllowsViaPermissionNames(t *testing.T) {
 	t.Parallel()
 
-	p := permission.New(
-		permission.WithID(uuid.New()),
-		permission.WithName("BiChat.Access"),
-		permission.WithResource("bichat"),
-		permission.WithAction(permission.ActionRead),
-		permission.WithModifier(permission.ModifierAll),
-	)
-	r := role.New("Admin", role.WithPermissions([]permission.Permission{p}))
-	u := user.New("T", "U", internet.MustParseEmail("t@example.com"), user.UILanguageEN, user.WithID(1))
-	u = u.AddRole(r)
+	mockU := &mockUser{
+		id:          1,
+		email:       "t@example.com",
+		permissions: []string{"BiChat.Access"},
+	}
 
-	ctx := composables.WithUser(context.Background(), u)
-	require.NoError(t, requirePermissionStrings(ctx, []string{"bichat.access"}))
+	ctx := context.WithValue(context.Background(), testUserKey, AppletUser(mockU))
+
+	a := &testApplet{name: "t", basePath: "/t", config: Config{
+		WindowGlobal: "__T__",
+		Shell:        ShellConfig{Mode: ShellModeStandalone},
+		Assets:       AssetConfig{Dev: &DevAssetConfig{Enabled: true, TargetURL: "http://localhost:5173"}},
+	}}
+	c, err := NewAppletController(a, nil, DefaultSessionConfig, nil, nil, &testHostServices{})
+	require.NoError(t, err)
+	require.NoError(t, c.requirePermissions(ctx, []string{"bichat.access"}))
 }

@@ -15,7 +15,6 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode, useRef, useMemo } from 'react'
 import {
-  MessageRole,
   type ChatDataSource,
   type Session,
   type ConversationTurn,
@@ -24,19 +23,25 @@ import {
   type Attachment,
   type QueuedMessage,
   type CodeOutput,
-  type ChatSessionContextValue,
   type ChatSessionStateValue,
   type ChatMessagingStateValue,
   type ChatInputStateValue,
-  type DebugLimits,
   type SendMessageOptions,
 } from '../types'
-import { RateLimiter } from '../utils/RateLimiter'
+import { RateLimiter, type RateLimiterConfig } from '../utils/RateLimiter'
 import {
   getSessionDebugUsage,
 } from '../utils/debugTrace'
 import { loadQueue, saveQueue } from '../utils/queueStorage'
 import { hasPermission } from './IotaContext'
+import {
+  ARTIFACT_TOOL_NAMES,
+  createPendingTurn,
+  createCompactedSystemTurn,
+  parseSlashCommand,
+  readDebugLimitsFromGlobalContext,
+  type ParsedSlashCommand,
+} from './chatHelpers'
 
 // ---------------------------------------------------------------------------
 // Internal contexts
@@ -47,134 +52,21 @@ const MessagingCtx = createContext<ChatMessagingStateValue | null>(null)
 const InputCtx = createContext<ChatInputStateValue | null>(null)
 
 // ---------------------------------------------------------------------------
-// Helpers (unchanged)
+// Provider props
 // ---------------------------------------------------------------------------
 
 interface ChatSessionProviderProps {
   dataSource: ChatDataSource
   sessionId?: string
   rateLimiter?: RateLimiter
+  /** Configuration for the built-in rate limiter (ignored when rateLimiter is provided). */
+  rateLimitConfig?: RateLimiterConfig
   children: ReactNode
 }
 
-const DEFAULT_RATE_LIMIT_CONFIG = {
+const DEFAULT_RATE_LIMIT_CONFIG: RateLimiterConfig = {
   maxRequests: 20,
   windowMs: 60000,
-}
-
-/** Tool names that produce persisted artifacts; must match server ArtifactHandler. */
-const ARTIFACT_TOOL_NAMES = new Set([
-  'code_interpreter',
-  'draw_chart',
-  'export_query_to_excel',
-  'export_data_to_excel',
-  'export_to_pdf',
-])
-
-function generateTempId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
-}
-
-function createPendingTurn(
-  sessionId: string,
-  content: string,
-  attachments: Attachment[] = []
-): ConversationTurn {
-  const now = new Date().toISOString()
-  return {
-    id: generateTempId('turn'),
-    sessionId,
-    userTurn: {
-      id: generateTempId('user'),
-      content,
-      attachments,
-      createdAt: now,
-    },
-    createdAt: now,
-  }
-}
-
-function createCompactedSystemTurn(sessionId: string, summary: string): ConversationTurn {
-  const now = new Date().toISOString()
-  return {
-    id: generateTempId('turn'),
-    sessionId,
-    userTurn: {
-      id: generateTempId('user'),
-      content: '',
-      attachments: [],
-      createdAt: now,
-    },
-    assistantTurn: {
-      id: generateTempId('assistant'),
-      role: MessageRole.System,
-      content: summary,
-      citations: [],
-      artifacts: [],
-      codeOutputs: [],
-      createdAt: now,
-    },
-    createdAt: now,
-  }
-}
-
-type SlashCommandName = '/clear' | '/debug' | '/compact'
-
-interface ParsedSlashCommand {
-  name: SlashCommandName
-  hasArgs: boolean
-}
-
-function parseSlashCommand(input: string): ParsedSlashCommand | null {
-  const trimmed = input.trim()
-  if (!trimmed.startsWith('/')) return null
-
-  const parts = trimmed.split(/\s+/).filter(Boolean)
-  if (parts.length === 0) return null
-
-  const candidate = parts[0].toLowerCase()
-  if (candidate !== '/clear' && candidate !== '/debug' && candidate !== '/compact') {
-    return null
-  }
-
-  return {
-    name: candidate,
-    hasArgs: parts.length > 1,
-  }
-}
-
-function readDebugLimitsFromGlobalContext(): DebugLimits | null {
-  if (typeof window === 'undefined') {
-    return null
-  }
-
-  const limits = window.__BICHAT_CONTEXT__?.extensions?.debug?.limits
-  if (!limits) {
-    return null
-  }
-
-  const {
-    policyMaxTokens,
-    modelMaxTokens,
-    effectiveMaxTokens,
-    completionReserveTokens,
-  } = limits
-
-  if (
-    typeof policyMaxTokens !== 'number' ||
-    typeof modelMaxTokens !== 'number' ||
-    typeof effectiveMaxTokens !== 'number' ||
-    typeof completionReserveTokens !== 'number'
-  ) {
-    return null
-  }
-
-  return {
-    policyMaxTokens,
-    modelMaxTokens,
-    effectiveMaxTokens,
-    completionReserveTokens,
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -185,6 +77,7 @@ export function ChatSessionProvider({
   dataSource,
   sessionId,
   rateLimiter: externalRateLimiter,
+  rateLimitConfig,
   children
 }: ChatSessionProviderProps) {
   // ── Session state ──────────────────────────────────────────────────────
@@ -217,7 +110,7 @@ export function ChatSessionProvider({
 
   // ── Rate limiter ───────────────────────────────────────────────────────
   const rateLimiterRef = useRef<RateLimiter>(
-    externalRateLimiter || new RateLimiter(DEFAULT_RATE_LIMIT_CONFIG)
+    externalRateLimiter || new RateLimiter(rateLimitConfig || DEFAULT_RATE_LIMIT_CONFIG)
   )
 
   // ── Refs for cross-context reads (no re-render subscription) ───────────
@@ -450,7 +343,6 @@ export function ChatSessionProvider({
         const timeUntilNext = rateLimiterRef.current.getTimeUntilNextRequest()
         const seconds = Math.ceil(timeUntilNext / 1000)
         setError(`Rate limit exceeded. Please wait ${seconds} seconds before sending another message.`)
-        setTimeout(() => setError(null), 5000)
         return
       }
 
@@ -473,6 +365,9 @@ export function ChatSessionProvider({
         }
         const replaceIndex = prev.findIndex((turn) => turn.userTurn.id === replaceFromMessageID)
         if (replaceIndex === -1) {
+          console.warn(
+            `[ChatContext] replaceFromMessageID "${replaceFromMessageID}" not found in turns; appending as new turn`
+          )
           return [...prev, tempTurn]
         }
         return [...prev.slice(0, replaceIndex), tempTurn]
@@ -594,7 +489,7 @@ export function ChatSessionProvider({
       setInputError(null)
 
       const convertedAttachments: Attachment[] = attachments.map(att => ({
-        id: '',
+        clientKey: att.clientKey || crypto.randomUUID(),
         filename: att.filename,
         mimeType: att.mimeType,
         sizeBytes: att.sizeBytes,
@@ -861,18 +756,3 @@ export function useChatInput(): ChatInputStateValue {
   return context
 }
 
-// ---------------------------------------------------------------------------
-// Backwards-compatible merged hook
-// ---------------------------------------------------------------------------
-
-export function useChat(): ChatSessionContextValue {
-  const s = useChatSession()
-  const m = useChatMessaging()
-  const i = useChatInput()
-
-  return useMemo(() => ({
-    ...s,
-    ...m,
-    ...i,
-  }), [s, m, i])
-}

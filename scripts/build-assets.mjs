@@ -29,8 +29,11 @@ if (srcFontsDir !== outFontsDir) {
   try {
     await access(srcFontsDir)
     await copyDir(srcFontsDir, outFontsDir)
-  } catch {
-    // no-op if source does not exist (e.g. applets repo has fonts in assets/ already)
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      throw err
+    }
+    // Source fonts directory does not exist — skip copy
   }
 }
 

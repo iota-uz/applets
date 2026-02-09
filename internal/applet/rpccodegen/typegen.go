@@ -8,19 +8,16 @@ import (
 	"strings"
 
 	"github.com/iota-uz/applets/pkg/applet"
-	"github.com/iota-uz/iota-sdk/pkg/serrors"
 )
 
 // EmitTypeScript generates TypeScript type definitions from a typed router description.
 func EmitTypeScript(desc *applet.TypedRouterDescription, typeName string) (string, error) {
-	const op serrors.Op = "rpccodegen.EmitTypeScript"
-
 	if desc == nil {
-		return "", serrors.E(op, serrors.Invalid, "description is nil")
+		return "", fmt.Errorf("rpccodegen.EmitTypeScript: description is nil")
 	}
 	typeName = strings.TrimSpace(typeName)
 	if typeName == "" {
-		return "", serrors.E(op, serrors.Invalid, "type name is empty")
+		return "", fmt.Errorf("rpccodegen.EmitTypeScript: type name is empty")
 	}
 
 	var b strings.Builder
@@ -119,7 +116,12 @@ func emitTypeRef(ref applet.TypeRef) string {
 }
 
 // RunTypegen resolves the router package, inspects the router, emits TypeScript, and writes to outputPath.
+// If cfg.OutputPath is set, it overrides the outputPath parameter.
 func RunTypegen(root string, cfg Config, outputPath string) error {
+	if cfg.OutputPath != "" {
+		outputPath = cfg.OutputPath
+	}
+
 	routerImport, err := ResolveRouterImport(root, cfg.RouterPackage)
 	if err != nil {
 		return fmt.Errorf("resolve router import: %w", err)

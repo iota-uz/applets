@@ -29,12 +29,12 @@ type ResolvedAssets struct {
 func loadManifest(manifestFS fs.FS, manifestPath string) (ViteManifest, error) {
 	manifestBytes, err := fs.ReadFile(manifestFS, manifestPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read manifest at %q: %w", manifestPath, err)
+		return nil, fmt.Errorf("applet.loadManifest: failed to read manifest at %s: %w", manifestPath, ErrInternal)
 	}
 
 	var manifest ViteManifest
 	if err := json.Unmarshal(manifestBytes, &manifest); err != nil {
-		return nil, fmt.Errorf("failed to parse manifest: %w", err)
+		return nil, fmt.Errorf("applet.loadManifest: failed to parse manifest: %w", ErrInternal)
 	}
 
 	return manifest, nil
@@ -47,6 +47,7 @@ func resolveAssetsFromManifest(
 	entrypoint string,
 	basePath string,
 ) (*ResolvedAssets, error) {
+
 	assets := &ResolvedAssets{
 		CSSFiles: make([]string, 0),
 		JSFiles:  make([]string, 0),
@@ -63,12 +64,19 @@ func resolveAssetsFromManifest(
 	}
 
 	if entry == nil {
-		return nil, fmt.Errorf("entrypoint %q not found in manifest", entrypoint)
+		return nil, fmt.Errorf("applet.resolveAssetsFromManifest: entrypoint %s not found in manifest: %w", entrypoint, ErrNotFound)
 	}
+
+	// Track seen CSS paths for O(1) dedup
+	seenCSS := make(map[string]struct{})
 
 	// Collect CSS files
 	for _, cssFile := range entry.CSS {
-		assets.CSSFiles = append(assets.CSSFiles, path.Join(basePath, cssFile))
+		cssPath := path.Join(basePath, cssFile)
+		if _, ok := seenCSS[cssPath]; !ok {
+			seenCSS[cssPath] = struct{}{}
+			assets.CSSFiles = append(assets.CSSFiles, cssPath)
+		}
 	}
 
 	// Collect JS file
@@ -90,18 +98,11 @@ func resolveAssetsFromManifest(
 			return
 		}
 
-		// Add CSS files from imported chunks
+		// Add CSS files from imported chunks (O(1) dedup via set)
 		for _, cssFile := range e.CSS {
 			cssPath := path.Join(basePath, cssFile)
-			// Avoid duplicates
-			found := false
-			for _, existing := range assets.CSSFiles {
-				if existing == cssPath {
-					found = true
-					break
-				}
-			}
-			if !found {
+			if _, ok := seenCSS[cssPath]; !ok {
+				seenCSS[cssPath] = struct{}{}
 				assets.CSSFiles = append(assets.CSSFiles, cssPath)
 			}
 		}

@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"go/parser"
+	"go/token"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -89,6 +91,11 @@ func InspectRouter(repoRoot string, routerImport string, routerFunc string) (*ap
 		return nil, err
 	}
 	code := BuildRouterInspectorProgram(mod, routerImport, routerFunc)
+
+	// Validate generated source parses as valid Go before running it.
+	if _, parseErr := parser.ParseFile(token.NewFileSet(), "main.go", code, 0); parseErr != nil {
+		return nil, fmt.Errorf("generated inspector program has syntax errors: %w", parseErr)
+	}
 
 	if err := os.WriteFile(mainPath, []byte(code), 0o644); err != nil {
 		return nil, err

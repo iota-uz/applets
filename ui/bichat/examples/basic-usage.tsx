@@ -17,7 +17,9 @@ import {
   createHttpDataSource,
   RateLimiter,
   BiChatConfig,
-  useChat,
+  useChatSession,
+  useChatMessaging,
+  useChatInput,
 } from '@iota-uz/sdk/bichat'
 
 // 1. Define your configuration
@@ -70,17 +72,9 @@ const rateLimiter = new RateLimiter({
 
 // 4. Custom Chat Interface Component
 function CustomChatInterface() {
-  const {
-    message,
-    setMessage,
-    messages,
-    loading,
-    error,
-    isStreaming,
-    streamingContent,
-    handleSubmit,
-    cancel,
-  } = useChat()
+  const { error } = useChatSession()
+  const { turns, loading, isStreaming, streamingContent, cancel } = useChatMessaging()
+  const { message, setMessage, handleSubmit } = useChatInput()
 
   return (
     <div className="chat-interface">
@@ -92,14 +86,28 @@ function CustomChatInterface() {
         </div>
       )}
 
-      {/* Messages List */}
+      {/* Messages List (turn-based) */}
       <div className="messages-container">
-        {messages.map((msg) => (
-          <div key={msg.id} className={`message message-${msg.role}`}>
-            <div className="message-content">{msg.content}</div>
-            <div className="message-time">
-              {new Date(msg.createdAt).toLocaleTimeString()}
+        {turns.map((turn) => (
+          <div key={turn.id}>
+            <div className="message message-user">
+              <div className="message-content">{turn.userTurn?.content}</div>
+              <div className="message-time">
+                {turn.userTurn?.createdAt
+                  ? new Date(turn.userTurn.createdAt).toLocaleTimeString()
+                  : ''}
+              </div>
             </div>
+            {turn.assistantTurn && (
+              <div className="message message-assistant">
+                <div className="message-content">{turn.assistantTurn.content}</div>
+                <div className="message-time">
+                  {turn.assistantTurn.createdAt
+                    ? new Date(turn.assistantTurn.createdAt).toLocaleTimeString()
+                    : ''}
+                </div>
+              </div>
+            )}
           </div>
         ))}
 

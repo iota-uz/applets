@@ -20,9 +20,12 @@ import type {
   StreamChunk,
   QuestionAnswers,
   SendMessageOptions,
+  AssistantTurn,
 } from '../types'
+import { MessageRole } from '../types'
 import { parseChartDataFromSpec } from '../utils/chartSpec'
 import { convertToBase64, validateAttachmentFile, validateFileCount } from '../utils/fileUtils'
+import { parseBichatStream } from '../utils/sseParser'
 import type { PendingQuestion as RPCPendingQuestion } from './rpc.generated'
 
 export interface HttpDataSourceConfig {
@@ -182,6 +185,26 @@ function toDownloadArtifact(artifact: SessionArtifact): DownloadArtifact | null 
     rowCount: parseRowCount(artifact.metadata),
     description: artifact.description,
   }
+}
+
+function normalizeAssistantTurn(turn: Partial<AssistantTurn> & { id: string; content: string; createdAt: string }): AssistantTurn {
+  return {
+    ...turn,
+    role: (turn.role as MessageRole) || MessageRole.Assistant,
+    citations: turn.citations || [],
+    artifacts: turn.artifacts || [],
+    codeOutputs: turn.codeOutputs || [],
+  }
+}
+
+function normalizeTurns(raw: ConversationTurn[]): ConversationTurn[] {
+  return raw.map((turn) => {
+    if (!turn.assistantTurn) return turn
+    return {
+      ...turn,
+      assistantTurn: normalizeAssistantTurn(turn.assistantTurn),
+    }
+  })
 }
 
 function toMillis(value: string): number {
@@ -371,7 +394,7 @@ export class HttpDataSource implements ChatDataSource {
         }),
       ])
 
-      const turns = attachArtifactsToTurns(data.turns as ConversationTurn[], artifactsData.artifacts || [])
+      const turns = attachArtifactsToTurns(normalizeTurns(data.turns as ConversationTurn[]), artifactsData.artifacts || [])
 
       return {
         session: toSession(data.session),
@@ -427,6 +450,7 @@ export class HttpDataSource implements ChatDataSource {
       validateAttachmentFile(file)
       const base64Data = await convertToBase64(file)
       attachments.push({
+        clientKey: crypto.randomUUID(),
         filename: file.name,
         mimeType: file.type,
         sizeBytes: file.size,
@@ -437,7 +461,7 @@ export class HttpDataSource implements ChatDataSource {
     const data = await this.callRPC('bichat.session.uploadArtifacts', {
       sessionId,
       attachments: attachments.map((a) => ({
-        id: '',
+        id: '', // Backend will assign ID
         filename: a.filename,
         mimeType: a.mimeType,
         sizeBytes: a.sizeBytes,
@@ -480,11 +504,11 @@ export class HttpDataSource implements ChatDataSource {
     // Create new abort controller for this stream
     this.abortController = new AbortController()
 
-    // Link external signal if provided
+    // Link external signal if provided, with cleanup
+    let onExternalAbort: (() => void) | undefined
     if (signal) {
-      signal.addEventListener('abort', () => {
-        this.abortController?.abort()
-      })
+      onExternalAbort = () => { this.abortController?.abort() }
+      signal.addEventListener('abort', onExternalAbort)
     }
 
     const url = `${this.config.baseUrl}${this.config.streamEndpoint}`
@@ -520,59 +544,13 @@ export class HttpDataSource implements ChatDataSource {
       }
 
       const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      let buffer = ''
 
-      try {
-        while (true) {
-          const { done, value } = await reader.read()
+      for await (const chunk of parseBichatStream(reader)) {
+        yield chunk
 
-          if (done) {
-            break
-          }
-
-          buffer += decoder.decode(value, { stream: true })
-
-          // Process SSE events in buffer
-          const lines = buffer.split('\n')
-          buffer = lines.pop() || ''
-
-          for (const line of lines) {
-            if (!line.trim() || line.startsWith(':')) {
-              continue
-            }
-
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6)
-
-              try {
-                const parsed = JSON.parse(data) as StreamChunk & { chunk?: string }
-                const inferredType =
-                  parsed.type || (parsed.content || parsed.chunk ? 'content' : 'error')
-                const normalized: StreamChunk = {
-                  ...parsed,
-                  type: inferredType,
-                  content: parsed.content ?? parsed.chunk,
-                }
-                yield normalized
-
-                // Stop if done or error
-                if (normalized.type === 'done' || normalized.type === 'error') {
-                  return
-                }
-              } catch (parseErr) {
-                console.error('Failed to parse SSE data:', parseErr)
-                yield {
-                  type: 'error',
-                  error: 'Failed to parse stream data',
-                }
-                return
-              }
-            }
-          }
+        if (chunk.type === 'done' || chunk.type === 'error') {
+          return
         }
-      } finally {
-        reader.releaseLock()
       }
     } catch (err) {
       if (err instanceof Error) {
@@ -594,6 +572,9 @@ export class HttpDataSource implements ChatDataSource {
         }
       }
     } finally {
+      if (signal && onExternalAbort) {
+        signal.removeEventListener('abort', onExternalAbort)
+      }
       this.abortController = null
     }
   }

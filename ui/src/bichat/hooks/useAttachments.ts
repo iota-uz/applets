@@ -58,13 +58,6 @@ const DEFAULT_MAX_FILE_SIZE = 20 * 1024 * 1024 // 20MB
 const DEFAULT_ALLOWED_TYPES: string[] = []
 
 /**
- * Generate a unique ID for an attachment
- */
-function generateId(): string {
-  return `attachment-${Date.now()}-${Math.random().toString(36).substring(7)}`
-}
-
-/**
  * Hook for managing file attachments
  *
  * @example
@@ -203,7 +196,7 @@ export function useAttachments(options: UseAttachmentsOptions = {}): UseAttachme
 
         // Create attachment object
         const attachment: Attachment = {
-          id: generateId(),
+          clientKey: crypto.randomUUID(),
           filename: file.name,
           mimeType: file.type,
           sizeBytes: file.size,

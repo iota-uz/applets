@@ -72,3 +72,25 @@ export async function* parseSSEStream(
     reader.releaseLock()
   }
 }
+
+/**
+ * Parses BiChat SSE stream with normalization.
+ * Infers missing types based on content presence.
+ */
+export async function* parseBichatStream(
+  reader: ReadableStreamDefaultReader<Uint8Array>
+): AsyncGenerator<import('../types').StreamChunk, void, unknown> {
+  for await (const event of parseSSEStream(reader)) {
+    const parsed = event as import('../types').StreamChunk
+
+    // Infer type if missing
+    const inferredType = parsed.type || (parsed.content ? 'content' : 'error')
+
+    const normalized: import('../types').StreamChunk = {
+      ...parsed,
+      type: inferredType,
+    }
+
+    yield normalized
+  }
+}

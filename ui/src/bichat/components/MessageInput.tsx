@@ -210,7 +210,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
 
         const newAttachments: Attachment[] = fileArray.map((file, i) => {
           const attachment: Attachment = {
-            id: '',
+            clientKey: crypto.randomUUID(),
             filename: file.name,
             mimeType: file.type,
             sizeBytes: file.size,

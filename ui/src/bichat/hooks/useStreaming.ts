@@ -27,11 +27,11 @@ export function useStreaming(options: UseStreamingOptions = {}) {
       // Create abort controller for this stream
       abortControllerRef.current = new AbortController()
 
-      // Link external signal if provided
+      // Link external signal if provided, with cleanup
+      let onExternalAbort: (() => void) | undefined
       if (signal) {
-        signal.addEventListener('abort', () => {
-          abortControllerRef.current?.abort()
-        })
+        onExternalAbort = () => { abortControllerRef.current?.abort() }
+        signal.addEventListener('abort', onExternalAbort)
       }
 
       try {
@@ -68,6 +68,9 @@ export function useStreaming(options: UseStreamingOptions = {}) {
         setError(errorObj)
         options.onError?.(errorObj.message)
       } finally {
+        if (signal && onExternalAbort) {
+          signal.removeEventListener('abort', onExternalAbort)
+        }
         setIsStreaming(false)
         abortControllerRef.current = null
       }

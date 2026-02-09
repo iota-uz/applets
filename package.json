@@ -11,7 +11,7 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "pnpm@10.19.0",
   "engines": {
     "node": ">=18"
   },
@@ -39,6 +39,21 @@
       "types": "./dist/bichat/tailwind.d.ts",
       "import": "./dist/bichat/tailwind.mjs",
       "require": "./dist/bichat/tailwind.cjs"
+    },
+    "./applet/core": {
+      "types": "./dist/applet/core.d.ts",
+      "import": "./dist/applet/core.mjs",
+      "require": "./dist/applet/core.cjs"
+    },
+    "./applet/host": {
+      "types": "./dist/applet/host.d.ts",
+      "import": "./dist/applet/host.mjs",
+      "require": "./dist/applet/host.cjs"
+    },
+    "./applet/devtools": {
+      "types": "./dist/applet/devtools.d.ts",
+      "import": "./dist/applet/devtools.mjs",
+      "require": "./dist/applet/devtools.cjs"
     },
     "./applet/vite": {
       "types": "./dist/applet/vite.d.ts",

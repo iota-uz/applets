@@ -12,7 +12,9 @@ This repository is the **applet framework and @iota-uz/sdk UI library**. It is *
 
 ## Dependencies
 
-- **Applets depends on** `github.com/iota-uz/iota-sdk` for shared packages: `pkg/serrors`, `pkg/composables`, `pkg/constants`, `pkg/i18nutil`, `pkg/types`, and `modules/core/domain/...` as needed. No circular dependency: SDK imports applets only for `pkg/applet`.
+- **Applets has NO Go dependency on `iota-sdk`**. The dependency is one-way: `iota-sdk → applets`.
+  - Applets defines its own local types: `AppletUser`, `AppletPermission`, `AppletRole` (interfaces in `pkg/applet/user.go`), error types `Op`, `Kind`, `Error`, `E()` (in `pkg/applet/errors.go`), and context extractors (`UserExtractorFunc`, `TenantIDExtractorFunc`, etc. in `pkg/applet/options.go`).
+  - The host application (iota-sdk) provides adapter implementations via `BuilderOption` functions: `WithUserExtractor()`, `WithTenantIDExtractor()`, `WithPoolExtractor()`, `WithPageLocaleExtractor()`.
 - **Local Go development**: Use `go.work` in the consumer (e.g. `eai/back/go.work`) with `use ../../applets` so the local applets repo is used.
 - **NPM package local development**: Use **`pnpm link`**. From this repo: run `pnpm build` then `pnpm link --global`. In the consumer (EAI ali web, or iota-sdk `modules/bichat/presentation/web`): run `pnpm link @iota-uz/sdk`.
 

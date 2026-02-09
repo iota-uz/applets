@@ -15,7 +15,7 @@
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Sidebar } from '@phosphor-icons/react'
-import { ChatSessionProvider, useChat } from '../context/ChatContext'
+import { ChatSessionProvider, useChatSession, useChatMessaging, useChatInput } from '../context/ChatContext'
 import { ChatDataSource, ConversationTurn } from '../types'
 import { RateLimiter } from '../utils/RateLimiter'
 import { ChatHeader } from './ChatHeader'
@@ -80,25 +80,18 @@ function ChatSessionCore({
   artifactsPanelStorageKey = 'bichat.artifacts-panel.expanded',
 }: Omit<ChatSessionProps, 'sessionId'>) {
   const { t } = useTranslation()
+  const { session, fetching, error, debugMode, sessionDebugUsage, debugLimits, currentSessionId } =
+    useChatSession()
+  const { turns, loading, isStreaming } = useChatMessaging()
   const {
-    session,
-    turns,
-    fetching,
-    error,
     inputError,
     message,
     setMessage,
     setInputError,
-    loading,
     handleSubmit,
     messageQueue,
     handleUnqueue,
-    debugMode,
-    sessionDebugUsage,
-    debugLimits,
-    currentSessionId,
-    isStreaming,
-  } = useChat()
+  } = useChatInput()
 
   const effectiveReadOnly = Boolean(readOnly ?? isReadOnly)
 

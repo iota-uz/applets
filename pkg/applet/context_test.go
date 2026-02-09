@@ -2,6 +2,7 @@ package applet
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,110 +11,101 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/csrf"
 	"github.com/iota-uz/go-i18n/v2/i18n"
-	"github.com/iota-uz/iota-sdk/modules/core/domain/aggregates/role"
-	"github.com/iota-uz/iota-sdk/modules/core/domain/aggregates/user"
-	"github.com/iota-uz/iota-sdk/modules/core/domain/entities/permission"
-	"github.com/iota-uz/iota-sdk/modules/core/domain/entities/upload"
-	"github.com/iota-uz/iota-sdk/modules/core/domain/value_objects/internet"
-	"github.com/iota-uz/iota-sdk/modules/core/domain/value_objects/phone"
-	"github.com/iota-uz/iota-sdk/pkg/composables"
-	"github.com/iota-uz/iota-sdk/pkg/constants"
-	"github.com/iota-uz/iota-sdk/pkg/types"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/text/language"
 )
 
-// Mock implementations
+// --- Test context keys and extractors ---
+// These replace the iota-sdk composables.WithUser / composables.WithTenantID pattern.
+// Tests put data into context using these keys, and extractors read them.
 
+type testCtxKey string
+
+const (
+	testUserKey     testCtxKey = "test_user"
+	testTenantIDKey testCtxKey = "test_tenant_id"
+	testLocaleKey   testCtxKey = "test_locale"
+)
+
+func testUserExtractor(ctx context.Context) (AppletUser, error) {
+	u, ok := ctx.Value(testUserKey).(AppletUser)
+	if !ok || u == nil {
+		return nil, fmt.Errorf("no user in context")
+	}
+	return u, nil
+}
+
+func testTenantExtractor(ctx context.Context) (uuid.UUID, error) {
+	tid, ok := ctx.Value(testTenantIDKey).(uuid.UUID)
+	if !ok {
+		return uuid.Nil, fmt.Errorf("no tenant ID in context")
+	}
+	return tid, nil
+}
+
+func testPageLocaleExtractor(ctx context.Context) language.Tag {
+	if locale, ok := ctx.Value(testLocaleKey).(language.Tag); ok {
+		return locale
+	}
+	return language.English
+}
+
+// testHostServices implements HostServices for testing.
+type testHostServices struct{}
+
+func (h *testHostServices) ExtractUser(ctx context.Context) (AppletUser, error) {
+	return testUserExtractor(ctx)
+}
+
+func (h *testHostServices) ExtractTenantID(ctx context.Context) (uuid.UUID, error) {
+	return testTenantExtractor(ctx)
+}
+
+func (h *testHostServices) ExtractPool(ctx context.Context) (*pgxpool.Pool, error) {
+	return nil, nil // No pool in tests
+}
+
+func (h *testHostServices) ExtractPageLocale(ctx context.Context) language.Tag {
+	return testPageLocaleExtractor(ctx)
+}
+
+// --- Mock implementations ---
+
+// mockUser implements both AppletUser and DetailedUser.
 type mockUser struct {
 	id          uint
-	email       internet.Email
+	email       string
 	firstName   string
 	lastName    string
-	permissions []permission.Permission
+	permissions []string
 }
 
-func (m *mockUser) ID() uint                                       { return m.id }
-func (m *mockUser) Email() internet.Email                          { return m.email }
-func (m *mockUser) FirstName() string                              { return m.firstName }
-func (m *mockUser) LastName() string                               { return m.lastName }
-func (m *mockUser) Permissions() []permission.Permission           { return m.permissions }
-func (m *mockUser) Can(perm permission.Permission) bool            { return false }
-func (m *mockUser) Type() user.Type                                { return user.TypeUser }
-func (m *mockUser) TenantID() uuid.UUID                            { return uuid.Nil }
-func (m *mockUser) MiddleName() string                             { return "" }
-func (m *mockUser) Password() string                               { return "" }
-func (m *mockUser) Avatar() upload.Upload                          { return nil }
-func (m *mockUser) AvatarID() uint                                 { return 0 }
-func (m *mockUser) Roles() []role.Role                             { return nil }
-func (m *mockUser) GroupIDs() []uuid.UUID                          { return nil }
-func (m *mockUser) LastIP() string                                 { return "" }
-func (m *mockUser) LastLogin() time.Time                           { return time.Time{} }
-func (m *mockUser) EmailVerifiedAt() *time.Time                    { return nil }
-func (m *mockUser) CreatedBy() uint                                { return 0 }
-func (m *mockUser) CreatedAt() time.Time                           { return time.Time{} }
-func (m *mockUser) UpdatedAt() time.Time                           { return time.Time{} }
-func (m *mockUser) DeletedAt() *time.Time                          { return nil }
-func (m *mockUser) SetFirstName(name string) user.User             { return m }
-func (m *mockUser) SetLastName(name string) user.User              { return m }
-func (m *mockUser) SetMiddleName(name string) user.User            { return m }
-func (m *mockUser) SetEmail(email internet.Email) user.User        { return m }
-func (m *mockUser) SetPassword(password string) (user.User, error) { return m, nil }
-func (m *mockUser) SetAvatar(avatar upload.Upload) user.User       { return m }
-func (m *mockUser) SetAvatarID(id uint) user.User                  { return m }
-func (m *mockUser) SetRoles(roles []role.Role) user.User           { return m }
-func (m *mockUser) SetPermissions(perms []permission.Permission) user.User {
-	return m
+func (m *mockUser) ID() uint               { return m.id }
+func (m *mockUser) Email() string          { return m.email }
+func (m *mockUser) FirstName() string      { return m.firstName }
+func (m *mockUser) LastName() string       { return m.lastName }
+func (m *mockUser) DisplayName() string    { return m.firstName + " " + m.lastName }
+func (m *mockUser) PermissionNames() []string {
+	if m.permissions == nil {
+		return []string{}
+	}
+	return m.permissions
 }
-func (m *mockUser) SetGroupIDs(ids []uuid.UUID) user.User                    { return m }
-func (m *mockUser) SetLastIP(ip string) user.User                            { return m }
-func (m *mockUser) SetLastLogin(t time.Time) user.User                       { return m }
-func (m *mockUser) SetEmailVerifiedAt(t *time.Time) user.User                { return m }
-func (m *mockUser) SetType(type_ user.Type) user.User                        { return m }
-func (m *mockUser) AddGroupID(groupID uuid.UUID) user.User                   { return m }
-func (m *mockUser) AddRole(r role.Role) user.User                            { return m }
-func (m *mockUser) RemoveRole(r role.Role) user.User                         { return m }
-func (m *mockUser) RemoveGroupID(groupID uuid.UUID) user.User                { return m }
-func (m *mockUser) AddPermission(perm permission.Permission) user.User       { return m }
-func (m *mockUser) RemovePermission(permID uuid.UUID) user.User              { return m }
-func (m *mockUser) SetName(firstName, lastName, middleName string) user.User { return m }
-func (m *mockUser) SetUILanguage(lang user.UILanguage) user.User             { return m }
-func (m *mockUser) SetPasswordUnsafe(password string) user.User              { return m }
-func (m *mockUser) SetPhone(p phone.Phone) user.User                         { return m }
-func (m *mockUser) Block(reason string, blockedBy uint, blockedByTenantID uuid.UUID) user.User {
-	return m
-}
-func (m *mockUser) Unblock() user.User                 { return m }
-func (m *mockUser) UILanguage() user.UILanguage        { return "" }
-func (m *mockUser) Phone() phone.Phone                 { return nil }
-func (m *mockUser) LastAction() time.Time              { return time.Time{} }
-func (m *mockUser) Events() []interface{}              { return nil }
-func (m *mockUser) CanUpdate() bool                    { return true }
-func (m *mockUser) CanDelete() bool                    { return true }
-func (m *mockUser) CheckPassword(password string) bool { return false }
-func (m *mockUser) IsBlocked() bool                    { return false }
-func (m *mockUser) BlockReason() string                { return "" }
-func (m *mockUser) BlockedAt() time.Time               { return time.Time{} }
-func (m *mockUser) BlockedBy() uint                    { return 0 }
-func (m *mockUser) BlockedByTenantID() uuid.UUID       { return uuid.Nil }
-func (m *mockUser) CanBeBlocked() bool                 { return true }
-
-type mockPermission struct {
-	name string
-}
-
-func (m *mockPermission) ID() uuid.UUID                       { return uuid.Nil }
-func (m *mockPermission) Name() string                        { return m.name }
-func (m *mockPermission) Resource() permission.Resource       { return "" }
-func (m *mockPermission) Action() permission.Action           { return "" }
-func (m *mockPermission) Modifier() permission.Modifier       { return "" }
-func (m *mockPermission) Equals(p permission.Permission) bool { return false }
-func (m *mockPermission) Matches(resource permission.Resource, action permission.Action) bool {
+func (m *mockUser) HasPermission(name string) bool {
+	normalized := normalizePermissionName(name)
+	for _, p := range m.permissions {
+		if normalizePermissionName(p) == normalized {
+			return true
+		}
+	}
 	return false
 }
-func (m *mockPermission) IsValid() bool { return true }
+
+// Ensure mockUser implements DetailedUser.
+var _ DetailedUser = (*mockUser)(nil)
 
 type mockTenantResolver struct {
 	name string
@@ -205,24 +197,18 @@ func createTestContext(t *testing.T, opts ...func(*testContextOptions)) context.
 		opt(options)
 	}
 
-	email, err := internet.NewEmail(options.email)
-	require.NoError(t, err)
-
-	mockUser := &mockUser{
+	mockU := &mockUser{
 		id:          options.userID,
-		email:       email,
+		email:       options.email,
 		firstName:   options.firstName,
 		lastName:    options.lastName,
 		permissions: options.permissions,
 	}
 
 	ctx := context.Background()
-	ctx = composables.WithUser(ctx, mockUser)
-	ctx = context.WithValue(ctx, constants.TenantIDKey, options.tenantID)
-	// PageContext kept for backward compatibility; prefer PageContextProvider for new code.
-	ctx = composables.WithPageCtx(ctx, &types.PageContext{ //nolint:staticcheck // SA1019: backward compat
-		Locale: options.locale,
-	})
+	ctx = context.WithValue(ctx, testUserKey, AppletUser(mockU))
+	ctx = context.WithValue(ctx, testTenantIDKey, options.tenantID)
+	ctx = context.WithValue(ctx, testLocaleKey, options.locale)
 
 	return ctx
 }
@@ -234,7 +220,7 @@ type testContextOptions struct {
 	lastName    string
 	tenantID    uuid.UUID
 	locale      language.Tag
-	permissions []permission.Permission
+	permissions []string
 }
 
 func withUserID(id uint) func(*testContextOptions) {
@@ -245,11 +231,7 @@ func withUserID(id uint) func(*testContextOptions) {
 
 func withPermissions(perms ...string) func(*testContextOptions) {
 	return func(o *testContextOptions) {
-		permissions := make([]permission.Permission, len(perms))
-		for i, p := range perms {
-			permissions[i] = &mockPermission{name: p}
-		}
-		o.permissions = permissions
+		o.permissions = perms
 	}
 }
 
@@ -272,7 +254,7 @@ func TestContextBuilder_Build_Success(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics)
+	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics, &testHostServices{})
 
 	ctx := createTestContext(t,
 		withUserID(42),
@@ -349,9 +331,9 @@ func TestContextBuilder_Build_MissingUser(t *testing.T) {
 	sessionConfig := DefaultSessionConfig
 
 	config := Config{}
-	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics)
+	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics, &testHostServices{})
 
-	// Context without user
+	// Context without user — extractor will fail
 	ctx := context.Background()
 	r := httptest.NewRequest(http.MethodGet, "/test", nil)
 
@@ -371,20 +353,18 @@ func TestContextBuilder_Build_MissingTenant(t *testing.T) {
 	sessionConfig := DefaultSessionConfig
 
 	config := Config{}
-	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics)
+	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics, &testHostServices{})
 
-	// Context with user but no tenant ID
-	email, err := internet.NewEmail("test@example.com")
-	require.NoError(t, err)
-	mockUser := &mockUser{
+	// Context with user but no tenant ID — tenant extractor will fail
+	mockU := &mockUser{
 		id:        123,
-		email:     email,
+		email:     "test@example.com",
 		firstName: "John",
 		lastName:  "Doe",
 	}
 
 	ctx := context.Background()
-	ctx = composables.WithUser(ctx, mockUser)
+	ctx = context.WithValue(ctx, testUserKey, AppletUser(mockU))
 	// No tenant ID in context
 
 	r := httptest.NewRequest(http.MethodGet, "/test", nil)
@@ -405,7 +385,7 @@ func TestGetAllTranslations_Success(t *testing.T) {
 	sessionConfig := DefaultSessionConfig
 
 	config := Config{}
-	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics)
+	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics, &testHostServices{})
 
 	// Test English locale
 	translations := builder.getAllTranslations(language.English)
@@ -429,7 +409,7 @@ func TestGetAllTranslations_LocaleNotFound(t *testing.T) {
 	sessionConfig := DefaultSessionConfig
 
 	config := Config{}
-	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics)
+	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics, &testHostServices{})
 
 	// Test unsupported locale
 	translations := builder.getAllTranslations(language.Japanese)
@@ -451,7 +431,7 @@ func TestGetAllTranslations_PrefixesMode(t *testing.T) {
 			Prefixes: []string{"Common."},
 		},
 	}
-	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics)
+	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics, &testHostServices{})
 
 	translations := builder.getAllTranslations(language.English)
 	assert.Equal(t, "Hello (Common)", translations["Common.Greeting"])
@@ -473,7 +453,7 @@ func TestGetAllTranslations_NoneMode(t *testing.T) {
 			Mode: TranslationModeNone,
 		},
 	}
-	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics)
+	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics, &testHostServices{})
 
 	translations := builder.getAllTranslations(language.English)
 	assert.Empty(t, translations)
@@ -494,7 +474,7 @@ func TestGetTenantName_ResolverSuccess(t *testing.T) {
 	}
 
 	config := Config{}
-	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics,
+	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics, &testHostServices{},
 		WithTenantNameResolver(resolver),
 	)
 
@@ -520,13 +500,13 @@ func TestGetTenantName_ResolverError(t *testing.T) {
 	}
 
 	config := Config{}
-	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics,
+	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics, &testHostServices{},
 		WithTenantNameResolver(resolver),
 	)
 
 	tenantID := uuid.MustParse("12345678-1234-1234-1234-123456789012")
 	ctx := context.Background()
-	// No pool in context, so it should fall back to default format
+	// No pool extractor, so it should fall back to default format
 
 	name := builder.getTenantName(ctx, tenantID)
 	// Should fall back to default format when resolver fails and no DB
@@ -543,7 +523,7 @@ func TestGetTenantName_AllFallbacksToDefault(t *testing.T) {
 	sessionConfig := DefaultSessionConfig
 
 	config := Config{}
-	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics)
+	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics, &testHostServices{})
 	// No resolver, no database
 
 	tenantID := uuid.MustParse("12345678-1234-1234-1234-123456789012")
@@ -553,46 +533,35 @@ func TestGetTenantName_AllFallbacksToDefault(t *testing.T) {
 	assert.Equal(t, "Tenant 12345678", name) // First 8 chars of UUID
 }
 
-func TestGetUserPermissions_Success(t *testing.T) {
+func TestCollectUserPermissionNames_Success(t *testing.T) {
 	t.Parallel()
 
-	ctx := createTestContext(t,
-		withPermissions("bichat.access", "finance.read", "core.admin"),
-	)
+	mockU := &mockUser{
+		permissions: []string{"bichat.access", "finance.read", "core.admin"},
+	}
 
-	permissions := getUserPermissions(ctx)
+	permissions := collectUserPermissionNames(mockU)
 	assert.Len(t, permissions, 3)
 	assert.Contains(t, permissions, "bichat.access")
 	assert.Contains(t, permissions, "finance.read")
 	assert.Contains(t, permissions, "core.admin")
 }
 
-func TestGetUserPermissions_IncludesRolePermissions(t *testing.T) {
+func TestCollectUserPermissionNames_NormalizesCase(t *testing.T) {
 	t.Parallel()
 
-	p := permission.New(
-		permission.WithID(uuid.New()),
-		permission.WithName("BiChat.Access"),
-		permission.WithResource("bichat"),
-		permission.WithAction(permission.ActionRead),
-		permission.WithModifier(permission.ModifierAll),
-	)
-	r := role.New("Admin", role.WithPermissions([]permission.Permission{p}))
-	u := user.New("T", "U", internet.MustParseEmail("role@example.com"), user.UILanguageEN, user.WithID(1))
-	u = u.AddRole(r)
+	mockU := &mockUser{
+		permissions: []string{"BiChat.Access"},
+	}
 
-	ctx := composables.WithUser(context.Background(), u)
-	permissions := getUserPermissions(ctx)
+	permissions := collectUserPermissionNames(mockU)
 	assert.Contains(t, permissions, "bichat.access")
 }
 
-func TestGetUserPermissions_ErrorCase(t *testing.T) {
+func TestCollectUserPermissionNames_NilUser(t *testing.T) {
 	t.Parallel()
 
-	// Context without user
-	ctx := context.Background()
-
-	permissions := getUserPermissions(ctx)
+	permissions := collectUserPermissionNames(nil)
 	assert.Empty(t, permissions)
 }
 
@@ -647,7 +616,7 @@ func TestBuildErrorContext_WithEnricher(t *testing.T) {
 	}
 
 	config := Config{}
-	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics,
+	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics, &testHostServices{},
 		WithErrorEnricher(enricher),
 	)
 
@@ -673,7 +642,7 @@ func TestBuildErrorContext_WithoutEnricher(t *testing.T) {
 	sessionConfig := DefaultSessionConfig
 
 	config := Config{}
-	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics)
+	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics, &testHostServices{})
 	// No enricher
 
 	ctx := context.Background()
@@ -706,7 +675,7 @@ func TestContextBuilder_Build_WithCustomContext(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics)
+	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics, &testHostServices{})
 
 	ctx := createTestContext(t)
 	r := httptest.NewRequest(http.MethodGet, "/test", nil)
@@ -747,7 +716,7 @@ func TestContextBuilder_Build_WithMuxRouter(t *testing.T) {
 		Router: NewMuxRouter(),
 	}
 
-	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics)
+	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics, &testHostServices{})
 
 	ctx := createTestContext(t)
 	r := httptest.NewRequest(http.MethodGet, "/sessions/123?tab=history", nil)
@@ -783,7 +752,7 @@ func TestContextBuilder_Build_MetricsRecorded(t *testing.T) {
 	sessionConfig := DefaultSessionConfig
 
 	config := Config{}
-	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics)
+	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics, &testHostServices{})
 
 	ctx := createTestContext(t)
 	r := httptest.NewRequest(http.MethodGet, "/test", nil)
@@ -971,9 +940,8 @@ func TestContextBuilder_Build_WithSessionStore(t *testing.T) {
 		},
 	}
 
-	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics,
-		WithSessionStore(store),
-	)
+	opts := []BuilderOption{WithSessionStore(store)}
+	builder := NewContextBuilder(config, bundle, sessionConfig, logger, metrics, &testHostServices{}, opts...)
 
 	ctx := createTestContext(t, withUserID(42))
 	r := httptest.NewRequest(http.MethodGet, "/test", nil)

@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useRef, useMemo, ReactNode, useState, lazy, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useChat } from '../context/ChatContext'
+import { useChatSession, useChatMessaging } from '../context/ChatContext'
 import { ConversationTurn } from '../types'
 import { TurnBubble } from './TurnBubble'
 import { TypingIndicator } from './TypingIndicator'
@@ -35,15 +35,8 @@ interface MessageListProps {
 
 export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs, readOnly }: MessageListProps) {
   const { t } = useTranslation()
-  const {
-    turns,
-    streamingContent,
-    isStreaming,
-    loading,
-    isCompacting,
-    currentSessionId,
-    fetching,
-  } = useChat()
+  const { currentSessionId, fetching } = useChatSession()
+  const { turns, streamingContent, isStreaming, loading, isCompacting } = useChatMessaging()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const initialScrollSessionRef = useRef<string | undefined>(undefined)

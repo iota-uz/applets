@@ -80,7 +80,6 @@ export interface Citation {
   startIndex: number
   endIndex: number
   excerpt?: string
-  source?: string
 }
 
 export interface CodeOutput {

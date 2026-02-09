@@ -16,10 +16,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/iota-uz/go-i18n/v2/i18n"
-	"github.com/iota-uz/iota-sdk/modules/core/domain/aggregates/user"
-	"github.com/iota-uz/iota-sdk/modules/core/domain/value_objects/internet"
-	"github.com/iota-uz/iota-sdk/pkg/composables"
-	"github.com/iota-uz/iota-sdk/pkg/types"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/text/language"
 )
@@ -69,7 +65,8 @@ func TestRegisterDevProxy_StripPrefix(t *testing.T) {
 					},
 				},
 			}
-			c := NewAppletController(a, nil, DefaultSessionConfig, nil, nil)
+			c, cErr := NewAppletController(a, nil, DefaultSessionConfig, nil, nil, &testHostServices{})
+			require.NoError(t, cErr)
 			router := mux.NewRouter()
 			c.RegisterRoutes(router)
 
@@ -118,7 +115,8 @@ func TestRegisterDevProxy_502WhenTargetDown(t *testing.T) {
 			},
 		},
 	}
-	c := NewAppletController(a, nil, DefaultSessionConfig, nil, nil)
+	c, cErr := NewAppletController(a, nil, DefaultSessionConfig, nil, nil, &testHostServices{})
+	require.NoError(t, cErr)
 	router := mux.NewRouter()
 	c.RegisterRoutes(router)
 
@@ -165,7 +163,8 @@ func TestDevProxy_BlackBox_AssetRoutes(t *testing.T) {
 			},
 		},
 	}
-	c := NewAppletController(a, nil, DefaultSessionConfig, nil, nil)
+	c, cErr := NewAppletController(a, nil, DefaultSessionConfig, nil, nil, &testHostServices{})
+	require.NoError(t, cErr)
 	router := mux.NewRouter()
 	c.RegisterRoutes(router)
 
@@ -218,16 +217,17 @@ func TestDevProxy_HTMLShell(t *testing.T) {
 			},
 		},
 	}
-	c := NewAppletController(a, bundle, DefaultSessionConfig, nil, nil)
+	c, cErr := NewAppletController(a, bundle, DefaultSessionConfig, nil, nil, &testHostServices{})
+	require.NoError(t, cErr)
 	router := mux.NewRouter()
 	c.RegisterRoutes(router)
 
-	u := user.New("Test", "User", internet.MustParseEmail("test@example.com"), user.UILanguageEN, user.WithID(1))
 	tenantID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	mockU := &mockUser{id: 1, email: "test@example.com", firstName: "Test", lastName: "User"}
 	ctx := context.Background()
-	ctx = composables.WithUser(ctx, u)
-	ctx = composables.WithTenantID(ctx, tenantID)
-	ctx = composables.WithPageCtx(ctx, &types.PageContext{Locale: language.English}) //nolint:staticcheck // SA1019: backward compat in test
+	ctx = context.WithValue(ctx, testUserKey, AppletUser(mockU))
+	ctx = context.WithValue(ctx, testTenantIDKey, tenantID)
+	ctx = context.WithValue(ctx, testLocaleKey, language.English)
 
 	req := httptest.NewRequest(http.MethodGet, basePath, nil).WithContext(ctx)
 	rec := httptest.NewRecorder()
@@ -264,7 +264,8 @@ func TestRegisterDevProxy_502WhenUpstreamReturns502(t *testing.T) {
 			},
 		},
 	}
-	c := NewAppletController(a, nil, DefaultSessionConfig, nil, nil)
+	c, cErr := NewAppletController(a, nil, DefaultSessionConfig, nil, nil, &testHostServices{})
+	require.NoError(t, cErr)
 	router := mux.NewRouter()
 	c.RegisterRoutes(router)
 

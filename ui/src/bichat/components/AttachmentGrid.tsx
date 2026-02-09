@@ -189,6 +189,7 @@ function FileCard({ attachment, index, onRemove }: FileCardProps) {
 /* ── Memoization ───────────────────────────────────── */
 
 const attachmentEq = (a: Attachment, b: Attachment) =>
+  a.clientKey === b.clientKey &&
   a.id === b.id &&
   a.filename === b.filename &&
   a.preview === b.preview &&
@@ -255,7 +256,7 @@ function AttachmentGrid({
           const isImage = isImageAttachment(attachment) && resolveImagePreview(attachment)
           return isImage ? (
             <MemoizedImageItem
-              key={`${attachment.id || attachment.filename}-${index}`}
+              key={attachment.clientKey}
               attachment={attachment}
               index={index}
               onRemove={isEditable ? onRemove : undefined}
@@ -263,7 +264,7 @@ function AttachmentGrid({
             />
           ) : (
             <MemoizedFileCard
-              key={`${attachment.id || attachment.filename}-${index}`}
+              key={attachment.clientKey}
               attachment={attachment}
               index={index}
               onRemove={isEditable ? onRemove : undefined}

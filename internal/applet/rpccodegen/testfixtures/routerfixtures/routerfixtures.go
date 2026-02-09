@@ -17,11 +17,13 @@ type pingResult struct {
 
 func Router() *applet.TypedRPCRouter {
 	r := applet.NewTypedRPCRouter()
-	applet.AddProcedure(r, "fixtures.ping", applet.Procedure[pingParams, pingResult]{
+	if err := applet.AddProcedure(r, "fixtures.ping", applet.Procedure[pingParams, pingResult]{
 		Handler: func(ctx context.Context, params pingParams) (pingResult, error) {
 			return pingResult{OK: params.Msg != ""}, nil
 		},
-	})
+	}); err != nil {
+		panic(err)
+	}
 	return r
 }
 

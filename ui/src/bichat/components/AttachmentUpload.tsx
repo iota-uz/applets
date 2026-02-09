@@ -85,7 +85,7 @@ const AttachmentUpload = memo<AttachmentUploadProps>(
               // Convert to base64
               const base64Data = await convertToBase64(file)
               const attachment: Attachment = {
-                id: '',
+                clientKey: crypto.randomUUID(),
                 filename: file.name,
                 mimeType: file.type,
                 sizeBytes: file.size,

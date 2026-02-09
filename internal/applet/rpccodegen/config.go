@@ -18,6 +18,7 @@ type Config struct {
 	TypeName      string
 	RouterPackage string
 	RouterFunc    string
+	OutputPath    string // Explicit output path override; when empty, falls back to TargetOut heuristic
 	TargetOut     string
 	SDKOut        string
 	ModuleOut     string

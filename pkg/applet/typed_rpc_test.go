@@ -3,9 +3,9 @@ package applet
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
-	"github.com/iota-uz/iota-sdk/pkg/serrors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -22,15 +22,15 @@ func TestTypedRPCRouter_ConfigAndDecode(t *testing.T) {
 	t.Parallel()
 
 	r := NewTypedRPCRouter()
-	AddProcedure(r, "demo.ok", Procedure[demoParams, demoResult]{
+	require.NoError(t, AddProcedure(r, "demo.ok", Procedure[demoParams, demoResult]{
 		RequirePermissions: []string{"demo.access"},
 		Handler: func(ctx context.Context, params demoParams) (demoResult, error) {
 			if params.ID == "" {
-				return demoResult{}, serrors.E(serrors.Op("demo"), serrors.KindValidation, "id required")
+				return demoResult{}, fmt.Errorf("demo: %w: id required", ErrValidation)
 			}
 			return demoResult{Ok: true}, nil
 		},
-	})
+	}))
 
 	cfg := r.Config()
 	require.NotNil(t, cfg)
@@ -79,11 +79,11 @@ func TestDescribeTypedRPCRouter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := NewTypedRPCRouter()
-			AddProcedure(r, "demo.ok", Procedure[demoParams, demoResult]{
+			require.NoError(t, AddProcedure(r, "demo.ok", Procedure[demoParams, demoResult]{
 				Handler: func(ctx context.Context, params demoParams) (demoResult, error) {
 					return demoResult{Ok: true}, nil
 				},
-			})
+			}))
 
 			desc, err := DescribeTypedRPCRouter(r)
 			require.NoError(t, err)
