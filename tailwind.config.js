@@ -1,6 +1,5 @@
-// Use built tailwind output (populated by build:tailwind from @iota-uz/sdk)
-const path = require('path')
-const sdkThemeExtend = require(path.join(__dirname, 'tailwind', 'sdk-theme.cjs'))
+// Uses built tailwind/ (populated by build:tailwind from local styles/ and ui/tailwind/)
+const sdkThemeExtend = require("./tailwind/sdk-theme.cjs");
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -13,4 +12,4 @@ module.exports = {
     extend: sdkThemeExtend,
   },
   plugins: [],
-}
+};

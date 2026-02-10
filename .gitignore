@@ -3,8 +3,8 @@
 dist/
 node_modules/
 
-# Build artifacts
-tailwind/
+# Build artifacts (root tailwind/ output only; styles/tailwind and ui/tailwind are source)
+/tailwind/
 ui/.storybook/preview.generated.css
 storybook-static/
 

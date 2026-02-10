@@ -1,39 +1,54 @@
-import { cp, mkdir, readdir } from 'node:fs/promises'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-
 /**
- * Copies tailwind/ from the published @iota-uz/sdk devDependency into repo-root/tailwind/.
- *
- * Circular bootstrapping: this package IS @iota-uz/sdk. We list ourselves as a devDependency
- * at a pinned version (e.g. 0.3.x) so pnpm install fetches the published package, whose
- * tailwind/ folder we copy here. That avoids duplicating CSS/config source in this repo.
- * Downside: until the devDependency version is bumped, we copy tailwind output from the
- * previous published release. When releasing a new version, either (1) publish once so the
- * new version is on the registry, then bump the devDependency range and re-run build, or
- * (2) accept that the first publish of a new major will ship tailwind from the previous
- * published version until the next release.
+ * Builds tailwind/ from local source in this repo (no copy from node_modules).
+ * Produces: tailwind/iota.css, main.css, sdk-theme.cjs, create-config.cjs, compiled.css.
  */
+import { cp, mkdir, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-// Resolve repo root from this script's location so output is always at repo-root/tailwind
-// (avoids wrong path when pnpm runs from a workspace package, e.g. cwd = ui/)
-const scriptDir = path.dirname(fileURLToPath(import.meta.url))
-const repoRoot = path.resolve(scriptDir, '..')
-const outDir = path.join(repoRoot, 'tailwind')
-const sdkTailwindDir = path.join(repoRoot, 'node_modules', '@iota-uz', 'sdk', 'tailwind')
-const entries = await readdir(sdkTailwindDir, { withFileTypes: true }).catch((err) => {
-  if (err.code === 'ENOENT') {
-    throw new Error(
-      `Tailwind source not found at ${sdkTailwindDir}. Add "@iota-uz/sdk" as a devDependency (e.g. "0.3.x") and run pnpm install. If building this package, ensure the published SDK version includes the tailwind/ folder.`
-    )
-  }
-  throw err
-})
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, "..");
+const outDir = path.join(repoRoot, "tailwind");
 
-await mkdir(outDir, { recursive: true })
+await mkdir(outDir, { recursive: true });
 
-for (const e of entries) {
-  const src = path.join(sdkTailwindDir, e.name)
-  const dest = path.join(outDir, e.name)
-  await cp(src, dest, { recursive: e.isDirectory() })
+const iotaCssPath = path.join(outDir, "iota.css");
+await cp(path.join(repoRoot, "styles", "tailwind", "iota.css"), iotaCssPath);
+
+const mainCssPath = path.join(outDir, "main.css");
+await writeFile(
+  mainCssPath,
+  `@import "tailwindcss";\n@import "./iota.css";\n`,
+  "utf8",
+);
+
+const sdkThemePath = path.join(outDir, "sdk-theme.cjs");
+await cp(path.join(repoRoot, "ui", "tailwind", "sdk-theme.cjs"), sdkThemePath);
+
+const createConfigPath = path.join(outDir, "create-config.cjs");
+await cp(
+  path.join(repoRoot, "ui", "tailwind", "create-config.cjs"),
+  createConfigPath,
+);
+
+const compiledInputPath = path.join(repoRoot, "styles", "tailwind", "input.css");
+const compiledCssPath = path.join(outDir, "compiled.css");
+
+const compiled = spawnSync(
+  "pnpm",
+  [
+    "exec",
+    "tailwindcss",
+    "--input",
+    compiledInputPath,
+    "--output",
+    compiledCssPath,
+    "--minify",
+  ],
+  { cwd: repoRoot, stdio: "inherit" },
+);
+
+if (compiled.status !== 0) {
+  throw new Error(`tailwindcss compilation failed with exit code ${compiled.status}`);
 }
