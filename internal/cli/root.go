@@ -8,15 +8,18 @@ import (
 func NewRootCommand() *cobra.Command {
 	root := &cobra.Command{
 		Use:   "applet",
-		Short: "Applet RPC and dependency utilities",
-		Long: `Generate or check applet RPC contracts and validate applet SDK dependency policy.
+		Short: "Applet development toolkit",
+		Long: `Applet CLI — development, build, and validation tools for applet projects.
 
-Run from the repo that contains the applet (e.g. iota-sdk or eai).`,
-		Example: `  applet rpc gen --name bichat
-  applet rpc check --name bichat
-  applet deps check
-  applet version
-  applet completion bash`,
+Run from the repo that contains the applet (e.g. iota-sdk or eai).
+Requires .applets/config.toml at the project root.`,
+		Example: `  applet dev
+  applet dev bichat
+  applet list
+  applet build bichat
+  applet check
+  applet rpc gen --name bichat
+  applet deps check`,
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}
@@ -26,6 +29,10 @@ Run from the repo that contains the applet (e.g. iota-sdk or eai).`,
 
 	root.AddCommand(NewVersionCommand())
 	root.AddCommand(NewCompletionCommand())
+	root.AddCommand(NewDevCommand())
+	root.AddCommand(NewListCommand())
+	root.AddCommand(NewBuildCommand())
+	root.AddCommand(NewCheckCommand())
 	root.AddCommand(NewRPCCommand())
 	root.AddCommand(NewDepsCommand())
 

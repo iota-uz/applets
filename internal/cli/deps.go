@@ -8,6 +8,7 @@ import (
 
 	"github.com/iota-uz/applets/internal/applet/depscheck"
 	"github.com/iota-uz/applets/internal/applet/rpccodegen"
+	"github.com/iota-uz/applets/internal/config"
 )
 
 // NewDepsCommand returns the deps command with check subcommand.
@@ -31,11 +32,16 @@ func NewDepsCommand() *cobra.Command {
 	return depsCmd
 }
 
-func runDepsCheck(cmd *cobra.Command, args []string) error {
-	root, err := rpccodegen.FindProjectRoot()
+func runDepsCheck(cmd *cobra.Command, _ []string) error {
+	// Try config-based root first, fall back to go.mod-based
+	root, err := config.FindRoot()
 	if err != nil {
-		return err
+		root, err = rpccodegen.FindProjectRoot()
+		if err != nil {
+			return err
+		}
 	}
+
 	violations, found, err := depscheck.Check(root)
 	if err != nil {
 		return err

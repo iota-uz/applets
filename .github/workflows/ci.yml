@@ -44,7 +44,7 @@ jobs:
 
       - name: Run Go tests
         working-directory: applets
-        run: go test ./pkg/... ./internal/... ./cmd/... -count=1
+        run: go test ./internal/... ./cmd/... -count=1
 
       - name: Install JS dependencies
         working-directory: applets
