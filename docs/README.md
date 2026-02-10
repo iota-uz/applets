@@ -33,6 +33,9 @@ applet rpc check --name bichat
 applet deps check
 ```
 
+- **Version**: `applet version` prints the CLI version (set at build time via `-ldflags`, or "dev").
+- **Shell completion**: `applet completion bash`, `applet completion zsh`, or `applet completion fish` generates a completion script; see `applet completion --help` for install instructions.
+
 To use a specific version: `go install github.com/iota-uz/applets/cmd/applet@v0.4.0`.
 
 **Alternatives:** From a clone, `go run ./cmd/applet rpc gen --name bichat` or `go run github.com/iota-uz/applets/cmd/applet rpc gen --name bichat`; or `go build -o applet ./cmd/applet` then `./applet rpc gen --name bichat`.
