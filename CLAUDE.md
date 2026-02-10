@@ -23,6 +23,18 @@ This repository is the **applet framework and @iota-uz/sdk UI library**. It is *
 - Put **applet framework** (Go) and **SDK UI library** (TypeScript/React) code in this repo.
 - Applet **implementations** (e.g. BiChat module, EAI Ali) stay in iota-sdk or eai; they consume this library.
 
+## Common commands (just)
+
+```bash
+just install    # Install applet CLI from local source (go install ./cmd/applet)
+just test       # Run all Go tests
+just vet        # Run go vet
+just check      # Run vet + test
+just build-npm  # Build the @iota-uz/sdk package
+just deps-npm   # Install npm dependencies
+just watch-npm  # Build npm package in watch mode
+```
+
 ## Workflows
 
 - **CI** (`.github/workflows/ci.yml`): on push/PR — Go test, `pnpm install --frozen-lockfile`, `pnpm run build`, optionally lint.
