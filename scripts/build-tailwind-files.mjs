@@ -68,9 +68,12 @@ const compiled = spawnSync(
 );
 
 if (compiled.status !== 0) {
+  const err = compiled.error;
   const msg =
-    compiled.error != null
-      ? String(compiled.error)
+    err != null
+      ? (err.code === "ENOENT"
+          ? "pnpm not found on PATH. Install pnpm (e.g. npm install -g pnpm) or run from a environment that provides it."
+          : String(err))
       : `tailwindcss compilation failed with exit code ${compiled.status ?? "unknown"}`;
   throw new Error(msg);
 }

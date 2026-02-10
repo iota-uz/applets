@@ -55,7 +55,7 @@ func BuildSDKIfNeeded(ctx context.Context, root string) error {
 		if err := os.MkdirAll(filepath.Join(root, "dist"), 0o755); err != nil {
 			return fmt.Errorf("create dist directory: %w", err)
 		}
-		if err := os.WriteFile(hashFile, []byte(currentHash), 0644); err != nil {
+		if err := os.WriteFile(hashFile, []byte(currentHash), 0o644); err != nil {
 			return err
 		}
 	}

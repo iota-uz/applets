@@ -1,3 +1,4 @@
+/* eslint-env node */
 // Uses built tailwind/ (populated by build:tailwind from local styles/ and ui/tailwind/).
 // Run `pnpm run build:tailwind` (or build script that runs it) before Tailwind so this file exists.
 let sdkThemeExtend;

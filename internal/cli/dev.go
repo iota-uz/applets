@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"os/exec"
 	"sort"
 	"strings"
@@ -60,9 +59,16 @@ func runDev(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Build project-level process specs
+	// Build project-level process specs (clone env maps so applet injection doesn't mutate config).
 	processes := make([]devrunner.ProcessSpec, 0, len(cfg.Dev.Processes))
 	for _, p := range cfg.Dev.Processes {
+		var env map[string]string
+		if len(p.Env) > 0 {
+			env = make(map[string]string, len(p.Env))
+			for k, v := range p.Env {
+				env[k] = v
+			}
+		}
 		processes = append(processes, devrunner.ProcessSpec{
 			Name:     p.Name,
 			Command:  p.Command,
@@ -70,7 +76,7 @@ func runDev(cmd *cobra.Command, args []string) error {
 			Dir:      root,
 			Color:    colorForProcess(p.Name),
 			Critical: p.Critical,
-			Env:      p.Env,
+			Env:      env,
 		})
 	}
 
@@ -133,7 +139,7 @@ func runDev(cmd *cobra.Command, args []string) error {
 		return runErr
 	}
 	if exitCode != 0 {
-		os.Exit(exitCode)
+		return NewExitError(exitCode, nil)
 	}
 	return nil
 }

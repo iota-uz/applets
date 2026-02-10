@@ -1,23 +1,22 @@
-import { cp, mkdir, readdir, stat } from 'node:fs/promises'
+import { cp, mkdir, readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(scriptDir, '..')
-const srcFontsDir = path.join(repoRoot, 'assets/fonts')
-const outFontsDir = path.join(repoRoot, 'assets/fonts')
+const srcFontsDir = path.join(repoRoot, 'assets', 'fonts')
+const outFontsDir = path.join(repoRoot, 'dist', 'fonts')
 const srcBichatCss = path.join(repoRoot, 'ui/src/bichat/styles.css')
 const outBichatCss = path.join(repoRoot, 'dist/bichat/styles.css')
 
 async function copyDir(src, dst) {
   await mkdir(dst, { recursive: true })
-  const entries = await readdir(src)
+  const entries = await readdir(src, { withFileTypes: true })
   await Promise.all(
-    entries.map(async (name) => {
-      const srcPath = path.join(src, name)
-      const dstPath = path.join(dst, name)
-      const s = await stat(srcPath)
-      if (s.isDirectory()) {
+    entries.map(async (ent) => {
+      const srcPath = path.join(src, ent.name)
+      const dstPath = path.join(dst, ent.name)
+      if (ent.isDirectory()) {
         await copyDir(srcPath, dstPath)
         return
       }

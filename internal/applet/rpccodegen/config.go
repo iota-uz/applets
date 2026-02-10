@@ -215,12 +215,12 @@ func CheckDrift(root, name string, cfg Config, needsReexportShim bool) error {
 		stat, err := os.Stat(moduleAbs)
 		if err != nil {
 			if os.IsNotExist(err) {
-				return nil
+				return fmt.Errorf("applet %s re-export shim missing at %s.\nRun: applet rpc gen --name %s", name, cfg.ModuleOut, name)
 			}
 			return err
 		}
 		if stat.IsDir() {
-			return nil
+			return fmt.Errorf("applet %s module path is a directory, re-export shim expected at %s.\nRun: applet rpc gen --name %s", name, cfg.ModuleOut, name)
 		}
 		actual, readErr := os.ReadFile(moduleAbs)
 		if readErr != nil {
