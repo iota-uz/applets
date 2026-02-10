@@ -1,49 +1,56 @@
-# Applets library docs
+# Applets
 
-Short reference for contributors working in this repo. Full applet and SDK documentation lives in [iota-sdk](https://github.com/iota-uz/iota-sdk) (`docs/`).
+Go library and CLI for the applet framework, plus the **@iota-uz/sdk** npm package (applet context, host, UI components, Tailwind helpers). Consumed by [iota-sdk](https://github.com/iota-uz/iota-sdk) and EAI to build and run applets (e.g. BiChat).
 
-## Repo layout
+Full architecture and development guides live in [iota-sdk docs](https://github.com/iota-uz/iota-sdk).
 
-- **Go**: Root package `github.com/iota-uz/applets` (public API), `internal/*` (implementation), `internal/applet/rpccodegen/` (RPC codegen), `cmd/applet/` (CLI).
-- **NPM**: Root `package.json` builds `@iota-uz/sdk` from `ui/`. Scripts in `scripts/`, Tailwind in `tailwind/` and `styles/`.
+---
 
-## Build and test
+## Go
 
-- **Go**: `go build ./...` and `go test ./...` (root has no tests; tests live in `internal/` and `cmd/`). Local dev uses `go.work` in consumers with `use ../../applets`.
-- **NPM**: `pnpm install --frozen-lockfile` then `pnpm run build`. Storybook: `pnpm run storybook`.
+Add the module to your project:
 
-## Consuming the library
+```bash
+go get github.com/iota-uz/applets@latest
+```
 
-- **Go**: Add `require github.com/iota-uz/applets v0.4.0` (or later). For local iteration, use `go.work` with `use ../../applets`.
-- **NPM**: Publish is triggered by tag `v*` (e.g. v0.4.0). For **local development use `pnpm link`**: from this repo run `pnpm build` then `pnpm link --global`. In the consumer (e.g. EAI ali web or iota-sdk `modules/bichat/presentation/web`) run `pnpm link @iota-uz/sdk`.
+Import the public API from the root package:
+
+```go
+import "github.com/iota-uz/applets"
+```
+
+Use `Registry`, `Controller`, RPC types, context helpers, and options as needed. For local development with a clone of this repo, use a [Go workspace](https://go.dev/ref/mod#workspaces) in your project with `use` pointing at the applets directory.
+
+---
+
+## NPM
+
+Install the SDK in your applet frontend (e.g. Vite/React):
+
+```bash
+pnpm add @iota-uz/sdk
+```
+
+Use applet context, host utilities, BiChat UI components, and Tailwind configuration from the package.
+
+---
 
 ## Applet CLI
 
-**Install** (recommended; no clone needed, ensure `$GOBIN` is on PATH):
+Install the CLI (ensure `$GOBIN` is on your PATH):
 
 ```bash
 go install github.com/iota-uz/applets/cmd/applet@latest
 ```
 
-Then from the repo that contains the applet (iota-sdk or eai):
+From a repo that contains an applet (e.g. iota-sdk or EAI):
 
 ```bash
-applet rpc gen --name bichat
-applet rpc check --name bichat
+applet rpc gen --name <applet-name>
+applet rpc check --name <applet-name>
 applet deps check
 ```
 
-- **Version**: `applet version` prints the CLI version (set at build time via `-ldflags`, or "dev").
-- **Shell completion**: `applet completion bash`, `applet completion zsh`, or `applet completion fish` generates a completion script; see `applet completion --help` for install instructions.
-
-To use a specific version: `go install github.com/iota-uz/applets/cmd/applet@v0.4.0`.
-
-**Alternatives:** From a clone, `go run ./cmd/applet rpc gen --name bichat` or `go run github.com/iota-uz/applets/cmd/applet rpc gen --name bichat`; or `go build -o applet ./cmd/applet` then `./applet rpc gen --name bichat`.
-
-## Releasing (Go + npm in sync)
-
-To release X.Y.Z: set `version` in package.json to X.Y.Z, commit, push, then push tag **vX.Y.Z**. The workflow publishes the npm package and creates the GitHub release. Go module version is the same tag (vX.Y.Z). Use the same version for Go and npm. See `.github/workflows/publish-iota-sdk.yml`.
-
-## Full docs
-
-- [iota-sdk docs](https://github.com/iota-uz/iota-sdk) — architecture, development guides, applet runtime.
+- **Specific version:** `go install github.com/iota-uz/applets/cmd/applet@v0.4.4`
+- **Shell completion:** `applet completion bash`, `applet completion zsh`, or `applet completion fish` — see `applet completion --help` for install instructions.
