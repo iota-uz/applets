@@ -18,7 +18,10 @@ import (
 func BuildSDKIfNeeded(root string) error {
 	uiSrc := filepath.Join(root, "ui", "src")
 	if _, err := os.Stat(uiSrc); err != nil {
-		return nil // no ui/src — not an SDK source repo, skip
+		if os.IsNotExist(err) {
+			return nil // no ui/src — not an SDK source repo, skip
+		}
+		return fmt.Errorf("stat ui/src: %w", err)
 	}
 
 	distIndex := filepath.Join(root, "dist/index.mjs")
@@ -28,7 +31,7 @@ func BuildSDKIfNeeded(root string) error {
 	if _, err := os.Stat(distIndex); err != nil {
 		needsBuild = true
 	} else {
-		currentHash, err := ComputeSDKHash(root)
+		currentHash, err := computeSDKHash(root)
 		if err != nil {
 			return err
 		}
@@ -44,7 +47,7 @@ func BuildSDKIfNeeded(root string) error {
 			return err
 		}
 
-		currentHash, err := ComputeSDKHash(root)
+		currentHash, err := computeSDKHash(root)
 		if err != nil {
 			return err
 		}
@@ -60,8 +63,8 @@ func BuildSDKIfNeeded(root string) error {
 	return nil
 }
 
-// ComputeSDKHash computes a SHA-256 hash over all .ts/.tsx/.css files in ui/src/ plus build config files.
-func ComputeSDKHash(root string) (string, error) {
+// computeSDKHash computes a SHA-256 hash over all .ts/.tsx/.css files in ui/src/ plus build config files.
+func computeSDKHash(root string) (string, error) {
 	uiSrc := filepath.Join(root, "ui/src")
 	var files []string
 

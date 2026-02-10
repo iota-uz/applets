@@ -99,16 +99,20 @@ func runDev(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		backendPort := devsetup.GetEnvOrDefault("IOTA_PORT", devsetup.GetEnvOrDefault("PORT", "3900"))
+		backendPort := devsetup.GetEnvOrDefault("IOTA_PORT", devsetup.GetEnvOrDefault("PORT", fmt.Sprintf("%d", cfg.Dev.BackendPort)))
 		result, err := devsetup.SetupApplet(root, appletName, applet, backendPort)
 		if err != nil {
 			return err
 		}
 
-		// Set env vars
-		for k, v := range result.EnvVars {
-			if err := os.Setenv(k, v); err != nil {
-				return fmt.Errorf("set env %s: %w", k, err)
+		// Propagate applet env vars to project-level processes (e.g. air needs IOTA_APPLET_DEV_*)
+		// instead of polluting the parent process via os.Setenv.
+		for i := range processes {
+			if processes[i].Env == nil {
+				processes[i].Env = make(map[string]string, len(result.EnvVars))
+			}
+			for k, v := range result.EnvVars {
+				processes[i].Env[k] = v
 			}
 		}
 
@@ -121,13 +125,11 @@ func runDev(cmd *cobra.Command, args []string) error {
 	ctx, cancel := devrunner.NotifyContext(context.Background())
 	defer cancel()
 
+	// CLI already checks tools are in PATH (preflightProcesses, preflightNodeTools).
+	// Devrunner preflight is disabled to avoid duplicate checks.
 	runOpts := &devrunner.RunOptions{
-		RestartProcessName:       restartTarget,
-		ProjectRoot:              root,
-		PreflightNodeMajor:       0,
-		PreflightPnpm:            appletName != "",
-		PreflightPackageJSONPath: "package.json",
-		PreflightDeps:            appletName != "",
+		RestartProcessName: restartTarget,
+		ProjectRoot:        root,
 	}
 
 	exitCode, runErr := devrunner.Run(ctx, cancel, processes, runOpts)

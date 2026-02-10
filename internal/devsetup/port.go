@@ -40,16 +40,6 @@ func CheckPort(ctx context.Context, port int, label string) error {
 	return nil
 }
 
-// PickAvailablePort tries ports starting from start, returning the first free one.
-func PickAvailablePort(ctx context.Context, start, attempts int) (int, error) {
-	for p := start; p < start+attempts; p++ {
-		if err := CheckPort(ctx, p, "Vite"); err == nil {
-			return p, nil
-		}
-	}
-	return 0, fmt.Errorf("no free port found in range %d-%d", start, start+attempts-1)
-}
-
 func listenLoopback(ctx context.Context, network string, port int) (net.Listener, error) {
 	var addr string
 	switch network {

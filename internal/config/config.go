@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
+	"sort"
 
 	"github.com/BurntSushi/toml"
 )
@@ -18,7 +18,8 @@ type ProjectConfig struct {
 
 // DevConfig holds project-level dev process definitions.
 type DevConfig struct {
-	Processes []ProcessConfig `toml:"processes"`
+	Processes   []ProcessConfig `toml:"processes"`
+	BackendPort int             `toml:"backend_port"`
 }
 
 // ProcessConfig describes a dev process to run.
@@ -100,6 +101,9 @@ func Load(root string) (*ProjectConfig, error) {
 
 // ApplyDefaults fills convention-derived fields for each applet.
 func ApplyDefaults(cfg *ProjectConfig) {
+	if cfg.Dev.BackendPort == 0 {
+		cfg.Dev.BackendPort = 3200
+	}
 	for name, applet := range cfg.Applets {
 		if applet.Module == "" {
 			applet.Module = filepath.Join("modules", name)
@@ -158,8 +162,7 @@ func (c *ProjectConfig) AppletNames() []string {
 	for name := range c.Applets {
 		names = append(names, name)
 	}
-	// Sort for deterministic ordering
-	sortStrings(names)
+	sort.Strings(names)
 	return names
 }
 
@@ -171,12 +174,4 @@ func (c *ProjectConfig) FirstCriticalProcess() string {
 		}
 	}
 	return ""
-}
-
-func sortStrings(s []string) {
-	for i := 1; i < len(s); i++ {
-		for j := i; j > 0 && strings.Compare(s[j-1], s[j]) > 0; j-- {
-			s[j-1], s[j] = s[j], s[j-1]
-		}
-	}
 }

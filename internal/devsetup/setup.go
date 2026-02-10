@@ -71,24 +71,36 @@ func SetupApplet(root, name string, applet *config.AppletConfig, backendPort str
 	log.Printf("Applet: %s\n", name)
 	log.Printf("URL:    http://localhost:%s%s\n", backendPort, applet.BasePath)
 
-	processes := []devrunner.ProcessSpec{
-		{
+	var processes []devrunner.ProcessSpec
+
+	// SDK watch: only if tsup.dev.config.ts exists (i.e. running from a repo that ships @iota-uz/sdk source)
+	if _, err := os.Stat(filepath.Join(root, "tsup.dev.config.ts")); err == nil {
+		processes = append(processes, devrunner.ProcessSpec{
 			Name: "sdk", Command: "pnpm",
 			Args: []string{"exec", "tsup", "--config", "tsup.dev.config.ts", "--watch"},
 			Dir:  root, Color: devrunner.ColorBlue, Critical: false,
-		},
-		{
+			Env: envVars,
+		})
+	}
+
+	// Applet CSS watch: only if the applet has src/index.css
+	if _, err := os.Stat(filepath.Join(webDir, "src", "index.css")); err == nil {
+		processes = append(processes, devrunner.ProcessSpec{
 			Name: "acss", Command: "pnpm",
 			Args: []string{"-C", webDir, "exec", "tailwindcss",
 				"-i", "src/index.css", "-o", "dist/style.css", "--watch"},
 			Dir: root, Color: devrunner.ColorMagenta, Critical: false,
-		},
-		{
-			Name: "vite", Command: "pnpm",
-			Args: []string{"-C", webDir, "exec", "vite"},
-			Dir:  root, Color: devrunner.ColorGreen, Critical: true,
-		},
+			Env: envVars,
+		})
 	}
+
+	// Vite dev server: always required
+	processes = append(processes, devrunner.ProcessSpec{
+		Name: "vite", Command: "pnpm",
+		Args: []string{"-C", webDir, "exec", "vite"},
+		Dir:  root, Color: devrunner.ColorGreen, Critical: true,
+		Env: envVars,
+	})
 
 	return &SetupResult{
 		Processes: processes,

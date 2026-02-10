@@ -36,6 +36,7 @@ vite_port = 5173
 	cfg, err := Load(root)
 	require.NoError(t, err)
 
+	assert.Equal(t, 3200, cfg.Dev.BackendPort)
 	assert.Len(t, cfg.Dev.Processes, 2)
 	assert.Equal(t, "air", cfg.Dev.Processes[0].Name)
 	assert.True(t, cfg.Dev.Processes[0].Critical)
@@ -144,6 +145,40 @@ func TestFirstCriticalProcess_None(t *testing.T) {
 		},
 	}
 	assert.Equal(t, "", cfg.FirstCriticalProcess())
+}
+
+func TestBackendPort_Default(t *testing.T) {
+	cfg := &ProjectConfig{
+		Applets: map[string]*AppletConfig{
+			"myapp": {BasePath: "/my-app"},
+		},
+	}
+	ApplyDefaults(cfg)
+	assert.Equal(t, 3200, cfg.Dev.BackendPort)
+}
+
+func TestBackendPort_Explicit(t *testing.T) {
+	root := t.TempDir()
+	dir := filepath.Join(root, ".applets")
+	require.NoError(t, os.MkdirAll(dir, 0755))
+
+	content := `
+[dev]
+backend_port = 3900
+
+[[dev.processes]]
+name = "air"
+command = "air"
+critical = true
+
+[applets.test]
+base_path = "/test"
+`
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "config.toml"), []byte(content), 0644))
+
+	cfg, err := Load(root)
+	require.NoError(t, err)
+	assert.Equal(t, 3900, cfg.Dev.BackendPort)
 }
 
 func TestProcessEnv(t *testing.T) {

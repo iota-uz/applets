@@ -21,7 +21,7 @@ func RefreshAppletDeps(root, webDir string) error {
 	nodeModules := filepath.Join(webDir, "node_modules")
 	didInstall := false
 
-	localSDKDep, err := HasLocalSDKDependency(webDir)
+	localSDKDep, err := hasLocalSDKDependency(webDir)
 	if err != nil {
 		return err
 	}
@@ -63,8 +63,8 @@ func RefreshAppletDeps(root, webDir string) error {
 	return nil
 }
 
-// HasLocalSDKDependency checks whether the applet uses a file:/link:/workspace: specifier for @iota-uz/sdk.
-func HasLocalSDKDependency(webDir string) (bool, error) {
+// hasLocalSDKDependency checks whether the applet uses a file:/link:/workspace: specifier for @iota-uz/sdk.
+func hasLocalSDKDependency(webDir string) (bool, error) {
 	packageJSONPath := filepath.Join(webDir, "package.json")
 	data, err := os.ReadFile(packageJSONPath)
 	if err != nil {

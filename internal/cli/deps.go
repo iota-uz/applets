@@ -2,7 +2,6 @@ package cli
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/spf13/cobra"
 
@@ -33,7 +32,9 @@ func NewDepsCommand() *cobra.Command {
 }
 
 func runDepsCheck(cmd *cobra.Command, _ []string) error {
-	// Try config-based root first, fall back to go.mod-based
+	// Try .applets/config.toml first, then fall back to go.mod-based root discovery.
+	// The fallback is intentional for backward compatibility: repos that haven't adopted
+	// .applets/config.toml yet can still use `applet deps check`.
 	root, err := config.FindRoot()
 	if err != nil {
 		root, err = rpccodegen.FindProjectRoot()
@@ -51,11 +52,8 @@ func runDepsCheck(cmd *cobra.Command, _ []string) error {
 		return nil
 	}
 	if len(violations) > 0 {
-		stderr := cmd.ErrOrStderr()
 		for _, v := range violations {
-			if _, err := stderr.Write([]byte(v + "\n")); err != nil {
-				return fmt.Errorf("write violation to stderr: %w", err)
-			}
+			cmd.PrintErrln(v)
 		}
 		return NewExitError(FailureCode, errors.New("applet SDK dependency policy check failed"))
 	}

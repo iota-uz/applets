@@ -24,9 +24,6 @@ Requires .applets/config.toml at the project root.`,
 		SilenceUsage:  true,
 	}
 
-	root.PersistentFlags().BoolVar(&verbose, "verbose", false, "verbose output")
-	root.PersistentFlags().BoolVar(&quiet, "quiet", false, "suppress non-error output")
-
 	root.AddCommand(NewVersionCommand())
 	root.AddCommand(NewCompletionCommand())
 	root.AddCommand(NewDevCommand())
@@ -38,6 +35,3 @@ Requires .applets/config.toml at the project root.`,
 
 	return root
 }
-
-// verbose and quiet are reserved for future use (e.g. logging in rpccodegen/depscheck).
-var verbose, quiet bool

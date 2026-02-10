@@ -62,11 +62,12 @@ Exits non-zero if drift is detected.`,
 }
 
 // resolveRPCTargets returns the root, and a list of (name, routerFunc) pairs to process.
+// It tries .applets/config.toml first, then falls back to go.mod-based root discovery.
+// The fallback is intentional for backward compatibility: repos that haven't adopted
+// .applets/config.toml yet can still use `applet rpc gen --name <name>`.
 func resolveRPCTargets(flagName, flagRouterFunc string) (string, []rpcTarget, error) {
-	// Try config-based root first
 	root, err := config.FindRoot()
 	if err != nil {
-		// Fall back to go.mod-based root for backward compat
 		root, err = rpccodegen.FindProjectRoot()
 		if err != nil {
 			return "", nil, err
