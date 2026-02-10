@@ -15,7 +15,7 @@ Short reference for contributors working in this repo. Full applet and SDK docum
 ## Consuming the library
 
 - **Go**: Add `require github.com/iota-uz/applets v0.4.0` (or later). For local iteration, use `go.work` with `use ../../applets`.
-- **NPM**: Publish is triggered by tag `iota-sdk-v*`. For **local development use `pnpm link`**: from this repo run `pnpm build` then `pnpm link --global`. In the consumer (e.g. EAI ali web or iota-sdk `modules/bichat/presentation/web`) run `pnpm link @iota-uz/sdk`.
+- **NPM**: Publish is triggered by tag `v*` (e.g. v0.4.0). For **local development use `pnpm link`**: from this repo run `pnpm build` then `pnpm link --global`. In the consumer (e.g. EAI ali web or iota-sdk `modules/bichat/presentation/web`) run `pnpm link @iota-uz/sdk`.
 
 ## Applet CLI
 
@@ -36,6 +36,10 @@ applet deps check
 To use a specific version: `go install github.com/iota-uz/applets/cmd/applet@v0.4.0`.
 
 **Alternatives:** From a clone, `go run ./cmd/applet rpc gen --name bichat` or `go run github.com/iota-uz/applets/cmd/applet rpc gen --name bichat`; or `go build -o applet ./cmd/applet` then `./applet rpc gen --name bichat`.
+
+## Releasing (Go + npm in sync)
+
+To release X.Y.Z: set `version` in package.json to X.Y.Z, commit, push, then push tag **vX.Y.Z**. The workflow publishes the npm package and creates the GitHub release. Go module version is the same tag (vX.Y.Z). Use the same version for Go and npm. See `.github/workflows/publish-iota-sdk.yml`.
 
 ## Full docs
 
