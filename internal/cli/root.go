@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"errors"
+
 	"github.com/spf13/cobra"
 )
 
@@ -21,10 +23,19 @@ Requires .applets/config.toml at the project root.`,
   applet check
   applet rpc gen --name bichat
   applet rpc check --name bichat
-  applet deps check`,
+  applet deps check
+  applet version`,
 		SilenceErrors: true,
 		SilenceUsage:  true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if v, _ := cmd.Flags().GetBool("version"); v {
+				cmd.Println("applet version", resolveVersion())
+				return nil
+			}
+			return errors.New("requires a subcommand")
+		},
 	}
+	root.Flags().BoolP("version", "v", false, "Print applet CLI version")
 
 	root.AddCommand(NewVersionCommand())
 	root.AddCommand(NewCompletionCommand())
