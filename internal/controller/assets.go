@@ -37,10 +37,6 @@ func (c *Controller) initAssets() error {
 		if dev.ClientModule == "" {
 			dev.ClientModule = "/@vite/client"
 		}
-		if dev.StripPrefix == nil {
-			v := true
-			dev.StripPrefix = &v
-		}
 		c.devAssets = &dev
 		return nil
 	}
@@ -82,20 +78,10 @@ func (c *Controller) registerDevProxy(router *mux.Router, fullAssetsPath string,
 		w.WriteHeader(http.StatusBadGateway)
 	}
 	origDirector := proxy.Director
+	// Forward the full path (including the assets prefix) to Vite.
+	// Vite's `base` is set to the full prefix, so it expects the complete path.
 	proxy.Director = func(req *http.Request) {
 		originalHost := req.Host
-		p := req.URL.Path
-		if dev.StripPrefix == nil || *dev.StripPrefix {
-			p = strings.TrimPrefix(p, fullAssetsPath)
-			if p == "" {
-				p = "/"
-			}
-			if !strings.HasPrefix(p, "/") {
-				p = "/" + p
-			}
-		}
-		req.URL.Path = p
-		req.URL.RawPath = p
 		origDirector(req)
 		if req.Header.Get("X-Forwarded-Host") == "" && originalHost != "" {
 			req.Header.Set("X-Forwarded-Host", originalHost)

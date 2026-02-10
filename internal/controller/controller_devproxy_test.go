@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -20,77 +19,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/text/language"
 )
-
-func ptr(b bool) *bool { return &b }
-
-func TestRegisterDevProxy_StripPrefix(t *testing.T) {
-	t.Parallel()
-
-	basePath := "/bi-chat"
-	assetsPath := "/assets"
-	fullAssetsPath := basePath + assetsPath
-
-	var receivedPath string
-	var mu sync.Mutex
-	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mu.Lock()
-		receivedPath = r.URL.Path
-		mu.Unlock()
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer backend.Close()
-
-	for _, strip := range []*bool{nil, ptr(true), ptr(false)} {
-		name := "StripPrefix_default_true"
-		if strip != nil && !*strip {
-			name = "StripPrefix_false"
-		} else if strip != nil && *strip {
-			name = "StripPrefix_true"
-		}
-		t.Run(name, func(t *testing.T) {
-			mu.Lock()
-			receivedPath = ""
-			mu.Unlock()
-
-			a := &testApplet{
-				name:     "chat",
-				basePath: basePath,
-				config: api.Config{
-					WindowGlobal: "__T__",
-					Shell:        api.ShellConfig{Mode: api.ShellModeStandalone, Title: "t"},
-					Assets: api.AssetConfig{
-						BasePath: assetsPath,
-						Dev: &api.DevAssetConfig{
-							Enabled:     true,
-							TargetURL:   backend.URL,
-							StripPrefix: strip,
-						},
-					},
-				},
-			}
-			c, cErr := New(a, nil, api.DefaultSessionConfig, nil, nil, &testHostServices{})
-			require.NoError(t, cErr)
-			router := mux.NewRouter()
-			c.RegisterRoutes(router)
-
-			req := httptest.NewRequest(http.MethodGet, fullAssetsPath+"/@vite/client", nil)
-			rec := httptest.NewRecorder()
-			router.ServeHTTP(rec, req)
-
-			require.Equal(t, http.StatusOK, rec.Code)
-			mu.Lock()
-			got := receivedPath
-			mu.Unlock()
-
-			expectStrip := strip == nil || (strip != nil && *strip)
-			if expectStrip {
-				require.Equal(t, "/@vite/client", got, "with StripPrefix true, backend should receive path without assets prefix")
-			} else {
-				require.Equal(t, fullAssetsPath+"/@vite/client", got, "with StripPrefix false, backend should receive full path")
-			}
-		})
-	}
-}
 
 func TestRegisterDevProxy_502WhenTargetDown(t *testing.T) {
 	t.Parallel()
@@ -137,11 +65,12 @@ func TestDevProxy_BlackBox_AssetRoutes(t *testing.T) {
 	viteBody := []byte("vite client js")
 	mainBody := []byte("main tsx")
 	vite := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// The proxy always forwards the full path — Vite's base is set to the prefix.
 		switch r.URL.Path {
-		case "/@vite/client":
+		case "/bi-chat/assets/@vite/client":
 			w.Header().Set("Content-Type", "application/javascript")
 			_, _ = w.Write(viteBody)
-		case "/src/main.tsx":
+		case "/bi-chat/assets/src/main.tsx":
 			w.Header().Set("Content-Type", "application/javascript")
 			_, _ = w.Write(mainBody)
 		default:

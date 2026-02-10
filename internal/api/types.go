@@ -96,7 +96,6 @@ type DevAssetConfig struct {
 	TargetURL    string
 	EntryModule  string
 	ClientModule string
-	StripPrefix  *bool
 }
 
 // RPCConfig configures the applet RPC endpoint.
