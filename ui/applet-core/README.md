@@ -2,7 +2,7 @@
 
 Applet Core is now part of the unified package: `@iota-uz/sdk`.
 
-- Docs: `README.MD` and `docs/content/getting-started/npm-package.mdx`
+- Docs: `README.md` and `docs/content/getting-started/npm-package.mdx`
 
 This document is kept only for historical context.
 
