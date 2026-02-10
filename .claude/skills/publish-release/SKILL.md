@@ -3,7 +3,7 @@ name: publish-release
 description: Use when publishing a new version of the applets package (Go module + npm @iota-uz/sdk). Covers version bump, tag, and release workflow.
 ---
 
-# Publish new version (applets)
+# Publish new version
 
 Use this when releasing a new version of this package. Go and npm share the same version (X.Y.Z).
 
@@ -32,6 +32,7 @@ Use this when releasing a new version of this package. Go and npm share the same
 4. **Workflow**  
    `.github/workflows/publish.yml` runs on tag push `v*`. It:
    - Validates tag matches `package.json`
+   - Runs GoReleaser (`.goreleaser.yaml`) to publish Go/CLI artifacts (linux/darwin only)
    - Builds and publishes **@iota-uz/sdk** to npm (requires `NPM_TOKEN` secret)
    - Creates a GitHub release
 

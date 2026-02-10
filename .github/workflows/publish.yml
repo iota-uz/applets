@@ -56,6 +56,20 @@ jobs:
             exit 1
           fi
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.10"
+
+      - name: Run GoReleaser
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "v2"
+          args: release --clean
+
       - name: Publish to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
