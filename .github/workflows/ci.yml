@@ -38,6 +38,7 @@ jobs:
         with:
           node-version: "20"
           cache: "pnpm"
+          cache-dependency-path: applets/pnpm-lock.yaml
 
       - name: Download Go dependencies
         working-directory: applets
