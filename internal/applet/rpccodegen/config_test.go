@@ -91,7 +91,6 @@ func TestReexportContent(t *testing.T) {
 	expected := "// Re-export canonical RPC contract from @iota-uz/sdk package.\n" +
 		"export type { BichatRPC } from '@iota-uz/sdk/bichat'\n"
 	assert.Equal(t, expected, ReexportContent("BichatRPC", "bichat"))
-	assert.Equal(t, expected, BichatReexportContent("BichatRPC"))
 }
 
 func TestSetEnv(t *testing.T) {
