@@ -68,6 +68,9 @@ func hasLocalSDKDependency(webDir string) (bool, error) {
 	packageJSONPath := filepath.Join(webDir, "package.json")
 	data, err := os.ReadFile(packageJSONPath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
 		return false, fmt.Errorf("failed to read applet package.json: %w", err)
 	}
 

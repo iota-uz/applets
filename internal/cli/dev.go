@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -90,7 +91,7 @@ func runDev(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("sdk build failed: %w", err)
 		}
 
-		webDir := applet.Web
+		webDir := filepath.Join(root, applet.Web)
 		if err := devsetup.RefreshAppletDeps(root, webDir); err != nil {
 			return fmt.Errorf("applet dep refresh failed: %w", err)
 		}

@@ -46,7 +46,7 @@ vite_port = 5173
 	require.Contains(t, cfg.Applets, "bichat")
 	bichat := cfg.Applets["bichat"]
 	assert.Equal(t, "/bi-chat", bichat.BasePath)
-	assert.Equal(t, "modules/bichat", bichat.Module)
+	assert.Equal(t, filepath.Join("modules", "bichat"), bichat.Module)
 	assert.Equal(t, filepath.Join("modules", "bichat", "presentation", "web"), bichat.Web)
 	assert.Equal(t, "/src/main.tsx", bichat.Entry)
 	assert.Equal(t, 5173, bichat.Dev.VitePort)
@@ -63,7 +63,7 @@ func TestApplyDefaults(t *testing.T) {
 	ApplyDefaults(cfg)
 
 	app := cfg.Applets["myapp"]
-	assert.Equal(t, "modules/myapp", app.Module)
+	assert.Equal(t, filepath.Join("modules", "myapp"), app.Module)
 	assert.Equal(t, filepath.Join("modules", "myapp", "presentation", "web"), app.Web)
 	assert.Equal(t, "/src/main.tsx", app.Entry)
 	assert.Equal(t, 5173, app.Dev.VitePort)

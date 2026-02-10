@@ -104,7 +104,14 @@ func ApplyDefaults(cfg *ProjectConfig) {
 	if cfg.Dev.BackendPort == 0 {
 		cfg.Dev.BackendPort = 3200
 	}
-	for name, applet := range cfg.Applets {
+	names := make([]string, 0, len(cfg.Applets))
+	for name := range cfg.Applets {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	const baseVitePort = 5173
+	for i, name := range names {
+		applet := cfg.Applets[name]
 		if applet.Module == "" {
 			applet.Module = filepath.Join("modules", name)
 		}
@@ -118,7 +125,7 @@ func ApplyDefaults(cfg *ProjectConfig) {
 			applet.Dev = &AppletDevConfig{}
 		}
 		if applet.Dev.VitePort == 0 {
-			applet.Dev.VitePort = 5173
+			applet.Dev.VitePort = baseVitePort + i
 		}
 		if applet.RPC == nil {
 			applet.RPC = &AppletRPCConfig{}

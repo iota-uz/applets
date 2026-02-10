@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -60,7 +61,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 
 	for _, name := range names {
 		applet := cfg.Applets[name]
-		webDir := applet.Web
+		webDir := filepath.Join(root, applet.Web)
 
 		if err := devsetup.RefreshAppletDeps(root, webDir); err != nil {
 			return fmt.Errorf("applet %s dep refresh failed: %w", name, err)
