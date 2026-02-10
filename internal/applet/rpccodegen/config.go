@@ -88,12 +88,6 @@ func ReexportContent(typeName, appletName string) string {
 	return fmt.Sprintf("// Re-export canonical RPC contract from @iota-uz/sdk package.\nexport type { %s } from '@iota-uz/sdk/%s'\n", typeName, appletName)
 }
 
-// BichatReexportContent returns the TypeScript content for the bichat module re-export shim.
-// Deprecated: use ReexportContent(typeName, "bichat") instead.
-func BichatReexportContent(typeName string) string {
-	return ReexportContent(typeName, "bichat")
-}
-
 // SetEnv returns a copy of base (or os.Environ() if nil) with key=value, replacing existing key if present.
 func SetEnv(base []string, key, value string) []string {
 	env := base
@@ -126,33 +120,6 @@ func IsDir(path string) bool {
 		return false
 	}
 	return info.IsDir()
-}
-
-// FindProjectRoot walks up from the current working directory until it finds go.mod for a known applet host (iota-sdk or eai).
-// Deprecated: use config.FindRoot() instead, which tries .applets/config.toml first then falls back to go.mod.
-func FindProjectRoot() (string, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-
-	dir := cwd
-	for {
-		modPath := filepath.Join(dir, "go.mod")
-		data, readErr := os.ReadFile(modPath)
-		if readErr == nil {
-			s := string(data)
-			if strings.Contains(s, "module github.com/iota-uz/iota-sdk") || strings.Contains(s, "module github.com/iota-uz/eai") {
-				return dir, nil
-			}
-		}
-
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			return "", fmt.Errorf("could not find project root (go.mod for github.com/iota-uz/iota-sdk or github.com/iota-uz/eai)")
-		}
-		dir = parent
-	}
 }
 
 // EnsureParentDir returns an error if the parent directory of root/relPath does not exist.

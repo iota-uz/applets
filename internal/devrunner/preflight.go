@@ -71,9 +71,6 @@ func PreflightNode(ctx context.Context, requiredMajor int) error {
 	// v is like "v20.10.0" or "v18.19.0"
 	v = strings.TrimPrefix(v, "v")
 	parts := strings.Split(v, ".")
-	if len(parts) == 0 {
-		return fmt.Errorf("could not parse node version %q", string(out))
-	}
 	major, err := strconv.Atoi(parts[0])
 	if err != nil {
 		return fmt.Errorf("could not parse node major version %q: %w", parts[0], err)
