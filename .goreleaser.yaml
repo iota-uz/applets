@@ -9,7 +9,6 @@ builds:
     goos:
       - linux
       - darwin
-      - windows
     goarch:
       - amd64
       - arm64
@@ -20,10 +19,8 @@ builds:
 
 archives:
   - id: default
-    format: tar.gz
-    format_overrides:
-      - goos: windows
-        format: zip
+    formats:
+      - tar.gz
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
 
 checksum:
