@@ -157,14 +157,21 @@ func runAppletRPCCheck(name, routerFunc *string) func(*cobra.Command, []string) 
 		if err != nil {
 			return err
 		}
-		tmpBytes, err := os.ReadFile(tmpPath)
-		if err != nil {
-			return err
+		// When TargetOut == ModuleOut and applet is bichat, the repo stores only the re-export shim (gen overwrites with BichatReexportContent).
+		var expectedBytes []byte
+		if cfg.Name == "bichat" && cfg.TargetOut == cfg.ModuleOut {
+			expectedBytes = []byte(rpccodegen.BichatReexportContent(cfg.TypeName))
+		} else {
+			tmpBytes, err := os.ReadFile(tmpPath)
+			if err != nil {
+				return err
+			}
+			expectedBytes = tmpBytes
 		}
-		if !bytes.Equal(targetBytes, tmpBytes) {
+		if !bytes.Equal(targetBytes, expectedBytes) {
 			return errors.New("RPC contract drift detected for applet: " + cfg.Name + "\nRun: applet rpc gen --name " + cfg.Name)
 		}
-		if cfg.Name == "bichat" {
+		if cfg.Name == "bichat" && cfg.TargetOut != cfg.ModuleOut {
 			moduleAbs := filepath.Join(root, cfg.ModuleOut)
 			if _, err := os.Stat(moduleAbs); err == nil {
 				actual, readErr := os.ReadFile(moduleAbs)
