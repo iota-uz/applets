@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,20 +21,16 @@ type SetupResult struct {
 
 // SetupApplet prepares environment variables, writes applet-dev.json, and returns
 // the process specs needed to run a single applet in dev mode.
-// ctx allows the caller to cancel the root pnpm install if run.
-func SetupApplet(ctx context.Context, root, name string, applet *config.AppletConfig, backendPort string) (*SetupResult, error) {
+func SetupApplet(root, name string, applet *config.AppletConfig, backendPort string) (*SetupResult, error) {
 	webDir := filepath.Join(root, applet.Web)
 	if _, err := os.Stat(webDir); err != nil {
-		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("web directory not found: %s", webDir)
-		}
-		return nil, fmt.Errorf("web directory %s: %w", webDir, err)
+		return nil, fmt.Errorf("web directory not found: %s", webDir)
 	}
 
 	// Install root node_modules if missing
 	if _, err := os.Stat(filepath.Join(root, "node_modules")); err != nil {
 		log.Println("Installing root dependencies...")
-		if err := RunCommand(ctx, root, "pnpm", "install", "--prefer-frozen-lockfile"); err != nil {
+		if err := RunCommand(context.Background(), root, "pnpm", "install", "--prefer-frozen-lockfile"); err != nil {
 			return nil, fmt.Errorf("failed to install root deps: %w", err)
 		}
 	}
@@ -78,16 +73,13 @@ func SetupApplet(ctx context.Context, root, name string, applet *config.AppletCo
 
 	var processes []devrunner.ProcessSpec
 
-	// Shallow-copy env per process so mutations in one don't affect others.
-	copyEnv := func() map[string]string { return maps.Clone(envVars) }
-
 	// SDK watch: only if tsup.dev.config.ts exists (i.e. running from a repo that ships @iota-uz/sdk source)
 	if _, err := os.Stat(filepath.Join(root, "tsup.dev.config.ts")); err == nil {
 		processes = append(processes, devrunner.ProcessSpec{
 			Name: "sdk", Command: "pnpm",
 			Args: []string{"exec", "tsup", "--config", "tsup.dev.config.ts", "--watch"},
 			Dir:  root, Color: devrunner.ColorBlue, Critical: false,
-			Env: copyEnv(),
+			Env: envVars,
 		})
 	}
 
@@ -98,7 +90,7 @@ func SetupApplet(ctx context.Context, root, name string, applet *config.AppletCo
 			Args: []string{"-C", webDir, "exec", "tailwindcss",
 				"-i", "src/index.css", "-o", "dist/style.css", "--watch"},
 			Dir: root, Color: devrunner.ColorMagenta, Critical: false,
-			Env: copyEnv(),
+			Env: envVars,
 		})
 	}
 
@@ -107,7 +99,7 @@ func SetupApplet(ctx context.Context, root, name string, applet *config.AppletCo
 		Name: "vite", Command: "pnpm",
 		Args: []string{"-C", webDir, "exec", "vite"},
 		Dir:  root, Color: devrunner.ColorGreen, Critical: true,
-		Env: copyEnv(),
+		Env: envVars,
 	})
 
 	return &SetupResult{

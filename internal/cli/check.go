@@ -57,6 +57,9 @@ func runCheck(cmd *cobra.Command, _ []string) error {
 	for _, name := range cfg.AppletNames() {
 		applet := cfg.Applets[name]
 		routerFunc := applet.RPC.RouterFunc
+		if routerFunc == "" {
+			routerFunc = "Router"
+		}
 
 		rpcCfg, err := rpccodegen.BuildRPCConfig(root, name, routerFunc)
 		if err != nil {
@@ -64,7 +67,8 @@ func runCheck(cmd *cobra.Command, _ []string) error {
 			continue
 		}
 
-		if err := checkRPCDrift(root, name, rpcCfg); err != nil {
+		needsReexportShim := applet.RPC != nil && applet.RPC.NeedsReexportShim
+		if err := checkRPCDrift(root, name, rpcCfg, needsReexportShim); err != nil {
 			cmd.PrintErrln(err)
 			failed = true
 		} else {
@@ -81,7 +85,7 @@ func runCheck(cmd *cobra.Command, _ []string) error {
 }
 
 // checkRPCDrift checks if the generated RPC contract matches what would be generated.
-func checkRPCDrift(root, name string, cfg rpccodegen.Config) error {
+func checkRPCDrift(root, name string, cfg rpccodegen.Config, needsReexportShim bool) error {
 	targetAbs := filepath.Join(root, cfg.TargetOut)
 	if _, err := os.Stat(targetAbs); err != nil {
 		if os.IsNotExist(err) {
@@ -110,8 +114,8 @@ func checkRPCDrift(root, name string, cfg rpccodegen.Config) error {
 	}
 
 	var expectedBytes []byte
-	if cfg.Name == "bichat" && cfg.TargetOut == cfg.ModuleOut {
-		expectedBytes = []byte(rpccodegen.BichatReexportContent(cfg.TypeName))
+	if needsReexportShim && cfg.TargetOut == cfg.ModuleOut {
+		expectedBytes = []byte(rpccodegen.ReexportContent(cfg.TypeName, name))
 	} else {
 		tmpBytes, readErr := os.ReadFile(tmpPath)
 		if readErr != nil {
@@ -124,16 +128,16 @@ func checkRPCDrift(root, name string, cfg rpccodegen.Config) error {
 		return fmt.Errorf("RPC contract drift detected for applet: %s\nRun: applet rpc gen --name %s", name, name)
 	}
 
-	if cfg.Name == "bichat" && cfg.TargetOut != cfg.ModuleOut {
+	if needsReexportShim && cfg.TargetOut != cfg.ModuleOut {
 		moduleAbs := filepath.Join(root, cfg.ModuleOut)
 		if _, err := os.Stat(moduleAbs); err == nil {
 			actual, readErr := os.ReadFile(moduleAbs)
 			if readErr != nil {
 				return readErr
 			}
-			expected := rpccodegen.BichatReexportContent(cfg.TypeName)
+			expected := rpccodegen.ReexportContent(cfg.TypeName, name)
 			if string(actual) != expected {
-				return fmt.Errorf("BiChat module rpc.generated.ts must be a re-export shim.\nRun: applet rpc gen --name %s", name)
+				return fmt.Errorf("applet %s module rpc.generated.ts must be a re-export shim.\nRun: applet rpc gen --name %s", name, name)
 			}
 		} else if !os.IsNotExist(err) {
 			return err

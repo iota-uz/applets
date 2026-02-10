@@ -15,8 +15,7 @@ import (
 // BuildSDKIfNeeded checks whether ui/src/ exists in root (auto-detect: only applicable
 // when running from a repo that ships @iota-uz/sdk source, e.g. iota-sdk or applets).
 // If the SDK dist is stale or missing, it runs `pnpm run build:js:dev`.
-// ctx allows the caller to cancel the build (e.g. on OS signal).
-func BuildSDKIfNeeded(ctx context.Context, root string) error {
+func BuildSDKIfNeeded(root string) error {
 	uiSrc := filepath.Join(root, "ui", "src")
 	if _, err := os.Stat(uiSrc); err != nil {
 		if os.IsNotExist(err) {
@@ -25,8 +24,8 @@ func BuildSDKIfNeeded(ctx context.Context, root string) error {
 		return fmt.Errorf("stat ui/src: %w", err)
 	}
 
-	distIndex := filepath.Join(root, "dist", "index.mjs")
-	hashFile := filepath.Join(root, "dist", ".sdk-build-hash")
+	distIndex := filepath.Join(root, "dist/index.mjs")
+	hashFile := filepath.Join(root, "dist/.sdk-build-hash")
 
 	needsBuild := false
 	if _, err := os.Stat(distIndex); err != nil {
@@ -44,7 +43,7 @@ func BuildSDKIfNeeded(ctx context.Context, root string) error {
 
 	if needsBuild {
 		log.Println("Building @iota-uz/sdk (tsup, dev mode)...")
-		if err := RunCommand(ctx, root, "pnpm", "run", "build:js:dev"); err != nil {
+		if err := RunCommand(context.Background(), root, "pnpm", "run", "build:js:dev"); err != nil {
 			return err
 		}
 
@@ -66,7 +65,7 @@ func BuildSDKIfNeeded(ctx context.Context, root string) error {
 
 // computeSDKHash computes a SHA-256 hash over all .ts/.tsx/.css files in ui/src/ plus build config files.
 func computeSDKHash(root string) (string, error) {
-	uiSrc := filepath.Join(root, "ui", "src")
+	uiSrc := filepath.Join(root, "ui/src")
 	var files []string
 
 	err := filepath.WalkDir(uiSrc, func(path string, d fs.DirEntry, err error) error {
@@ -87,8 +86,11 @@ func computeSDKHash(root string) (string, error) {
 
 	for _, name := range []string{"tsup.config.ts", "tsup.dev.config.ts"} {
 		p := filepath.Join(root, name)
-		if _, err := os.Stat(p); err == nil {
+		_, err := os.Stat(p)
+		if err == nil {
 			files = append(files, p)
+		} else if !os.IsNotExist(err) {
+			return "", fmt.Errorf("stat %s: %w", p, err)
 		}
 	}
 
@@ -96,10 +98,7 @@ func computeSDKHash(root string) (string, error) {
 
 	hasher := sha256.New()
 	for _, file := range files {
-		relPath, err := filepath.Rel(root, file)
-		if err != nil {
-			return "", fmt.Errorf("relative path for %s: %w", file, err)
-		}
+		relPath, _ := filepath.Rel(root, file)
 		hasher.Write([]byte(relPath))
 
 		content, err := os.ReadFile(file)

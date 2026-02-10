@@ -82,9 +82,15 @@ func BuildRPCConfig(root, name, routerFunc string) (Config, error) {
 	}, nil
 }
 
+// ReexportContent returns the TypeScript content for an applet module re-export shim.
+func ReexportContent(typeName, appletName string) string {
+	return fmt.Sprintf("// Re-export canonical RPC contract from @iota-uz/sdk package.\nexport type { %s } from '@iota-uz/sdk/%s'\n", typeName, appletName)
+}
+
 // BichatReexportContent returns the TypeScript content for the bichat module re-export shim.
+// Deprecated: use ReexportContent(typeName, "bichat") instead.
 func BichatReexportContent(typeName string) string {
-	return fmt.Sprintf("// Re-export canonical RPC contract from @iota-uz/sdk package.\nexport type { %s } from '@iota-uz/sdk/bichat'\n", typeName)
+	return ReexportContent(typeName, "bichat")
 }
 
 // SetEnv returns a copy of base (or os.Environ() if nil) with key=value, replacing existing key if present.

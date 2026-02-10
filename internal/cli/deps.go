@@ -37,6 +37,9 @@ func runDepsCheck(cmd *cobra.Command, _ []string) error {
 	// .applets/config.toml yet can still use `applet deps check`.
 	root, err := config.FindRoot()
 	if err != nil {
+		if !errors.Is(err, config.ErrConfigNotFound) {
+			return err
+		}
 		root, err = rpccodegen.FindProjectRoot()
 		if err != nil {
 			return err

@@ -2,10 +2,11 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
+	"sort"
 
 	"github.com/BurntSushi/toml"
 )
@@ -48,14 +49,19 @@ type AppletDevConfig struct {
 
 // AppletRPCConfig holds applet-specific RPC codegen settings.
 type AppletRPCConfig struct {
-	RouterFunc string `toml:"router_func"`
+	RouterFunc        string `toml:"router_func"`
+	NeedsReexportShim bool   `toml:"needs_reexport_shim"`
 }
 
 const configDir = ".applets"
 const configFile = "config.toml"
 
+// ErrConfigNotFound is returned by FindRoot when .applets/config.toml is not found.
+var ErrConfigNotFound = errors.New("could not find .applets/config.toml")
+
 // FindRoot walks up from the current working directory looking for .applets/config.toml.
 // Returns the project root (the directory containing .applets/).
+// Use errors.Is(err, ErrConfigNotFound) to detect "not found" vs other errors (e.g. permission denied).
 func FindRoot() (string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -65,13 +71,17 @@ func FindRoot() (string, error) {
 	dir := cwd
 	for {
 		candidate := filepath.Join(dir, configDir, configFile)
-		if _, err := os.Stat(candidate); err == nil {
+		_, err := os.Stat(candidate)
+		if err == nil {
 			return dir, nil
+		}
+		if err != nil && !os.IsNotExist(err) {
+			return "", fmt.Errorf("stat %s: %w", candidate, err)
 		}
 
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			return "", fmt.Errorf("could not find %s/%s (walked up from %s)", configDir, configFile, cwd)
+			return "", fmt.Errorf("%w (walked up from %s)", ErrConfigNotFound, cwd)
 		}
 		dir = parent
 	}
@@ -104,14 +114,7 @@ func ApplyDefaults(cfg *ProjectConfig) {
 	if cfg.Dev.BackendPort == 0 {
 		cfg.Dev.BackendPort = 3200
 	}
-	names := make([]string, 0, len(cfg.Applets))
-	for name := range cfg.Applets {
-		names = append(names, name)
-	}
-	slices.Sort(names)
-	const baseVitePort = 5173
-	for i, name := range names {
-		applet := cfg.Applets[name]
+	for name, applet := range cfg.Applets {
 		if applet.Module == "" {
 			applet.Module = filepath.Join("modules", name)
 		}
@@ -125,7 +128,7 @@ func ApplyDefaults(cfg *ProjectConfig) {
 			applet.Dev = &AppletDevConfig{}
 		}
 		if applet.Dev.VitePort == 0 {
-			applet.Dev.VitePort = baseVitePort + i
+			applet.Dev.VitePort = 5173
 		}
 		if applet.RPC == nil {
 			applet.RPC = &AppletRPCConfig{}
@@ -148,8 +151,7 @@ func Validate(cfg *ProjectConfig) error {
 	}
 
 	usedPorts := make(map[int]string)
-	for _, name := range cfg.AppletNames() {
-		applet := cfg.Applets[name]
+	for name, applet := range cfg.Applets {
 		if applet.BasePath == "" {
 			return fmt.Errorf("applets.%s: base_path is required", name)
 		}
@@ -170,7 +172,7 @@ func (c *ProjectConfig) AppletNames() []string {
 	for name := range c.Applets {
 		names = append(names, name)
 	}
-	slices.Sort(names)
+	sort.Strings(names)
 	return names
 }
 

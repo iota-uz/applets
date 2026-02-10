@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -86,21 +86,21 @@ func runDev(cmd *cobra.Command, args []string) error {
 	if appletName != "" {
 		applet := cfg.Applets[appletName]
 
-		if err := devsetup.BuildSDKIfNeeded(cmd.Context(), root); err != nil {
+		if err := devsetup.BuildSDKIfNeeded(root); err != nil {
 			return fmt.Errorf("sdk build failed: %w", err)
 		}
 
-		webDir := filepath.Join(root, applet.Web)
-		if err := devsetup.RefreshAppletDeps(cmd.Context(), root, webDir); err != nil {
+		webDir := applet.Web
+		if err := devsetup.RefreshAppletDeps(root, webDir); err != nil {
 			return fmt.Errorf("applet dep refresh failed: %w", err)
 		}
 
-		if err := devsetup.CheckPort(cmd.Context(), applet.Dev.VitePort, "Vite"); err != nil {
+		if err := devsetup.CheckPort(context.Background(), applet.Dev.VitePort, "Vite"); err != nil {
 			return err
 		}
 
 		backendPort := devsetup.GetEnvOrDefault("IOTA_PORT", devsetup.GetEnvOrDefault("PORT", fmt.Sprintf("%d", cfg.Dev.BackendPort)))
-		result, err := devsetup.SetupApplet(cmd.Context(), root, appletName, applet, backendPort)
+		result, err := devsetup.SetupApplet(root, appletName, applet, backendPort)
 		if err != nil {
 			return err
 		}
@@ -141,7 +141,7 @@ func runDev(cmd *cobra.Command, args []string) error {
 		return runErr
 	}
 	if exitCode != 0 {
-		return NewExitError(exitCode, nil)
+		os.Exit(exitCode)
 	}
 	return nil
 }

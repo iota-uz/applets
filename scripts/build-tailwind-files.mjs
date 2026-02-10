@@ -50,5 +50,9 @@ const compiled = spawnSync(
 );
 
 if (compiled.status !== 0) {
-  throw new Error(`tailwindcss compilation failed with exit code ${compiled.status}`);
+  const msg =
+    compiled.error != null
+      ? String(compiled.error)
+      : `tailwindcss compilation failed with exit code ${compiled.status ?? "unknown"}`;
+  throw new Error(msg);
 }

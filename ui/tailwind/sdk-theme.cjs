@@ -38,7 +38,6 @@ module.exports = {
     100: "oklch(var(--clr-text-100))",
     200: "oklch(var(--clr-text-200))",
     300: "oklch(var(--clr-text-300))",
-    green: "oklch(var(--clr-text-green))",
     pink: "oklch(var(--clr-text-pink))",
     yellow: "oklch(var(--clr-text-yellow))",
     blue: "oklch(var(--clr-text-blue))",
@@ -67,6 +66,7 @@ module.exports = {
       950: "oklch(var(--gray-950) / <alpha-value>)",
     },
     green: {
+      DEFAULT: "oklch(var(--clr-text-green))",
       50: "oklch(var(--green-50) / <alpha-value>)",
       100: "oklch(var(--green-100) / <alpha-value>)",
       200: "oklch(var(--green-200) / <alpha-value>)",
