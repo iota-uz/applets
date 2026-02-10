@@ -2,7 +2,7 @@
  * Builds tailwind/ from local source in this repo (no copy from node_modules).
  * Produces: tailwind/iota.css, main.css, sdk-theme.cjs, create-config.cjs, compiled.css.
  */
-import { cp, mkdir, writeFile } from "node:fs/promises";
+import { access, cp, mkdir, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -10,6 +10,24 @@ import { fileURLToPath } from "node:url";
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
 const outDir = path.join(repoRoot, "tailwind");
+
+const requiredInputs = [
+  ["styles", "tailwind", "iota.css"],
+  ["ui", "tailwind", "sdk-theme.cjs"],
+  ["ui", "tailwind", "create-config.cjs"],
+  ["styles", "tailwind", "input.css"],
+];
+for (const parts of requiredInputs) {
+  const p = path.join(repoRoot, ...parts);
+  try {
+    await access(p);
+  } catch (err) {
+    if (err.code === "ENOENT") {
+      throw new Error(`Required file not found: ${path.relative(repoRoot, p)}\n  at ${p}`);
+    }
+    throw err;
+  }
+}
 
 await mkdir(outDir, { recursive: true });
 

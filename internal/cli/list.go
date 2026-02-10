@@ -23,12 +23,7 @@ func NewListCommand() *cobra.Command {
 }
 
 func runList(cmd *cobra.Command, _ []string) error {
-	root, err := config.FindRoot()
-	if err != nil {
-		return err
-	}
-
-	cfg, err := config.Load(root)
+	_, cfg, err := config.LoadFromCWD()
 	if err != nil {
 		return err
 	}

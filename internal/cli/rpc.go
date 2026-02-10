@@ -1,10 +1,8 @@
 package cli
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -12,14 +10,53 @@ import (
 	"github.com/iota-uz/applets/internal/applet/rpccodegen"
 )
 
-// NewRPCCommand returns the `applet rpc` subcommand (gen, etc.).
+// NewRPCCommand returns the `applet rpc` subcommand (gen, check, etc.).
 func NewRPCCommand() *cobra.Command {
 	rpcCmd := &cobra.Command{
 		Use:   "rpc",
 		Short: "RPC contract codegen",
 	}
 	rpcCmd.AddCommand(NewRPCGenCommand())
+	rpcCmd.AddCommand(NewRPCCheckCommand())
 	return rpcCmd
+}
+
+// NewRPCCheckCommand returns the `applet rpc check` subcommand.
+func NewRPCCheckCommand() *cobra.Command {
+	var name string
+	cmd := &cobra.Command{
+		Use:   "check",
+		Short: "Verify RPC contract is up to date for an applet",
+		Long:  `Exits with an error if the on-disk rpc.generated.ts does not match what would be generated from the Go router. Use "applet rpc gen --name <name>" to fix.`,
+		Example: `  applet rpc check --name bichat`,
+		Args:    cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := rpccodegen.ValidateAppletName(name); err != nil {
+				return err
+			}
+			root, cfg, err := config.LoadFromCWD()
+			if err != nil {
+				return err
+			}
+			applet, err := config.ResolveApplet(cfg, name)
+			if err != nil {
+				return err
+			}
+			rpcCfg, err := rpccodegen.BuildRPCConfig(root, name, applet.RPC.RouterFunc)
+			if err != nil {
+				return err
+			}
+			needsReexportShim := applet.RPC != nil && applet.RPC.NeedsReexportShim
+			if err := rpccodegen.CheckDrift(root, name, rpcCfg, needsReexportShim); err != nil {
+				return err
+			}
+			cmd.Println("RPC contract is up to date:", name)
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&name, "name", "", "Applet name (required)")
+	_ = cmd.MarkFlagRequired("name")
+	return cmd
 }
 
 // NewRPCGenCommand returns the `applet rpc gen` subcommand.
@@ -35,23 +72,15 @@ func NewRPCGenCommand() *cobra.Command {
 			if err := rpccodegen.ValidateAppletName(name); err != nil {
 				return err
 			}
-			root, err := config.FindRoot()
+			root, cfg, err := config.LoadFromCWD()
 			if err != nil {
 				return err
 			}
-			cfg, err := config.Load(root)
+			applet, err := config.ResolveApplet(cfg, name)
 			if err != nil {
 				return err
 			}
-			applet, ok := cfg.Applets[name]
-			if !ok {
-				return fmt.Errorf("unknown applet %q (available: %s)", name, strings.Join(cfg.AppletNames(), ", "))
-			}
-			routerFunc := applet.RPC.RouterFunc
-			if routerFunc == "" {
-				routerFunc = "Router"
-			}
-			rpcCfg, err := rpccodegen.BuildRPCConfig(root, name, routerFunc)
+			rpcCfg, err := rpccodegen.BuildRPCConfig(root, name, applet.RPC.RouterFunc)
 			if err != nil {
 				return err
 			}

@@ -7,8 +7,15 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/BurntSushi/toml"
+)
+
+// Canonical default values for applet config.
+const (
+	DefaultRouterFunc   = "Router"
+	DefaultViteBasePort = 5173
 )
 
 // ProjectConfig is the top-level config from .applets/config.toml.
@@ -56,18 +63,27 @@ type AppletRPCConfig struct {
 const configDir = ".applets"
 const configFile = "config.toml"
 
-// ErrConfigNotFound is returned by FindRoot when .applets/config.toml is not found.
-var ErrConfigNotFound = errors.New("could not find .applets/config.toml")
+// ErrConfigNotFound is returned when neither .applets/config.toml nor a known go.mod project root was found.
+var ErrConfigNotFound = errors.New("could not find .applets/config.toml or project root (go.mod for github.com/iota-uz/iota-sdk or github.com/iota-uz/eai)")
 
-// FindRoot walks up from the current working directory looking for .applets/config.toml.
-// Returns the project root (the directory containing .applets/).
-// Use errors.Is(err, ErrConfigNotFound) to detect "not found" vs other errors (e.g. permission denied).
+// FindRoot returns the project root: first tries .applets/config.toml walking up from cwd,
+// then falls back to a directory containing go.mod for a known applet host (iota-sdk or eai).
 func FindRoot() (string, error) {
+	root, err := findRootAppletsConfig()
+	if err == nil {
+		return root, nil
+	}
+	if !errors.Is(err, ErrConfigNotFound) {
+		return "", err
+	}
+	return findRootGoMod()
+}
+
+func findRootAppletsConfig() (string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return "", err
 	}
-
 	dir := cwd
 	for {
 		candidate := filepath.Join(dir, configDir, configFile)
@@ -78,13 +94,57 @@ func FindRoot() (string, error) {
 		if err != nil && !os.IsNotExist(err) {
 			return "", fmt.Errorf("stat %s: %w", candidate, err)
 		}
-
 		parent := filepath.Dir(dir)
 		if parent == dir {
 			return "", fmt.Errorf("%w (walked up from %s)", ErrConfigNotFound, cwd)
 		}
 		dir = parent
 	}
+}
+
+func findRootGoMod() (string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	dir := cwd
+	for {
+		modPath := filepath.Join(dir, "go.mod")
+		data, readErr := os.ReadFile(modPath)
+		if readErr == nil {
+			s := string(data)
+			if strings.Contains(s, "module github.com/iota-uz/iota-sdk") || strings.Contains(s, "module github.com/iota-uz/eai") {
+				return dir, nil
+			}
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", ErrConfigNotFound
+		}
+		dir = parent
+	}
+}
+
+// LoadFromCWD discovers the project root (FindRoot), loads .applets/config.toml, applies defaults, and validates.
+// Use this as the single entrypoint for commands that need both root and config.
+func LoadFromCWD() (root string, cfg *ProjectConfig, err error) {
+	root, err = FindRoot()
+	if err != nil {
+		return "", nil, err
+	}
+	cfg, err = Load(root)
+	if err != nil {
+		return "", nil, err
+	}
+	return root, cfg, nil
+}
+
+// ResolveApplet returns the applet config for name or a consistent error listing available applets.
+func ResolveApplet(cfg *ProjectConfig, name string) (*AppletConfig, error) {
+	if a, ok := cfg.Applets[name]; ok {
+		return a, nil
+	}
+	return nil, fmt.Errorf("unknown applet %q (available: %s)", name, strings.Join(cfg.AppletNames(), ", "))
 }
 
 // Load parses .applets/config.toml from the given root, applies defaults, and validates.
@@ -110,11 +170,18 @@ func Load(root string) (*ProjectConfig, error) {
 }
 
 // ApplyDefaults fills convention-derived fields for each applet.
+// Applets with vite_port unset get a unique default (DefaultViteBasePort + index) to avoid port conflicts.
 func ApplyDefaults(cfg *ProjectConfig) {
 	if cfg.Dev.BackendPort == 0 {
 		cfg.Dev.BackendPort = 3200
 	}
-	for name, applet := range cfg.Applets {
+	names := make([]string, 0, len(cfg.Applets))
+	for name := range cfg.Applets {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for i, name := range names {
+		applet := cfg.Applets[name]
 		if applet.Module == "" {
 			applet.Module = filepath.Join("modules", name)
 		}
@@ -128,18 +195,19 @@ func ApplyDefaults(cfg *ProjectConfig) {
 			applet.Dev = &AppletDevConfig{}
 		}
 		if applet.Dev.VitePort == 0 {
-			applet.Dev.VitePort = 5173
+			applet.Dev.VitePort = DefaultViteBasePort + i
 		}
 		if applet.RPC == nil {
 			applet.RPC = &AppletRPCConfig{}
 		}
 		if applet.RPC.RouterFunc == "" {
-			applet.RPC.RouterFunc = "Router"
+			applet.RPC.RouterFunc = DefaultRouterFunc
 		}
 	}
 }
 
 // Validate checks required fields, unique ports, and non-empty process names.
+// Iteration over applets uses sorted names for deterministic error messages.
 func Validate(cfg *ProjectConfig) error {
 	for i, p := range cfg.Dev.Processes {
 		if p.Name == "" {
@@ -151,7 +219,8 @@ func Validate(cfg *ProjectConfig) error {
 	}
 
 	usedPorts := make(map[int]string)
-	for name, applet := range cfg.Applets {
+	for _, name := range cfg.AppletNames() {
+		applet := cfg.Applets[name]
 		if applet.BasePath == "" {
 			return fmt.Errorf("applets.%s: base_path is required", name)
 		}

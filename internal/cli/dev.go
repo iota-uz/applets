@@ -33,12 +33,7 @@ With a name, also starts the applet's Vite dev server, SDK watcher, and applet C
 }
 
 func runDev(cmd *cobra.Command, args []string) error {
-	root, err := config.FindRoot()
-	if err != nil {
-		return err
-	}
-
-	cfg, err := config.Load(root)
+	root, cfg, err := config.LoadFromCWD()
 	if err != nil {
 		return err
 	}
@@ -47,12 +42,9 @@ func runDev(cmd *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		appletName = args[0]
 	}
-
-	// Validate applet exists in config
 	if appletName != "" {
-		if _, ok := cfg.Applets[appletName]; !ok {
-			names := cfg.AppletNames()
-			return fmt.Errorf("unknown applet %q (available: %s)", appletName, strings.Join(names, ", "))
+		if _, err := config.ResolveApplet(cfg, appletName); err != nil {
+			return err
 		}
 	}
 
@@ -86,21 +78,21 @@ func runDev(cmd *cobra.Command, args []string) error {
 	if appletName != "" {
 		applet := cfg.Applets[appletName]
 
-		if err := devsetup.BuildSDKIfNeeded(root); err != nil {
+		if err := devsetup.BuildSDKIfNeeded(cmd.Context(), root); err != nil {
 			return fmt.Errorf("sdk build failed: %w", err)
 		}
 
 		webDir := applet.Web
-		if err := devsetup.RefreshAppletDeps(root, webDir); err != nil {
+		if err := devsetup.RefreshAppletDeps(cmd.Context(), root, webDir); err != nil {
 			return fmt.Errorf("applet dep refresh failed: %w", err)
 		}
 
-		if err := devsetup.CheckPort(context.Background(), applet.Dev.VitePort, "Vite"); err != nil {
+		if err := devsetup.CheckPort(cmd.Context(), applet.Dev.VitePort, "Vite"); err != nil {
 			return err
 		}
 
 		backendPort := devsetup.GetEnvOrDefault("IOTA_PORT", devsetup.GetEnvOrDefault("PORT", fmt.Sprintf("%d", cfg.Dev.BackendPort)))
-		result, err := devsetup.SetupApplet(root, appletName, applet, backendPort)
+		result, err := devsetup.SetupApplet(cmd.Context(), root, appletName, applet, backendPort)
 		if err != nil {
 			return err
 		}

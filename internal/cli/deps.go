@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/iota-uz/applets/internal/applet/depscheck"
-	"github.com/iota-uz/applets/internal/applet/rpccodegen"
 	"github.com/iota-uz/applets/internal/config"
 )
 
@@ -32,18 +31,9 @@ func NewDepsCommand() *cobra.Command {
 }
 
 func runDepsCheck(cmd *cobra.Command, _ []string) error {
-	// Try .applets/config.toml first, then fall back to go.mod-based root discovery.
-	// The fallback is intentional for backward compatibility: repos that haven't adopted
-	// .applets/config.toml yet can still use `applet deps check`.
 	root, err := config.FindRoot()
 	if err != nil {
-		if !errors.Is(err, config.ErrConfigNotFound) {
-			return err
-		}
-		root, err = rpccodegen.FindProjectRoot()
-		if err != nil {
-			return err
-		}
+		return err
 	}
 
 	violations, found, err := depscheck.Check(root)

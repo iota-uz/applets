@@ -91,16 +91,10 @@ func Run(ctx context.Context, cancel context.CancelFunc, specs []ProcessSpec, op
 			if err := PreflightNode(ctx, nodeMajor); err != nil {
 				return 1, &PreflightError{Err: err}
 			}
-			if out, err := exec.CommandContext(ctx, "node", "-v").Output(); err == nil {
-				log.Printf("Node %s", strings.TrimSpace(string(out)))
-			}
 		}
 		if opts.PreflightPnpm {
 			if err := PreflightPnpm(ctx); err != nil {
 				return 1, &PreflightError{Err: err}
-			}
-			if out, err := exec.CommandContext(ctx, "pnpm", "-v").Output(); err == nil {
-				log.Printf("pnpm %s", strings.TrimSpace(string(out)))
 			}
 		}
 		if opts.PreflightDeps && opts.ProjectRoot != "" {
@@ -267,6 +261,7 @@ func (m *managedProcess) runCritical(ctx context.Context, exitCh chan<- string) 
 			outputMu.Unlock()
 			continue
 		default:
+			// Any non-restarted exit of a critical process is treated as fatal and triggers full shutdown.
 			exitCh <- m.spec.Name
 			return
 		}
@@ -366,8 +361,14 @@ func startProcess(ctx context.Context, spec ProcessSpec, padLen int, shutdownTim
 	}
 	cmd.WaitDelay = shutdownTimeout
 
-	stdout, _ := cmd.StdoutPipe()
-	stderr, _ := cmd.StderrPipe()
+	stdout, errOut := cmd.StdoutPipe()
+	if errOut != nil {
+		log.Printf("warning: stdout pipe for %s: %v", spec.Name, errOut)
+	}
+	stderr, errErr := cmd.StderrPipe()
+	if errErr != nil {
+		log.Printf("warning: stderr pipe for %s: %v", spec.Name, errErr)
+	}
 
 	if err := cmd.Start(); err != nil {
 		return nil, err
@@ -375,9 +376,12 @@ func startProcess(ctx context.Context, spec ProcessSpec, padLen int, shutdownTim
 
 	prefix := fmt.Sprintf("[%-*s]", padLen, spec.Name)
 	coloredPrefix := spec.Color + prefix + ColorReset
-
-	go logOutput(stdout, coloredPrefix)
-	go logOutput(stderr, coloredPrefix)
+	if stdout != nil {
+		go logOutput(stdout, coloredPrefix)
+	}
+	if stderr != nil {
+		go logOutput(stderr, coloredPrefix)
+	}
 
 	return cmd, nil
 }

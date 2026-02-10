@@ -20,17 +20,24 @@ type SetupResult struct {
 }
 
 // SetupApplet prepares environment variables, writes applet-dev.json, and returns
-// the process specs needed to run a single applet in dev mode.
-func SetupApplet(root, name string, applet *config.AppletConfig, backendPort string) (*SetupResult, error) {
+// the process specs needed to run a single applet in dev mode. ctx is used for cancellation of installs.
+func SetupApplet(ctx context.Context, root, name string, applet *config.AppletConfig, backendPort string) (*SetupResult, error) {
 	webDir := filepath.Join(root, applet.Web)
-	if _, err := os.Stat(webDir); err != nil {
-		return nil, fmt.Errorf("web directory not found: %s", webDir)
+	stat, err := os.Stat(webDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("web directory not found: %s", webDir)
+		}
+		return nil, fmt.Errorf("web directory: %w", err)
+	}
+	if !stat.IsDir() {
+		return nil, fmt.Errorf("web path is not a directory: %s", webDir)
 	}
 
 	// Install root node_modules if missing
 	if _, err := os.Stat(filepath.Join(root, "node_modules")); err != nil {
 		log.Println("Installing root dependencies...")
-		if err := RunCommand(context.Background(), root, "pnpm", "install", "--prefer-frozen-lockfile"); err != nil {
+		if err := RunCommand(ctx, root, "pnpm", "install", "--prefer-frozen-lockfile"); err != nil {
 			return nil, fmt.Errorf("failed to install root deps: %w", err)
 		}
 	}
@@ -71,6 +78,15 @@ func SetupApplet(root, name string, applet *config.AppletConfig, backendPort str
 	log.Printf("Applet: %s\n", name)
 	log.Printf("URL:    http://localhost:%s%s\n", backendPort, applet.BasePath)
 
+	// copyEnv returns a shallow copy so each process has its own map and mutations do not alias.
+	copyEnv := func(m map[string]string) map[string]string {
+		out := make(map[string]string, len(m))
+		for k, v := range m {
+			out[k] = v
+		}
+		return out
+	}
+
 	var processes []devrunner.ProcessSpec
 
 	// SDK watch: only if tsup.dev.config.ts exists (i.e. running from a repo that ships @iota-uz/sdk source)
@@ -79,7 +95,7 @@ func SetupApplet(root, name string, applet *config.AppletConfig, backendPort str
 			Name: "sdk", Command: "pnpm",
 			Args: []string{"exec", "tsup", "--config", "tsup.dev.config.ts", "--watch"},
 			Dir:  root, Color: devrunner.ColorBlue, Critical: false,
-			Env: envVars,
+			Env: copyEnv(envVars),
 		})
 	}
 
@@ -90,7 +106,7 @@ func SetupApplet(root, name string, applet *config.AppletConfig, backendPort str
 			Args: []string{"-C", webDir, "exec", "tailwindcss",
 				"-i", "src/index.css", "-o", "dist/style.css", "--watch"},
 			Dir: root, Color: devrunner.ColorMagenta, Critical: false,
-			Env: envVars,
+			Env: copyEnv(envVars),
 		})
 	}
 
@@ -99,7 +115,7 @@ func SetupApplet(root, name string, applet *config.AppletConfig, backendPort str
 		Name: "vite", Command: "pnpm",
 		Args: []string{"-C", webDir, "exec", "vite"},
 		Dir:  root, Color: devrunner.ColorGreen, Critical: true,
-		Env: envVars,
+		Env: copyEnv(envVars),
 	})
 
 	return &SetupResult{

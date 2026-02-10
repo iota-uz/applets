@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -27,12 +26,7 @@ With a name, builds only that applet.`,
 }
 
 func runBuild(cmd *cobra.Command, args []string) error {
-	root, err := config.FindRoot()
-	if err != nil {
-		return err
-	}
-
-	cfg, err := config.Load(root)
+	root, cfg, err := config.LoadFromCWD()
 	if err != nil {
 		return err
 	}
@@ -40,9 +34,8 @@ func runBuild(cmd *cobra.Command, args []string) error {
 	var names []string
 	if len(args) > 0 {
 		name := args[0]
-		if _, ok := cfg.Applets[name]; !ok {
-			available := cfg.AppletNames()
-			return fmt.Errorf("unknown applet %q (available: %s)", name, strings.Join(available, ", "))
+		if _, err := config.ResolveApplet(cfg, name); err != nil {
+			return err
 		}
 		names = []string{name}
 	} else {
@@ -54,7 +47,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	if err := devsetup.BuildSDKIfNeeded(root); err != nil {
+	if err := devsetup.BuildSDKIfNeeded(cmd.Context(), root); err != nil {
 		return fmt.Errorf("sdk build failed: %w", err)
 	}
 
@@ -62,7 +55,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		applet := cfg.Applets[name]
 		webDir := applet.Web
 
-		if err := devsetup.RefreshAppletDeps(root, webDir); err != nil {
+		if err := devsetup.RefreshAppletDeps(cmd.Context(), root, webDir); err != nil {
 			return fmt.Errorf("applet %s dep refresh failed: %w", name, err)
 		}
 

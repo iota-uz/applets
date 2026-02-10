@@ -14,8 +14,8 @@ import (
 
 // BuildSDKIfNeeded checks whether ui/src/ exists in root (auto-detect: only applicable
 // when running from a repo that ships @iota-uz/sdk source, e.g. iota-sdk or applets).
-// If the SDK dist is stale or missing, it runs `pnpm run build:js:dev`.
-func BuildSDKIfNeeded(root string) error {
+// If the SDK dist is stale or missing, it runs `pnpm run build:js:dev`. ctx is used for cancellation.
+func BuildSDKIfNeeded(ctx context.Context, root string) error {
 	uiSrc := filepath.Join(root, "ui", "src")
 	if _, err := os.Stat(uiSrc); err != nil {
 		if os.IsNotExist(err) {
@@ -24,8 +24,8 @@ func BuildSDKIfNeeded(root string) error {
 		return fmt.Errorf("stat ui/src: %w", err)
 	}
 
-	distIndex := filepath.Join(root, "dist/index.mjs")
-	hashFile := filepath.Join(root, "dist/.sdk-build-hash")
+	distIndex := filepath.Join(root, "dist", "index.mjs")
+	hashFile := filepath.Join(root, "dist", ".sdk-build-hash")
 
 	needsBuild := false
 	if _, err := os.Stat(distIndex); err != nil {
@@ -43,7 +43,7 @@ func BuildSDKIfNeeded(root string) error {
 
 	if needsBuild {
 		log.Println("Building @iota-uz/sdk (tsup, dev mode)...")
-		if err := RunCommand(context.Background(), root, "pnpm", "run", "build:js:dev"); err != nil {
+		if err := RunCommand(ctx, root, "pnpm", "run", "build:js:dev"); err != nil {
 			return err
 		}
 
@@ -52,7 +52,7 @@ func BuildSDKIfNeeded(root string) error {
 			return err
 		}
 
-		if err := os.MkdirAll(filepath.Join(root, "dist"), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(root, "dist"), 0o755); err != nil {
 			return fmt.Errorf("create dist directory: %w", err)
 		}
 		if err := os.WriteFile(hashFile, []byte(currentHash), 0644); err != nil {
@@ -65,7 +65,7 @@ func BuildSDKIfNeeded(root string) error {
 
 // computeSDKHash computes a SHA-256 hash over all .ts/.tsx/.css files in ui/src/ plus build config files.
 func computeSDKHash(root string) (string, error) {
-	uiSrc := filepath.Join(root, "ui/src")
+	uiSrc := filepath.Join(root, "ui", "src")
 	var files []string
 
 	err := filepath.WalkDir(uiSrc, func(path string, d fs.DirEntry, err error) error {
@@ -98,7 +98,10 @@ func computeSDKHash(root string) (string, error) {
 
 	hasher := sha256.New()
 	for _, file := range files {
-		relPath, _ := filepath.Rel(root, file)
+		relPath, err := filepath.Rel(root, file)
+		if err != nil {
+			return "", fmt.Errorf("rel %s from root: %w", file, err)
+		}
 		hasher.Write([]byte(relPath))
 
 		content, err := os.ReadFile(file)

@@ -40,4 +40,11 @@ if (srcFontsDir !== outFontsDir) {
 }
 
 await mkdir(path.dirname(outBichatCss), { recursive: true })
-await cp(srcBichatCss, outBichatCss)
+try {
+  await cp(srcBichatCss, outBichatCss)
+} catch (err) {
+  if (err.code === 'ENOENT') {
+    throw new Error(`Bichat styles not found: ${srcBichatCss}. Ensure ui/src/bichat/styles.css exists.`)
+  }
+  throw err
+}

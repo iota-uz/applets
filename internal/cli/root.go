@@ -13,12 +13,14 @@ func NewRootCommand() *cobra.Command {
 
 Run from the repo that contains the applet (e.g. iota-sdk or eai).
 Requires .applets/config.toml at the project root.`,
-		Example: `  applet dev
+		Example: `  applet doctor
+  applet dev
   applet dev bichat
   applet list
   applet build bichat
   applet check
   applet rpc gen --name bichat
+  applet rpc check --name bichat
   applet deps check`,
 		SilenceErrors: true,
 		SilenceUsage:  true,
@@ -26,6 +28,7 @@ Requires .applets/config.toml at the project root.`,
 
 	root.AddCommand(NewVersionCommand())
 	root.AddCommand(NewCompletionCommand())
+	root.AddCommand(NewDoctorCommand())
 	root.AddCommand(NewDevCommand())
 	root.AddCommand(NewListCommand())
 	root.AddCommand(NewBuildCommand())

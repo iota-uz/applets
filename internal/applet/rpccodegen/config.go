@@ -1,6 +1,7 @@
 package rpccodegen
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -127,7 +128,8 @@ func IsDir(path string) bool {
 	return info.IsDir()
 }
 
-// FindProjectRoot walks up from the current working directory until it finds go.mod for a known applet host (iota-sdk or eai). The CLI is run from the consumer repo that contains the applet (e.g. modules/bichat).
+// FindProjectRoot walks up from the current working directory until it finds go.mod for a known applet host (iota-sdk or eai).
+// Deprecated: use config.FindRoot() instead, which tries .applets/config.toml first then falls back to go.mod.
 func FindProjectRoot() (string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -159,5 +161,76 @@ func EnsureParentDir(root, relPath string) error {
 	if !IsDir(parent) {
 		return fmt.Errorf("target directory does not exist: %s", filepath.ToSlash(filepath.Clean(relPath)))
 	}
+	return nil
+}
+
+// CheckDrift verifies that the on-disk RPC contract matches what would be generated from the Go router.
+// If needsReexportShim is true and the target is the SDK output, the module re-export shim is also validated.
+// Returns an error describing the drift and the command to fix it (applet rpc gen --name <name>).
+func CheckDrift(root, name string, cfg Config, needsReexportShim bool) error {
+	targetAbs := filepath.Join(root, cfg.TargetOut)
+	if _, err := os.Stat(targetAbs); err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("RPC target file does not exist: %s\nRun: applet rpc gen --name %s", cfg.TargetOut, name)
+		}
+		return err
+	}
+
+	tmpFile, err := os.CreateTemp("", "applet-rpc-contract-*.ts")
+	if err != nil {
+		return err
+	}
+	tmpPath := tmpFile.Name()
+	if err := tmpFile.Close(); err != nil {
+		return err
+	}
+	defer func() { _ = os.Remove(tmpPath) }()
+
+	if err := RunTypegen(root, cfg, tmpPath); err != nil {
+		return err
+	}
+
+	targetBytes, err := os.ReadFile(targetAbs)
+	if err != nil {
+		return err
+	}
+
+	var expectedBytes []byte
+	if needsReexportShim && cfg.TargetOut == cfg.ModuleOut {
+		expectedBytes = []byte(ReexportContent(cfg.TypeName, name))
+	} else {
+		tmpBytes, readErr := os.ReadFile(tmpPath)
+		if readErr != nil {
+			return readErr
+		}
+		expectedBytes = tmpBytes
+	}
+
+	if !bytes.Equal(targetBytes, expectedBytes) {
+		return fmt.Errorf("RPC contract drift detected for applet: %s\nRun: applet rpc gen --name %s", name, name)
+	}
+
+	if needsReexportShim && cfg.TargetOut != cfg.ModuleOut {
+		moduleAbs := filepath.Join(root, cfg.ModuleOut)
+		stat, err := os.Stat(moduleAbs)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return nil
+			}
+			return err
+		}
+		if stat.IsDir() {
+			return nil
+		}
+		actual, readErr := os.ReadFile(moduleAbs)
+		if readErr != nil {
+			return readErr
+		}
+		expected := ReexportContent(cfg.TypeName, name)
+		if string(actual) != expected {
+			return fmt.Errorf("applet %s module rpc.generated.ts must be a re-export shim.\nRun: applet rpc gen --name %s", name, name)
+		}
+	}
+
 	return nil
 }
