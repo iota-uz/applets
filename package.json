@@ -19,7 +19,7 @@
     "dist",
     "tailwind",
     "assets",
-    "README.MD",
+    "README.md",
     "LICENSE"
   ],
   "exports": {
