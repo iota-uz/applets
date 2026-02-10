@@ -125,6 +125,7 @@ func InspectRouter(repoRoot string, routerImport string, routerFunc string) (*ap
 }
 
 // BuildRouterInspectorProgram returns the source code of a small Go program that imports the router package and outputs the typed router description as JSON.
+// The applet package is always imported from github.com/iota-uz/applets so the inspector works when run from consumer repos (e.g. iota-sdk, eai).
 func BuildRouterInspectorProgram(modulePath string, routerImport string, routerFunc string) string {
 	return fmt.Sprintf(`package main
 
@@ -134,7 +135,7 @@ import (
 	"os"
 	"reflect"
 
-	"%s/pkg/applet"
+	"github.com/iota-uz/applets/pkg/applet"
 	rpc "%s"
 )
 
@@ -195,5 +196,5 @@ func main() {
 	enc.SetEscapeHTML(false)
 	_ = enc.Encode(d)
 }
-`, modulePath, routerImport, routerFunc, routerFunc)
+`, routerImport, routerFunc, routerFunc)
 }
