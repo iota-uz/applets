@@ -42,7 +42,7 @@ func NewRPCCheckCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			rpcCfg, err := rpccodegen.BuildRPCConfig(root, name, applet.RPC.RouterFunc)
+			rpcCfg, err := rpccodegen.BuildRPCConfig(root, name, "Router")
 			if err != nil {
 				return err
 			}
@@ -80,7 +80,7 @@ func NewRPCGenCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			rpcCfg, err := rpccodegen.BuildRPCConfig(root, name, applet.RPC.RouterFunc)
+			rpcCfg, err := rpccodegen.BuildRPCConfig(root, name, "Router")
 			if err != nil {
 				return err
 			}

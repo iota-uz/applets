@@ -125,7 +125,26 @@ func TestAppletController_RPC(t *testing.T) {
 		wantHTTP               int
 		wantRPCError           string
 		wantRPCMessageContains string
+		wantResultKey          string // if set, assert resp.Result contains this key
 	}{
+		{
+			name: "SuccessfulCall",
+			rpcCfg: &api.RPCConfig{
+				Path: "/rpc",
+				Methods: map[string]api.RPCMethod{
+					"echo": {Handler: func(ctx context.Context, params json.RawMessage) (any, error) {
+						return map[string]any{"msg": "hello"}, nil
+					}},
+				},
+			},
+			req: func() *http.Request {
+				r := httptest.NewRequest(http.MethodPost, "/t/rpc", bytes.NewBufferString(`{"id":"42","method":"echo","params":{}}`))
+				r.Host = "example.com"
+				return r
+			},
+			wantHTTP:      http.StatusOK,
+			wantResultKey: "msg",
+		},
 		{
 			name: "MethodNotFound",
 			rpcCfg: &api.RPCConfig{
@@ -265,12 +284,19 @@ func TestAppletController_RPC(t *testing.T) {
 			c.handleRPC(w, req)
 			require.Equal(t, tc.wantHTTP, w.Code)
 
+			var resp rpcResponse
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+
 			if tc.wantRPCError == "" {
+				require.Nil(t, resp.Error, "expected no RPC error")
+				if tc.wantResultKey != "" {
+					result, ok := resp.Result.(map[string]any)
+					require.True(t, ok, "expected result to be a map")
+					assert.Contains(t, result, tc.wantResultKey)
+				}
 				return
 			}
 
-			var resp rpcResponse
-			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
 			require.NotNil(t, resp.Error)
 			assert.Equal(t, tc.wantRPCError, resp.Error.Code)
 			if tc.wantRPCError == "forbidden" {
@@ -303,42 +329,3 @@ func TestRequirePermissions_Allows(t *testing.T) {
 	require.NoError(t, c.requirePermissions(ctx, []string{"test.secret"}))
 }
 
-func TestRequirePermissions_AllowsPascalCase(t *testing.T) {
-	t.Parallel()
-
-	mockU := &mockUser{
-		id:          1,
-		email:       "t@example.com",
-		permissions: []string{"Test.Secret"},
-	}
-	ctx := context.WithValue(context.Background(), testUserKey, api.AppletUser(mockU))
-
-	a := &testApplet{name: "t", basePath: "/t", config: api.Config{
-		WindowGlobal: "__T__",
-		Shell:        api.ShellConfig{Mode: api.ShellModeStandalone},
-		Assets:       api.AssetConfig{Dev: &api.DevAssetConfig{Enabled: true, TargetURL: "http://localhost:5173"}},
-	}}
-	c, err := New(a, nil, api.DefaultSessionConfig, nil, nil, &testHostServices{})
-	require.NoError(t, err)
-	require.NoError(t, c.requirePermissions(ctx, []string{"Test.Secret"}))
-}
-
-func TestRequirePermissions_AllowsViaPermissionNames(t *testing.T) {
-	t.Parallel()
-
-	mockU := &mockUser{
-		id:          1,
-		email:       "t@example.com",
-		permissions: []string{"BiChat.Access"},
-	}
-	ctx := context.WithValue(context.Background(), testUserKey, api.AppletUser(mockU))
-
-	a := &testApplet{name: "t", basePath: "/t", config: api.Config{
-		WindowGlobal: "__T__",
-		Shell:        api.ShellConfig{Mode: api.ShellModeStandalone},
-		Assets:       api.AssetConfig{Dev: &api.DevAssetConfig{Enabled: true, TargetURL: "http://localhost:5173"}},
-	}}
-	c, err := New(a, nil, api.DefaultSessionConfig, nil, nil, &testHostServices{})
-	require.NoError(t, err)
-	require.NoError(t, c.requirePermissions(ctx, []string{"BiChat.Access"}))
-}

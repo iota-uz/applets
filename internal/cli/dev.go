@@ -15,19 +15,18 @@ import (
 	"github.com/iota-uz/applets/internal/devsetup"
 )
 
-// NewDevCommand returns the `applet dev [name]` subcommand.
+// NewDevCommand returns the `applet dev` subcommand.
 func NewDevCommand() *cobra.Command {
 	return &cobra.Command{
-		Use:   "dev [name]",
+		Use:   "dev",
 		Short: "Start development environment",
 		Long: `Start the development environment for the project.
 
-Without a name, starts only the project-level processes (e.g. air, templ, css).
-With a name, also starts the applet's Vite dev server, SDK watcher, and applet CSS.`,
-		Example: `  applet dev
-  applet dev bichat`,
-		Args: cobra.MaximumNArgs(1),
-		RunE: runDev,
+Starts project-level processes (e.g. air, templ, css) and all configured applets
+(Vite dev servers, SDK watchers, applet CSS).`,
+		Example: `  applet dev`,
+		Args:    cobra.NoArgs,
+		RunE:    runDev,
 	}
 }
 
@@ -37,25 +36,20 @@ func runDev(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	var appletName string
-	if len(args) > 0 {
-		appletName = args[0]
-	}
-	if appletName != "" {
-		if _, err := config.ResolveApplet(cfg, appletName); err != nil {
-			return err
-		}
-	}
-
 	// Preflight: check configured process commands are in PATH
 	if err := preflightProcesses(cfg); err != nil {
 		return err
 	}
 
-	// If applet given, also check node/pnpm
-	if appletName != "" {
+	appletNames := cfg.AppletNames()
+
+	// If there are applets, check node/pnpm and build SDK once upfront
+	if len(appletNames) > 0 {
 		if err := preflightNodeTools(); err != nil {
 			return err
+		}
+		if err := devsetup.BuildSDKIfNeeded(cmd.Context(), root); err != nil {
+			return fmt.Errorf("sdk build failed: %w", err)
 		}
 	}
 
@@ -80,31 +74,24 @@ func runDev(cmd *cobra.Command, args []string) error {
 		})
 	}
 
-	// If applet specified, set it up
-	if appletName != "" {
-		applet := cfg.Applets[appletName]
+	// Set up each configured applet
+	for _, name := range appletNames {
+		applet := cfg.Applets[name]
 
-		if err := devsetup.BuildSDKIfNeeded(cmd.Context(), root); err != nil {
-			return fmt.Errorf("sdk build failed: %w", err)
+		if err := devsetup.RefreshAppletDeps(cmd.Context(), root, applet.Web); err != nil {
+			return fmt.Errorf("applet %s dep refresh failed: %w", name, err)
 		}
 
-		webDir := applet.Web
-		if err := devsetup.RefreshAppletDeps(cmd.Context(), root, webDir); err != nil {
-			return fmt.Errorf("applet dep refresh failed: %w", err)
-		}
-
-		if err := devsetup.CheckPort(cmd.Context(), applet.Dev.VitePort, "Vite"); err != nil {
+		if err := devsetup.CheckPort(cmd.Context(), applet.Dev.VitePort, fmt.Sprintf("Vite (%s)", name)); err != nil {
 			return err
 		}
 
-		backendPort := devsetup.GetEnvOrDefault("IOTA_PORT", devsetup.GetEnvOrDefault("PORT", fmt.Sprintf("%d", cfg.Dev.BackendPort)))
-		result, err := devsetup.SetupApplet(cmd.Context(), root, appletName, applet, backendPort)
+		result, err := devsetup.SetupApplet(cmd.Context(), root, name, applet)
 		if err != nil {
-			return err
+			return fmt.Errorf("applet %s setup failed: %w", name, err)
 		}
 
 		// Propagate applet env vars to project-level processes (e.g. air needs IOTA_APPLET_DEV_*)
-		// instead of polluting the parent process via os.Setenv.
 		for i := range processes {
 			if processes[i].Env == nil {
 				processes[i].Env = make(map[string]string, len(result.EnvVars))

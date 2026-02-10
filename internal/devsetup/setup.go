@@ -2,7 +2,6 @@ package devsetup
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -19,9 +18,9 @@ type SetupResult struct {
 	EnvVars   map[string]string
 }
 
-// SetupApplet prepares environment variables, writes applet-dev.json, and returns
-// the process specs needed to run a single applet in dev mode. ctx is used for cancellation of installs.
-func SetupApplet(ctx context.Context, root, name string, applet *config.AppletConfig, backendPort string) (*SetupResult, error) {
+// SetupApplet prepares environment variables and returns
+// the process specs needed to run a single applet in dev mode.
+func SetupApplet(ctx context.Context, root, name string, applet *config.AppletConfig) (*SetupResult, error) {
 	webDir := filepath.Join(root, applet.Web)
 	stat, err := os.Stat(webDir)
 	if err != nil {
@@ -51,35 +50,11 @@ func SetupApplet(ctx context.Context, root, name string, applet *config.AppletCo
 		"APPLET_VITE_PORT":                                fmt.Sprintf("%d", applet.Dev.VitePort),
 		fmt.Sprintf("IOTA_APPLET_DEV_%s", upperName):      "1",
 		fmt.Sprintf("IOTA_APPLET_VITE_URL_%s", upperName): fmt.Sprintf("http://localhost:%d", applet.Dev.VitePort),
-		fmt.Sprintf("IOTA_APPLET_ENTRY_%s", upperName):    applet.Entry,
+		fmt.Sprintf("IOTA_APPLET_ENTRY_%s", upperName):    "/src/main.tsx",
 		fmt.Sprintf("IOTA_APPLET_CLIENT_%s", upperName):   "/@vite/client",
 	}
 
-	// Write applet-dev.json
-	backendURL := fmt.Sprintf("http://localhost:%s", backendPort)
-	manifest := struct {
-		BasePath   string `json:"basePath"`
-		AssetsBase string `json:"assetsBase"`
-		VitePort   int    `json:"vitePort"`
-		BackendURL string `json:"backendUrl"`
-	}{
-		BasePath:   applet.BasePath,
-		AssetsBase: applet.BasePath + "/assets/",
-		VitePort:   applet.Dev.VitePort,
-		BackendURL: backendURL,
-	}
-	manifestBytes, err := json.MarshalIndent(manifest, "", "  ")
-	if err != nil {
-		log.Printf("warning: could not marshal applet-dev.json: %v", err)
-	} else {
-		manifestPath := filepath.Join(webDir, "applet-dev.json")
-		if err := os.WriteFile(manifestPath, manifestBytes, 0644); err != nil {
-			log.Printf("warning: could not write %s: %v", manifestPath, err)
-		}
-	}
-
-	log.Printf("Applet: %s\n", name)
-	log.Printf("URL:    http://localhost:%s%s\n", backendPort, applet.BasePath)
+	log.Printf("Applet: %s (vite :%d)\n", name, applet.Dev.VitePort)
 
 	// copyEnv returns a shallow copy so each process has its own map and mutations do not alias.
 	copyEnv := func(m map[string]string) map[string]string {

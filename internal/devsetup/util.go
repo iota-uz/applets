@@ -28,10 +28,3 @@ func IsNewer(source, target string) bool {
 	return srcInfo.ModTime().After(tgtInfo.ModTime())
 }
 
-// GetEnvOrDefault returns the environment variable value, or def if empty/unset.
-func GetEnvOrDefault(key, def string) string {
-	if val := os.Getenv(key); val != "" {
-		return val
-	}
-	return def
-}

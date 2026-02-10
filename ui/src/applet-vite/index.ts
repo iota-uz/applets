@@ -4,9 +4,8 @@ export {
   createLocalSdkAliases,
   getAppletAssetsBase,
   getAppletVitePort,
-  readAppletDevManifest,
 } from './vite'
-export type { AppletViteOptions, AppletDevManifest } from './vite'
+export type { AppletViteOptions } from './vite'
 
 export {
   createAppletStylesVirtualModulePlugin,

@@ -12,11 +12,9 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-// Canonical default values for applet config.
-const (
-	DefaultRouterFunc   = "Router"
-	DefaultViteBasePort = 5173
-)
+// DefaultViteBasePort is the base port for applet Vite dev servers.
+// Applets are assigned ports sequentially: 5173, 5174, 5175, etc.
+const DefaultViteBasePort = 5173
 
 // ProjectConfig is the top-level config from .applets/config.toml.
 type ProjectConfig struct {
@@ -26,8 +24,7 @@ type ProjectConfig struct {
 
 // DevConfig holds project-level dev process definitions.
 type DevConfig struct {
-	Processes   []ProcessConfig `toml:"processes"`
-	BackendPort int             `toml:"backend_port"`
+	Processes []ProcessConfig `toml:"processes"`
 }
 
 // ProcessConfig describes a dev process to run.
@@ -41,10 +38,8 @@ type ProcessConfig struct {
 
 // AppletConfig holds per-applet configuration.
 type AppletConfig struct {
-	BasePath string          `toml:"base_path"`
-	Module   string          `toml:"module"`
-	Web      string          `toml:"web"`
-	Entry    string          `toml:"entry"`
+	BasePath string           `toml:"base_path"`
+	Web      string           `toml:"web"`
 	Dev      *AppletDevConfig `toml:"dev"`
 	RPC      *AppletRPCConfig `toml:"rpc"`
 }
@@ -56,8 +51,7 @@ type AppletDevConfig struct {
 
 // AppletRPCConfig holds applet-specific RPC codegen settings.
 type AppletRPCConfig struct {
-	RouterFunc        string `toml:"router_func"`
-	NeedsReexportShim bool   `toml:"needs_reexport_shim"`
+	NeedsReexportShim bool `toml:"needs_reexport_shim"`
 }
 
 const configDir = ".applets"
@@ -174,9 +168,6 @@ func Load(root string) (*ProjectConfig, error) {
 // ApplyDefaults fills convention-derived fields for each applet.
 // Applets with vite_port unset get a unique default (DefaultViteBasePort + index) to avoid port conflicts.
 func ApplyDefaults(cfg *ProjectConfig) {
-	if cfg.Dev.BackendPort == 0 {
-		cfg.Dev.BackendPort = 3200
-	}
 	names := make([]string, 0, len(cfg.Applets))
 	for name := range cfg.Applets {
 		names = append(names, name)
@@ -184,14 +175,8 @@ func ApplyDefaults(cfg *ProjectConfig) {
 	sort.Strings(names)
 	for i, name := range names {
 		applet := cfg.Applets[name]
-		if applet.Module == "" {
-			applet.Module = filepath.Join("modules", name)
-		}
 		if applet.Web == "" {
 			applet.Web = filepath.Join("modules", name, "presentation", "web")
-		}
-		if applet.Entry == "" {
-			applet.Entry = "/src/main.tsx"
 		}
 		if applet.Dev == nil {
 			applet.Dev = &AppletDevConfig{}
@@ -201,9 +186,6 @@ func ApplyDefaults(cfg *ProjectConfig) {
 		}
 		if applet.RPC == nil {
 			applet.RPC = &AppletRPCConfig{}
-		}
-		if applet.RPC.RouterFunc == "" {
-			applet.RPC.RouterFunc = DefaultRouterFunc
 		}
 	}
 }

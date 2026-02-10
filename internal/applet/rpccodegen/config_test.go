@@ -86,13 +86,6 @@ func TestBuildRPCConfig_TargetSelection(t *testing.T) {
 	})
 }
 
-func TestReexportContent(t *testing.T) {
-	t.Parallel()
-	expected := "// Re-export canonical RPC contract from @iota-uz/sdk package.\n" +
-		"export type { BichatRPC } from '@iota-uz/sdk/bichat'\n"
-	assert.Equal(t, expected, ReexportContent("BichatRPC", "bichat"))
-}
-
 func TestSetEnv(t *testing.T) {
 	t.Parallel()
 	env := []string{"A=1", "GOTOOLCHAIN=local", "B=2"}

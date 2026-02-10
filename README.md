@@ -52,7 +52,7 @@ applet rpc gen --name <applet-name>
 applet rpc check --name <applet-name>
 applet deps check
 applet check               # deps + RPC drift for all applets
-applet dev [name]          # start dev environment
+applet dev                 # start dev environment (all configured applets)
 applet build [name]        # build production bundle
 applet list                # list configured applets
 ```
@@ -66,52 +66,33 @@ applet list                # list configured applets
 
 The CLI expects a project root where `.applets/config.toml` exists (or, for `applet deps check`, a repo with a `go.mod` for `github.com/iota-uz/iota-sdk` or `github.com/iota-uz/eai`).
 
-Example `.applets/config.toml` with all options documented in comments:
+Minimal `.applets/config.toml` — only `base_path` is required per applet:
 
 ```toml
-# --- Dev (project-level) ---
-[dev]
-# Backend port for dev manifest. Default: 3200
-backend_port = 3200
-
-# Project-level processes (e.g. air, templ). At least one required.
-# Each process: name (required), command (required), args (optional), critical (optional), env (optional).
+# Project-level dev processes
 [[dev.processes]]
 name = "air"
 command = "air"
-args = ["-c", ".air.toml"]
 critical = true
-# env = { FOO = "bar" }
 
 [[dev.processes]]
 name = "templ"
 command = "templ"
 args = ["generate", "--watch"]
 
-# --- Applets (per-app) ---
-# Each applet: base_path (required), module, web, entry (optional; see defaults below).
+# Applets: only base_path is required. Everything else is convention.
 [applets.bichat]
 base_path = "/bi-chat"
-# module = "modules/bichat"                    # default: modules/<name>
-# web = "modules/bichat/presentation/web"       # default: modules/<name>/presentation/web
-# entry = "/src/main.tsx"                       # default: /src/main.tsx
-
-[applets.bichat.dev]
-# Vite dev server port. Default: unique per applet (5173, 5174, …)
-vite_port = 5173
-
-[applets.bichat.rpc]
-# Go function name for RPC codegen. Default: "Router"
-router_func = "Router"
-# If true, the applet module re-exports the RPC contract from the SDK package. Default: false
-needs_reexport_shim = false
-
-# Second applet: only required fields + overrides; rest use defaults
-[applets.otherapp]
-base_path = "/other"
-module = "modules/otherapp"
-web = "modules/otherapp/frontend"
-# dev.vite_port and rpc.* use defaults (unique port, Router, false)
 ```
 
-Defaults are applied in sorted applet name order; `vite_port` is made unique when not set to avoid conflicts. Run `applet doctor` to validate config and environment.
+**Convention defaults:**
+- `web` = `modules/<name>/presentation/web`
+- `vite_port` = auto-assigned (5173, 5174, …) by sorted name order
+- RPC router function = `Router` (hardcoded convention)
+- Entry point = `/src/main.tsx` (Vite standard)
+
+**Optional overrides:**
+- `web` — custom web directory path (rare)
+- `[applets.<name>.rpc] needs_reexport_shim = true` — for SDK applets that re-export RPC contracts
+
+Run `applet doctor` to validate config and environment.

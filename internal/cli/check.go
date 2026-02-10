@@ -45,10 +45,10 @@ func runCheck(cmd *cobra.Command, _ []string) error {
 		failed = true
 	}
 
-	// RPC check for each applet (RouterFunc already defaulted by config.ApplyDefaults)
+	// RPC check for each applet (convention: router function is always "Router")
 	for _, name := range cfg.AppletNames() {
 		applet := cfg.Applets[name]
-		rpcCfg, err := rpccodegen.BuildRPCConfig(root, name, applet.RPC.RouterFunc)
+		rpcCfg, err := rpccodegen.BuildRPCConfig(root, name, "Router")
 		if err != nil {
 			cmd.PrintErrln("RPC check skipped for", name+":", err)
 			continue

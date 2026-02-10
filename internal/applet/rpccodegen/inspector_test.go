@@ -48,8 +48,41 @@ func TestInspectRouter(t *testing.T) {
 		desc, err := InspectRouter(repoRoot, importPath, "Router")
 		require.NoError(t, err)
 		require.NotNil(t, desc)
-		require.NotEmpty(t, desc.Methods)
+		require.Len(t, desc.Methods, 2, "Router should have ping + rich methods")
+
+		// Methods are sorted by name
 		require.Equal(t, "fixtures.ping", desc.Methods[0].Name)
+		require.Equal(t, "fixtures.rich", desc.Methods[1].Name)
+
+		// Verify rich method exercises all type kinds
+		rich := desc.Methods[1]
+		require.Equal(t, "named", rich.Params.Kind)
+		require.Equal(t, "named", rich.Result.Kind)
+
+		resultType, ok := desc.Types[rich.Result.Name]
+		require.True(t, ok, "result type %q should be in Types map", rich.Result.Name)
+
+		fieldKinds := make(map[string]string)
+		for _, f := range resultType.Fields {
+			fieldKinds[f.Name] = f.Type.Kind
+		}
+		// []string → array, map[string]string → record, time.Time → string, uuid.UUID → string
+		require.Equal(t, "array", fieldKinds["tags"], "[]string should map to array")
+		require.Equal(t, "array", fieldKinds["scores"], "[]int should map to array")
+		require.Equal(t, "record", fieldKinds["labels"], "map[string]string should map to record")
+		require.Equal(t, "string", fieldKinds["createdAt"], "time.Time should map to string")
+		require.Equal(t, "named", fieldKinds["nested"], "struct should map to named")
+		require.Equal(t, "union", fieldKinds["optName"], "*string should map to union (string | null)")
+
+		// json:"-" field should be absent
+		_, hasIgnored := fieldKinds["ignored"]
+		require.False(t, hasIgnored, "json:\"-\" field should be excluded")
+
+		// uuid param
+		paramsType, ok := desc.Types[rich.Params.Name]
+		require.True(t, ok)
+		require.Len(t, paramsType.Fields, 1)
+		require.Equal(t, "string", paramsType.Fields[0].Type.Kind, "uuid.UUID should map to string")
 	})
 
 	t.Run("DependencyfulRouter", func(t *testing.T) {
@@ -57,8 +90,7 @@ func TestInspectRouter(t *testing.T) {
 		desc, err := InspectRouter(repoRoot, importPath, "RouterWithDeps")
 		require.NoError(t, err)
 		require.NotNil(t, desc)
-		require.NotEmpty(t, desc.Methods)
-		require.Equal(t, "fixtures.ping", desc.Methods[0].Name)
+		require.Len(t, desc.Methods, 2, "RouterWithDeps delegates to Router")
 	})
 
 	t.Run("InvalidReturnType", func(t *testing.T) {
@@ -67,18 +99,6 @@ func TestInspectRouter(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "expected *applets.TypedRPCRouter")
 	})
-}
-
-func TestBuildRouterInspectorProgram(t *testing.T) {
-	t.Parallel()
-
-	code := BuildRouterInspectorProgram(
-		"github.com/iota-uz/iota-sdk",
-		"github.com/iota-uz/iota-sdk/modules/bichat/rpc",
-		"Router",
-	)
-	require.Contains(t, code, `reflect.ValueOf(rpc.Router)`)
-	require.Contains(t, code, `const routerFuncName = "Router"`)
 }
 
 func findRepoRoot(t *testing.T) string {
