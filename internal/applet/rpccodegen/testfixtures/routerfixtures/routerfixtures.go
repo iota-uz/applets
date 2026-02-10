@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/iota-uz/applets/pkg/applet"
+	"github.com/iota-uz/applets"
 )
 
 type pingParams struct {
@@ -15,9 +15,9 @@ type pingResult struct {
 	OK bool `json:"ok"`
 }
 
-func Router() *applet.TypedRPCRouter {
-	r := applet.NewTypedRPCRouter()
-	if err := applet.AddProcedure(r, "fixtures.ping", applet.Procedure[pingParams, pingResult]{
+func Router() *applets.TypedRPCRouter {
+	r := applets.NewTypedRPCRouter()
+	if err := applets.AddProcedure(r, "fixtures.ping", applets.Procedure[pingParams, pingResult]{
 		Handler: func(ctx context.Context, params pingParams) (pingResult, error) {
 			return pingResult{OK: params.Msg != ""}, nil
 		},
@@ -27,7 +27,7 @@ func Router() *applet.TypedRPCRouter {
 	return r
 }
 
-func RouterWithDeps(_ io.Reader, _ *int) *applet.TypedRPCRouter {
+func RouterWithDeps(_ io.Reader, _ *int) *applets.TypedRPCRouter {
 	return Router()
 }
 

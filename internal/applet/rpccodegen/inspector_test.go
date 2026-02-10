@@ -65,7 +65,7 @@ func TestInspectRouter(t *testing.T) {
 		t.Parallel()
 		_, err := InspectRouter(repoRoot, importPath, "RouterBadReturn")
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "expected *applet.TypedRPCRouter")
+		require.Contains(t, err.Error(), "expected *applets.TypedRPCRouter")
 	})
 }
 

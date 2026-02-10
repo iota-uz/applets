@@ -7,11 +7,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/iota-uz/applets/pkg/applet"
+	"github.com/iota-uz/applets"
 )
 
 // EmitTypeScript generates TypeScript type definitions from a typed router description.
-func EmitTypeScript(desc *applet.TypedRouterDescription, typeName string) (string, error) {
+func EmitTypeScript(desc *applets.TypedRouterDescription, typeName string) (string, error) {
 	if desc == nil {
 		return "", fmt.Errorf("rpccodegen.EmitTypeScript: description is nil")
 	}
@@ -27,7 +27,7 @@ func EmitTypeScript(desc *applet.TypedRouterDescription, typeName string) (strin
 	b.WriteString(typeName)
 	b.WriteString(" = {\n")
 
-	methods := append([]applet.TypedMethodDescription(nil), desc.Methods...)
+	methods := append([]applets.TypedMethodDescription(nil), desc.Methods...)
 	sort.Slice(methods, func(i, j int) bool { return methods[i].Name < methods[j].Name })
 	for _, m := range methods {
 		b.WriteString("  ")
@@ -74,7 +74,7 @@ func EmitTypeScript(desc *applet.TypedRouterDescription, typeName string) (strin
 	return b.String(), nil
 }
 
-func emitTypeRef(ref applet.TypeRef) string {
+func emitTypeRef(ref applets.TypeRef) string {
 	switch ref.Kind {
 	case "string":
 		return "string"

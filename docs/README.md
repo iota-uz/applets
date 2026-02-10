@@ -4,12 +4,12 @@ Short reference for contributors working in this repo. Full applet and SDK docum
 
 ## Repo layout
 
-- **Go**: `pkg/applet/` (public API), `internal/applet/rpccodegen/` (RPC codegen), `cmd/applet/` (CLI).
+- **Go**: Root package `github.com/iota-uz/applets` (public API), `internal/*` (implementation), `internal/applet/rpccodegen/` (RPC codegen), `cmd/applet/` (CLI).
 - **NPM**: Root `package.json` builds `@iota-uz/sdk` from `ui/`. Scripts in `scripts/`, Tailwind in `tailwind/` and `styles/`.
 
 ## Build and test
 
-- **Go**: `go build ./...` and `go test ./pkg/... ./internal/... ./cmd/...`. Local dev uses `replace github.com/iota-uz/iota-sdk => ../iota-sdk` when this repo is next to `iota-sdk`.
+- **Go**: `go build ./...` and `go test ./...` (root has no tests; tests live in `internal/` and `cmd/`). Local dev uses `go.work` in consumers with `use ../../applets`.
 - **NPM**: `pnpm install --frozen-lockfile` then `pnpm run build`. Storybook: `pnpm run storybook`.
 
 ## Consuming the library

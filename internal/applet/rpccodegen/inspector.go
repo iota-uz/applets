@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/iota-uz/applets/pkg/applet"
+	"github.com/iota-uz/applets"
 )
 
 var goIdentifierRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
@@ -65,7 +65,7 @@ func ResolveRouterImport(repoRoot string, routerPkg string) (string, error) {
 }
 
 // InspectRouter generates a temporary Go program that loads the router package and runs DescribeTypedRPCRouter, then returns the description.
-func InspectRouter(repoRoot string, routerImport string, routerFunc string) (*applet.TypedRouterDescription, error) {
+func InspectRouter(repoRoot string, routerImport string, routerFunc string) (*applets.TypedRouterDescription, error) {
 	if err := ValidateGoIdentifier(routerFunc); err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func InspectRouter(repoRoot string, routerImport string, routerFunc string) (*ap
 		return nil, fmt.Errorf("router inspection failed: %w: %s", err, strings.TrimSpace(stderr.String()))
 	}
 
-	var desc applet.TypedRouterDescription
+	var desc applets.TypedRouterDescription
 	if err := json.Unmarshal(stdout.Bytes(), &desc); err != nil {
 		return nil, fmt.Errorf("failed to parse router description: %w", err)
 	}
@@ -135,7 +135,7 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/iota-uz/applets/pkg/applet"
+	"github.com/iota-uz/applets"
 	rpc "%s"
 )
 
@@ -179,15 +179,15 @@ func main() {
 		fail("router function %%q returned invalid value", routerFuncName)
 	}
 	if routerValue.Kind() == reflect.Pointer && routerValue.IsNil() {
-		fail("router function %%q returned nil *applet.TypedRPCRouter", routerFuncName)
+		fail("router function %%q returned nil *applets.TypedRPCRouter", routerFuncName)
 	}
 
-	router, ok := routerValue.Interface().(*applet.TypedRPCRouter)
+	router, ok := routerValue.Interface().(*applets.TypedRPCRouter)
 	if !ok {
-		fail("router function %%q returned %%T; expected *applet.TypedRPCRouter", routerFuncName, routerValue.Interface())
+		fail("router function %%q returned %%T; expected *applets.TypedRPCRouter", routerFuncName, routerValue.Interface())
 	}
 
-	d, err := applet.DescribeTypedRPCRouter(router)
+	d, err := applets.DescribeTypedRPCRouter(router)
 	if err != nil {
 		fail("failed to describe typed rpc router: %%v", err)
 	}

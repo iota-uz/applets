@@ -3,7 +3,7 @@ package rpccodegen
 import (
 	"testing"
 
-	"github.com/iota-uz/applets/pkg/applet"
+	"github.com/iota-uz/applets"
 	"github.com/stretchr/testify/require"
 )
 
@@ -12,24 +12,24 @@ func TestEmitTypeScript(t *testing.T) {
 
 	cases := []struct {
 		name         string
-		desc         *applet.TypedRouterDescription
+		desc         *applets.TypedRouterDescription
 		typeName     string
 		wantContains []string
 		wantErr      bool
 	}{
 		{
 			name: "SingleMethod",
-			desc: &applet.TypedRouterDescription{
-				Methods: []applet.TypedMethodDescription{
+			desc: &applets.TypedRouterDescription{
+				Methods: []applets.TypedMethodDescription{
 					{
 						Name:   "demo.ping",
-						Params: applet.TypeRef{Kind: "named", Name: "PingParams"},
-						Result: applet.TypeRef{Kind: "named", Name: "PingResult"},
+						Params: applets.TypeRef{Kind: "named", Name: "PingParams"},
+						Result: applets.TypeRef{Kind: "named", Name: "PingResult"},
 					},
 				},
-				Types: map[string]applet.TypedTypeObject{
-					"PingParams": {Fields: []applet.TypedField{}},
-					"PingResult": {Fields: []applet.TypedField{{Name: "ok", Type: applet.TypeRef{Kind: "boolean"}}}},
+				Types: map[string]applets.TypedTypeObject{
+					"PingParams": {Fields: []applets.TypedField{}},
+					"PingResult": {Fields: []applets.TypedField{{Name: "ok", Type: applets.TypeRef{Kind: "boolean"}}}},
 				},
 			},
 			typeName: "DemoRPC",
@@ -49,7 +49,7 @@ func TestEmitTypeScript(t *testing.T) {
 		},
 		{
 			name:     "EmptyTypeName",
-			desc:     &applet.TypedRouterDescription{},
+			desc:     &applets.TypedRouterDescription{},
 			typeName: "",
 			wantErr:  true,
 		},
