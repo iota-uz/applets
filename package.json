@@ -98,6 +98,7 @@
     "remark-gfm": "^4.0.0"
   },
   "devDependencies": {
+    "@iota-uz/sdk": "0.3.x",
     "@eslint/js": "^9.39.2",
     "@storybook/addon-essentials": "8.6.15",
     "@storybook/addon-viewport": "8.6.15",
