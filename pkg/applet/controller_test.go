@@ -318,7 +318,7 @@ func TestRequirePermissions_Allows(t *testing.T) {
 	require.NoError(t, c.requirePermissions(ctx, []string{"test.secret"}))
 }
 
-func TestRequirePermissions_AllowsCaseInsensitive(t *testing.T) {
+func TestRequirePermissions_AllowsPascalCase(t *testing.T) {
 	t.Parallel()
 
 	mockU := &mockUser{
@@ -336,7 +336,7 @@ func TestRequirePermissions_AllowsCaseInsensitive(t *testing.T) {
 	}}
 	c, err := NewAppletController(a, nil, DefaultSessionConfig, nil, nil, &testHostServices{})
 	require.NoError(t, err)
-	require.NoError(t, c.requirePermissions(ctx, []string{"test.secret"}))
+	require.NoError(t, c.requirePermissions(ctx, []string{"Test.Secret"}))
 }
 
 func TestRequirePermissions_AllowsViaPermissionNames(t *testing.T) {
@@ -357,5 +357,5 @@ func TestRequirePermissions_AllowsViaPermissionNames(t *testing.T) {
 	}}
 	c, err := NewAppletController(a, nil, DefaultSessionConfig, nil, nil, &testHostServices{})
 	require.NoError(t, err)
-	require.NoError(t, c.requirePermissions(ctx, []string{"bichat.access"}))
+	require.NoError(t, c.requirePermissions(ctx, []string{"BiChat.Access"}))
 }

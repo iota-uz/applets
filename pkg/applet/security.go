@@ -101,17 +101,18 @@ func validatePermissions(permissions []string) []string {
 	return validated
 }
 
+// normalizePermissionName trims whitespace and preserves case so hosts can use
+// PascalCase permission names (e.g. "BiChat.Access") that match their domain.
 func normalizePermissionName(perm string) string {
-	return strings.ToLower(strings.TrimSpace(perm))
+	return strings.TrimSpace(perm)
 }
 
-// permissionRegex validates permission format: module.action (lowercase, dots, underscores)
-// Example valid permissions: "bichat.access", "finance.read", "core.admin"
-// Invalid: "BICHAT.ACCESS" (uppercase), "bichat" (no action), "bichat..access" (double dots)
-var permissionRegex = regexp.MustCompile(`^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$`)
+// permissionRegex validates permission format: Segment.Segment (letters, digits, underscores, dots)
+// Example valid permissions: "BiChat.Access", "User.Create", "bichat.access"
+var permissionRegex = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*$`)
 
-// isValidPermissionFormat checks if permission follows the format: module.action
-// Must start with lowercase letter, contain only lowercase, digits, dots, underscores.
+// isValidPermissionFormat checks if permission follows the format: segment.segment...
+// Allows PascalCase to align with SDK/host permission names.
 func isValidPermissionFormat(perm string) bool {
 	return permissionRegex.MatchString(perm)
 }

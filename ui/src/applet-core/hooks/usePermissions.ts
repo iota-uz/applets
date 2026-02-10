@@ -8,7 +8,7 @@ import type { PermissionsHook } from '../types'
  * Usage:
  * const { hasPermission, hasAnyPermission } = usePermissions()
  *
- * if (hasPermission('bichat.access')) {
+ * if (hasPermission('BiChat.Access')) {
  *   // User has bichat access
  * }
  *

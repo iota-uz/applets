@@ -258,7 +258,7 @@ func TestContextBuilder_Build_Success(t *testing.T) {
 
 	ctx := createTestContext(t,
 		withUserID(42),
-		withPermissions("bichat.access", "finance.read"),
+		withPermissions("BiChat.Access", "Finance.Read"),
 	)
 
 	// Create CSRF-protected request
@@ -281,8 +281,8 @@ func TestContextBuilder_Build_Success(t *testing.T) {
 		assert.Equal(t, "test@example.com", initialCtx.User.Email)
 		assert.Equal(t, "John", initialCtx.User.FirstName)
 		assert.Equal(t, "Doe", initialCtx.User.LastName)
-		assert.Contains(t, initialCtx.User.Permissions, "bichat.access")
-		assert.Contains(t, initialCtx.User.Permissions, "finance.read")
+		assert.Contains(t, initialCtx.User.Permissions, "BiChat.Access")
+		assert.Contains(t, initialCtx.User.Permissions, "Finance.Read")
 
 		// Verify tenant context
 		assert.NotEmpty(t, initialCtx.Tenant.ID)
@@ -537,17 +537,17 @@ func TestCollectUserPermissionNames_Success(t *testing.T) {
 	t.Parallel()
 
 	mockU := &mockUser{
-		permissions: []string{"bichat.access", "finance.read", "core.admin"},
+		permissions: []string{"BiChat.Access", "Finance.Read", "Core.Admin"},
 	}
 
 	permissions := collectUserPermissionNames(mockU)
 	assert.Len(t, permissions, 3)
-	assert.Contains(t, permissions, "bichat.access")
-	assert.Contains(t, permissions, "finance.read")
-	assert.Contains(t, permissions, "core.admin")
+	assert.Contains(t, permissions, "BiChat.Access")
+	assert.Contains(t, permissions, "Finance.Read")
+	assert.Contains(t, permissions, "Core.Admin")
 }
 
-func TestCollectUserPermissionNames_NormalizesCase(t *testing.T) {
+func TestCollectUserPermissionNames_PreservesPascalCase(t *testing.T) {
 	t.Parallel()
 
 	mockU := &mockUser{
@@ -555,7 +555,7 @@ func TestCollectUserPermissionNames_NormalizesCase(t *testing.T) {
 	}
 
 	permissions := collectUserPermissionNames(mockU)
-	assert.Contains(t, permissions, "bichat.access")
+	assert.Contains(t, permissions, "BiChat.Access")
 }
 
 func TestCollectUserPermissionNames_NilUser(t *testing.T) {

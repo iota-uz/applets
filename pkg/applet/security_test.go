@@ -82,30 +82,30 @@ func TestValidatePermissions(t *testing.T) {
 	}{
 		{
 			name:     "valid permissions accepted",
-			input:    []string{"bichat.access", "finance.read", "core.admin"},
-			expected: []string{"bichat.access", "finance.read", "core.admin"},
+			input:    []string{"BiChat.Access", "Finance.Read", "Core.Admin"},
+			expected: []string{"BiChat.Access", "Finance.Read", "Core.Admin"},
 		},
 		{
 			name:     "empty permission filtered out",
-			input:    []string{"bichat.access", "", "finance.read"},
-			expected: []string{"bichat.access", "finance.read"},
+			input:    []string{"BiChat.Access", "", "Finance.Read"},
+			expected: []string{"BiChat.Access", "Finance.Read"},
 		},
 		{
 			name: "overly long permission filtered out",
 			input: []string{
-				"bichat.access",
+				"BiChat.Access",
 				string(make([]byte, 300)), // 300 chars > 255 limit
 			},
-			expected: []string{"bichat.access"},
+			expected: []string{"BiChat.Access"},
 		},
 		{
-			name:     "uppercase permissions normalized",
-			input:    []string{"BICHAT.ACCESS", "bichat.access"},
-			expected: []string{"bichat.access"},
+			name:     "case preserved (PascalCase)",
+			input:    []string{"BiChat.Access", "User.Create"},
+			expected: []string{"BiChat.Access", "User.Create"},
 		},
 		{
-			name:     "mixed case permissions normalized",
-			input:    []string{"BiChat.Access", "Finance.Read"},
+			name:     "lowercase still accepted",
+			input:    []string{"bichat.access", "finance.read"},
 			expected: []string{"bichat.access", "finance.read"},
 		},
 		{
@@ -115,8 +115,8 @@ func TestValidatePermissions(t *testing.T) {
 		},
 		{
 			name:     "invalid format - double dots rejected",
-			input:    []string{"bichat..access", "bichat.access"},
-			expected: []string{"bichat.access"},
+			input:    []string{"bichat..access", "BiChat.Access"},
+			expected: []string{"BiChat.Access"},
 		},
 		{
 			name: "max permissions limit enforced (100)",
@@ -160,10 +160,10 @@ func TestIsValidPermissionFormat(t *testing.T) {
 		valid      bool
 	}{
 		{name: "valid: module.action", permission: "bichat.access", valid: true},
+		{name: "valid: PascalCase", permission: "BiChat.Access", valid: true},
 		{name: "valid: nested module", permission: "finance.reports.read", valid: true},
 		{name: "valid: with numbers", permission: "module1.action2", valid: true},
 		{name: "valid: with underscores", permission: "my_module.my_action", valid: true},
-		{name: "invalid: uppercase", permission: "Bichat.Access", valid: false},
 		{name: "single word currently valid (NOTE: may be bug)", permission: "bichat", valid: true}, // Current regex accepts this
 		{name: "invalid: double dots", permission: "bichat..access", valid: false},
 		{name: "invalid: starts with dot", permission: ".bichat.access", valid: false},

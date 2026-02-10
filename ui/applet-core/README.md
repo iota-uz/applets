@@ -13,8 +13,8 @@ Permission checking utilities.
 ```tsx
 const { hasPermission, hasAnyPermission, permissions } = usePermissions()
 
-if (hasPermission('bichat.access')) {
-  // User has bichat access
+if (hasPermission('BiChat.Access')) {
+  // User has BiChat access
 }
 
 if (hasAnyPermission('finance.view', 'finance.edit')) {
@@ -261,7 +261,7 @@ sdkcomposables.CanUser(ctx, permissions.BiChatAccess)
 ```
 ```tsx
 // React frontend
-hasPermission('bichat.access')
+hasPermission('BiChat.Access')
 ```
 
 **Translations:**

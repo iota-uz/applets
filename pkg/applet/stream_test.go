@@ -198,7 +198,7 @@ func TestStreamContextBuilder_Build_Success(t *testing.T) {
 
 	ctx := createTestContext(t,
 		withUserID(42),
-		withPermissions("bichat.access", "finance.read"),
+		withPermissions("BiChat.Access", "Finance.Read"),
 	)
 
 	r := httptest.NewRequest(http.MethodGet, "/stream", nil)
@@ -219,8 +219,8 @@ func TestStreamContextBuilder_Build_Success(t *testing.T) {
 		// Verify lightweight context
 		assert.Equal(t, int64(42), streamCtx.UserID)
 		assert.NotEmpty(t, streamCtx.TenantID)
-		assert.Contains(t, streamCtx.Permissions, "bichat.access")
-		assert.Contains(t, streamCtx.Permissions, "finance.read")
+		assert.Contains(t, streamCtx.Permissions, "BiChat.Access")
+		assert.Contains(t, streamCtx.Permissions, "Finance.Read")
 		assert.NotEmpty(t, streamCtx.CSRFToken)
 
 		// Verify session context
@@ -342,7 +342,7 @@ func TestStreamContextBuilder_Build_Performance(t *testing.T) {
 
 	ctx := createTestContext(t,
 		withUserID(42),
-		withPermissions("bichat.access", "finance.read"),
+		withPermissions("BiChat.Access", "Finance.Read"),
 	)
 
 	r := httptest.NewRequest(http.MethodGet, "/stream", nil)
@@ -422,7 +422,7 @@ func TestStreamContextBuilder_VerifyLightweight(t *testing.T) {
 
 	ctx := createTestContext(t,
 		withUserID(42),
-		withPermissions("bichat.access"),
+		withPermissions("BiChat.Access"),
 	)
 
 	r := httptest.NewRequest(http.MethodGet, "/stream", nil)

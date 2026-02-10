@@ -1,6 +1,6 @@
 package applet
 
-// collectUserPermissionNames returns the user's permission names, normalized.
+// collectUserPermissionNames returns the user's permission names (trimmed, case preserved).
 func collectUserPermissionNames(u AppletUser) []string {
 	if u == nil {
 		return []string{}
