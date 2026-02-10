@@ -13,9 +13,10 @@ const maxPermissionLength = 255
 var permissionRegex = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)*$`)
 
 // ValidatePermissions filters and validates permission names. Returns only valid ones.
+// Always returns a non-nil slice (empty slice for no permissions) to ensure correct JSON serialization.
 func ValidatePermissions(permissions []string) []string {
 	if len(permissions) == 0 {
-		return nil
+		return []string{}
 	}
 	validated := make([]string, 0, len(permissions))
 	seen := make(map[string]struct{}, len(permissions))
@@ -37,9 +38,10 @@ func ValidatePermissions(permissions []string) []string {
 }
 
 // CollectUserPermissionNames returns the user's permission names, validated and deduplicated.
+// Always returns a non-nil slice (empty slice for no permissions) to ensure correct JSON serialization.
 func CollectUserPermissionNames(u api.AppletUser) []string {
 	if u == nil {
-		return nil
+		return []string{}
 	}
 	raw := u.PermissionNames()
 	return ValidatePermissions(raw)

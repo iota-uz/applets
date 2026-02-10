@@ -54,7 +54,7 @@ export function StreamError({
             type="button"
           >
             <ArrowClockwise className="w-4 h-4" />
-            {t('streamError.retry')}
+            {t('StreamError.Retry')}
           </button>
         )}
         {onRegenerate && (
@@ -64,7 +64,7 @@ export function StreamError({
             type="button"
           >
             <ArrowsCounterClockwise className="w-4 h-4" />
-            {t('streamError.regenerate')}
+            {t('StreamError.Regenerate')}
           </button>
         )}
       </div>

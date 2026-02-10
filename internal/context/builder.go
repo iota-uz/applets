@@ -163,6 +163,10 @@ func (b *ContextBuilder) Build(ctx context.Context, r *http.Request, basePath st
 		}
 	}
 
+	if err := initial.Validate(); err != nil {
+		return nil, fmt.Errorf("%s: context contract violation: %w", op, err)
+	}
+
 	if b.logger != nil {
 		b.logger.WithFields(logrus.Fields{
 			"user_id":     user.ID(),

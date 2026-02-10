@@ -23,10 +23,10 @@ export default function ConfirmationStep({
       {/* Header */}
       <div>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          {t('questionForm.reviewTitle')}
+          {t('QuestionForm.ReviewTitle')}
         </h3>
         <p className="text-gray-600 dark:text-gray-400 mt-1">
-          {t('questionForm.reviewDescription')}
+          {t('QuestionForm.ReviewDescription')}
         </p>
       </div>
 
@@ -72,7 +72,7 @@ export default function ConfirmationStep({
                 </div>
               ) : (
                 <p className="text-sm text-gray-400 dark:text-gray-500 italic">
-                  {t('questionForm.skip')}
+                  {t('QuestionForm.Skip')}
                 </p>
               )}
             </div>

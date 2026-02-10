@@ -85,7 +85,7 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
       }
     }).catch(() => {
       if (!cancelled) {
-        setError(t('allChats.failedToLoad'))
+        setError(t('AllChats.FailedToLoad'))
         setFetching(false)
       }
     })
@@ -165,7 +165,7 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
           />
           <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
             <Archive size={16} className="w-4 h-4" />
-            {t('allChats.includeArchived')}
+            {t('AllChats.IncludeArchived')}
           </span>
         </label>
 
@@ -173,14 +173,14 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
         {totalCount > 0 && (
           <p className="text-xs text-gray-500 dark:text-gray-400">
             {totalCount === 1
-              ? t('allChats.chatFound', { count: totalCount })
-              : t('allChats.chatsFound', { count: totalCount })}
+              ? t('AllChats.ChatFound', { count: totalCount })
+              : t('AllChats.ChatsFound', { count: totalCount })}
           </p>
         )}
       </div>
 
       {/* Chat List */}
-      <nav className="flex-1 overflow-y-auto px-2 pb-4 hide-scrollbar" aria-label={t('allChats.organizationChats')}>
+      <nav className="flex-1 overflow-y-auto px-2 pb-4 hide-scrollbar" aria-label={t('AllChats.OrganizationChats')}>
         {fetching && chats.length === 0 ? (
           <SessionSkeleton count={5} />
         ) : (
@@ -192,7 +192,7 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
                 initial="hidden"
                 animate="visible"
                 role="list"
-                aria-label={t('allChats.organizationChatSessions')}
+                aria-label={t('AllChats.OrganizationChatSessions')}
               >
                 {chats.map((chat) => (
                   <motion.div
@@ -260,7 +260,7 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
                         onClick={handleLoadMore}
                         className="text-sm text-primary-600 dark:text-primary-400 hover:underline"
                       >
-                        {t('allChats.loadMore')}
+                        {t('AllChats.LoadMore')}
                       </button>
                     )}
                   </div>
@@ -268,13 +268,13 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
               </motion.div>
             ) : (
               <EmptyState
-                title={t('allChats.noChatsFound')}
+                title={t('AllChats.NoChatsFound')}
                 description={
                   selectedUser
-                    ? t('allChats.noChatsFromUser', { firstName: selectedUser.firstName, lastName: selectedUser.lastName })
+                    ? t('AllChats.NoChatsFromUser', { firstName: selectedUser.firstName, lastName: selectedUser.lastName })
                     : includeArchived
-                    ? t('allChats.noChatsInOrg')
-                    : t('allChats.noActiveChatsInOrg')
+                    ? t('AllChats.NoChatsInOrg')
+                    : t('AllChats.NoActiveChatsInOrg')
                 }
               />
             )}

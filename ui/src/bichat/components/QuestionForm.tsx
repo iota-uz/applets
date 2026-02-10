@@ -91,8 +91,8 @@ export default function QuestionForm({
   // Calculate progress text
   const totalSteps = questions.length + 1
   const progressText = isConfirmationStep
-    ? t('questionForm.step', { current: totalSteps, total: totalSteps })
-    : t('questionForm.step', { current: currentStep + 1, total: totalSteps })
+    ? t('QuestionForm.Step', { current: totalSteps, total: totalSteps })
+    : t('QuestionForm.Step', { current: currentStep + 1, total: totalSteps })
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
@@ -102,7 +102,7 @@ export default function QuestionForm({
         <div className="border-b border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {t('questionForm.title')}
+              {t('QuestionForm.Title')}
             </h2>
             <button
               onClick={onCancel}
@@ -158,7 +158,7 @@ export default function QuestionForm({
               disabled={isSubmitting}
               className="cursor-pointer px-6 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 font-medium transition-colors"
             >
-              {t('questionForm.back')}
+              {t('QuestionForm.Back')}
             </button>
           )}
 
@@ -182,7 +182,7 @@ export default function QuestionForm({
                 className="cursor-pointer px-6 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
               >
                 {isSubmitting && <LoadingSpinner size="sm" />}
-                {isSubmitting ? t('questionForm.submitting') : t('questionForm.confirm')}
+                {isSubmitting ? t('QuestionForm.Submitting') : t('QuestionForm.Confirm')}
               </button>
             </>
           ) : (
@@ -192,7 +192,7 @@ export default function QuestionForm({
               disabled={!currentQuestionAnswered || isSubmitting}
               className="cursor-pointer px-6 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
             >
-              {t('questionForm.next')}
+              {t('QuestionForm.Next')}
             </button>
           )}
         </div>

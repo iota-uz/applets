@@ -38,7 +38,7 @@ function UserFilter({ users, selectedUser, onUserChange, loading }: UserFilterPr
                 disabled:opacity-50 disabled:cursor-not-allowed
                 flex items-center justify-between gap-2
               `}
-              aria-label={t('allChats.allUsers')}
+              aria-label={t('AllChats.AllUsers')}
             >
               {selectedUser ? (
                 <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -54,7 +54,7 @@ function UserFilter({ users, selectedUser, onUserChange, loading }: UserFilterPr
                 </div>
               ) : (
                 <span className="text-gray-500 dark:text-gray-400">
-                  {loading ? t('allChats.loadingUsers') : t('allChats.allUsers')}
+                  {loading ? t('AllChats.LoadingUsers') : t('AllChats.AllUsers')}
                 </span>
               )}
 
@@ -114,7 +114,7 @@ function UserFilter({ users, selectedUser, onUserChange, loading }: UserFilterPr
                       }
                     `}
                   >
-                    {t('allChats.allUsers')}
+                    {t('AllChats.AllUsers')}
                   </button>
                 )}
               </MenuItem>
@@ -163,7 +163,7 @@ function UserFilter({ users, selectedUser, onUserChange, loading }: UserFilterPr
               {/* Empty state */}
               {users.length === 0 && (
                 <div className="px-3 py-6 text-center">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('allChats.noUsersFound')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('AllChats.NoUsersFound')}</p>
                 </div>
               )}
             </MenuItems>

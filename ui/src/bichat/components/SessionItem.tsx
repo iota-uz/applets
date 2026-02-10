@@ -46,7 +46,7 @@ const SessionItem = memo<SessionItemProps>(
     className = '',
   }) => {
     const editableTitleRef = useRef<EditableTextRef>(null)
-    const itemRef = useRef<HTMLButtonElement>(null)
+    const itemRef = useRef<HTMLDivElement>(null)
     const [menuOpen, setMenuOpen] = useState(false)
     const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null)
     const [isTouch, setIsTouch] = useState(false)
@@ -156,10 +156,17 @@ const SessionItem = memo<SessionItemProps>(
           whileHover="hover"
           exit="exit"
         >
-          <button
-            type="button"
+          <div
+            role="button"
+            tabIndex={0}
             ref={itemRef}
             onClick={() => onSelect(session.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onSelect(session.id)
+              }
+            }}
             className={`block w-full text-left px-3 py-2 rounded-lg transition-smooth group relative touch-tap cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 ${
               isActive
                 ? 'bg-primary-50/50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 border-l-4 border-primary-400 dark:border-primary-600'
@@ -344,7 +351,7 @@ const SessionItem = memo<SessionItemProps>(
                 </Menu>
               )}
             </div>
-          </button>
+          </div>
         </motion.div>
         <TouchContextMenu
           items={contextMenuItems}

@@ -21,38 +21,27 @@ interface WelcomeContentProps {
   disabled?: boolean
 }
 
-const EXAMPLE_PROMPTS: ExamplePrompt[] = [
-  {
-    category: 'Data Analysis',
-    icon: ChartBar,
-    text: 'Show me sales trends for the last quarter',
-  },
-  {
-    category: 'Reports',
-    icon: FileText,
-    text: 'Generate a summary of customer feedback',
-  },
-  {
-    category: 'Insights',
-    icon: Lightbulb,
-    text: 'What are the top performing products?',
-  },
-]
+/** Default prompt definitions with i18n keys and English fallbacks. */
+const PROMPT_DEFS = [
+  { categoryKey: 'Welcome.Prompt1Category', textKey: 'Welcome.Prompt1Text', icon: ChartBar, defaultCategory: 'OSAGO Portfolio', defaultText: 'What is the total amount of accrued OSAGO premiums for the reporting period?' },
+  { categoryKey: 'Welcome.Prompt2Category', textKey: 'Welcome.Prompt2Text', icon: FileText, defaultCategory: 'Regional Analysis', defaultText: 'Show me the top 5 regions by collected insurance premiums' },
+  { categoryKey: 'Welcome.Prompt3Category', textKey: 'Welcome.Prompt3Text', icon: Lightbulb, defaultCategory: 'Loss Analysis', defaultText: 'Calculate the loss ratio across the entire OSAGO portfolio' },
+] as const
 
-const CATEGORY_STYLES: Record<string, { badge: string; icon: string }> = {
-  'Data Analysis': {
+const PROMPT_STYLES: { badge: string; icon: string }[] = [
+  {
     badge: 'bg-sky-50 text-sky-600 ring-sky-600/10 dark:bg-sky-400/10 dark:text-sky-400 dark:ring-sky-400/20',
     icon: 'text-sky-500 dark:text-sky-400',
   },
-  Reports: {
+  {
     badge: 'bg-teal-50 text-teal-600 ring-teal-600/10 dark:bg-teal-400/10 dark:text-teal-400 dark:ring-teal-400/20',
     icon: 'text-teal-500 dark:text-teal-400',
   },
-  Insights: {
+  {
     badge: 'bg-amber-50 text-amber-600 ring-amber-600/10 dark:bg-amber-400/10 dark:text-amber-400 dark:ring-amber-400/20',
     icon: 'text-amber-500 dark:text-amber-400',
   },
-}
+]
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -99,6 +88,12 @@ const reducedItemVariants = {
   }
 }
 
+/** Resolve a translation key, falling back to a default if the key is not translated. */
+function tOr(t: (key: string) => string, key: string, defaultValue: string): string {
+  const v = t(key)
+  return v !== key ? v : defaultValue
+}
+
 function WelcomeContent({
   onPromptSelect,
   title,
@@ -109,6 +104,12 @@ function WelcomeContent({
   const shouldReduceMotion = useReducedMotion()
   const resolvedTitle = title || t('Welcome.Title')
   const resolvedDescription = description || t('Welcome.Description')
+
+  const prompts: ExamplePrompt[] = PROMPT_DEFS.map((def) => ({
+    category: tOr(t, def.categoryKey, def.defaultCategory),
+    text: tOr(t, def.textKey, def.defaultText),
+    icon: def.icon,
+  }))
 
   const handlePromptClick = (prompt: string) => {
     if (onPromptSelect && !disabled) {
@@ -161,8 +162,8 @@ function WelcomeContent({
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {EXAMPLE_PROMPTS.map((prompt, index) => {
-            const style = CATEGORY_STYLES[prompt.category]
+          {prompts.map((prompt, index) => {
+            const style = PROMPT_STYLES[index]
             return (
               <motion.button
                 key={index}

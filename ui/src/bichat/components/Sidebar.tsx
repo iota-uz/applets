@@ -326,7 +326,7 @@ export default function Sidebar({
         ) : (
           <>
             {/* Search Input */}
-            <div className="mt-3">
+            <div className="mt-3 px-4">
               <SearchInput
                 value={searchQuery}
                 onChange={setSearchQuery}

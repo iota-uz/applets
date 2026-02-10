@@ -14,7 +14,7 @@ export default function SkipLink() {
       href="#main-content"
       className="sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:top-4 focus-visible:left-4 focus-visible:z-50 focus-visible:bg-primary-600 focus-visible:text-white focus-visible:px-4 focus-visible:py-2 focus-visible:rounded-lg focus-visible:shadow-lg"
     >
-      {t('skipLink.label')}
+      {t('SkipLink.Label')}
     </a>
   )
 }
