@@ -91,7 +91,7 @@ func findRootAppletsConfig() (string, error) {
 		if err == nil {
 			return dir, nil
 		}
-		if err != nil && !os.IsNotExist(err) {
+		if !os.IsNotExist(err) {
 			return "", fmt.Errorf("stat %s: %w", candidate, err)
 		}
 		parent := filepath.Dir(dir)
@@ -116,6 +116,8 @@ func findRootGoMod() (string, error) {
 			if strings.Contains(s, "module github.com/iota-uz/iota-sdk") || strings.Contains(s, "module github.com/iota-uz/eai") {
 				return dir, nil
 			}
+		} else if !os.IsNotExist(readErr) {
+			return "", fmt.Errorf("read %s: %w", modPath, readErr)
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {

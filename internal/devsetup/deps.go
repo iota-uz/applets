@@ -12,7 +12,11 @@ import (
 
 // RefreshAppletDeps ensures applet node_modules are up to date and clears the Vite
 // cache when the local SDK bundle has changed. ctx is used for cancellation of installs.
+// webDir may be relative to root; it is resolved to an absolute path before any FS use.
 func RefreshAppletDeps(ctx context.Context, root, webDir string) error {
+	if !filepath.IsAbs(webDir) {
+		webDir = filepath.Join(root, webDir)
+	}
 	nodeModules := filepath.Join(webDir, "node_modules")
 	didInstall := false
 

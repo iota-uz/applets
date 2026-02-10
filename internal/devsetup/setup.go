@@ -36,6 +36,9 @@ func SetupApplet(ctx context.Context, root, name string, applet *config.AppletCo
 
 	// Install root node_modules if missing
 	if _, err := os.Stat(filepath.Join(root, "node_modules")); err != nil {
+		if !os.IsNotExist(err) {
+			return nil, fmt.Errorf("node_modules: %w", err)
+		}
 		log.Println("Installing root dependencies...")
 		if err := RunCommand(ctx, root, "pnpm", "install", "--prefer-frozen-lockfile"); err != nil {
 			return nil, fmt.Errorf("failed to install root deps: %w", err)
