@@ -10,7 +10,11 @@ Use this when releasing a new version of this package. Go and npm share the same
 ## Steps
 
 1. **Bump version**  
-   In `package.json`, set `"version": "X.Y.Z"` (e.g. 0.4.6).
+   Use npm to bump the patch version without creating a git tag:
+   ```bash
+   npm version patch --no-git-tag-version
+   ```
+   Then read the new version from `package.json` and use it as `X.Y.Z` in the following steps.
 
 2. **Commit and push**  
    Commit all changes (including the version bump) and push to `main`:
@@ -26,7 +30,7 @@ Use this when releasing a new version of this package. Go and npm share the same
    ```
 
 4. **Workflow**  
-   `.github/workflows/publish-iota-sdk.yml` runs on tag push `v*`. It:
+   `.github/workflows/publish.yml` runs on tag push `v*`. It:
    - Validates tag matches `package.json`
    - Builds and publishes **@iota-uz/sdk** to npm (requires `NPM_TOKEN` secret)
    - Creates a GitHub release
