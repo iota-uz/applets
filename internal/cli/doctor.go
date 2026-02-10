@@ -57,11 +57,14 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 		}
 		cmd.Printf("Node: OK (required %d+)\n", nodeMajor)
 	}
-	if err := devrunner.PreflightPnpm(ctx); err != nil {
-		cmd.PrintErrln(err)
-		return NewExitError(FailureCode, err)
+	needPnpm := cfg.Dev.Processes != nil || len(cfg.Applets) > 0
+	if needPnpm {
+		if err := devrunner.PreflightPnpm(ctx); err != nil {
+			cmd.PrintErrln(err)
+			return NewExitError(FailureCode, err)
+		}
+		cmd.Println("pnpm: OK")
 	}
-	cmd.Println("pnpm: OK")
 
 	cmd.Println("All checks passed.")
 	return nil
