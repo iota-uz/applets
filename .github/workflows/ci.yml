@@ -26,17 +26,19 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
+          go-version: "1.24.10"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
           version: "9.15.0"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: applets/pnpm-lock.yaml
 
       - name: Download Go dependencies
         working-directory: applets
@@ -44,7 +46,7 @@ jobs:
 
       - name: Run Go tests
         working-directory: applets
-        run: go test ./pkg/... ./internal/... ./cmd/... -count=1
+        run: go test ./internal/... ./cmd/... -count=1
 
       - name: Install JS dependencies
         working-directory: applets

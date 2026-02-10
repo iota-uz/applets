@@ -1,7 +1,9 @@
 import { cp, mkdir, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const repoRoot = path.resolve(process.cwd())
+const scriptDir = path.dirname(fileURLToPath(import.meta.url))
+const repoRoot = path.resolve(scriptDir, '..')
 const srcFontsDir = path.join(repoRoot, 'assets/fonts')
 const outFontsDir = path.join(repoRoot, 'assets/fonts')
 const srcBichatCss = path.join(repoRoot, 'ui/src/bichat/styles.css')
@@ -38,4 +40,11 @@ if (srcFontsDir !== outFontsDir) {
 }
 
 await mkdir(path.dirname(outBichatCss), { recursive: true })
-await cp(srcBichatCss, outBichatCss)
+try {
+  await cp(srcBichatCss, outBichatCss)
+} catch (err) {
+  if (err.code === 'ENOENT') {
+    throw new Error(`Bichat styles not found: ${srcBichatCss}. Ensure ui/src/bichat/styles.css exists.`)
+  }
+  throw err
+}

@@ -2,12 +2,11 @@ package cli
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/spf13/cobra"
 
 	"github.com/iota-uz/applets/internal/applet/depscheck"
-	"github.com/iota-uz/applets/internal/applet/rpccodegen"
+	"github.com/iota-uz/applets/internal/config"
 )
 
 // NewDepsCommand returns the deps command with check subcommand.
@@ -31,11 +30,12 @@ func NewDepsCommand() *cobra.Command {
 	return depsCmd
 }
 
-func runDepsCheck(cmd *cobra.Command, args []string) error {
-	root, err := rpccodegen.FindProjectRoot()
+func runDepsCheck(cmd *cobra.Command, _ []string) error {
+	root, err := config.FindRoot()
 	if err != nil {
 		return err
 	}
+
 	violations, found, err := depscheck.Check(root)
 	if err != nil {
 		return err
@@ -45,11 +45,8 @@ func runDepsCheck(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 	if len(violations) > 0 {
-		stderr := cmd.ErrOrStderr()
 		for _, v := range violations {
-			if _, err := stderr.Write([]byte(v + "\n")); err != nil {
-				return fmt.Errorf("write violation to stderr: %w", err)
-			}
+			cmd.PrintErrln(v)
 		}
 		return NewExitError(FailureCode, errors.New("applet SDK dependency policy check failed"))
 	}

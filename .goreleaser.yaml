@@ -1,0 +1,44 @@
+version: 2
+
+project_name: applet
+
+builds:
+  - id: applet
+    main: ./cmd/applet
+    binary: applet
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+
+archives:
+  - id: default
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+
+checksum:
+  name_template: "checksums.txt"
+
+release:
+  github:
+    owner: iota-uz
+    name: applets
+  name_template: "v{{ .Version }}"
+  draft: false
+  prerelease: auto
+  header: |
+    ## Go / CLI
+    - **Install:** `go install github.com/iota-uz/applets/cmd/applet@v{{ .Version }}`
+    - **Module:** `go get github.com/iota-uz/applets@v{{ .Version }}`
+    ## npm
+    - **Package:** `@iota-uz/sdk@{{ .Version }}` — `npm install @iota-uz/sdk`

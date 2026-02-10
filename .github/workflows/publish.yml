@@ -1,4 +1,4 @@
-name: Publish @iota-uz/sdk
+name: Publish
 
 on:
   push:
@@ -6,16 +6,19 @@ on:
       - "v*"
 
 concurrency:
-  group: npm-publish-${{ github.ref }}
+  group: publish-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -53,16 +56,21 @@ jobs:
             exit 1
           fi
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.10"
+
+      - name: Run GoReleaser
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "v2"
+          args: release --clean
+
       - name: Publish to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: pnpm publish --access public --no-git-checks
-
-      - name: Create GitHub release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          V="${{ steps.version.outputs.version }}"
-          gh release create "${GITHUB_REF_NAME}" \
-            --title "Release v${V}" \
-            --notes "Go: \`go get github.com/iota-uz/applets@v${V}\` / CLI: \`go install github.com/iota-uz/applets/cmd/applet@v${V}\` — npm: \`@iota-uz/sdk@${V}\`."
+        run: npm publish --access public

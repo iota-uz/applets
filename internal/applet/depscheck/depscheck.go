@@ -1,12 +1,13 @@
 package depscheck
 
 import (
-	"encoding/json"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/iota-uz/applets/internal/applet/pkgjson"
 )
 
 var (
@@ -14,11 +15,6 @@ var (
 	localSDKPackageLockPattern   = regexp.MustCompile(`@iota-uz/sdk@(file|link|workspace):`)
 	localSDKSpecifierLockPattern = regexp.MustCompile(`(?s)(?:'@iota-uz/sdk'|\"@iota-uz/sdk\"|@iota-uz/sdk):\s*\n\s*specifier:\s*(file|link|workspace):`)
 )
-
-type packageDeps struct {
-	Dependencies    map[string]string `json:"dependencies"`
-	DevDependencies map[string]string `json:"devDependencies"`
-}
 
 // Check walks applet web package.json files under root/modules and returns
 // any SDK dependency policy violations. found is true if at least one
@@ -50,24 +46,17 @@ func Check(root string) (violations []string, found bool, err error) {
 }
 
 func checkAppletPackage(packagePath string) ([]string, error) {
-	data, err := os.ReadFile(packagePath)
+	deps, err := pkgjson.Read(packagePath)
 	if err != nil {
 		return nil, err
 	}
-	var deps packageDeps
-	if err := json.Unmarshal(data, &deps); err != nil {
-		return nil, err
-	}
-	spec := deps.Dependencies["@iota-uz/sdk"]
-	if spec == "" {
-		spec = deps.DevDependencies["@iota-uz/sdk"]
-	}
+	spec := pkgjson.SDKSpec(deps)
 	if spec == "" {
 		return nil, nil
 	}
 	var violations []string
 	packageRel := filepath.ToSlash(packagePath)
-	if strings.HasPrefix(spec, "file:") || strings.HasPrefix(spec, "link:") || strings.HasPrefix(spec, "workspace:") {
+	if pkgjson.IsLocalSDKSpec(spec) {
 		violations = append(violations,
 			"Error: "+packageRel+" uses local @iota-uz/sdk dependency ("+spec+"). Use an exact npm version instead.")
 	}

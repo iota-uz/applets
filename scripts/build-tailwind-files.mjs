@@ -1,48 +1,76 @@
-import { cp, mkdir, writeFile } from 'node:fs/promises'
-import { spawnSync } from 'node:child_process'
-import path from 'node:path'
+/**
+ * Builds tailwind/ from local source in this repo (no copy from node_modules).
+ * Produces: tailwind/iota.css, main.css, sdk-theme.cjs, create-config.cjs, compiled.css.
+ */
+import { access, cp, mkdir, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const repoRoot = path.resolve(process.cwd())
-const outDir = path.join(repoRoot, 'tailwind')
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, "..");
+const outDir = path.join(repoRoot, "tailwind");
 
-await mkdir(outDir, { recursive: true })
+const requiredInputs = [
+  ["styles", "tailwind", "iota.css"],
+  ["ui", "tailwind", "sdk-theme.cjs"],
+  ["ui", "tailwind", "create-config.cjs"],
+  ["styles", "tailwind", "input.css"],
+];
+for (const parts of requiredInputs) {
+  const p = path.join(repoRoot, ...parts);
+  try {
+    await access(p);
+  } catch (err) {
+    if (err.code === "ENOENT") {
+      throw new Error(`Required file not found: ${path.relative(repoRoot, p)}\n  at ${p}`);
+    }
+    throw err;
+  }
+}
 
-const iotaCssPath = path.join(outDir, 'iota.css')
-await cp(path.join(repoRoot, 'styles/tailwind/iota.css'), iotaCssPath)
+await mkdir(outDir, { recursive: true });
 
-const mainCssPath = path.join(outDir, 'main.css')
+const iotaCssPath = path.join(outDir, "iota.css");
+await cp(path.join(repoRoot, "styles", "tailwind", "iota.css"), iotaCssPath);
+
+const mainCssPath = path.join(outDir, "main.css");
 await writeFile(
   mainCssPath,
   `@import "tailwindcss";\n@import "./iota.css";\n`,
-  'utf8',
-)
+  "utf8",
+);
 
-const sdkThemePath = path.join(outDir, 'sdk-theme.cjs')
-await cp(path.join(repoRoot, 'ui/tailwind/sdk-theme.cjs'), sdkThemePath)
+const sdkThemePath = path.join(outDir, "sdk-theme.cjs");
+await cp(path.join(repoRoot, "ui", "tailwind", "sdk-theme.cjs"), sdkThemePath);
 
-const createConfigPath = path.join(outDir, 'create-config.cjs')
+const createConfigPath = path.join(outDir, "create-config.cjs");
 await cp(
-  path.join(repoRoot, 'ui/tailwind/create-config.cjs'),
+  path.join(repoRoot, "ui", "tailwind", "create-config.cjs"),
   createConfigPath,
-)
+);
 
-const compiledInputPath = path.join(repoRoot, 'styles/tailwind/input.css')
-const compiledCssPath = path.join(outDir, 'compiled.css')
+const compiledInputPath = path.join(repoRoot, "styles", "tailwind", "input.css");
+const compiledCssPath = path.join(outDir, "compiled.css");
 
 const compiled = spawnSync(
-  'pnpm',
+  "pnpm",
   [
-    'exec',
-    'tailwindcss',
-    '--input',
+    "exec",
+    "tailwindcss",
+    "--input",
     compiledInputPath,
-    '--output',
+    "--output",
     compiledCssPath,
-    '--minify',
+    "--minify",
   ],
-  { cwd: repoRoot, stdio: 'inherit' },
-)
+  { cwd: repoRoot, stdio: "inherit" },
+);
 
 if (compiled.status !== 0) {
-  throw new Error(`tailwindcss compilation failed with exit code ${compiled.status}`)
+  const msg =
+    compiled.error != null
+      ? String(compiled.error)
+      : `tailwindcss compilation failed with exit code ${compiled.status ?? "unknown"}`;
+  throw new Error(msg);
 }
