@@ -91,16 +91,10 @@ func Run(ctx context.Context, cancel context.CancelFunc, specs []ProcessSpec, op
 			if err := PreflightNode(ctx, nodeMajor); err != nil {
 				return 1, &PreflightError{Err: err}
 			}
-			if out, err := exec.CommandContext(ctx, "node", "-v").Output(); err == nil {
-				log.Printf("Node %s", strings.TrimSpace(string(out)))
-			}
 		}
 		if opts.PreflightPnpm {
 			if err := PreflightPnpm(ctx); err != nil {
 				return 1, &PreflightError{Err: err}
-			}
-			if out, err := exec.CommandContext(ctx, "pnpm", "-v").Output(); err == nil {
-				log.Printf("pnpm %s", strings.TrimSpace(string(out)))
 			}
 		}
 		if opts.PreflightDeps && opts.ProjectRoot != "" {
@@ -182,6 +176,7 @@ loop:
 		case key := <-keyCh:
 			switch key {
 			case 'r':
+				// restart() only drains restartCh for critical processes; if RestartProcessName is auxiliary, the signal is sent but runAuxiliary does not read restartCh (process restarts on crash loop instead).
 				if opts.RestartProcessName != "" {
 					for _, m := range managed {
 						if m.spec.Name == opts.RestartProcessName {
@@ -265,6 +260,7 @@ func (m *managedProcess) runCritical(ctx context.Context, exitCh chan<- string) 
 			outputMu.Unlock()
 			continue
 		default:
+			// Any non-restarted exit of a critical process (including exit 0) is treated as fatal and triggers full shutdown.
 			exitCh <- m.spec.Name
 			return
 		}
@@ -361,8 +357,14 @@ func startProcess(ctx context.Context, spec ProcessSpec, padLen int, shutdownTim
 	}
 	cmd.WaitDelay = shutdownTimeout
 
-	stdout, _ := cmd.StdoutPipe()
-	stderr, _ := cmd.StderrPipe()
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		log.Printf("warning: failed to create stdout pipe for %s: %v", spec.Name, err)
+	}
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		log.Printf("warning: failed to create stderr pipe for %s: %v", spec.Name, err)
+	}
 
 	if err := cmd.Start(); err != nil {
 		return nil, err
@@ -371,8 +373,12 @@ func startProcess(ctx context.Context, spec ProcessSpec, padLen int, shutdownTim
 	prefix := fmt.Sprintf("[%-*s]", padLen, spec.Name)
 	coloredPrefix := spec.Color + prefix + ColorReset
 
-	go logOutput(stdout, coloredPrefix)
-	go logOutput(stderr, coloredPrefix)
+	if stdout != nil {
+		go logOutput(stdout, coloredPrefix)
+	}
+	if stderr != nil {
+		go logOutput(stderr, coloredPrefix)
+	}
 
 	return cmd, nil
 }

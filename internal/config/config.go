@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 
 	"github.com/BurntSushi/toml"
 )
@@ -108,7 +108,7 @@ func ApplyDefaults(cfg *ProjectConfig) {
 	for name := range cfg.Applets {
 		names = append(names, name)
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	const baseVitePort = 5173
 	for i, name := range names {
 		applet := cfg.Applets[name]
@@ -148,7 +148,8 @@ func Validate(cfg *ProjectConfig) error {
 	}
 
 	usedPorts := make(map[int]string)
-	for name, applet := range cfg.Applets {
+	for _, name := range cfg.AppletNames() {
+		applet := cfg.Applets[name]
 		if applet.BasePath == "" {
 			return fmt.Errorf("applets.%s: base_path is required", name)
 		}
@@ -169,7 +170,7 @@ func (c *ProjectConfig) AppletNames() []string {
 	for name := range c.Applets {
 		names = append(names, name)
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	return names
 }
 

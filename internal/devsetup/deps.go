@@ -16,8 +16,8 @@ type packageDeps struct {
 }
 
 // RefreshAppletDeps ensures applet node_modules are up to date and clears the Vite
-// cache when the local SDK bundle has changed.
-func RefreshAppletDeps(root, webDir string) error {
+// cache when the local SDK bundle has changed. ctx allows the caller to cancel (e.g. pnpm install).
+func RefreshAppletDeps(ctx context.Context, root, webDir string) error {
 	nodeModules := filepath.Join(webDir, "node_modules")
 	didInstall := false
 
@@ -28,17 +28,17 @@ func RefreshAppletDeps(root, webDir string) error {
 
 	if _, err := os.Stat(nodeModules); err != nil {
 		log.Println("Installing applet dependencies...")
-		if err := RunCommand(context.Background(), root, "pnpm", "-C", webDir, "install", "--prefer-frozen-lockfile"); err != nil {
+		if err := RunCommand(ctx, root, "pnpm", "-C", webDir, "install", "--prefer-frozen-lockfile"); err != nil {
 			return err
 		}
 		didInstall = true
 	} else if localSDKDep {
-		distIndex := filepath.Join(root, "dist/index.mjs")
-		sdkModule := filepath.Join(nodeModules, "@iota-uz/sdk/dist/index.mjs")
+		distIndex := filepath.Join(root, "dist", "index.mjs")
+		sdkModule := filepath.Join(nodeModules, "@iota-uz", "sdk", "dist", "index.mjs")
 
 		if IsNewer(distIndex, sdkModule) {
 			log.Println("Refreshing applet deps (local @iota-uz/sdk changed)...")
-			if err := RunCommand(context.Background(), root, "pnpm", "-C", webDir, "install", "--prefer-frozen-lockfile"); err != nil {
+			if err := RunCommand(ctx, root, "pnpm", "-C", webDir, "install", "--prefer-frozen-lockfile"); err != nil {
 				return err
 			}
 			didInstall = true
@@ -51,7 +51,7 @@ func RefreshAppletDeps(root, webDir string) error {
 			log.Printf("warning: failed to clear Vite cache after install: %v", err)
 		}
 	} else {
-		distIndex := filepath.Join(root, "dist/index.mjs")
+		distIndex := filepath.Join(root, "dist", "index.mjs")
 		if IsNewer(distIndex, viteCache) {
 			log.Println("Clearing Vite dep cache (SDK bundle changed)...")
 			if err := os.RemoveAll(viteCache); err != nil {

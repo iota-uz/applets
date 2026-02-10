@@ -90,6 +90,9 @@ func TestValidate_DuplicateVitePorts(t *testing.T) {
 	}
 	err := Validate(cfg)
 	assert.ErrorContains(t, err, "vite_port 5173 conflicts")
+	// Validate iterates over sorted applet names, so the message is deterministic: the second in order reports the conflict (e.g. "applets.app2: ... conflicts with applet app1").
+	assert.ErrorContains(t, err, "app2")
+	assert.ErrorContains(t, err, "app1")
 }
 
 func TestValidate_EmptyProcessName(t *testing.T) {

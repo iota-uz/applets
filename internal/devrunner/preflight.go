@@ -28,6 +28,9 @@ type packageJSON struct {
 	Engines *packageJSONEngines `json:"engines"`
 }
 
+// nodeMajorRe extracts the first number from engines.node (e.g. ">=18" -> "18").
+var nodeMajorRe = regexp.MustCompile(`(\d+)`)
+
 // PreflightFromPackageJSON parses package.json under projectRoot and returns the minimum Node major
 // from engines.node (e.g. ">=18" -> 18, "18" -> 18). If file or field is missing, returns 0, nil.
 func PreflightFromPackageJSON(projectRoot string) (int, error) {
@@ -47,8 +50,7 @@ func PreflightFromPackageJSON(projectRoot string) (int, error) {
 		return 0, nil
 	}
 	// Parse ">=18", "18", ">=18.0.0", "18.x", etc. — take first number as min major.
-	re := regexp.MustCompile(`(\d+)`)
-	m := re.FindStringSubmatch(pkg.Engines.Node)
+	m := nodeMajorRe.FindStringSubmatch(pkg.Engines.Node)
 	if len(m) < 2 {
 		return 0, nil
 	}
@@ -70,9 +72,6 @@ func PreflightNode(ctx context.Context, requiredMajor int) error {
 	// v is like "v20.10.0" or "v18.19.0"
 	v = strings.TrimPrefix(v, "v")
 	parts := strings.Split(v, ".")
-	if len(parts) == 0 {
-		return fmt.Errorf("could not parse node version %q", string(out))
-	}
 	major, err := strconv.Atoi(parts[0])
 	if err != nil {
 		return fmt.Errorf("could not parse node major version %q: %w", parts[0], err)

@@ -55,7 +55,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	if err := devsetup.BuildSDKIfNeeded(root); err != nil {
+	if err := devsetup.BuildSDKIfNeeded(cmd.Context(), root); err != nil {
 		return fmt.Errorf("sdk build failed: %w", err)
 	}
 
@@ -63,7 +63,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		applet := cfg.Applets[name]
 		webDir := filepath.Join(root, applet.Web)
 
-		if err := devsetup.RefreshAppletDeps(root, webDir); err != nil {
+		if err := devsetup.RefreshAppletDeps(cmd.Context(), root, webDir); err != nil {
 			return fmt.Errorf("applet %s dep refresh failed: %w", name, err)
 		}
 

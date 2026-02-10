@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -175,58 +174,8 @@ func doRPCCheck(cmd *cobra.Command, root, name, routerFunc string) error {
 	if err != nil {
 		return err
 	}
-	targetAbs := filepath.Join(root, cfg.TargetOut)
-	if _, err := os.Stat(targetAbs); err != nil {
-		if os.IsNotExist(err) {
-			return errors.New("RPC target file does not exist: " + cfg.TargetOut + "\nRun: applet rpc gen --name " + cfg.Name)
-		}
+	if err := checkRPCDrift(root, name, cfg); err != nil {
 		return err
-	}
-	tmpFile, err := os.CreateTemp("", "applet-rpc-contract-*.ts")
-	if err != nil {
-		return err
-	}
-	tmpPath := tmpFile.Name()
-	if err := tmpFile.Close(); err != nil {
-		return err
-	}
-	defer func() {
-		_ = os.Remove(tmpPath)
-	}()
-	if err := rpccodegen.RunTypegen(root, cfg, tmpPath); err != nil {
-		return err
-	}
-	targetBytes, err := os.ReadFile(targetAbs)
-	if err != nil {
-		return err
-	}
-	var expectedBytes []byte
-	if cfg.Name == "bichat" && cfg.TargetOut == cfg.ModuleOut {
-		expectedBytes = []byte(rpccodegen.BichatReexportContent(cfg.TypeName))
-	} else {
-		tmpBytes, err := os.ReadFile(tmpPath)
-		if err != nil {
-			return err
-		}
-		expectedBytes = tmpBytes
-	}
-	if !bytes.Equal(targetBytes, expectedBytes) {
-		return errors.New("RPC contract drift detected for applet: " + cfg.Name + "\nRun: applet rpc gen --name " + cfg.Name)
-	}
-	if cfg.Name == "bichat" && cfg.TargetOut != cfg.ModuleOut {
-		moduleAbs := filepath.Join(root, cfg.ModuleOut)
-		if _, err := os.Stat(moduleAbs); err == nil {
-			actual, readErr := os.ReadFile(moduleAbs)
-			if readErr != nil {
-				return readErr
-			}
-			expected := rpccodegen.BichatReexportContent(cfg.TypeName)
-			if string(actual) != expected {
-				return errors.New("BiChat module rpc.generated.ts must be a re-export shim.\nRun: applet rpc gen --name " + cfg.Name)
-			}
-		} else if !os.IsNotExist(err) {
-			return err
-		}
 	}
 	cmd.Println("RPC contract is up to date:", cfg.Name)
 	return nil
