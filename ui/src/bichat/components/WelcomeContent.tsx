@@ -23,9 +23,9 @@ interface WelcomeContentProps {
 
 /** Default prompt definitions with i18n keys and English fallbacks. */
 const PROMPT_DEFS = [
-  { categoryKey: 'Welcome.Prompt1Category', textKey: 'Welcome.Prompt1Text', icon: ChartBar, defaultCategory: 'OSAGO Portfolio', defaultText: 'What is the total amount of accrued OSAGO premiums for the reporting period?' },
-  { categoryKey: 'Welcome.Prompt2Category', textKey: 'Welcome.Prompt2Text', icon: FileText, defaultCategory: 'Regional Analysis', defaultText: 'Show me the top 5 regions by collected insurance premiums' },
-  { categoryKey: 'Welcome.Prompt3Category', textKey: 'Welcome.Prompt3Text', icon: Lightbulb, defaultCategory: 'Loss Analysis', defaultText: 'Calculate the loss ratio across the entire OSAGO portfolio' },
+  { categoryKey: 'BiChat.Welcome.Prompt1Category', textKey: 'BiChat.Welcome.Prompt1Text', icon: ChartBar, defaultCategory: 'Data Analysis', defaultText: 'Show me a summary of key metrics' },
+  { categoryKey: 'BiChat.Welcome.Prompt2Category', textKey: 'BiChat.Welcome.Prompt2Text', icon: FileText, defaultCategory: 'Reports', defaultText: 'Generate a report for the current period' },
+  { categoryKey: 'BiChat.Welcome.Prompt3Category', textKey: 'BiChat.Welcome.Prompt3Text', icon: Lightbulb, defaultCategory: 'Insights', defaultText: 'What trends can you identify in the data?' },
 ] as const
 
 const PROMPT_STYLES: { badge: string; icon: string }[] = [

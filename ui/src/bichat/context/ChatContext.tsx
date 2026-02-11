@@ -206,7 +206,7 @@ export function ChatSessionProvider({
   const executeSlashCommand = useCallback(
     async (command: ParsedSlashCommand): Promise<boolean> => {
       if (command.hasArgs) {
-        setInputError('slash.error.noArguments')
+        setInputError('BiChat.Slash.ErrorNoArguments')
         return true
       }
 
@@ -215,7 +215,7 @@ export function ChatSessionProvider({
 
       if (command.name === '/debug') {
         if (!hasPermission('bichat.export')) {
-          setInputError('slash.error.debugUnauthorized')
+          setInputError('BiChat.Slash.ErrorDebugUnauthorized')
           return true
         }
 
@@ -247,11 +247,12 @@ export function ChatSessionProvider({
 
       const curSessionId = sessionRef.current.currentSessionId
       if (!curSessionId || curSessionId === 'new') {
-        setInputError('slash.error.sessionRequired')
+        setInputError('BiChat.Slash.ErrorSessionRequired')
         return true
       }
 
       if (command.name === '/clear') {
+        setMessage('')
         setLoading(true)
         setStreamingContent('')
 
@@ -267,9 +268,8 @@ export function ChatSessionProvider({
           }
           setCompactionSummary(null)
           setCodeOutputs([])
-          setMessage('')
         } catch (err) {
-          setInputError(err instanceof Error ? err.message : 'slash.error.clearFailed')
+          setInputError(err instanceof Error ? err.message : 'BiChat.Slash.ErrorClearFailed')
         } finally {
           setLoading(false)
           setIsStreaming(false)
@@ -278,6 +278,7 @@ export function ChatSessionProvider({
       }
 
       if (command.name === '/compact') {
+        setMessage('')
         setLoading(true)
         setIsCompacting(true)
         setCompactionSummary(null)
@@ -299,9 +300,8 @@ export function ChatSessionProvider({
           }
 
           setCodeOutputs([])
-          setMessage('')
         } catch (err) {
-          setInputError(err instanceof Error ? err.message : 'slash.error.compactFailed')
+          setInputError(err instanceof Error ? err.message : 'BiChat.Slash.ErrorCompactFailed')
         } finally {
           setIsCompacting(false)
           setLoading(false)
@@ -310,7 +310,7 @@ export function ChatSessionProvider({
         return true
       }
 
-      setInputError('slash.error.unknownCommand')
+      setInputError('BiChat.Slash.ErrorUnknownCommand')
       return true
     },
     [dataSource]
@@ -328,11 +328,11 @@ export function ChatSessionProvider({
       if (trimmedContent.startsWith('/')) {
         const maybeCommand = parseSlashCommand(content)
         if (!maybeCommand) {
-          setInputError('slash.error.unknownCommand')
+          setInputError('BiChat.Slash.ErrorUnknownCommand')
           return
         }
         if (attachments.length > 0) {
-          setInputError('slash.error.noAttachments')
+          setInputError('BiChat.Slash.ErrorNoAttachments')
           return
         }
         await executeSlashCommand(maybeCommand)

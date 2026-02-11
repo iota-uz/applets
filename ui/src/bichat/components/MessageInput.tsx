@@ -344,7 +344,16 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       }
 
       if (isCommandListVisible) {
-        if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
+        if (e.key === 'Tab') {
+          e.preventDefault()
+          if (filteredCommands.length > 0) {
+            onMessageChange(filteredCommands[activeCommandIndex].name)
+            setCommandListDismissed(true)
+          }
+          return
+        }
+
+        if (e.key === 'ArrowDown') {
           e.preventDefault()
           if (filteredCommands.length > 0) {
             setActiveCommandIndex((prev) => (prev + 1) % filteredCommands.length)
@@ -352,7 +361,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
           return
         }
 
-        if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
+        if (e.key === 'ArrowUp') {
           e.preventDefault()
           if (filteredCommands.length > 0) {
             setActiveCommandIndex((prev) =>

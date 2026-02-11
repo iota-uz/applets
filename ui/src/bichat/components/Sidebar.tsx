@@ -12,7 +12,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { X, Plus, Archive, CaretLineLeft, CaretLineRight, Gear } from '@phosphor-icons/react'
+import { X, Plus, Archive, CaretLineLeft, CaretLineRight, Gear, Users, List } from '@phosphor-icons/react'
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import SessionSkeleton from './SessionSkeleton'
 import SessionItem from './SessionItem'
@@ -21,6 +21,7 @@ import SearchInput from './SearchInput'
 import DateGroupHeader from './DateGroupHeader'
 import { EmptyState } from './EmptyState'
 import LoadingSpinner from './LoadingSpinner'
+import AllChatsList from './AllChatsList'
 import { useTranslation } from '../hooks/useTranslation'
 import { useToast } from '../hooks/useToast'
 import { groupSessionsByDate } from '../utils/sessionGrouping'
@@ -103,6 +104,8 @@ function useSidebarCollapse() {
   return { isCollapsed, isCollapsedRef, toggle, expand, collapse }
 }
 
+type ActiveTab = 'my-chats' | 'all-chats'
+
 export interface SidebarProps {
   dataSource: ChatDataSource
   onSessionSelect: (sessionId: string) => void
@@ -110,6 +113,7 @@ export interface SidebarProps {
   onArchivedView?: () => void
   activeSessionId?: string
   creating?: boolean
+  showAllChatsTab?: boolean
   isOpen?: boolean
   onClose?: () => void
   headerSlot?: React.ReactNode
@@ -124,6 +128,7 @@ export default function Sidebar({
   onArchivedView,
   activeSessionId,
   creating,
+  showAllChatsTab,
   isOpen: _isOpen,
   onClose,
   headerSlot,
@@ -137,7 +142,7 @@ export default function Sidebar({
   const searchContainerRef = useRef<HTMLDivElement>(null)
 
   // Collapse state — disabled when used as a mobile drawer (onClose present)
-  const { isCollapsed, isCollapsedRef, toggle, expand, collapse } = useSidebarCollapse()
+  const { isCollapsed, toggle, collapse } = useSidebarCollapse()
   const collapsible = !onClose // desktop only
 
   // Click-on-empty-space to toggle (same pattern as SDK sidebar)
@@ -183,6 +188,9 @@ export default function Sidebar({
   }, [collapsible, collapse])
 
   const showCollapsed = collapsible && isCollapsed
+
+  // View state (my chats vs all chats)
+  const [activeTab, setActiveTab] = useState<ActiveTab>('my-chats')
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -482,7 +490,14 @@ export default function Sidebar({
             </div>
           )}
 
-          {/* Search Input + Chat List */}
+          {/* Conditional content based on active view */}
+          {activeTab === 'all-chats' && showAllChatsTab ? (
+            <AllChatsList
+              dataSource={dataSource}
+              onSessionSelect={onSessionSelect}
+              activeSessionId={activeSessionId}
+            />
+          ) : (
             <>
               {/* Search Input */}
               <div ref={searchContainerRef} className="mt-3 px-4">
@@ -652,7 +667,7 @@ export default function Sidebar({
           {collapsible && (
             <div className="mt-auto border-t border-gray-100 dark:border-gray-800/80 px-4 py-3 flex items-center justify-between">
               {/* Gear settings menu */}
-              {onArchivedView ? (
+              {(onArchivedView || showAllChatsTab) ? (
                 <Menu>
                   <MenuButton
                     onClick={(e: React.MouseEvent) => {
@@ -685,6 +700,46 @@ export default function Sidebar({
                           >
                             <Archive size={16} className="text-gray-400 dark:text-gray-500" />
                             {t('BiChat.Sidebar.ArchivedChats')}
+                          </button>
+                        )}
+                      </MenuItem>
+                    )}
+                    {showAllChatsTab && activeTab !== 'all-chats' && (
+                      <MenuItem>
+                        {({ focus }) => (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              setActiveTab('all-chats')
+                            }}
+                            className={`cursor-pointer flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-gray-600 dark:text-gray-300 transition-colors ${
+                              focus ? 'bg-gray-100 dark:bg-gray-800/70' : ''
+                            }`}
+                            aria-label={t('BiChat.Sidebar.AllChats')}
+                          >
+                            <Users size={16} className="text-gray-400 dark:text-gray-500" />
+                            {t('BiChat.Sidebar.AllChats')}
+                          </button>
+                        )}
+                      </MenuItem>
+                    )}
+                    {showAllChatsTab && activeTab === 'all-chats' && (
+                      <MenuItem>
+                        {({ focus }) => (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              setActiveTab('my-chats')
+                            }}
+                            className={`cursor-pointer flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-gray-600 dark:text-gray-300 transition-colors ${
+                              focus ? 'bg-gray-100 dark:bg-gray-800/70' : ''
+                            }`}
+                            aria-label={t('BiChat.Sidebar.MyChats')}
+                          >
+                            <List size={16} className="text-gray-400 dark:text-gray-500" />
+                            {t('BiChat.Sidebar.MyChats')}
                           </button>
                         )}
                       </MenuItem>

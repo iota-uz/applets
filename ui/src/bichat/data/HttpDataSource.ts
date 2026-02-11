@@ -300,7 +300,6 @@ function attachArtifactsToTurns(
     }
   })
 
-  const assistantPositions: Array<{ index: number; createdAtMs: number }> = []
   const turnIndexByMessageID = new Map<string, number>()
 
   nextTurns.forEach((turn, index) => {
@@ -309,32 +308,16 @@ function attachArtifactsToTurns(
     const assistantTurn = turn.assistantTurn
     if (!assistantTurn) return
     turnIndexByMessageID.set(assistantTurn.id, index)
-    assistantPositions.push({
-      index,
-      createdAtMs: toMillis(assistantTurn.createdAt || turn.createdAt),
-    })
   })
-
-  if (assistantPositions.length === 0) return turns
-
-  const findFallbackAssistantIndex = (artifactCreatedAt: string): number => {
-    const artifactMs = toMillis(artifactCreatedAt)
-    if (!Number.isFinite(artifactMs)) {
-      return assistantPositions[assistantPositions.length - 1].index
-    }
-    for (const pos of assistantPositions) {
-      if (Number.isFinite(pos.createdAtMs) && pos.createdAtMs >= artifactMs) {
-        return pos.index
-      }
-    }
-    return assistantPositions[assistantPositions.length - 1].index
-  }
 
   for (const entry of downloadArtifacts) {
     const messageID = entry.raw.messageId
-    const targetIndex =
-      (messageID ? turnIndexByMessageID.get(messageID) : undefined) ??
-      findFallbackAssistantIndex(entry.raw.createdAt)
+    // Only attach artifacts that are explicitly linked to a message.
+    // Orphan artifacts (uploaded via the artifacts panel) have no messageId
+    // and should not appear on any message.
+    if (!messageID) continue
+    const targetIndex = turnIndexByMessageID.get(messageID)
+    if (targetIndex === undefined) continue
 
     const assistantTurn = nextTurns[targetIndex]?.assistantTurn
     if (!assistantTurn) continue
@@ -350,9 +333,9 @@ function attachArtifactsToTurns(
 
   for (const raw of chartArtifacts) {
     const messageID = raw.messageId
-    const targetIndex =
-      (messageID ? turnIndexByMessageID.get(messageID) : undefined) ??
-      findFallbackAssistantIndex(raw.createdAt)
+    if (!messageID) continue
+    const targetIndex = turnIndexByMessageID.get(messageID)
+    if (targetIndex === undefined) continue
 
     const assistantTurn = nextTurns[targetIndex]?.assistantTurn
     if (!assistantTurn) continue

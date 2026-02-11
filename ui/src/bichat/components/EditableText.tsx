@@ -63,9 +63,7 @@ const EditableText = forwardRef<EditableTextRef, EditableTextProps>(
     // Expose methods via ref
     useImperativeHandle(ref, () => ({
       startEditing: () => {
-        if (!isLoading) {
-          setIsEditing(true)
-        }
+        setIsEditing(true)
       },
       cancelEditing: () => {
         setEditValue(value)
@@ -120,9 +118,7 @@ const EditableText = forwardRef<EditableTextRef, EditableTextProps>(
     }
 
     const handleDoubleClick = () => {
-      if (!isLoading) {
-        setIsEditing(true)
-      }
+      setIsEditing(true)
     }
 
     const handleBlur = () => {

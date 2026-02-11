@@ -14,8 +14,6 @@ import { TurnBubble } from './TurnBubble'
 import { TypingIndicator } from './TypingIndicator'
 import StreamingCursor from './StreamingCursor'
 import ScrollToBottomButton from './ScrollToBottomButton'
-import CompactionDoodle from './CompactionDoodle'
-import { useTranslation } from '../hooks/useTranslation'
 import { normalizeStreamingMarkdown } from '../utils/markdownStream'
 
 const MarkdownRenderer = lazy(() =>
@@ -34,7 +32,6 @@ interface MessageListProps {
 }
 
 export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs, readOnly }: MessageListProps) {
-  const { t } = useTranslation()
   const { currentSessionId, fetching } = useChatSession()
   const { turns, streamingContent, isStreaming, loading, isCompacting } = useChatMessaging()
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -108,12 +105,6 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
     <div className="relative flex-1 min-h-0">
       <div ref={containerRef} className="h-full overflow-y-auto px-4 py-6">
         <div className="mx-auto space-y-6">
-          {isCompacting && (
-            <CompactionDoodle
-              title={t('BiChat.Slash.CompactingTitle')}
-              subtitle={t('BiChat.Slash.CompactingSubtitle')}
-            />
-          )}
           {/* Loading skeleton when no turns yet */}
           {fetching && turns.length === 0 && (
             <div className="space-y-6" aria-hidden="true">

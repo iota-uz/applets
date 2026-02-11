@@ -17,11 +17,11 @@ interface SessionArtifactListProps {
 }
 
 const TYPE_LABEL_KEYS: Record<string, string> = {
-  chart: 'Artifacts.GroupCharts',
-  code_output: 'Artifacts.GroupCodeOutputs',
-  export: 'Artifacts.GroupExports',
-  attachment: 'Artifacts.GroupAttachments',
-  other: 'Artifacts.GroupOther',
+  chart: 'BiChat.Artifacts.GroupCharts',
+  code_output: 'BiChat.Artifacts.GroupCodeOutputs',
+  export: 'BiChat.Artifacts.GroupExports',
+  attachment: 'BiChat.Artifacts.GroupAttachments',
+  other: 'BiChat.Artifacts.GroupOther',
 }
 
 function getGroupIcon(type: string): ReactNode {

@@ -1,3 +1,5 @@
+import { motion } from 'framer-motion'
+
 interface CompactionDoodleProps {
   title: string
   subtitle: string
@@ -5,19 +7,22 @@ interface CompactionDoodleProps {
 
 export function CompactionDoodle({ title, subtitle }: CompactionDoodleProps) {
   return (
-    <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
-      <div className="flex items-center gap-3">
-        <div className="relative w-10 h-10">
-          <div className="absolute inset-0 rounded-full bg-primary-500/20 animate-pulse motion-reduce:animate-none" />
-          <div className="absolute inset-1 rounded-full bg-primary-500/40 animate-pulse motion-reduce:animate-none" />
-          <div className="absolute inset-3 rounded-full bg-primary-600" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{title}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>
-        </div>
+    <motion.div
+      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 4, scale: 0.98 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+      className="flex items-center gap-2.5 rounded-xl border border-gray-200/70 bg-white/95 px-3.5 py-2 shadow-sm backdrop-blur-sm dark:border-gray-700/50 dark:bg-gray-800/95"
+    >
+      <div className="relative flex h-5 w-5 items-center justify-center">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-400/30" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-500" />
       </div>
-    </div>
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{title}</span>
+        <span className="text-[11px] text-gray-400 dark:text-gray-500">{subtitle}</span>
+      </div>
+    </motion.div>
   )
 }
 

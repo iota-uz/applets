@@ -21,6 +21,7 @@ import { RateLimiter } from '../utils/RateLimiter'
 import { ChatHeader } from './ChatHeader'
 import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
+import CompactionDoodle from './CompactionDoodle'
 import WelcomeContent from './WelcomeContent'
 import { useTranslation } from '../hooks/useTranslation'
 import { SessionArtifactsPanel } from './SessionArtifactsPanel'
@@ -82,7 +83,7 @@ function ChatSessionCore({
   const { t } = useTranslation()
   const { session, fetching, error, debugMode, sessionDebugUsage, debugLimits, currentSessionId } =
     useChatSession()
-  const { turns, loading, isStreaming } = useChatMessaging()
+  const { turns, loading, isStreaming, isCompacting } = useChatMessaging()
   const {
     inputError,
     message,
@@ -309,6 +310,16 @@ function ChatSessionCore({
                 thinkingVerbs={thinkingVerbs}
                 readOnly={effectiveReadOnly}
               />
+              <AnimatePresence>
+                {isCompacting && (
+                  <div className="flex justify-center px-4 pb-2">
+                    <CompactionDoodle
+                      title={t('BiChat.Slash.CompactingTitle')}
+                      subtitle={t('BiChat.Slash.CompactingSubtitle')}
+                    />
+                  </div>
+                )}
+              </AnimatePresence>
               {!effectiveReadOnly && (
                 <MessageInput
                   message={message}
