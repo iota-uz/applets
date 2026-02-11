@@ -250,6 +250,48 @@ func TestAppletController_RPC(t *testing.T) {
 			wantRPCMessageContains: "chat service not registered",
 		},
 		{
+			name: "ErrorClassifierValidation",
+			rpcCfg: &api.RPCConfig{
+				Path: "/rpc",
+				Methods: map[string]api.RPCMethod{
+					"validate": {
+						Handler: func(ctx context.Context, params json.RawMessage) (any, error) {
+							return nil, &classifiedError{kind: "validation", msg: "field X is required"}
+						},
+					},
+				},
+			},
+			req: func() *http.Request {
+				r := httptest.NewRequest(http.MethodPost, "/t/rpc", bytes.NewBufferString(`{"id":"1","method":"validate","params":{}}`))
+				r.Host = "example.com"
+				return r
+			},
+			wantHTTP:               http.StatusOK,
+			wantRPCError:           "validation",
+			wantRPCMessageContains: "validation failed",
+		},
+		{
+			name: "ErrorClassifierNotFound",
+			rpcCfg: &api.RPCConfig{
+				Path: "/rpc",
+				Methods: map[string]api.RPCMethod{
+					"find": {
+						Handler: func(ctx context.Context, params json.RawMessage) (any, error) {
+							return nil, &classifiedError{kind: "not_found", msg: "session not found"}
+						},
+					},
+				},
+			},
+			req: func() *http.Request {
+				r := httptest.NewRequest(http.MethodPost, "/t/rpc", bytes.NewBufferString(`{"id":"1","method":"find","params":{}}`))
+				r.Host = "example.com"
+				return r
+			},
+			wantHTTP:               http.StatusOK,
+			wantRPCError:           "not_found",
+			wantRPCMessageContains: "resource not found",
+		},
+		{
 			name: "PayloadTooLarge",
 			rpcCfg: &api.RPCConfig{
 				Path:         "/rpc",

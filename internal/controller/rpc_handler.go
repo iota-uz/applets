@@ -84,14 +84,17 @@ func (c *Controller) handleRPC(w http.ResponseWriter, r *http.Request) {
 	result, err := rpcMethod.Handler(r.Context(), req.Params)
 	if err != nil {
 		code := mapErrorCode(err)
+		msg := mapRPCErrorMessage(code, err, exposeInternalErrors)
+
+		// Always log RPC errors server-side for debuggability.
+		c.logger.WithField("method", method).WithField("code", code).WithError(err).Error("RPC handler error")
+
 		rpcErr := &rpcError{
 			Code:    code,
-			Message: mapRPCErrorMessage(code, err, exposeInternalErrors),
+			Message: msg,
 		}
-		if exposeInternalErrors && err != nil {
-			if msg := strings.TrimSpace(err.Error()); msg != "" {
-				rpcErr.Details = map[string]string{"internal": msg}
-			}
+		if exposeInternalErrors {
+			rpcErr.Details = extractErrorDetails(err)
 		}
 		writeRPC(w, http.StatusOK, rpcResponse{ID: req.ID, Error: rpcErr})
 		return
@@ -113,6 +116,7 @@ func writeRPC(w http.ResponseWriter, status int, resp rpcResponse) {
 }
 
 func mapErrorCode(err error) string {
+	// 1. Check sentinel errors (fmt.Errorf %w wrapping).
 	switch {
 	case errors.Is(err, api.ErrValidation):
 		return "validation"
@@ -124,9 +128,17 @@ func mapErrorCode(err error) string {
 		return "forbidden"
 	case errors.Is(err, api.ErrInternal):
 		return "internal"
-	default:
-		return "error"
 	}
+
+	// 2. Check for ErrorClassifier interface (e.g. serrors.Error with Kind).
+	var classifier api.ErrorClassifier
+	if errors.As(err, &classifier) {
+		if kind := classifier.ErrorKind(); kind != "" {
+			return kind
+		}
+	}
+
+	return "error"
 }
 
 func mapRPCErrorMessage(code string, err error, exposeInternalErrors bool) string {
@@ -149,6 +161,36 @@ func mapRPCErrorMessage(code string, err error, exposeInternalErrors bool) strin
 	default:
 		return "request failed"
 	}
+}
+
+// extractErrorDetails builds a structured details map from the error chain.
+// This is returned in the RPC response only when ExposeInternalErrors is true.
+func extractErrorDetails(err error) map[string]any {
+	if err == nil {
+		return nil
+	}
+	details := make(map[string]any)
+	if msg := strings.TrimSpace(err.Error()); msg != "" {
+		details["message"] = msg
+	}
+
+	// Walk the error chain to build an operation trace.
+	var ops []string
+	current := err
+	for current != nil {
+		// Check for Op field via interface (serrors.Error pattern).
+		type oper interface{ Operation() string }
+		if o, ok := current.(oper); ok {
+			if op := o.Operation(); op != "" {
+				ops = append(ops, op)
+			}
+		}
+		current = errors.Unwrap(current)
+	}
+	if len(ops) > 0 {
+		details["trace"] = ops
+	}
+	return details
 }
 
 func (c *Controller) requirePermissions(ctx context.Context, required []string) error {

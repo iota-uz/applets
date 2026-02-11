@@ -90,3 +90,14 @@ func (m *mockUser) HasPermission(name string) bool {
 }
 
 var _ api.DetailedUser = (*mockUser)(nil)
+
+// classifiedError implements api.ErrorClassifier for testing.
+type classifiedError struct {
+	kind string
+	msg  string
+}
+
+func (e *classifiedError) Error() string     { return e.msg }
+func (e *classifiedError) ErrorKind() string { return e.kind }
+
+var _ api.ErrorClassifier = (*classifiedError)(nil)

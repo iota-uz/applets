@@ -46,6 +46,9 @@ func New(
 	if err := validate.Config(applet.Config()); err != nil {
 		return nil, fmt.Errorf("controller: %w: %s", api.ErrValidation, err.Error())
 	}
+	if logger == nil {
+		logger = logrus.StandardLogger()
+	}
 	cfg := applet.Config()
 	builder := context.NewContextBuilder(cfg, bundle, sessionConfig, logger, metrics, host, opts...)
 	c := &Controller{

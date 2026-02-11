@@ -48,9 +48,7 @@ func (c *Controller) render(ctx context.Context, w http.ResponseWriter, r *http.
 	mountHTML := buildMountElement(config.Mount)
 	cssLinks, jsScripts, err := c.buildAssetTags()
 	if err != nil {
-		if c.logger != nil {
-			c.logger.WithError(err).Error("failed to build asset tags")
-		}
+		c.logger.WithError(err).Error("failed to build asset tags")
 		http.Error(w, "Failed to resolve applet assets", http.StatusInternalServerError)
 		return
 	}
