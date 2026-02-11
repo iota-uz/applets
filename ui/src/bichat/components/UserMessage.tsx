@@ -5,7 +5,7 @@
 
 import { useState, useCallback, useRef, useEffect, type ReactNode } from 'react'
 import { Check, Copy, PencilSimple } from '@phosphor-icons/react'
-import { formatDistanceToNow } from 'date-fns'
+import { formatRelativeTime } from '../utils/dateFormatting'
 import AttachmentGrid from './AttachmentGrid'
 import ImageModal from './ImageModal'
 import type { Attachment, ImageAttachment, UserTurn } from '../types'
@@ -284,7 +284,7 @@ export function UserMessage({
   const currentAttachment =
     selectedImageIndex !== null ? imageAttachments[selectedImageIndex] : null
 
-  const timestamp = formatDistanceToNow(new Date(turn.createdAt), { addSuffix: true })
+  const timestamp = formatRelativeTime(turn.createdAt, t)
 
   // Slot props
   const avatarSlotProps: UserMessageAvatarSlotProps = { initials }
@@ -345,7 +345,7 @@ export function UserMessage({
                     value={draftContent}
                     onChange={(e) => setDraftContent(e.target.value)}
                     className="w-full min-h-[80px] resize-y rounded-lg px-3 py-2 bg-white/10 text-white placeholder-white/70 outline-none focus:ring-2 focus:ring-white/30"
-                    aria-label="Edit message"
+                    aria-label={t('BiChat.Message.EditMessage')}
                   />
                   <div className="flex justify-end gap-2">
                     <button
@@ -353,7 +353,7 @@ export function UserMessage({
                       onClick={handleEditCancel}
                       className="cursor-pointer px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 transition-colors text-sm font-medium"
                     >
-                      Cancel
+                      {t('BiChat.Message.Cancel')}
                     </button>
                     <button
                       type="button"
@@ -361,7 +361,7 @@ export function UserMessage({
                       className="cursor-pointer px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/25 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={!draftContent.trim() || draftContent === turn.content}
                     >
-                      Save
+                      {t('BiChat.Message.Save')}
                     </button>
                   </div>
                 </div>
@@ -384,7 +384,7 @@ export function UserMessage({
                 <button
                   onClick={handleCopyClick}
                   className={`cursor-pointer ${classes.actionButton} ${isCopied ? 'text-green-600 dark:text-green-400' : ''}`}
-                  aria-label="Copy message"
+                  aria-label={t('BiChat.Message.CopyMessage')}
                   title={isCopied ? t('BiChat.Message.Copied') : t('BiChat.Message.Copy')}
                 >
                   {isCopied ? <Check size={14} weight="bold" /> : <Copy size={14} weight="regular" />}
@@ -394,8 +394,8 @@ export function UserMessage({
                   <button
                     onClick={handleEditClick}
                     className={`cursor-pointer ${classes.actionButton}`}
-                    aria-label="Edit message"
-                    title="Edit"
+                    aria-label={t('BiChat.Message.EditMessage')}
+                    title={t('BiChat.Message.EditMessage')}
                     disabled={isEditing}
                   >
                     <PencilSimple size={14} weight="regular" />

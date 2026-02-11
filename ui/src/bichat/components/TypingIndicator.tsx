@@ -38,7 +38,7 @@ const prefersReducedMotion = () => {
 const getRandomVerb = (verbs: string[], current: string): string => {
   const available = verbs.filter((v) => v !== current)
   if (available.length === 0) {
-    return current || verbs[0] || 'Thinking'
+    return current || verbs[0] || ''
   }
   return available[Math.floor(Math.random() * available.length)]
 }
@@ -87,7 +87,7 @@ function TypingIndicator({
             animate="animate"
             exit="exit"
             className="text-sm bichat-thinking-shimmer block"
-            aria-label={`AI is ${verb}`}
+            aria-label={t('BiChat.Thinking.AriaLabel', { verb })}
           >
             {verb}...
           </motion.span>

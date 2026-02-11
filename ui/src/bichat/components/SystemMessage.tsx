@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react'
 import { CaretDown, Check, Copy, ClockCounterClockwise } from '@phosphor-icons/react'
-import { formatDistanceToNow } from 'date-fns'
+import { formatRelativeTime } from '../utils/dateFormatting'
 import { useTranslation } from '../hooks/useTranslation'
 
 const MarkdownRenderer = lazy(() =>
@@ -87,7 +87,7 @@ export function SystemMessage({
     }
   }, [content, onCopy])
 
-  const timestamp = formatDistanceToNow(new Date(createdAt), { addSuffix: true })
+  const timestamp = formatRelativeTime(createdAt, t)
 
   const resolvedHeight = isExpanded ? contentHeight : COLLAPSED_HEIGHT
 
@@ -126,7 +126,7 @@ export function SystemMessage({
                     : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-700/40'
                   }
                 `}
-                aria-label="Copy message"
+                aria-label={t('BiChat.Message.CopyMessage')}
                 title={isCopied ? t('BiChat.Message.Copied') : t('BiChat.Message.Copy')}
               >
                 {isCopied ? <Check size={13} weight="bold" /> : <Copy size={13} weight="regular" />}

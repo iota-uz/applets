@@ -9,10 +9,10 @@ import { differenceInMinutes, differenceInHours, differenceInDays, format } from
  * Falls back to HH:mm format for dates older than 24 hours
  *
  * Accepts an optional `t` function for i18n. Translation keys used:
- * - relativeTime.justNow
- * - relativeTime.minutesAgo (receives `{count}`)
- * - relativeTime.hoursAgo   (receives `{count}`)
- * - relativeTime.daysAgo    (receives `{count}`)
+ * - BiChat.RelativeTime.JustNow
+ * - BiChat.RelativeTime.MinutesAgo (receives `{count}`)
+ * - BiChat.RelativeTime.HoursAgo   (receives `{count}`)
+ * - BiChat.RelativeTime.DaysAgo    (receives `{count}`)
  *
  * If no `t` function is provided, falls back to English defaults.
  */

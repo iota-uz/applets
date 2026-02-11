@@ -5,9 +5,7 @@
 
 import { memo, useCallback, type ReactNode } from 'react'
 import { TableExportButton } from './TableExportButton'
-
-/** Default message sent when user clicks the export button */
-const DEFAULT_EXPORT_MESSAGE = 'Export the table above to Excel'
+import { useTranslation } from '../hooks/useTranslation'
 
 interface TableWithExportProps {
   /** The table content to render */
@@ -26,12 +24,15 @@ export const TableWithExport = memo(function TableWithExport({
   children,
   sendMessage,
   disabled = false,
-  exportMessage = DEFAULT_EXPORT_MESSAGE,
-  exportLabel = 'Export',
+  exportMessage,
+  exportLabel,
 }: TableWithExportProps) {
+  const { t } = useTranslation()
+  const resolvedExportMessage = exportMessage ?? t('BiChat.ExportTableToExcel')
+  const resolvedExportLabel = exportLabel ?? t('BiChat.Export')
   const handleExport = useCallback(() => {
-    sendMessage?.(exportMessage)
-  }, [sendMessage, exportMessage])
+    sendMessage?.(resolvedExportMessage)
+  }, [sendMessage, resolvedExportMessage])
 
   return (
     <>
@@ -40,7 +41,7 @@ export const TableWithExport = memo(function TableWithExport({
       </div>
       {sendMessage && (
         <div className="flex justify-end mt-1">
-          <TableExportButton onClick={handleExport} disabled={disabled} label={exportLabel} />
+          <TableExportButton onClick={handleExport} disabled={disabled} label={resolvedExportLabel} />
         </div>
       )}
     </>

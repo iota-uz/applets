@@ -8,6 +8,7 @@
 import { memo } from 'react'
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle, Description } from '@headlessui/react'
 import { WarningCircle } from '@phosphor-icons/react'
+import { useTranslation } from '../hooks/useTranslation'
 
 export interface ConfirmModalProps {
   /** Whether the modal is open */
@@ -34,10 +35,13 @@ function ConfirmModalBase({
   message,
   onConfirm,
   onCancel,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  confirmText,
+  cancelText,
   isDanger = false,
 }: ConfirmModalProps) {
+  const { t } = useTranslation()
+  const resolvedConfirmText = confirmText ?? t('BiChat.Common.Confirm')
+  const resolvedCancelText = cancelText ?? t('BiChat.Common.Cancel')
   return (
     <Dialog open={isOpen} onClose={onCancel} className="relative z-40">
       {/* Backdrop */}
@@ -70,10 +74,10 @@ function ConfirmModalBase({
             <button
               onClick={onCancel}
               className="cursor-pointer px-4 py-2 text-sm font-medium rounded-xl text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/60 hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-250 dark:active:bg-gray-600 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
-              aria-label={`Cancel ${title.toLowerCase()}`}
+              aria-label={resolvedCancelText}
               data-testid="confirm-modal-cancel"
             >
-              {cancelText}
+              {resolvedCancelText}
             </button>
             <button
               onClick={onConfirm}
@@ -85,10 +89,10 @@ function ConfirmModalBase({
                   ? 'bg-red-600 hover:bg-red-700 active:bg-red-800 focus-visible:ring-red-500/50'
                   : 'bg-primary-600 hover:bg-primary-700 active:bg-primary-800 focus-visible:ring-primary-500/50',
               ].join(' ')}
-              aria-label={`Confirm ${title.toLowerCase()}`}
+              aria-label={resolvedConfirmText}
               data-testid="confirm-modal-confirm"
             >
-              {confirmText}
+              {resolvedConfirmText}
             </button>
           </div>
         </DialogPanel>

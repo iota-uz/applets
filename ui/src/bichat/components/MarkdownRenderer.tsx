@@ -18,6 +18,7 @@ import { parseChartDataFromJsonString } from '../utils/chartSpec'
 import type { Citation } from '../types'
 import { TableWithExport } from './TableWithExport'
 import { ChartCard } from './ChartCard'
+import { useTranslation } from '../hooks/useTranslation'
 
 // Lazy load CodeBlock for bundle optimization
 const CodeBlock = lazy(() => import('./CodeBlock').then((module) => ({ default: module.CodeBlock })))
@@ -95,10 +96,14 @@ function MarkdownRenderer({
   citations,
   sendMessage,
   sendDisabled = false,
-  copyLabel = 'Copy',
-  copiedLabel = 'Copied!',
-  exportLabel = 'Export',
+  copyLabel,
+  copiedLabel,
+  exportLabel,
 }: MarkdownRendererProps) {
+  const { t } = useTranslation()
+  const resolvedCopyLabel = copyLabel ?? t('BiChat.Message.Copy')
+  const resolvedCopiedLabel = copiedLabel ?? t('BiChat.Message.Copied')
+  const resolvedExportLabel = exportLabel ?? t('BiChat.Export')
   // Process citations to replace raw markers with [1], [2], etc.
   const processed = useMemo(() => {
     return processCitations(content, citations)
@@ -158,8 +163,8 @@ function MarkdownRenderer({
             language={language}
             value={value}
             inline={false}
-            copyLabel={copyLabel}
-            copiedLabel={copiedLabel}
+            copyLabel={resolvedCopyLabel}
+            copiedLabel={resolvedCopiedLabel}
           />
         </Suspense>
       )
@@ -199,7 +204,7 @@ function MarkdownRenderer({
       <TableWithExport
         sendMessage={sendMessage}
         disabled={sendDisabled}
-        exportLabel={exportLabel}
+        exportLabel={resolvedExportLabel}
       >
         {children}
       </TableWithExport>

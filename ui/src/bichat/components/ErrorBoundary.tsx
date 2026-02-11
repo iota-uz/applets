@@ -5,6 +5,7 @@
 
 import { Component, ErrorInfo, ReactNode } from 'react'
 import { WarningCircle, ArrowClockwise } from '@phosphor-icons/react'
+import { useTranslation } from '../hooks/useTranslation'
 
 interface ErrorBoundaryProps {
   children: ReactNode
@@ -25,20 +26,23 @@ interface ErrorBoundaryState {
 function DefaultErrorContent({
   error,
   onReset,
-  resetLabel = 'Try Again',
-  errorTitle = 'Something went wrong',
+  resetLabel,
+  errorTitle,
 }: {
   error: Error | null
   onReset?: () => void
   resetLabel?: string
   errorTitle?: string
 }) {
+  const { t } = useTranslation()
+  const resolvedResetLabel = resetLabel ?? t('BiChat.Common.TryAgain')
+  const resolvedErrorTitle = errorTitle ?? t('BiChat.Error.SomethingWentWrong')
   return (
     <div className="flex flex-col items-center justify-center p-8 text-center min-h-[200px]">
       <WarningCircle size={48} className="text-red-500 mb-4" weight="fill" />
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{errorTitle}</h2>
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{resolvedErrorTitle}</h2>
       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 max-w-md">
-        {error?.message || 'An unexpected error occurred. Please try again.'}
+        {error?.message || t('BiChat.Error.UnexpectedError')}
       </p>
       {onReset && (
         <button
@@ -47,7 +51,7 @@ function DefaultErrorContent({
           className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
         >
           <ArrowClockwise size={16} weight="bold" />
-          {resetLabel}
+          {resolvedResetLabel}
         </button>
       )}
     </div>

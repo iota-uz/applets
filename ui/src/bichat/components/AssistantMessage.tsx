@@ -5,7 +5,7 @@
 
 import { useState, useCallback, lazy, Suspense, useRef, useEffect, type ReactNode } from 'react'
 import { Check, Copy, ArrowsClockwise } from '@phosphor-icons/react'
-import { formatDistanceToNow } from 'date-fns'
+import { formatRelativeTime } from '../utils/dateFormatting'
 import CodeOutputsPanel from './CodeOutputsPanel'
 import StreamingCursor from './StreamingCursor'
 import { ChartCard } from './ChartCard'
@@ -283,7 +283,7 @@ export function AssistantMessage({
     }
   }, [onRegenerate, turnId])
 
-  const timestamp = formatDistanceToNow(new Date(turn.createdAt), { addSuffix: true })
+  const timestamp = formatRelativeTime(turn.createdAt, t)
 
   // Slot props
   const avatarSlotProps: AssistantMessageAvatarSlotProps = { text: isSystemMessage ? 'SYS' : 'AI' }
@@ -366,7 +366,7 @@ export function AssistantMessage({
                 fallback={
                   <div className="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500">
                     <div className="w-4 h-4 border-2 border-gray-300 dark:border-gray-600 border-t-transparent rounded-full animate-spin" />
-                    Loading...
+                    {t('BiChat.Common.Loading')}
                   </div>
                 }
               >
@@ -423,7 +423,7 @@ export function AssistantMessage({
                     </button>
                     {explanationExpanded && (
                       <div className="pt-3 text-sm text-gray-600 dark:text-gray-400">
-                        <Suspense fallback={<div>Loading...</div>}>
+                        <Suspense fallback={<div>{t('BiChat.Common.Loading')}</div>}>
                           <MarkdownRenderer content={turn.explanation!} />
                         </Suspense>
                       </div>
@@ -467,7 +467,7 @@ export function AssistantMessage({
                 <button
                   onClick={handleCopyClick}
                   className={`cursor-pointer ${classes.actionButton} ${isCopied ? 'text-green-600 dark:text-green-400' : ''}`}
-                  aria-label="Copy message"
+                  aria-label={t('BiChat.Message.CopyMessage')}
                   title={isCopied ? t('BiChat.Message.Copied') : t('BiChat.Message.Copy')}
                 >
                   {isCopied ? <Check size={14} weight="bold" /> : <Copy size={14} weight="regular" />}
@@ -477,8 +477,8 @@ export function AssistantMessage({
                   <button
                     onClick={handleRegenerateClick}
                     className={`cursor-pointer ${classes.actionButton}`}
-                    aria-label="Regenerate response"
-                    title="Regenerate"
+                    aria-label={t('BiChat.Message.Regenerate')}
+                    title={t('BiChat.Message.Regenerate')}
                   >
                     <ArrowsClockwise size={14} weight="regular" />
                   </button>

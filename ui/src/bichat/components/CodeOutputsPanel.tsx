@@ -11,6 +11,7 @@
 import { Download } from '@phosphor-icons/react'
 import type { CodeOutput } from '../types'
 import { formatFileSize } from '../utils/fileUtils'
+import { useTranslation } from '../hooks/useTranslation'
 
 interface CodeOutputsPanelProps {
   outputs: CodeOutput[]
@@ -27,12 +28,13 @@ function toBase64(str: string): string {
 }
 
 function CodeOutputsPanel({ outputs }: CodeOutputsPanelProps) {
+  const { t } = useTranslation()
   if (!outputs || outputs.length === 0) return null
 
   return (
     <div className="mb-2 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
       <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
-        Code Output
+        {t('BiChat.CodeOutput.Title')}
       </div>
       <div className="space-y-2">
         {outputs.map((output, index) => (
@@ -45,7 +47,7 @@ function CodeOutputsPanel({ outputs }: CodeOutputsPanelProps) {
                       ? output.content
                       : `data:${output.mimeType || 'image/png'};base64,${output.content}`
                   }
-                  alt={output.filename || 'Code output'}
+                  alt={output.filename || t('BiChat.CodeOutput.CodeOutput')}
                   className="max-w-full rounded border border-gray-300 dark:border-gray-600"
                 />
                 {/* File info overlay */}
@@ -88,7 +90,7 @@ function CodeOutputsPanel({ outputs }: CodeOutputsPanelProps) {
             )}
             {output.type === 'error' && (
               <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded border border-red-200 dark:border-red-800">
-                <div className="font-semibold mb-1">Error</div>
+                <div className="font-semibold mb-1">{t('BiChat.Error.Label')}</div>
                 <pre className="whitespace-pre-wrap">{output.content}</pre>
               </div>
             )}

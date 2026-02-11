@@ -8,6 +8,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { Transition } from '@headlessui/react'
 import { CheckCircle, XCircle, Info, Warning, X } from '@phosphor-icons/react'
 import type { ToastType } from '../hooks/useToast'
+import { useTranslation } from '../hooks/useTranslation'
 
 export interface ToastProps {
   id: string
@@ -59,8 +60,10 @@ export function Toast({
   message,
   duration = 5000,
   onDismiss,
-  dismissLabel = 'Dismiss notification',
+  dismissLabel,
 }: ToastProps) {
+  const { t } = useTranslation()
+  const resolvedDismissLabel = dismissLabel ?? t('BiChat.Chat.DismissNotification')
   const config = typeConfig[type]
   const Icon = config.iconEl
   const [show, setShow] = useState(false)
@@ -133,7 +136,7 @@ export function Toast({
         <button
           onClick={handleDismiss}
           className="mt-0.5 -mr-1 cursor-pointer shrink-0 rounded-lg p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200/60 dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-700/60 transition-colors duration-100"
-          aria-label={dismissLabel}
+          aria-label={resolvedDismissLabel}
         >
           <X size={14} weight="bold" />
         </button>

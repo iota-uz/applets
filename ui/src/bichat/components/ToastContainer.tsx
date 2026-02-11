@@ -6,6 +6,7 @@
 
 import { Toast } from './Toast'
 import type { ToastItem } from '../hooks/useToast'
+import { useTranslation } from '../hooks/useTranslation'
 
 interface ToastContainerProps {
   toasts: ToastItem[]
@@ -15,11 +16,12 @@ interface ToastContainerProps {
 }
 
 export function ToastContainer({ toasts, onDismiss, dismissLabel }: ToastContainerProps) {
+  const { t } = useTranslation()
   if (toasts.length === 0) return null
 
   return (
     <div
-      aria-label="Notifications"
+      aria-label={t('BiChat.Common.Notifications')}
       className="fixed top-6 right-6 z-[var(--bichat-z-toast,60)] flex flex-col gap-2 pointer-events-none"
     >
       {toasts.map((toast) => (

@@ -5,6 +5,7 @@
 
 import { ArrowDown } from '@phosphor-icons/react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from '../hooks/useTranslation'
 
 interface ScrollToBottomButtonProps {
   show: boolean
@@ -22,6 +23,7 @@ function ScrollToBottomButton({
   disabled = false,
   label,
 }: ScrollToBottomButtonProps) {
+  const { t } = useTranslation()
   return (
     <AnimatePresence>
       {show && (
@@ -41,7 +43,7 @@ function ScrollToBottomButton({
                 ? 'flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary-600 dark:bg-primary-500 border-primary-600 dark:border-primary-500 hover:bg-primary-700 dark:hover:bg-primary-600 active:bg-primary-800 dark:active:bg-primary-700'
                 : 'p-2.5 rounded-full bg-white dark:bg-gray-800'
             }`}
-            aria-label={label || 'Scroll to bottom'}
+            aria-label={label || t('BiChat.Common.ScrollToBottom')}
           >
             {label ? (
               <>

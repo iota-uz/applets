@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useRef, memo } from 'react'
 import { Copy, Check } from '@phosphor-icons/react'
+import { useTranslation } from '../hooks/useTranslation'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
@@ -61,9 +62,12 @@ function CodeBlock({
   language,
   value,
   inline,
-  copyLabel = 'Copy',
-  copiedLabel = 'Copied!',
+  copyLabel,
+  copiedLabel,
 }: CodeBlockProps) {
+  const { t } = useTranslation()
+  const resolvedCopyLabel = copyLabel ?? t('BiChat.Message.Copy')
+  const resolvedCopiedLabel = copiedLabel ?? t('BiChat.Message.Copied')
   const [copied, setCopied] = useState(false)
   const [copyFailed, setCopyFailed] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(getInitialDarkMode)
@@ -172,18 +176,18 @@ function CodeBlock({
               ? 'text-red-500 dark:text-red-400'
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
           }`}
-          title={copyLabel}
+          title={resolvedCopyLabel}
           aria-live="polite"
         >
           {copied ? (
             <>
               <Check size={16} className="w-4 h-4" />
-              <span>{copiedLabel}</span>
+              <span>{resolvedCopiedLabel}</span>
             </>
           ) : (
             <>
               <Copy size={16} className="w-4 h-4" />
-              <span>{copyFailed ? 'Failed' : copyLabel}</span>
+              <span>{copyFailed ? t('BiChat.Message.CopyFailed') : resolvedCopyLabel}</span>
             </>
           )}
         </button>

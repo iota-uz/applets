@@ -51,16 +51,18 @@ const sizeClasses = {
 function SearchInput({
   value,
   onChange,
-  placeholder = 'Search...',
+  placeholder,
   autoFocus = false,
   onSubmit,
   onEscape,
   className = '',
   size = 'md',
   disabled = false,
-  ariaLabel = 'Search',
+  ariaLabel,
 }: SearchInputProps) {
   const { t } = useTranslation()
+  const resolvedPlaceholder = placeholder ?? t('BiChat.Common.Search')
+  const resolvedAriaLabel = ariaLabel ?? t('BiChat.Common.Search')
   const inputRef = useRef<HTMLInputElement>(null)
   const sizes = sizeClasses[size]
 
@@ -109,10 +111,10 @@ function SearchInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
         disabled={disabled}
         className={`w-full ${sizes.container} bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700/50 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:border-primary-400 dark:focus-visible:border-primary-600 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
-        aria-label={ariaLabel}
+        aria-label={resolvedAriaLabel}
       />
 
       {/* Clear Button */}

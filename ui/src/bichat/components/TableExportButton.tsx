@@ -5,6 +5,7 @@
 
 import { memo } from 'react'
 import { FileXls } from '@phosphor-icons/react'
+import { useTranslation } from '../hooks/useTranslation'
 
 interface TableExportButtonProps {
   /** Click handler for export action */
@@ -20,20 +21,23 @@ interface TableExportButtonProps {
 export const TableExportButton = memo(function TableExportButton({
   onClick,
   disabled = false,
-  label = 'Export',
-  disabledTooltip = 'Please wait...',
+  label,
+  disabledTooltip,
 }: TableExportButtonProps) {
+  const { t } = useTranslation()
+  const resolvedLabel = label ?? t('BiChat.Export')
+  const resolvedDisabledTooltip = disabledTooltip ?? t('BiChat.Common.PleaseWait')
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       className="cursor-pointer inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
-      aria-label={label}
-      title={disabled ? disabledTooltip : label}
+      aria-label={resolvedLabel}
+      title={disabled ? resolvedDisabledTooltip : resolvedLabel}
     >
       <FileXls size={16} weight="fill" />
-      <span>{label}</span>
+      <span>{resolvedLabel}</span>
     </button>
   )
 })

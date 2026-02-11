@@ -48,7 +48,7 @@ const EditableText = forwardRef<EditableTextRef, EditableTextProps>(
       onSave,
       maxLength = 100,
       isLoading = false,
-      placeholder = 'Untitled',
+      placeholder,
       className = '',
       inputClassName = '',
       size = 'sm',
@@ -56,6 +56,7 @@ const EditableText = forwardRef<EditableTextRef, EditableTextProps>(
     ref
   ) => {
     const { t } = useTranslation()
+    const resolvedPlaceholder = placeholder ?? t('BiChat.Common.Untitled')
     const [isEditing, setIsEditing] = useState(false)
     const [editValue, setEditValue] = useState(value)
     const inputRef = useRef<HTMLInputElement>(null)
@@ -141,7 +142,7 @@ const EditableText = forwardRef<EditableTextRef, EditableTextProps>(
             onKeyDown={handleKeyDown}
             onBlur={handleBlur}
             maxLength={maxLength}
-            placeholder={placeholder}
+            placeholder={resolvedPlaceholder}
             className={`flex-1 px-2 py-1 ${sizeClass} bg-white dark:bg-gray-700 border border-primary-500 dark:border-primary-600 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 dark:focus-visible:ring-primary-600/30 text-gray-900 dark:text-white ${inputClassName}`}
             aria-label={t('BiChat.EditableText.AriaLabel')}
           />
@@ -149,7 +150,7 @@ const EditableText = forwardRef<EditableTextRef, EditableTextProps>(
       )
     }
 
-    const displayValue = value || placeholder
+    const displayValue = value || resolvedPlaceholder
 
     return (
       <span
