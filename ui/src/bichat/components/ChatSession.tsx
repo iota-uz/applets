@@ -34,6 +34,13 @@ interface ChatSessionProps {
   sessionId?: string
   /** Optional rate limiter to throttle sendMessage */
   rateLimiter?: RateLimiter
+  /**
+   * Called when a new session is created (e.g. on first message in a "new
+   * chat"). Use this to navigate your SPA router to the new session URL.
+   *
+   * Replaces the deprecated `dataSource.navigateToSession`.
+   */
+  onSessionCreated?: (sessionId: string) => void
   /** Alias for isReadOnly (preferred) */
   readOnly?: boolean
   isReadOnly?: boolean
@@ -487,10 +494,15 @@ function ChatSessionCore({
 }
 
 export function ChatSession(props: ChatSessionProps) {
-  const { dataSource, sessionId, rateLimiter, ...coreProps } = props
+  const { dataSource, sessionId, rateLimiter, onSessionCreated, ...coreProps } = props
 
   return (
-    <ChatSessionProvider dataSource={dataSource} sessionId={sessionId} rateLimiter={rateLimiter}>
+    <ChatSessionProvider
+      dataSource={dataSource}
+      sessionId={sessionId}
+      rateLimiter={rateLimiter}
+      onSessionCreated={onSessionCreated}
+    >
       <ChatSessionCore dataSource={dataSource} {...coreProps} />
     </ChatSessionProvider>
   )

@@ -35,7 +35,11 @@ export interface HttpDataSourceConfig {
   csrfToken?: string | (() => string)
   headers?: Record<string, string>
   timeout?: number
-  /** Optional: called when a new session is created so the host app can navigate (e.g. SPA router) */
+  /**
+   * @deprecated Pass `onSessionCreated` to `ChatSessionProvider` or
+   * `ChatSession` instead. Coupling navigation to the data source causes
+   * component remounts during active streams.
+   */
   navigateToSession?: (sessionId: string) => void
 }
 

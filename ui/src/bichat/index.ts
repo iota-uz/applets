@@ -192,7 +192,7 @@ export * from './animations'
 // Context
 // =============================================================================
 
-export { ChatSessionProvider, useChatSession, useChatMessaging, useOptionalChatMessaging, useChatInput } from './context/ChatContext'
+export { ChatSessionProvider, useChatSession, useChatMessaging, useOptionalChatMessaging, useChatInput, type ChatSessionProviderProps } from './context/ChatContext'
 export { IotaContextProvider, useIotaContext, hasPermission } from './context/IotaContext'
 export {
   ConfigProvider,
@@ -219,6 +219,18 @@ export { getCSRFToken, addCSRFHeader, createHeadersWithCSRF } from './api/csrf'
 
 export { HttpDataSource, createHttpDataSource } from './data/HttpDataSource'
 export type { BichatRPC } from './data/rpc.generated'
+
+// =============================================================================
+// Machine (framework-agnostic state management)
+// =============================================================================
+
+export { ChatMachine, type ChatMachineConfig } from './machine'
+
+// =============================================================================
+// SSE Parsing
+// =============================================================================
+
+export { parseBichatStream, parseBichatStreamEvents, parseSSEStream } from './utils/sseParser'
 
 // =============================================================================
 // Utilities
@@ -253,8 +265,14 @@ export type {
   QuestionAnswerData,
   QuestionAnswers,
   // Streaming types
+  StreamEvent,
   StreamChunk,
-  // Data source interface
+  // Split data source interfaces
+  SessionStore,
+  MessageTransport,
+  ArtifactStore,
+  AdminStore,
+  // Combined data source interface
   ChatDataSource,
   ChatSessionContextValue,
   ChatSessionStateValue,

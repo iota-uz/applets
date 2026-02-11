@@ -2,6 +2,8 @@
  * SSE stream parser for consuming Server-Sent Events.
  */
 
+import type { StreamChunk, StreamEvent } from '../types'
+
 export interface SSEEvent {
   type: string
   content?: string
@@ -74,23 +76,87 @@ export async function* parseSSEStream(
 }
 
 /**
- * Parses BiChat SSE stream with normalization.
- * Infers missing types based on content presence.
+ * Terminal event types that signal end of stream.
+ */
+const TERMINAL_TYPES = new Set(['done', 'error'])
+
+/**
+ * Parses BiChat SSE stream with normalization and terminal event guarantee.
+ *
+ * Guarantees that the generator always yields a terminal event (`done` or
+ * `error`) as its last item — even when the underlying stream closes silently
+ * without one.
  */
 export async function* parseBichatStream(
   reader: ReadableStreamDefaultReader<Uint8Array>
-): AsyncGenerator<import('../types').StreamChunk, void, unknown> {
+): AsyncGenerator<StreamChunk, void, unknown> {
+  let yieldedTerminal = false
+
   for await (const event of parseSSEStream(reader)) {
-    const parsed = event as import('../types').StreamChunk
+    const parsed = event as StreamChunk
 
     // Infer type if missing
     const inferredType = parsed.type || (parsed.content ? 'content' : 'error')
 
-    const normalized: import('../types').StreamChunk = {
+    const normalized: StreamChunk = {
       ...parsed,
       type: inferredType,
     }
 
+    if (TERMINAL_TYPES.has(inferredType)) {
+      yieldedTerminal = true
+    }
+
     yield normalized
+  }
+
+  // Guarantee: always emit a terminal event
+  if (!yieldedTerminal) {
+    yield { type: 'done' }
+  }
+}
+
+/**
+ * Type-safe version of `parseBichatStream` that yields `StreamEvent`
+ * discriminated union members instead of the flat `StreamChunk`.
+ *
+ * Use this in new code for proper type narrowing on `event.type`.
+ */
+export async function* parseBichatStreamEvents(
+  reader: ReadableStreamDefaultReader<Uint8Array>
+): AsyncGenerator<StreamEvent, void, unknown> {
+  for await (const chunk of parseBichatStream(reader)) {
+    const event = toStreamEvent(chunk)
+    if (event) yield event
+  }
+}
+
+/**
+ * Convert a flat StreamChunk into a discriminated StreamEvent.
+ * Returns null for chunks that can't be meaningfully mapped.
+ */
+function toStreamEvent(chunk: StreamChunk): StreamEvent | null {
+  switch (chunk.type) {
+    case 'chunk':
+    case 'content':
+      return { type: 'content', content: chunk.content ?? '' }
+    case 'tool_start':
+      return chunk.tool ? { type: 'tool_start', tool: chunk.tool } : null
+    case 'tool_end':
+      return chunk.tool ? { type: 'tool_end', tool: chunk.tool } : null
+    case 'usage':
+      return chunk.usage ? { type: 'usage', usage: chunk.usage } : null
+    case 'user_message':
+      return chunk.sessionId ? { type: 'user_message', sessionId: chunk.sessionId } : null
+    case 'interrupt':
+      return chunk.interrupt
+        ? { type: 'interrupt', interrupt: chunk.interrupt, sessionId: chunk.sessionId }
+        : null
+    case 'done':
+      return { type: 'done', sessionId: chunk.sessionId, generationMs: chunk.generationMs }
+    case 'error':
+      return { type: 'error', error: chunk.error ?? 'Unknown error' }
+    default:
+      return null
   }
 }

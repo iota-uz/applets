@@ -1,10 +1,14 @@
 /**
- * Configuration context provider for BiChat
- * Provides props-based configuration with optional window global fallback
+ * Configuration context provider for BiChat.
+ *
+ * @deprecated Use `IotaContextProvider` with its new optional `context` prop
+ * instead. `ConfigProvider` and `BiChatConfig` are kept for backwards
+ * compatibility but will be removed in a future major version.
  */
 
 import { createContext, useContext, ReactNode } from 'react'
 
+/** @deprecated Use `IotaContextProvider` with its `context` prop instead. */
 export interface BiChatConfig {
   user: {
     id: string
@@ -37,8 +41,9 @@ interface ConfigProviderProps {
 }
 
 /**
- * ConfigProvider component
- * Provides configuration to the BiChat library
+ * @deprecated Use `IotaContextProvider` with its `context` prop instead.
+ *
+ * ConfigProvider component — provides configuration to the BiChat library.
  *
  * @param config - Configuration object (preferred method)
  * @param useGlobalConfig - If true, falls back to window.__APPLET_CONTEXT__ when config is not provided

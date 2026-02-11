@@ -254,6 +254,24 @@ export interface QuestionAnswers {
   [questionId: string]: QuestionAnswerData
 }
 
+// ---------------------------------------------------------------------------
+// StreamEvent — discriminated union for type-safe stream handling
+// ---------------------------------------------------------------------------
+
+export type StreamEvent =
+  | { type: 'content'; content: string }
+  | { type: 'tool_start'; tool: StreamToolPayload }
+  | { type: 'tool_end'; tool: StreamToolPayload }
+  | { type: 'usage'; usage: DebugUsage }
+  | { type: 'user_message'; sessionId: string }
+  | { type: 'interrupt'; interrupt: StreamInterruptPayload; sessionId?: string }
+  | { type: 'done'; sessionId?: string; generationMs?: number }
+  | { type: 'error'; error: string }
+
+/**
+ * @deprecated Use `StreamEvent` instead. `StreamChunk` is kept for backwards
+ * compatibility but the flat all-optional shape is unsound.
+ */
 export interface StreamChunk {
   type: 'chunk' | 'content' | 'tool_start' | 'tool_end' | 'usage' | 'done' | 'error' | 'user_message' | 'interrupt'
   content?: string
@@ -346,6 +364,19 @@ export interface SessionGroup {
   sessions: Session[]
 }
 
+// Re-export split interfaces for consumers that only need a subset
+export type { SessionStore, MessageTransport, ArtifactStore, AdminStore } from './data-source'
+
+/**
+ * Full data source interface for BiChat.
+ *
+ * Combines session CRUD, message transport, and optional artifact/admin
+ * methods. Existing implementations satisfy this without changes.
+ *
+ * For new code, prefer the focused interfaces (`SessionStore`,
+ * `MessageTransport`, `ArtifactStore`, `AdminStore`) when you only need a
+ * subset of capabilities.
+ */
 export interface ChatDataSource {
   // Core operations
   createSession(): Promise<Session>
@@ -392,6 +423,11 @@ export interface ChatDataSource {
     answers: QuestionAnswers
   ): Promise<{ success: boolean; error?: string }>
   rejectPendingQuestion(sessionId: string): Promise<{ success: boolean; error?: string }>
+  /**
+   * @deprecated Pass `onSessionCreated` to `ChatSessionProvider` instead.
+   * This method couples navigation to the data source, causing component
+   * remounts during active streams.
+   */
   navigateToSession?(sessionId: string): void
 
   // Session management
@@ -474,7 +510,7 @@ export interface ChatInputStateValue {
   messageQueue: QueuedMessage[]
   setMessage: (message: string) => void
   setInputError: (error: string | null) => void
-  handleSubmit: (e: React.FormEvent, attachments?: Attachment[]) => void
+  handleSubmit: (e: { preventDefault: () => void }, attachments?: Attachment[]) => void
   handleUnqueue: () => { content: string; attachments: Attachment[] } | null
   enqueueMessage: (content: string, attachments: Attachment[]) => boolean
   removeQueueItem: (index: number) => void
@@ -487,6 +523,11 @@ export interface ChatInputStateValue {
 
 export interface ChatSessionContextValue
   extends ChatSessionStateValue, ChatMessagingStateValue, ChatInputStateValue {
+  /**
+   * @deprecated Use `retryLastMessage` from `ChatMessagingStateValue` instead.
+   * This field is not populated by the current ChatMachine-based provider and
+   * will always be `undefined` at runtime.
+   */
   handleRetry?: () => Promise<void>
 }
 

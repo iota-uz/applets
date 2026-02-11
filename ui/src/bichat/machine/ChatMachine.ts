@@ -1,0 +1,1023 @@
+/**
+ * ChatMachine — framework-agnostic state machine for BiChat.
+ *
+ * Owns all async logic that was previously in ChatContext.tsx:
+ * - Session fetch (with race-condition guards)
+ * - Message sending + streaming
+ * - Slash commands (/debug, /clear, /compact)
+ * - HITL question submission / rejection
+ * - Message queue (auto-drain)
+ * - Rate limiting
+ * - Abort / cancel
+ *
+ * Zero React dependency. Designed for `useSyncExternalStore`:
+ * three subscribe/getSnapshot pairs map to the existing 3-context split.
+ */
+
+import type {
+  ChatDataSource,
+  ConversationTurn,
+  CodeOutput,
+  Attachment,
+  QuestionAnswers,
+  SendMessageOptions,
+  SessionDebugUsage,
+} from '../types'
+import type { RateLimiter } from '../utils/RateLimiter'
+import { normalizeRPCError } from '../utils/errorDisplay'
+import { loadQueue, saveQueue } from '../utils/queueStorage'
+import { getSessionDebugUsage } from '../utils/debugTrace'
+import {
+  ARTIFACT_TOOL_NAMES,
+  createPendingTurn,
+  createCompactedSystemTurn,
+  parseSlashCommand,
+  readDebugLimitsFromGlobalContext,
+  type ParsedSlashCommand,
+} from '../context/chatHelpers'
+import type {
+  ChatMachineConfig,
+  ChatMachineState,
+  SessionSnapshot,
+  MessagingSnapshot,
+  InputSnapshot,
+  LastSendAttempt,
+} from './types'
+import {
+  deriveSessionSnapshot,
+  deriveMessagingSnapshot,
+  deriveInputSnapshot,
+  deriveDebugMode,
+} from './selectors'
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type Listener = () => void
+
+const MAX_QUEUE_SIZE = 5
+
+// ---------------------------------------------------------------------------
+// ChatMachine
+// ---------------------------------------------------------------------------
+
+export class ChatMachine {
+  // ── Config ──────────────────────────────────────────────────────────────
+  private dataSource: ChatDataSource
+  private rateLimiter: RateLimiter
+  private onSessionCreated?: (sessionId: string) => void
+
+  // ── Internal state ──────────────────────────────────────────────────────
+  private state: ChatMachineState
+
+  // ── Refs (mutable, no subscription) ─────────────────────────────────────
+  private abortController: AbortController | null = null
+  private lastSendAttempt: LastSendAttempt | null = null
+  /** Prevents fetchSession effect from clobbering state while stream is active. */
+  private sendingSessionId: string | null = null
+  private fetchCancelled = false
+  private disposed = false
+  /** Memoized sessionDebugUsage — avoids unnecessary session re-renders during streaming. */
+  private lastSessionDebugUsage: SessionDebugUsage | null = null
+
+  // ── Listeners ───────────────────────────────────────────────────────────
+  private sessionListeners = new Set<Listener>()
+  private messagingListeners = new Set<Listener>()
+  private inputListeners = new Set<Listener>()
+
+  // ── Snapshot caches (for useSyncExternalStore identity stability) ───────
+  private cachedSessionSnapshot: SessionSnapshot | null = null
+  private cachedMessagingSnapshot: MessagingSnapshot | null = null
+  private cachedInputSnapshot: InputSnapshot | null = null
+  private sessionSnapshotVersion = 0
+  private messagingSnapshotVersion = 0
+  private inputSnapshotVersion = 0
+  private lastSessionSnapshotVersion = -1
+  private lastMessagingSnapshotVersion = -1
+  private lastInputSnapshotVersion = -1
+
+  // ── Bound method references (stable identity) ──────────────────────────
+  readonly setError: (error: string | null) => void
+  readonly retryFetchSession: () => void
+  readonly sendMessage: (content: string, attachments?: Attachment[]) => Promise<void>
+  readonly handleRegenerate: (turnId: string) => Promise<void>
+  readonly handleEdit: (turnId: string, newContent: string) => Promise<void>
+  readonly handleCopy: (text: string) => Promise<void>
+  readonly handleSubmitQuestionAnswers: (answers: QuestionAnswers) => void
+  readonly handleRejectPendingQuestion: () => Promise<void>
+  readonly retryLastMessage: () => Promise<void>
+  readonly clearStreamError: () => void
+  readonly cancel: () => void
+  readonly setCodeOutputs: (outputs: CodeOutput[]) => void
+  readonly setMessage: (message: string) => void
+  readonly setInputError: (error: string | null) => void
+  readonly handleSubmit: (e: { preventDefault: () => void }, attachments?: Attachment[]) => void
+  readonly handleUnqueue: () => { content: string; attachments: Attachment[] } | null
+  readonly enqueueMessage: (content: string, attachments: Attachment[]) => boolean
+  readonly removeQueueItem: (index: number) => void
+  readonly updateQueueItem: (index: number, content: string) => void
+
+  constructor(config: ChatMachineConfig) {
+    this.dataSource = config.dataSource
+    this.rateLimiter = config.rateLimiter
+    this.onSessionCreated = config.onSessionCreated
+
+    this.state = {
+      session: {
+        currentSessionId: undefined,
+        session: null,
+        fetching: false,
+        error: null,
+        errorRetryable: false,
+        debugModeBySession: {},
+        debugLimits: readDebugLimitsFromGlobalContext(),
+      },
+      messaging: {
+        turns: [],
+        streamingContent: '',
+        isStreaming: false,
+        streamError: null,
+        streamErrorRetryable: false,
+        loading: false,
+        pendingQuestion: null,
+        codeOutputs: [],
+        isCompacting: false,
+        artifactsInvalidationTrigger: 0,
+      },
+      input: {
+        message: '',
+        inputError: null,
+        messageQueue: [],
+      },
+    }
+
+    // Bind all public methods once (stable references)
+    this.setError = this._setError.bind(this)
+    this.retryFetchSession = this._retryFetchSession.bind(this)
+    this.sendMessage = this._sendMessage.bind(this)
+    this.handleRegenerate = this._handleRegenerate.bind(this)
+    this.handleEdit = this._handleEdit.bind(this)
+    this.handleCopy = this._handleCopy.bind(this)
+    this.handleSubmitQuestionAnswers = this._handleSubmitQuestionAnswers.bind(this)
+    this.handleRejectPendingQuestion = this._handleRejectPendingQuestion.bind(this)
+    this.retryLastMessage = this._retryLastMessage.bind(this)
+    this.clearStreamError = this._clearStreamError.bind(this)
+    this.cancel = this._cancel.bind(this)
+    this.setCodeOutputs = this._setCodeOutputs.bind(this)
+    this.setMessage = this._setMessage.bind(this)
+    this.setInputError = this._setInputError.bind(this)
+    this.handleSubmit = this._handleSubmit.bind(this)
+    this.handleUnqueue = this._handleUnqueue.bind(this)
+    this.enqueueMessage = this._enqueueMessage.bind(this)
+    this.removeQueueItem = this._removeQueueItem.bind(this)
+    this.updateQueueItem = this._updateQueueItem.bind(this)
+  }
+
+  // =====================================================================
+  // Lifecycle
+  // =====================================================================
+
+  /**
+   * Set the active session ID. Triggers fetch when transitioning to a real
+   * session, or resets state for 'new'/undefined.
+   */
+  setSessionId(id: string | undefined): void {
+    if (this.disposed) return
+    const prev = this.state.session.currentSessionId
+    if (id === prev) return
+
+    this.state.session.currentSessionId = id
+    this._notifySession()
+
+    // Reset queue for new session
+    if (!id || id === 'new') {
+      this._updateInput({ messageQueue: [] })
+    } else {
+      this._updateInput({ messageQueue: loadQueue(id) })
+    }
+
+    this._fetchSessionIfNeeded()
+  }
+
+  /**
+   * Update mutable config that may change across parent re-renders.
+   * Called from the React provider's useEffect to keep the machine in sync.
+   */
+  updateConfig(config: Pick<ChatMachineConfig, 'dataSource' | 'onSessionCreated'>): void {
+    this.dataSource = config.dataSource
+    this.onSessionCreated = config.onSessionCreated
+  }
+
+  dispose(): void {
+    this.disposed = true
+    this.fetchCancelled = true
+    this.abortController?.abort()
+    this.sessionListeners.clear()
+    this.messagingListeners.clear()
+    this.inputListeners.clear()
+  }
+
+  // =====================================================================
+  // Subscribe / getSnapshot (for useSyncExternalStore)
+  // =====================================================================
+
+  subscribeSession = (listener: Listener): (() => void) => {
+    this.sessionListeners.add(listener)
+    return () => { this.sessionListeners.delete(listener) }
+  }
+
+  getSessionSnapshot = (): SessionSnapshot => {
+    if (this.lastSessionSnapshotVersion !== this.sessionSnapshotVersion) {
+      this.cachedSessionSnapshot = deriveSessionSnapshot(this.state, {
+        setError: this.setError,
+        retryFetchSession: this.retryFetchSession,
+      })
+      this.lastSessionSnapshotVersion = this.sessionSnapshotVersion
+    }
+    return this.cachedSessionSnapshot!
+  }
+
+  subscribeMessaging = (listener: Listener): (() => void) => {
+    this.messagingListeners.add(listener)
+    return () => { this.messagingListeners.delete(listener) }
+  }
+
+  getMessagingSnapshot = (): MessagingSnapshot => {
+    if (this.lastMessagingSnapshotVersion !== this.messagingSnapshotVersion) {
+      this.cachedMessagingSnapshot = deriveMessagingSnapshot(this.state, {
+        sendMessage: this.sendMessage,
+        handleRegenerate: this.handleRegenerate,
+        handleEdit: this.handleEdit,
+        handleCopy: this.handleCopy,
+        handleSubmitQuestionAnswers: this.handleSubmitQuestionAnswers,
+        handleRejectPendingQuestion: this.handleRejectPendingQuestion,
+        retryLastMessage: this.retryLastMessage,
+        clearStreamError: this.clearStreamError,
+        cancel: this.cancel,
+        setCodeOutputs: this.setCodeOutputs,
+      })
+      this.lastMessagingSnapshotVersion = this.messagingSnapshotVersion
+    }
+    return this.cachedMessagingSnapshot!
+  }
+
+  subscribeInput = (listener: Listener): (() => void) => {
+    this.inputListeners.add(listener)
+    return () => { this.inputListeners.delete(listener) }
+  }
+
+  getInputSnapshot = (): InputSnapshot => {
+    if (this.lastInputSnapshotVersion !== this.inputSnapshotVersion) {
+      this.cachedInputSnapshot = deriveInputSnapshot(this.state, {
+        setMessage: this.setMessage,
+        setInputError: this.setInputError,
+        handleSubmit: this.handleSubmit,
+        handleUnqueue: this.handleUnqueue,
+        enqueueMessage: this.enqueueMessage,
+        removeQueueItem: this.removeQueueItem,
+        updateQueueItem: this.updateQueueItem,
+      })
+      this.lastInputSnapshotVersion = this.inputSnapshotVersion
+    }
+    return this.cachedInputSnapshot!
+  }
+
+  // =====================================================================
+  // Private — state updates + notification
+  // =====================================================================
+
+  private _updateSession(patch: Partial<typeof this.state.session>): void {
+    Object.assign(this.state.session, patch)
+    this._notifySession()
+  }
+
+  private _notifySession(): void {
+    this.sessionSnapshotVersion++
+    for (const fn of this.sessionListeners) fn()
+  }
+
+  private _updateMessaging(patch: Partial<typeof this.state.messaging>): void {
+    Object.assign(this.state.messaging, patch)
+    this._notifyMessaging()
+    // sessionDebugUsage is derived from turns — only notify session listeners
+    // when the derived usage actually changes (avoids re-renders during streaming).
+    if ('turns' in patch) {
+      const newUsage = getSessionDebugUsage(this.state.messaging.turns)
+      if (!sessionDebugUsageEqual(this.lastSessionDebugUsage, newUsage)) {
+        this.lastSessionDebugUsage = newUsage
+        this._notifySession()
+      }
+    }
+  }
+
+  private _notifyMessaging(): void {
+    this.messagingSnapshotVersion++
+    for (const fn of this.messagingListeners) fn()
+  }
+
+  private _updateInput(patch: Partial<typeof this.state.input>): void {
+    Object.assign(this.state.input, patch)
+    // Only persist queue to sessionStorage when it actually changed
+    if ('messageQueue' in patch) {
+      this._persistQueue()
+    }
+    this._notifyInput()
+  }
+
+  private _notifyInput(): void {
+    this.inputSnapshotVersion++
+    for (const fn of this.inputListeners) fn()
+  }
+
+  private _persistQueue(): void {
+    const sid = this.state.session.currentSessionId
+    if (!sid || sid === 'new') return
+    saveQueue(sid, this.state.input.messageQueue)
+  }
+
+  // =====================================================================
+  // Private — session fetch
+  // =====================================================================
+
+  private _fetchSessionIfNeeded(): void {
+    const id = this.state.session.currentSessionId
+    if (!id || id === 'new') {
+      this._updateSession({
+        session: null,
+        fetching: false,
+        error: null,
+        errorRetryable: false,
+      })
+      this._updateMessaging({
+        turns: [],
+        pendingQuestion: null,
+      })
+      this._updateInput({ inputError: null })
+      return
+    }
+
+    // Skip while stream is managing this session
+    if (this.sendingSessionId === id) return
+
+    this.fetchCancelled = false
+    this._updateSession({ fetching: true, error: null, errorRetryable: false })
+    this._updateInput({ inputError: null })
+
+    const fetchId = id
+    this.dataSource
+      .fetchSession(fetchId)
+      .then((result) => {
+        if (this.fetchCancelled || this.disposed) return
+        if (this.state.session.currentSessionId !== fetchId) return
+        if (this.sendingSessionId === fetchId) return
+
+        if (result) {
+          this._updateSession({ session: result.session, fetching: false })
+          this._setTurnsFromFetch(result.turns)
+          this._updateMessaging({ pendingQuestion: result.pendingQuestion || null })
+        } else {
+          this._updateSession({ error: 'Session not found', fetching: false })
+        }
+      })
+      .catch((err) => {
+        if (this.fetchCancelled || this.disposed) return
+        if (this.state.session.currentSessionId !== fetchId) return
+        if (this.sendingSessionId === fetchId) return
+        const normalized = normalizeRPCError(err, 'Failed to load session')
+        this._updateSession({
+          error: normalized.userMessage,
+          errorRetryable: normalized.retryable,
+          fetching: false,
+        })
+      })
+  }
+
+  /** Sets turns from fetch, preserving pending user-only turns if server hasn't caught up. */
+  private _setTurnsFromFetch(fetchedTurns: ConversationTurn[]): void {
+    const prev = this.state.messaging.turns
+    const hasPendingUserOnly = prev.length > 0 && !prev[prev.length - 1].assistantTurn
+    if (hasPendingUserOnly && (!fetchedTurns || fetchedTurns.length === 0)) {
+      return // keep optimistic turn
+    }
+    this._updateMessaging({ turns: fetchedTurns ?? prev })
+  }
+
+  // =====================================================================
+  // Private — actions
+  // =====================================================================
+
+  private _setError(error: string | null): void {
+    this._updateSession({
+      error,
+      errorRetryable: false,
+    })
+  }
+
+  private _retryFetchSession(): void {
+    this._fetchSessionIfNeeded()
+  }
+
+  private _clearStreamError(): void {
+    this._updateMessaging({
+      streamError: null,
+      streamErrorRetryable: false,
+    })
+  }
+
+  private _cancel(): void {
+    if (this.abortController) {
+      this.abortController.abort()
+      this.abortController = null
+      this._updateMessaging({ isStreaming: false, loading: false })
+    }
+  }
+
+  private _setCodeOutputs(outputs: CodeOutput[]): void {
+    this._updateMessaging({ codeOutputs: outputs })
+  }
+
+  private _setMessage(message: string): void {
+    this._updateInput({ message })
+  }
+
+  private _setInputError(error: string | null): void {
+    this._updateInput({ inputError: error })
+  }
+
+  // ── Slash commands ──────────────────────────────────────────────────────
+
+  private async _executeSlashCommand(command: ParsedSlashCommand): Promise<boolean> {
+    if (command.hasArgs) {
+      this._updateInput({ inputError: 'BiChat.Slash.ErrorNoArguments' })
+      return true
+    }
+
+    this._updateSession({ error: null, errorRetryable: false })
+    this._updateInput({ inputError: null })
+    this._clearStreamError()
+
+    if (command.name === '/debug') {
+      const debugMode = deriveDebugMode(this.state)
+      const key = this.state.session.currentSessionId || 'new'
+      const nextDebugMode = !debugMode
+      this._updateSession({
+        debugModeBySession: {
+          ...this.state.session.debugModeBySession,
+          [key]: nextDebugMode,
+        },
+      })
+
+      if (nextDebugMode && this.state.session.currentSessionId && this.state.session.currentSessionId !== 'new') {
+        try {
+          const result = await this.dataSource.fetchSession(this.state.session.currentSessionId)
+          if (result) {
+            this._updateSession({ session: result.session })
+            this._updateMessaging({
+              turns: result.turns,
+              pendingQuestion: result.pendingQuestion || null,
+            })
+          }
+        } catch (err) {
+          console.error('Failed to refresh session for debug mode:', err)
+        }
+      }
+
+      this._updateInput({ message: '' })
+      return true
+    }
+
+    const curSessionId = this.state.session.currentSessionId
+    if (!curSessionId || curSessionId === 'new') {
+      this._updateInput({ inputError: 'BiChat.Slash.ErrorSessionRequired' })
+      return true
+    }
+
+    if (command.name === '/clear') {
+      this._updateInput({ message: '' })
+      this._updateMessaging({ loading: true, streamingContent: '' })
+
+      try {
+        await this.dataSource.clearSessionHistory(curSessionId)
+        const result = await this.dataSource.fetchSession(curSessionId)
+        if (result) {
+          this._updateSession({ session: result.session })
+          this._updateMessaging({
+            turns: result.turns,
+            pendingQuestion: result.pendingQuestion || null,
+          })
+        } else {
+          this._updateMessaging({ turns: [] })
+        }
+        this._updateMessaging({ codeOutputs: [] })
+      } catch (err) {
+        const normalized = normalizeRPCError(err, 'Failed to clear session history')
+        this._updateInput({ inputError: normalized.userMessage })
+      } finally {
+        this._updateMessaging({ loading: false, isStreaming: false })
+      }
+      return true
+    }
+
+    if (command.name === '/compact') {
+      this._updateInput({ message: '' })
+      this._updateMessaging({
+        loading: true,
+        isCompacting: true,
+        streamingContent: '',
+      })
+
+      try {
+        const compactResult = await this.dataSource.compactSessionHistory(curSessionId)
+        const summary = compactResult.summary || ''
+        this._updateMessaging({
+          turns: [createCompactedSystemTurn(curSessionId, summary)],
+        })
+
+        const result = await this.dataSource.fetchSession(curSessionId)
+        if (result) {
+          this._updateSession({ session: result.session })
+          this._updateMessaging({
+            turns: result.turns,
+            pendingQuestion: result.pendingQuestion || null,
+          })
+        } else {
+          this._updateMessaging({ turns: [] })
+        }
+        this._updateMessaging({ codeOutputs: [] })
+      } catch (err) {
+        const normalized = normalizeRPCError(err, 'Failed to compact session history')
+        this._updateInput({ inputError: normalized.userMessage })
+      } finally {
+        this._updateMessaging({ isCompacting: false, loading: false, isStreaming: false })
+      }
+      return true
+    }
+
+    this._updateInput({ inputError: 'BiChat.Slash.ErrorUnknownCommand' })
+    return true
+  }
+
+  // ── Send message ────────────────────────────────────────────────────────
+
+  /**
+   * Public entry point (no options). Calls _sendMessageCore internally.
+   */
+  private async _sendMessage(content: string, attachments: Attachment[] = []): Promise<void> {
+    return this._sendMessageCore(content, attachments)
+  }
+
+  /**
+   * Internal entry point with options (for regenerate/edit).
+   */
+  private async _sendMessageDirect(
+    content: string,
+    attachments: Attachment[],
+    options?: SendMessageOptions
+  ): Promise<void> {
+    return this._sendMessageCore(content, attachments, options)
+  }
+
+  /**
+   * Core send-message logic. Handles slash commands, rate limiting, streaming,
+   * session creation, optimistic turns, and auto-queue-drain.
+   */
+  private async _sendMessageCore(
+    content: string,
+    attachments: Attachment[] = [],
+    options?: SendMessageOptions
+  ): Promise<void> {
+    if (this.disposed) return
+    if (!content.trim() || this.state.messaging.loading) return
+
+    const trimmedContent = content.trim()
+    if (trimmedContent.startsWith('/')) {
+      const maybeCommand = parseSlashCommand(content)
+      if (!maybeCommand) {
+        this._updateInput({ inputError: 'BiChat.Slash.ErrorUnknownCommand' })
+        return
+      }
+      if (attachments.length > 0) {
+        this._updateInput({ inputError: 'BiChat.Slash.ErrorNoAttachments' })
+        return
+      }
+      await this._executeSlashCommand(maybeCommand)
+      return
+    }
+
+    if (!this.rateLimiter.canMakeRequest()) {
+      const timeUntilNext = this.rateLimiter.getTimeUntilNextRequest()
+      const seconds = Math.ceil(timeUntilNext / 1000)
+      this._updateInput({
+        inputError: `Rate limit exceeded. Please wait ${seconds} seconds before sending another message.`,
+      })
+      return
+    }
+
+    this._updateInput({ message: '', inputError: null })
+    this._updateSession({ error: null, errorRetryable: false })
+    this._clearStreamError()
+    this._updateMessaging({
+      loading: true,
+      streamingContent: '',
+    })
+
+    this.abortController = new AbortController()
+
+    const curSessionId = this.state.session.currentSessionId
+    const curDebugMode = deriveDebugMode(this.state)
+    const replaceFromMessageID = options?.replaceFromMessageID
+    const tempTurn = createPendingTurn(curSessionId || 'new', content, attachments)
+    this.lastSendAttempt = { content, attachments, options }
+
+    // Optimistic turn insertion
+    const prevTurns = this.state.messaging.turns
+    if (!replaceFromMessageID) {
+      this._updateMessaging({ turns: [...prevTurns, tempTurn] })
+    } else {
+      const idx = prevTurns.findIndex((t) => t.userTurn.id === replaceFromMessageID)
+      if (idx === -1) {
+        console.warn(`[ChatMachine] replaceFromMessageID "${replaceFromMessageID}" not found; appending as new turn`)
+        this._updateMessaging({ turns: [...prevTurns, tempTurn] })
+      } else {
+        this._updateMessaging({ turns: [...prevTurns.slice(0, idx), tempTurn] })
+      }
+    }
+
+    let shouldDrainQueue = true
+
+    try {
+      let activeSessionId = curSessionId
+      let shouldNavigateAfter = false
+
+      if (!activeSessionId || activeSessionId === 'new') {
+        const result = await this.dataSource.createSession()
+        if (result) {
+          const createdSessionID = result.id
+          activeSessionId = createdSessionID
+          this._updateSession({ currentSessionId: createdSessionID })
+          if (curDebugMode) {
+            this._updateSession({
+              debugModeBySession: {
+                ...this.state.session.debugModeBySession,
+                [createdSessionID]: true,
+              },
+            })
+          }
+          shouldNavigateAfter = true
+        }
+      }
+
+      // Lock: prevent fetch-session from clobbering state
+      this.sendingSessionId = activeSessionId || null
+
+      let accumulatedContent = ''
+      let createdSessionId: string | undefined
+      let sessionFetched = false
+      this._updateMessaging({ isStreaming: true })
+
+      for await (const chunk of this.dataSource.sendMessage(
+        activeSessionId || 'new',
+        content,
+        attachments,
+        this.abortController?.signal,
+        {
+          debugMode: curDebugMode,
+          replaceFromMessageID,
+        }
+      )) {
+        if (this.abortController?.signal.aborted) break
+
+        if ((chunk.type === 'chunk' || chunk.type === 'content') && chunk.content) {
+          accumulatedContent += chunk.content
+          this._updateMessaging({ streamingContent: accumulatedContent })
+        } else if (chunk.type === 'error') {
+          throw new Error(chunk.error || 'Stream error')
+        } else if (chunk.type === 'interrupt' || chunk.type === 'done') {
+          if (chunk.sessionId) {
+            createdSessionId = chunk.sessionId
+          }
+          if (!sessionFetched) {
+            sessionFetched = true
+            const finalSessionId = createdSessionId || activeSessionId
+            if (finalSessionId && finalSessionId !== 'new') {
+              const fetchResult = await this.dataSource.fetchSession(finalSessionId)
+              if (fetchResult) {
+                this._updateSession({ session: fetchResult.session })
+                this._setTurnsFromFetch(fetchResult.turns)
+                this._updateMessaging({ pendingQuestion: fetchResult.pendingQuestion || null })
+              }
+            }
+          }
+        } else if (chunk.type === 'user_message' && chunk.sessionId) {
+          createdSessionId = chunk.sessionId
+        } else if (chunk.type === 'tool_end' && chunk.tool?.name && ARTIFACT_TOOL_NAMES.has(chunk.tool.name)) {
+          this._updateMessaging({
+            artifactsInvalidationTrigger: this.state.messaging.artifactsInvalidationTrigger + 1,
+          })
+        }
+      }
+
+      // Ensure we have final session state even if stream ended without 'done'
+      if (!sessionFetched) {
+        const finalSessionId = createdSessionId || activeSessionId
+        if (finalSessionId && finalSessionId !== 'new') {
+          try {
+            const fetchResult = await this.dataSource.fetchSession(finalSessionId)
+            if (fetchResult) {
+              this._updateSession({ session: fetchResult.session })
+              this._updateMessaging({
+                turns: fetchResult.turns ?? [],
+                pendingQuestion: fetchResult.pendingQuestion || null,
+              })
+            }
+          } catch (fetchErr) {
+            console.error('Failed to fetch session after stream:', fetchErr)
+          }
+        }
+      }
+
+      const targetSessionId = createdSessionId || activeSessionId
+      if (shouldNavigateAfter && targetSessionId && targetSessionId !== 'new') {
+        // Prefer callback prop over deprecated data source method
+        if (this.onSessionCreated) {
+          this.onSessionCreated(targetSessionId)
+        } else {
+          this.dataSource.navigateToSession?.(targetSessionId)
+        }
+      }
+      this._clearStreamError()
+      this.lastSendAttempt = null
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        this._updateInput({ message: content })
+        this._clearStreamError()
+        shouldDrainQueue = false
+        return
+      }
+
+      this._updateMessaging({
+        turns: this.state.messaging.turns.filter((t) => t.id !== tempTurn.id),
+      })
+
+      const normalized = normalizeRPCError(err, 'Failed to send message')
+      this._updateInput({ inputError: normalized.userMessage })
+      this._updateMessaging({
+        streamError: normalized.userMessage,
+        streamErrorRetryable: normalized.retryable,
+      })
+      console.error('Send message error:', err)
+      shouldDrainQueue = false
+    } finally {
+      this._updateMessaging({
+        loading: false,
+        streamingContent: '',
+        isStreaming: false,
+      })
+      this.abortController = null
+      this.sendingSessionId = null
+
+      // Auto-drain queue on success
+      if (shouldDrainQueue) {
+        const queue = this.state.input.messageQueue
+        if (queue.length > 0) {
+          const next = queue[0]
+          this._updateInput({ messageQueue: queue.slice(1) })
+          // Defer to avoid reentrant call
+          setTimeout(() => {
+            this._sendMessageCore(next.content, next.attachments)
+          }, 0)
+        }
+      }
+    }
+  }
+
+  // ── Retry ───────────────────────────────────────────────────────────────
+
+  private async _retryLastMessage(): Promise<void> {
+    const lastAttempt = this.lastSendAttempt
+    if (!lastAttempt || this.state.messaging.loading) return
+    this._clearStreamError()
+    this._updateInput({ inputError: null })
+    await this._sendMessageDirect(lastAttempt.content, lastAttempt.attachments, lastAttempt.options)
+  }
+
+  // ── Regenerate / Edit ───────────────────────────────────────────────────
+
+  private async _handleRegenerate(turnId: string): Promise<void> {
+    const curSessionId = this.state.session.currentSessionId
+    if (!curSessionId || curSessionId === 'new') return
+
+    const turn = this.state.messaging.turns.find((t) => t.id === turnId)
+    if (!turn) return
+
+    this._updateSession({ error: null, errorRetryable: false })
+    // _sendMessageDirect delegates to _sendMessageCore which handles all errors internally
+    await this._sendMessageDirect(turn.userTurn.content, turn.userTurn.attachments, {
+      replaceFromMessageID: turn.userTurn.id,
+    })
+  }
+
+  private async _handleEdit(turnId: string, newContent: string): Promise<void> {
+    const curSessionId = this.state.session.currentSessionId
+    if (!curSessionId || curSessionId === 'new') {
+      this._updateInput({ message: newContent })
+      this._updateMessaging({
+        turns: this.state.messaging.turns.filter((t) => t.id !== turnId),
+      })
+      return
+    }
+
+    const turn = this.state.messaging.turns.find((t) => t.id === turnId)
+    if (!turn) {
+      this._updateSession({ error: 'Failed to edit message', errorRetryable: false })
+      return
+    }
+
+    this._updateSession({ error: null, errorRetryable: false })
+    // _sendMessageDirect delegates to _sendMessageCore which handles all errors internally
+    await this._sendMessageDirect(newContent, turn.userTurn.attachments, {
+      replaceFromMessageID: turn.userTurn.id,
+    })
+  }
+
+  private async _handleCopy(text: string): Promise<void> {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) return
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      // Clipboard write can fail if page doesn't have focus (Permissions Policy)
+    }
+  }
+
+  // ── HITL ────────────────────────────────────────────────────────────────
+
+  private async _handleSubmitQuestionAnswers(answers: QuestionAnswers): Promise<void> {
+    const curSessionId = this.state.session.currentSessionId
+    const curPendingQuestion = this.state.messaging.pendingQuestion
+    if (!curSessionId || !curPendingQuestion) return
+
+    this._updateMessaging({ loading: true })
+    this._updateSession({ error: null, errorRetryable: false })
+    const previousPendingQuestion = curPendingQuestion
+    this._updateMessaging({ pendingQuestion: null })
+
+    try {
+      const result = await this.dataSource.submitQuestionAnswers(
+        curSessionId,
+        previousPendingQuestion.id,
+        answers
+      )
+      if (this.disposed) return
+
+      if (result.success) {
+        if (curSessionId !== 'new') {
+          try {
+            const fetchResult = await this.dataSource.fetchSession(curSessionId)
+            if (this.disposed) return
+            if (fetchResult) {
+              this._updateMessaging({
+                turns: fetchResult.turns,
+                pendingQuestion: fetchResult.pendingQuestion || null,
+              })
+            } else {
+              this._updateMessaging({ pendingQuestion: previousPendingQuestion })
+              this._updateSession({ error: 'Failed to load updated session', errorRetryable: false })
+            }
+          } catch (fetchErr) {
+            if (this.disposed) return
+            this._updateMessaging({ pendingQuestion: previousPendingQuestion })
+            const normalized = normalizeRPCError(fetchErr, 'Failed to load updated session')
+            this._updateSession({ error: normalized.userMessage, errorRetryable: normalized.retryable })
+          }
+        }
+      } else {
+        this._updateMessaging({ pendingQuestion: previousPendingQuestion })
+        this._updateSession({ error: result.error || 'Failed to submit answers', errorRetryable: false })
+      }
+    } catch (err) {
+      if (this.disposed) return
+      this._updateMessaging({ pendingQuestion: previousPendingQuestion })
+      const normalized = normalizeRPCError(err, 'Failed to submit answers')
+      this._updateSession({ error: normalized.userMessage, errorRetryable: normalized.retryable })
+    } finally {
+      if (!this.disposed) {
+        this._updateMessaging({ loading: false })
+      }
+    }
+  }
+
+  private async _handleRejectPendingQuestion(): Promise<void> {
+    const curSessionId = this.state.session.currentSessionId
+    const curPendingQuestion = this.state.messaging.pendingQuestion
+    if (!curSessionId || !curPendingQuestion) return
+
+    try {
+      const result = await this.dataSource.rejectPendingQuestion(curSessionId)
+      if (this.disposed) return
+      if (result.success) {
+        this._updateMessaging({ pendingQuestion: null })
+        if (curSessionId !== 'new') {
+          const fetchResult = await this.dataSource.fetchSession(curSessionId)
+          if (this.disposed) return
+          if (fetchResult) {
+            this._updateSession({ session: fetchResult.session })
+            this._setTurnsFromFetch(fetchResult.turns)
+            this._updateMessaging({ pendingQuestion: fetchResult.pendingQuestion || null })
+          }
+        }
+      } else {
+        this._updateSession({ error: result.error || 'Failed to reject question', errorRetryable: false })
+      }
+    } catch (err) {
+      if (this.disposed) return
+      const normalized = normalizeRPCError(err, 'Failed to reject question')
+      this._updateSession({ error: normalized.userMessage, errorRetryable: normalized.retryable })
+    }
+  }
+
+  // ── Input / queue ───────────────────────────────────────────────────────
+
+  private _handleSubmit(e: { preventDefault: () => void }, attachments: Attachment[] = []): void {
+    e.preventDefault()
+    const msg = this.state.input.message
+    if (!msg.trim() && attachments.length === 0) return
+    this._updateInput({ inputError: null })
+    this._clearStreamError()
+
+    const convertedAttachments: Attachment[] = attachments.map((att) => ({
+      clientKey: att.clientKey || crypto.randomUUID(),
+      filename: att.filename,
+      mimeType: att.mimeType,
+      sizeBytes: att.sizeBytes,
+      base64Data: att.base64Data,
+      url: att.url,
+      preview: att.preview,
+    }))
+
+    // Queue if currently generating
+    if (this.state.messaging.loading) {
+      const ok = this._enqueueMessage(msg.trim(), convertedAttachments)
+      if (ok) {
+        this._updateInput({ message: '' })
+      }
+      return
+    }
+
+    this._sendMessage(msg.trim(), convertedAttachments)
+  }
+
+  private _handleUnqueue(): { content: string; attachments: Attachment[] } | null {
+    const queue = this.state.input.messageQueue
+    if (queue.length === 0) return null
+
+    const last = queue[queue.length - 1]
+    this._updateInput({ messageQueue: queue.slice(0, -1) })
+    return { content: last.content, attachments: last.attachments }
+  }
+
+  private _enqueueMessage(content: string, attachments: Attachment[]): boolean {
+    if (this.state.input.messageQueue.length >= MAX_QUEUE_SIZE) {
+      this._updateInput({ inputError: 'BiChat.Input.QueueFull' })
+      return false
+    }
+    this._updateInput({
+      messageQueue: [...this.state.input.messageQueue, { content, attachments }],
+    })
+    return true
+  }
+
+  private _removeQueueItem(index: number): void {
+    this._updateInput({
+      messageQueue: this.state.input.messageQueue.filter((_, i) => i !== index),
+    })
+  }
+
+  private _updateQueueItem(index: number, content: string): void {
+    this._updateInput({
+      messageQueue: this.state.input.messageQueue.map((item, i) =>
+        i === index ? { ...item, content } : item
+      ),
+    })
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function sessionDebugUsageEqual(
+  a: SessionDebugUsage | null,
+  b: SessionDebugUsage
+): boolean {
+  if (!a) return false
+  return (
+    a.promptTokens === b.promptTokens &&
+    a.completionTokens === b.completionTokens &&
+    a.totalTokens === b.totalTokens &&
+    a.turnsWithUsage === b.turnsWithUsage &&
+    a.latestPromptTokens === b.latestPromptTokens &&
+    a.latestCompletionTokens === b.latestCompletionTokens &&
+    a.latestTotalTokens === b.latestTotalTokens
+  )
+}
