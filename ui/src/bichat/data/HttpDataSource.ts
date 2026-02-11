@@ -5,7 +5,7 @@
  * Uses turn-based architecture - fetches ConversationTurns instead of flat messages.
  */
 
-import { createAppletRPCClient } from '../../applet-host'
+import { AppletRPCException, createAppletRPCClient } from '../../applet-host'
 import type { BichatRPC, Session as RPCSession } from './rpc.generated'
 import type {
   ChatDataSource,
@@ -63,6 +63,11 @@ interface RPCArtifact {
   sizeBytes: number
   metadata?: Record<string, unknown>
   createdAt: string
+}
+
+function isSessionNotFoundError(err: unknown): boolean {
+  if (!(err instanceof AppletRPCException)) return false
+  return err.code === 'not_found' || err.code === 'session_not_found'
 }
 
 function toSession(session: RPCSession): Session {
@@ -374,6 +379,7 @@ export class HttpDataSource implements ChatDataSource {
     }
     this.rpc = createAppletRPCClient({
       endpoint: `${this.config.baseUrl}${this.config.rpcEndpoint}`,
+      timeoutMs: this.config.timeout,
     })
   }
 
@@ -443,8 +449,11 @@ export class HttpDataSource implements ChatDataSource {
         pendingQuestion: toPendingQuestion(data.pendingQuestion),
       }
     } catch (err) {
+      if (isSessionNotFoundError(err)) {
+        return null
+      }
       console.error('Failed to fetch session:', err)
-      return null
+      throw err instanceof Error ? err : new Error('Failed to fetch session')
     }
   }
 
@@ -559,7 +568,7 @@ export class HttpDataSource implements ChatDataSource {
       content,
       debugMode: options?.debugMode ?? false,
       replaceFromMessageId: options?.replaceFromMessageID,
-      attachments: attachments.map(a => ({
+      attachments: attachments.map((a) => ({
         filename: a.filename,
         mimeType: a.mimeType,
         sizeBytes: a.sizeBytes,
@@ -568,16 +577,30 @@ export class HttpDataSource implements ChatDataSource {
       })),
     }
 
+    let connectionTimeoutID: ReturnType<typeof setTimeout> | undefined
+    let connectionTimedOut = false
     try {
+      const timeoutMs = this.config.timeout ?? 0
+      if (timeoutMs > 0) {
+        connectionTimeoutID = setTimeout(() => {
+          connectionTimedOut = true
+          this.abortController?.abort()
+        }, timeoutMs)
+      }
+
       const response = await fetch(url, {
         method: 'POST',
         headers: this.createHeaders(),
         body: JSON.stringify(payload),
         signal: this.abortController.signal,
       })
+      if (connectionTimeoutID !== undefined) {
+        clearTimeout(connectionTimeoutID)
+        connectionTimeoutID = undefined
+      }
 
       if (!response.ok) {
-        throw new Error(`Stream request failed: ${response.statusText}`)
+        throw new Error(`Stream request failed: HTTP ${response.status}`)
       }
 
       if (!response.body) {
@@ -598,7 +621,9 @@ export class HttpDataSource implements ChatDataSource {
         if (err.name === 'AbortError') {
           yield {
             type: 'error',
-            error: 'Stream cancelled',
+            error: connectionTimedOut
+              ? `Stream request timed out after ${this.config.timeout}ms`
+              : 'Stream cancelled',
           }
         } else {
           yield {
@@ -613,6 +638,9 @@ export class HttpDataSource implements ChatDataSource {
         }
       }
     } finally {
+      if (connectionTimeoutID !== undefined) {
+        clearTimeout(connectionTimeoutID)
+      }
       if (signal && onExternalAbort) {
         signal.removeEventListener('abort', onExternalAbort)
       }

@@ -23,6 +23,7 @@ import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
 import CompactionDoodle from './CompactionDoodle'
 import WelcomeContent from './WelcomeContent'
+import ArchiveBanner from './ArchiveBanner'
 import { useTranslation } from '../hooks/useTranslation'
 import { SessionArtifactsPanel } from './SessionArtifactsPanel'
 
@@ -51,6 +52,8 @@ interface ChatSessionProps {
   onBack?: () => void
   /** Custom verbs for the typing indicator (e.g. ['Thinking', 'Analyzing', ...]) */
   thinkingVerbs?: string[]
+  /** Callback invoked after an archived session is restored (e.g. to navigate or refresh) */
+  onSessionRestored?: (sessionId: string) => void
   /** Enables the built-in right-side artifacts panel for persisted session artifacts */
   showArtifactsPanel?: boolean
   /** Initial expanded state for artifacts panel when no persisted preference exists */
@@ -76,6 +79,7 @@ function ChatSessionCore({
   actionsSlot,
   onBack,
   thinkingVerbs,
+  onSessionRestored,
   showArtifactsPanel = false,
   artifactsPanelDefaultExpanded = false,
   artifactsPanelStorageKey = 'bichat.artifacts-panel.expanded',
@@ -94,7 +98,20 @@ function ChatSessionCore({
     handleUnqueue,
   } = useChatInput()
 
-  const effectiveReadOnly = Boolean(readOnly ?? isReadOnly)
+  const isArchived = session?.status === 'archived'
+  const effectiveReadOnly = Boolean(readOnly ?? isReadOnly) || isArchived
+  const [restoring, setRestoring] = useState(false)
+
+  const handleRestore = useCallback(async () => {
+    if (!session?.id) return
+    setRestoring(true)
+    try {
+      await dataSource.unarchiveSession(session.id)
+      onSessionRestored?.(session.id)
+    } finally {
+      setRestoring(false)
+    }
+  }, [dataSource, session?.id, onSessionRestored])
 
   const [artifactsPanelExpanded, setArtifactsPanelExpanded] = useState(
     artifactsPanelDefaultExpanded
@@ -304,6 +321,13 @@ function ChatSessionCore({
             </div>
           ) : (
             <>
+              {isArchived && (
+                <ArchiveBanner
+                  show
+                  onRestore={handleRestore}
+                  restoring={restoring}
+                />
+              )}
               <MessageList
                 renderUserTurn={renderUserTurn}
                 renderAssistantTurn={renderAssistantTurn}

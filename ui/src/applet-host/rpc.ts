@@ -37,14 +37,19 @@ interface RPCResponse<TResult> {
 export interface CreateAppletRPCClientOptions {
   endpoint: string
   fetcher?: typeof fetch
+  timeoutMs?: number
 }
 
 export function createAppletRPCClient(options: CreateAppletRPCClientOptions) {
   const fetcher = options.fetcher ?? fetch
+  const timeoutMs = typeof options.timeoutMs === 'number' && options.timeoutMs > 0 ? options.timeoutMs : 0
 
   async function call<TParams, TResult>(method: string, params: TParams): Promise<TResult> {
     const req: RPCRequest = { id: crypto.randomUUID(), method, params }
     const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now()
+    const abortController = timeoutMs > 0 ? new AbortController() : undefined
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined
+    let timedOut = false
     maybeDispatchRPCEvent({
       id: req.id,
       method: req.method,
@@ -52,10 +57,18 @@ export function createAppletRPCClient(options: CreateAppletRPCClientOptions) {
     })
 
     try {
+      if (abortController) {
+        timeoutHandle = setTimeout(() => {
+          timedOut = true
+          abortController.abort()
+        }, timeoutMs)
+      }
+
       const resp = await fetcher(options.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(req),
+        signal: abortController?.signal,
       })
 
       if (!resp.ok) {
@@ -91,14 +104,26 @@ export function createAppletRPCClient(options: CreateAppletRPCClientOptions) {
 
       return json.result as TResult
     } catch (err) {
+      let rpcErr: unknown = err
+      if (err instanceof Error && err.name === 'AbortError') {
+        rpcErr = new AppletRPCException({
+          code: timedOut ? 'timeout' : 'aborted',
+          message: timedOut ? `RPC request timed out after ${timeoutMs}ms` : 'RPC request was aborted',
+          cause: err,
+        })
+      }
       maybeDispatchRPCEvent({
         id: req.id,
         method: req.method,
         status: 'error',
         durationMs: elapsedMs(startedAt),
-        error: err,
+        error: rpcErr,
       })
-      throw err
+      throw rpcErr
+    } finally {
+      if (timeoutHandle !== undefined) {
+        clearTimeout(timeoutHandle)
+      }
     }
   }
 

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Paperclip } from '@phosphor-icons/react'
+import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Paperclip, Plus } from '@phosphor-icons/react'
 import type { ChatDataSource, SessionArtifact } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
 import { useOptionalChatMessaging } from '../context/ChatContext'
@@ -314,6 +314,33 @@ export function SessionArtifactsPanel({
     [canDeleteArtifact, dataSource]
   )
 
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleAttachClick = useCallback(() => {
+    fileInputRef.current?.click()
+  }, [])
+
+  const handleFileInputChange = useCallback(
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      if (!dataSource.uploadSessionArtifacts || !e.target.files?.length) return
+      const files = Array.from(e.target.files)
+      try {
+        const result = await dataSource.uploadSessionArtifacts(sessionId, files)
+        if ((result.artifacts || []).length > 0) {
+          setDropSuccessState()
+          void fetchArtifacts({ reset: true, manual: false })
+        }
+        setError(null)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : tRef.current('BiChat.Artifacts.FailedToLoad'))
+      } finally {
+        // Reset input so same file can be re-selected
+        e.target.value = ''
+      }
+    },
+    [dataSource, fetchArtifacts, sessionId, setDropSuccessState]
+  )
+
   return (
     <aside
       className={[
@@ -351,6 +378,27 @@ export function SessionArtifactsPanel({
             {t('BiChat.Artifacts.Title')} ({artifacts.length})
           </h2>
         </div>
+        {canDropFiles && (
+          <>
+            <button
+              type="button"
+              onClick={handleAttachClick}
+              className="ml-2 flex-shrink-0 rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+              aria-label={t('BiChat.Artifacts.AttachFiles')}
+              title={t('BiChat.Artifacts.AttachFiles')}
+            >
+              <Plus className="h-4 w-4" weight="bold" />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={handleFileInputChange}
+              aria-label={t('BiChat.Artifacts.AttachFiles')}
+            />
+          </>
+        )}
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">

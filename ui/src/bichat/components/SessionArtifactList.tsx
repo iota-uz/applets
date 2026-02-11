@@ -120,6 +120,9 @@ export function SessionArtifactList({
           <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
             {t('BiChat.Artifacts.EmptySubtitle')}
           </p>
+          <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
+            {t('BiChat.Artifacts.EmptyHint')}
+          </p>
         </div>
       </div>
     )
