@@ -23,7 +23,7 @@ import type {
   AssistantTurn,
 } from '../types'
 import { MessageRole } from '../types'
-import { parseChartDataFromSpec } from '../utils/chartSpec'
+import { parseChartDataFromSpec, parseChartDataFromJsonString, isRecord } from '../utils/chartSpec'
 import { convertToBase64, validateAttachmentFile, validateFileCount } from '../utils/fileUtils'
 import { parseBichatStream } from '../utils/sseParser'
 import type { PendingQuestion as RPCPendingQuestion } from './rpc.generated'
@@ -187,12 +187,70 @@ function toDownloadArtifact(artifact: SessionArtifact): DownloadArtifact | null 
   }
 }
 
+function extractChartDataFromToolCalls(toolCalls?: Array<{ name: string; result?: string }>): import('../types').ChartData | undefined {
+  if (!toolCalls) return undefined
+  for (const tc of toolCalls) {
+    if (tc.name === 'draw_chart' && tc.result) {
+      const parsed = parseChartDataFromJsonString(tc.result)
+      if (parsed) return parsed
+    }
+  }
+  return undefined
+}
+
+const EXPORT_TOOL_NAMES: Record<string, DownloadArtifact['type']> = {
+  export_query_to_excel: 'excel',
+  export_data_to_excel: 'excel',
+  export_to_pdf: 'pdf',
+}
+
+function extractDownloadArtifactsFromToolCalls(toolCalls?: Array<{ name: string; result?: string }>): DownloadArtifact[] {
+  if (!toolCalls) return []
+  const artifacts: DownloadArtifact[] = []
+  for (const tc of toolCalls) {
+    const type = EXPORT_TOOL_NAMES[tc.name]
+    if (!type || !tc.result) continue
+
+    let parsed: unknown
+    try { parsed = JSON.parse(tc.result) } catch { continue }
+    if (!isRecord(parsed) || typeof parsed.url !== 'string' || !parsed.url) continue
+
+    const filename = typeof parsed.filename === 'string' && parsed.filename
+      ? parsed.filename
+      : parsed.url.split('/').pop() || 'download'
+
+    const sizeKB = typeof parsed.file_size_kb === 'number' ? parsed.file_size_kb : undefined
+    const sizeBytes = typeof parsed.size === 'number' ? parsed.size : (sizeKB != null ? sizeKB * 1024 : undefined)
+
+    artifacts.push({
+      type,
+      filename,
+      url: parsed.url,
+      sizeReadable: sizeBytes != null ? formatSizeReadable(sizeBytes) : undefined,
+      rowCount: parseRowCount(parsed as Record<string, unknown>),
+      description: typeof parsed.description === 'string' ? parsed.description : undefined,
+    })
+  }
+  return artifacts
+}
+
 function normalizeAssistantTurn(turn: Partial<AssistantTurn> & { id: string; content: string; createdAt: string }): AssistantTurn {
+  const existingArtifacts = turn.artifacts || []
+  const fromToolCalls = extractDownloadArtifactsFromToolCalls(turn.toolCalls)
+  // Merge: add tool-call artifacts that aren't already present (by URL + filename)
+  const merged = [...existingArtifacts]
+  for (const a of fromToolCalls) {
+    if (!merged.some((e) => e.url === a.url && e.filename === a.filename)) {
+      merged.push(a)
+    }
+  }
+
   return {
     ...turn,
     role: (turn.role as MessageRole) || MessageRole.Assistant,
+    chartData: turn.chartData || extractChartDataFromToolCalls(turn.toolCalls),
     citations: turn.citations || [],
-    artifacts: turn.artifacts || [],
+    artifacts: merged,
     codeOutputs: turn.codeOutputs || [],
   }
 }
