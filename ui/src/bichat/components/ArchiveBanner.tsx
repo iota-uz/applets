@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Archive, Spinner } from '@phosphor-icons/react'
 import { errorMessageVariants } from '../animations/variants'
 import Alert from './Alert'
+import { useTranslation } from '../hooks/useTranslation'
 
 interface ArchiveBannerProps {
   show?: boolean
@@ -22,6 +23,7 @@ function ArchiveBanner({
   restoring = false,
   onRestoreComplete,
 }: ArchiveBannerProps) {
+  const { t } = useTranslation()
   const [error, setError] = useState<string | null>(null)
 
   const handleRestore = async () => {
@@ -34,7 +36,7 @@ function ArchiveBanner({
         onRestoreComplete()
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to restore session'
+      const message = err instanceof Error ? err.message : t('BiChat.Archive.RestoreFailed')
       setError(message)
     }
   }
@@ -50,7 +52,7 @@ function ArchiveBanner({
             exit="exit"
             className="border-t border border-blue-200 bg-blue-50 dark:bg-blue-900/20 px-4 py-3"
             role="region"
-            aria-label="Archive banner"
+            aria-label={t('BiChat.Archive.Banner')}
           >
             <div className="w-full flex items-start justify-between px-4">
               <div className="flex items-start gap-3 flex-1">
@@ -60,7 +62,7 @@ function ArchiveBanner({
                 {/* Content */}
                 <div className="flex-1">
                   <p className="text-sm text-blue-700 dark:text-blue-400">
-                    This chat session has been archived
+                    {t('BiChat.Archive.Archived')}
                   </p>
                 </div>
               </div>
@@ -70,15 +72,15 @@ function ArchiveBanner({
                 onClick={handleRestore}
                 disabled={restoring}
                 className="ml-2 flex-shrink-0 px-3 py-1.5 text-xs font-medium bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-                aria-label="Restore session"
+                aria-label={t('BiChat.Archive.Restore')}
               >
                 {restoring ? (
                   <>
                     <Spinner size={16} className="w-4 h-4 animate-spin" />
-                    Restoring...
+                    {t('BiChat.Archive.Restoring')}
                   </>
                 ) : (
-                  'Restore'
+                  t('BiChat.Archive.Restore')
                 )}
               </button>
             </div>
@@ -91,7 +93,7 @@ function ArchiveBanner({
         <Alert
           variant="error"
           message={error}
-          title="Restore Failed"
+          title={t('BiChat.Archive.RestoreFailed')}
           onDismiss={() => setError(null)}
           dismissible
         />

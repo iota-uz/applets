@@ -5,6 +5,7 @@
 
 import { useEffect, useRef, memo, type KeyboardEvent } from 'react'
 import { MagnifyingGlass, X } from '@phosphor-icons/react'
+import { useTranslation } from '../hooks/useTranslation'
 
 export interface SearchInputProps {
   /** Current search value */
@@ -59,6 +60,7 @@ function SearchInput({
   disabled = false,
   ariaLabel = 'Search',
 }: SearchInputProps) {
+  const { t } = useTranslation()
   const inputRef = useRef<HTMLInputElement>(null)
   const sizes = sizeClasses[size]
 
@@ -119,8 +121,8 @@ function SearchInput({
           type="button"
           onClick={handleClear}
           className={`cursor-pointer absolute inset-y-0 right-2 flex items-center ${sizes.clearBtn} rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300`}
-          aria-label="Clear search"
-          title="Clear search"
+          aria-label={t('BiChat.Search.Clear')}
+          title={t('BiChat.Search.Clear')}
         >
           <X size={sizes.icon - 2} weight="bold" />
         </button>

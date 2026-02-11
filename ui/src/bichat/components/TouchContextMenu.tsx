@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback, FC, ReactNode, CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useTranslation } from '../hooks/useTranslation';
 
 export interface ContextMenuItem {
   id: string;
@@ -24,6 +25,7 @@ export const TouchContextMenu: FC<TouchContextMenuProps> = ({
   onClose,
   anchorRect,
 }) => {
+  const { t } = useTranslation();
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const menuRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -126,7 +128,7 @@ export const TouchContextMenu: FC<TouchContextMenuProps> = ({
           <motion.div
             ref={menuRef}
             role="menu"
-            aria-label="Context menu"
+            aria-label={t('BiChat.ContextMenu')}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}

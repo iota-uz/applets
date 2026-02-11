@@ -1,12 +1,13 @@
 /**
  * TypingIndicator Component
  * Displays rotating verbs with shimmer animation to show AI is thinking/processing.
- * Verbs are configurable via props.
+ * Verbs are configurable via props. When not provided, defaults are pulled from translations.
  */
 
-import { useState, useEffect, memo } from 'react'
+import { useState, useEffect, useMemo, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { verbTransitionVariants } from '../animations/variants'
+import { useTranslation } from '../hooks/useTranslation'
 
 export interface TypingIndicatorProps {
   /** Custom thinking verbs to rotate through */
@@ -17,14 +18,14 @@ export interface TypingIndicatorProps {
   className?: string
 }
 
-// Default thinking verbs
-const DEFAULT_VERBS = [
-  'Thinking',
-  'Processing',
-  'Analyzing',
-  'Synthesizing',
-  'Computing',
-  'Working on it',
+// Translation keys for default thinking verbs
+const THINKING_KEYS = [
+  'BiChat.Thinking.Thinking',
+  'BiChat.Thinking.Processing',
+  'BiChat.Thinking.Analyzing',
+  'BiChat.Thinking.Synthesizing',
+  'BiChat.Thinking.Computing',
+  'BiChat.Thinking.WorkingOnIt',
 ]
 
 // Check if user prefers reduced motion
@@ -43,10 +44,17 @@ const getRandomVerb = (verbs: string[], current: string): string => {
 }
 
 function TypingIndicator({
-  verbs = DEFAULT_VERBS,
+  verbs: verbsProp,
   rotationInterval = 3000,
   className = '',
 }: TypingIndicatorProps) {
+  const { t } = useTranslation()
+
+  const verbs = useMemo(() => {
+    if (verbsProp) return verbsProp
+    return THINKING_KEYS.map((key) => t(key))
+  }, [verbsProp, t])
+
   const [verb, setVerb] = useState(() => verbs[Math.floor(Math.random() * verbs.length)])
 
   useEffect(() => {

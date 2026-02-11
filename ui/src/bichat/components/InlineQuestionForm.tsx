@@ -19,6 +19,7 @@ import {
 } from '@phosphor-icons/react'
 import { PendingQuestion, QuestionAnswers } from '../types'
 import { useChatMessaging } from '../context/ChatContext'
+import { useTranslation } from '../hooks/useTranslation'
 
 interface InlineQuestionFormProps {
   pendingQuestion: PendingQuestion
@@ -26,6 +27,7 @@ interface InlineQuestionFormProps {
 
 export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps) {
   const { handleSubmitQuestionAnswers, handleRejectPendingQuestion, loading } = useChatMessaging()
+  const { t } = useTranslation()
   const [currentStep, setCurrentStep] = useState(0)
   const [answers, setAnswers] = useState<QuestionAnswers>({})
   const [otherTexts, setOtherTexts] = useState<Record<string, string>>({})
@@ -157,7 +159,7 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
   const canProceed = isCurrentAnswerValid()
 
   return (
-    <div className="animate-slide-up rounded-2xl border border-primary-200 dark:border-primary-800/50 bg-gradient-to-b from-primary-50/80 to-white dark:from-primary-950/30 dark:to-gray-900/80 shadow-sm overflow-hidden">
+    <div className="animate-slide-up rounded-2xl border border-gray-200 dark:border-gray-700/50 bg-gradient-to-b from-primary-50/80 to-white dark:from-primary-950/30 dark:to-gray-900/80 shadow-sm overflow-hidden">
       <form onSubmit={handleSubmit}>
         {/* Header bar */}
         <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
@@ -167,7 +169,7 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">
-                Input needed
+                {t('BiChat.InlineQuestion.InputNeeded')}
               </span>
               {totalSteps > 1 && (
                 <span className="text-[11px] tabular-nums text-gray-400 dark:text-gray-500">
@@ -181,7 +183,7 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
             onClick={handleRejectPendingQuestion}
             disabled={loading}
             className="cursor-pointer p-1 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-40"
-            aria-label="Dismiss"
+            aria-label={t('BiChat.InlineQuestion.Dismiss')}
           >
             <X size={16} weight="bold" />
           </button>
@@ -218,7 +220,7 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
           </p>
           {isMultiSelect && (
             <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-              Select all that apply
+              {t('BiChat.InlineQuestion.SelectAllThatApply')}
             </p>
           )}
         </div>
@@ -305,23 +307,20 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
                 ? 'text-gray-900 dark:text-gray-100 font-medium'
                 : 'text-gray-700 dark:text-gray-300',
             ].join(' ')}>
-              Other
+              {t('BiChat.InlineQuestion.Other')}
             </span>
           </label>
 
-          {/* Other text input — slides open */}
-          {isOtherSelected && (
-            <div className="pl-8 pr-1 pb-1 animate-slide-up">
-              <input
-                type="text"
-                value={currentOtherText}
-                onChange={(e) => handleOtherTextChange(e.target.value)}
-                placeholder="Type your answer..."
-                autoFocus
-                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-400 dark:focus:border-primary-600 transition-shadow"
-              />
-            </div>
-          )}
+          {/* Other text input — always visible, typing auto-selects "Other" */}
+          <div className="pl-8 pr-1 pb-1">
+            <input
+              type="text"
+              value={currentOtherText}
+              onChange={(e) => handleOtherTextChange(e.target.value)}
+              placeholder={t('BiChat.InlineQuestion.TypeYourAnswer')}
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-400 dark:focus:border-primary-600 transition-shadow"
+            />
+          </div>
         </div>
 
         {/* Footer with navigation */}
@@ -334,7 +333,7 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
                 className="cursor-pointer flex items-center gap-1 px-2.5 py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
                 <ArrowLeft size={14} weight="bold" />
-                Back
+                {t('BiChat.InlineQuestion.Back')}
               </button>
             )}
           </div>
@@ -352,12 +351,12 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
           >
             {isLastStep ? (
               <>
-                Submit
+                {t('BiChat.Submit')}
                 <PaperPlaneTilt size={14} weight="fill" />
               </>
             ) : (
               <>
-                Next
+                {t('BiChat.InlineQuestion.Next')}
                 <ArrowRight size={14} weight="bold" />
               </>
             )}

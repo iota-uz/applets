@@ -7,6 +7,7 @@
 
 import { useState, useRef, useEffect, useImperativeHandle, forwardRef, memo } from 'react'
 import { CircleNotch } from '@phosphor-icons/react'
+import { useTranslation } from '../hooks/useTranslation'
 
 export interface EditableTextProps {
   /** Current text value */
@@ -54,6 +55,7 @@ const EditableText = forwardRef<EditableTextRef, EditableTextProps>(
     },
     ref
   ) => {
+    const { t } = useTranslation()
     const [isEditing, setIsEditing] = useState(false)
     const [editValue, setEditValue] = useState(value)
     const inputRef = useRef<HTMLInputElement>(null)
@@ -145,7 +147,7 @@ const EditableText = forwardRef<EditableTextRef, EditableTextProps>(
             maxLength={maxLength}
             placeholder={placeholder}
             className={`flex-1 px-2 py-1 ${sizeClass} bg-white dark:bg-gray-700 border border-primary-500 dark:border-primary-600 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 dark:focus-visible:ring-primary-600/30 text-gray-900 dark:text-white ${inputClassName}`}
-            aria-label="Edit text. Press Enter to save, Escape to cancel"
+            aria-label={t('BiChat.EditableText.AriaLabel')}
           />
         </div>
       )
@@ -157,7 +159,7 @@ const EditableText = forwardRef<EditableTextRef, EditableTextProps>(
       <span
         onDoubleClick={handleDoubleClick}
         className={`${sizeClass} font-medium truncate flex-1 cursor-pointer select-none hover:text-primary-600 dark:hover:text-primary-400 transition-colors ${className}`}
-        title="Double-click to edit"
+        title={t('BiChat.EditableText.DoubleClickToEdit')}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {

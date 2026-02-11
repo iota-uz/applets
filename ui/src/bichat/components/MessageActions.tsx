@@ -2,6 +2,7 @@ import { useState, memo } from 'react'
 import { Copy, ArrowClockwise, PencilSimple } from '@phosphor-icons/react'
 import { MessageRole } from '../types'
 import { useToast } from '../hooks/useToast'
+import { useTranslation } from '../hooks/useTranslation'
 import LoadingSpinner from './LoadingSpinner'
 
 interface ActionableMessage {
@@ -26,6 +27,7 @@ function MessageActions({
   const [copying, setCopying] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
   const toast = useToast()
+  const { t } = useTranslation()
 
   const isUser = message.role === MessageRole.User
 
@@ -33,9 +35,9 @@ function MessageActions({
     setCopying(true)
     try {
       await onCopy(message.content)
-      toast.success('Copied to clipboard')
+      toast.success(t('BiChat.Message.CopiedToClipboard'))
     } catch {
-      toast.error('Failed to copy message')
+      toast.error(t('BiChat.Message.FailedToCopy'))
     } finally {
       setCopying(false)
     }
@@ -57,9 +59,9 @@ function MessageActions({
       <button
         onClick={handleCopy}
         disabled={copying}
-        title={copying ? 'Copying...' : 'Copy message (Cmd/Ctrl+C on selection)'}
+        title={copying ? t('BiChat.Message.Copying') : t('BiChat.Message.CopyMessage')}
         className="cursor-pointer text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300 rounded-md transition-colors disabled:opacity-50 p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
-        aria-label={copying ? 'Copying message' : 'Copy message'}
+        aria-label={copying ? t('BiChat.Message.Copying') : t('BiChat.Message.CopyMessage')}
       >
         {copying ? (
           <LoadingSpinner variant="spinner" size="sm" />
@@ -73,9 +75,9 @@ function MessageActions({
         <button
           onClick={handleRegenerate}
           disabled={regenerating}
-          title={regenerating ? 'Regenerating...' : 'Regenerate response'}
+          title={regenerating ? t('BiChat.Message.Regenerating') : t('BiChat.Message.Regenerate')}
           className="cursor-pointer text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300 rounded-md transition-colors disabled:opacity-50 p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
-          aria-label={regenerating ? 'Regenerating response' : 'Regenerate response'}
+          aria-label={regenerating ? t('BiChat.Message.Regenerating') : t('BiChat.Message.Regenerate')}
         >
           {regenerating ? (
             <LoadingSpinner variant="spinner" size="sm" />
@@ -89,9 +91,9 @@ function MessageActions({
       {isUser && onEdit && (
         <button
           onClick={() => onEdit(message)}
-          title="Edit message"
+          title={t('BiChat.Message.EditMessage')}
           className="cursor-pointer text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300 rounded-md transition-colors p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
-          aria-label="Edit message"
+          aria-label={t('BiChat.Message.EditMessage')}
         >
           <PencilSimple size={16} className="w-4 h-4" />
         </button>

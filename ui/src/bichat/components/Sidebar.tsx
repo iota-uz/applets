@@ -289,23 +289,25 @@ export default function Sidebar({
         role="navigation"
         aria-label={t('Sidebar.ChatSessions')}
       >
-        {/* Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          {headerSlot}
-          {onClose && (
-            <motion.button
-              onClick={onClose}
-              className="cursor-pointer p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-smooth text-gray-600 dark:text-gray-400"
-              title={t('Sidebar.CloseSidebar')}
-              aria-label={t('Sidebar.CloseSidebar')}
-              whileHover="hover"
-              whileTap="tap"
-              variants={buttonVariants}
-            >
-              <X size={20} className="w-5 h-5" />
-            </motion.button>
-          )}
-        </div>
+        {/* Header — only rendered when there is content to show */}
+        {(headerSlot || onClose) && (
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            {headerSlot}
+            {onClose && (
+              <motion.button
+                onClick={onClose}
+                className="cursor-pointer p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-smooth text-gray-600 dark:text-gray-400"
+                title={t('Sidebar.CloseSidebar')}
+                aria-label={t('Sidebar.CloseSidebar')}
+                whileHover="hover"
+                whileTap="tap"
+                variants={buttonVariants}
+              >
+                <X size={20} className="w-5 h-5" />
+              </motion.button>
+            )}
+          </div>
+        )}
 
         {/* TabBar - Only visible if consumer passes showAllChatsTab */}
         {showAllChatsTab && (
@@ -374,7 +376,7 @@ export default function Sidebar({
             <nav
               ref={sessionListRef}
               className="flex-1 overflow-y-auto px-2 pb-4 hide-scrollbar"
-              aria-label="Chat history"
+              aria-label={t('BiChat.Sidebar.ChatHistory')}
               onKeyDown={handleSessionListKeyDown}
             >
               {loading && sessions.length === 0 ? (

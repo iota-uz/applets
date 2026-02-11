@@ -163,7 +163,7 @@ function UserFilter({ users, selectedUser, onUserChange, loading }: UserFilterPr
               {/* Empty state */}
               {users.length === 0 && (
                 <div className="px-3 py-6 text-center">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('AllChats.NoUsersFound')}</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">{t('AllChats.NoUsersFound')}</p>
                 </div>
               )}
             </MenuItems>

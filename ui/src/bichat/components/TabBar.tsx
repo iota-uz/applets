@@ -62,7 +62,7 @@ function TabBar({ tabs, activeTab, onTabChange }: TabBarProps) {
   return (
     <div
       ref={tablistRef}
-      className="flex gap-1 px-4 pt-4 pb-2 border-b border-gray-200 dark:border-gray-700"
+      className="flex justify-center gap-1 px-4 pt-4 pb-2 border-b border-gray-200 dark:border-gray-700"
       role="tablist"
       onKeyDown={handleKeyDown}
     >

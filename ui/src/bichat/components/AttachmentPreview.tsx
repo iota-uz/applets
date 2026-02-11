@@ -8,6 +8,7 @@ import { memo, useState } from 'react'
 import { X } from '@phosphor-icons/react'
 import { ImageAttachment } from '../types'
 import { formatFileSize, createDataUrl } from '../utils/fileUtils'
+import { useTranslation } from '../hooks/useTranslation'
 
 interface AttachmentPreviewProps {
   /** The attachment to display */
@@ -21,6 +22,7 @@ interface AttachmentPreviewProps {
 }
 
 const AttachmentPreview = memo<AttachmentPreviewProps>(({ attachment, onRemove, onClick, readonly = false }) => {
+  const { t } = useTranslation()
   const [isImageLoaded, setIsImageLoaded] = useState(false)
   const [imageError, setImageError] = useState(false)
 
@@ -65,7 +67,7 @@ const AttachmentPreview = memo<AttachmentPreviewProps>(({ attachment, onRemove, 
         {/* Error State */}
         {imageError && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-700">
-            <span className="text-xs text-gray-500 dark:text-gray-400">Preview unavailable</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{t('BiChat.Attachment.PreviewUnavailable')}</span>
           </div>
         )}
 
@@ -115,7 +117,7 @@ const AttachmentPreview = memo<AttachmentPreviewProps>(({ attachment, onRemove, 
           }}
           className="absolute top-1 right-1 flex items-center justify-center bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white rounded-full transition-all duration-200 shadow-sm hover:shadow-md active:scale-90 w-6 h-6"
           aria-label={`Remove ${attachment.filename}`}
-          title="Remove attachment"
+          title={t('BiChat.Attachment.Remove')}
         >
           <X size={14} className="w-3.5 h-3.5" weight="bold" />
         </button>
