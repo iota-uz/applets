@@ -63,6 +63,7 @@ export { TypingIndicator, type TypingIndicatorProps } from './components/TypingI
 
 // Session management components
 export { default as Sidebar } from './components/Sidebar'
+export type { SidebarProps } from './components/Sidebar'
 export { default as SessionItem } from './components/SessionItem'
 export { default as ArchivedChatList } from './components/ArchivedChatList'
 export { default as AllChatsList } from './components/AllChatsList'
@@ -70,6 +71,9 @@ export { TabBar } from './components/TabBar'
 export { UserFilter } from './components/UserFilter'
 export { default as DateGroupHeader } from './components/DateGroupHeader'
 export { default as SessionSkeleton } from './components/SessionSkeleton'
+
+// Layout component
+export { BiChatLayout, type BiChatLayoutProps, type SidebarDrawerProps } from './components/BiChatLayout'
 
 // Specialized message components
 export { SystemMessage } from './components/SystemMessage'
@@ -177,6 +181,7 @@ export {
 export { useScrollToBottom } from './hooks/useScrollToBottom'
 export { useKeyboardShortcuts, type ShortcutConfig } from './hooks/useKeyboardShortcuts'
 export { useLongPress } from './hooks/useLongPress'
+export { useSidebarState, type UseSidebarStateReturn } from './hooks/useSidebarState'
 
 // =============================================================================
 // Animations
@@ -223,6 +228,7 @@ export type { BichatRPC } from './data/rpc.generated'
 export { RateLimiter } from './utils/RateLimiter'
 export * from './utils/fileUtils'
 export { groupSessionsByDate } from './utils/sessionGrouping'
+export { toErrorDisplay, isPermissionDeniedError, type RPCErrorDisplay } from './utils/errorDisplay'
 
 // =============================================================================
 // Types

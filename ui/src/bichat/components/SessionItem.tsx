@@ -5,7 +5,7 @@
  */
 
 import React, { useRef, memo, useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { motion, useMotionValue, useTransform, type PanInfo } from 'framer-motion'
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import { DotsThree, Check, Bookmark, PencilSimple, Archive, ArrowsClockwise, ArrowUUpLeft, Trash } from '@phosphor-icons/react'
 import { EditableText, type EditableTextRef } from './EditableText'
@@ -52,6 +52,24 @@ const SessionItem = memo<SessionItemProps>(
     const [isTouch, setIsTouch] = useState(false)
     const { t } = useTranslation()
 
+    // Drag-to-archive gesture
+    const isDraggingRef = useRef(false)
+    const dragX = useMotionValue(0)
+    const archiveOpacity = useTransform(dragX, [-80, -40, 0], [1, 0.5, 0])
+    const archiveScale = useTransform(dragX, [-80, -40, 0], [1, 0.8, 0.6])
+    const canDragArchive = !!onArchive
+
+    const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+      if (info.offset.x < -80 && onArchive) {
+        onArchive()
+      }
+      // Defer reset so the click event (which fires synchronously after dragEnd)
+      // still sees isDraggingRef=true and skips navigation.
+      requestAnimationFrame(() => {
+        isDraggingRef.current = false
+      })
+    }
+
     // Detect touch device
     useEffect(() => {
       setIsTouch('ontouchend' in document)
@@ -80,19 +98,17 @@ const SessionItem = memo<SessionItemProps>(
       if (!element) return
 
       const isIPad = /iPad|Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document
+      if (!isIPad) return
 
-      if (isIPad) {
-        const handleContextMenu = (e: Event) => {
-          e.preventDefault()
-          const target = e.currentTarget as HTMLElement
-          setMenuAnchor(target.getBoundingClientRect())
-          setMenuOpen(true)
-        }
-
-        element.addEventListener('contextmenu', handleContextMenu)
-        return () => element.removeEventListener('contextmenu', handleContextMenu)
+      const handleContextMenu = (e: Event) => {
+        e.preventDefault()
+        const target = e.currentTarget as HTMLElement
+        setMenuAnchor(target.getBoundingClientRect())
+        setMenuOpen(true)
       }
-      return undefined
+
+      element.addEventListener('contextmenu', handleContextMenu)
+      return () => element.removeEventListener('contextmenu', handleContextMenu)
     }, [itemRef])
 
     const contextMenuItems: ContextMenuItem[] = mode === 'archived'
@@ -155,12 +171,39 @@ const SessionItem = memo<SessionItemProps>(
           animate="animate"
           whileHover="hover"
           exit="exit"
+          className="relative overflow-hidden rounded-lg"
         >
+          {/* Archive zone — revealed by drag */}
+          {canDragArchive && (
+            <motion.div
+              className="absolute inset-y-0 right-0 w-20 flex items-center justify-center bg-gray-500 dark:bg-gray-600 rounded-r-lg"
+              style={{ opacity: archiveOpacity, scale: archiveScale }}
+              aria-hidden="true"
+            >
+              <Archive size={20} className="text-white" />
+            </motion.div>
+          )}
+
+          {/* Draggable item content */}
+          <motion.div
+            drag={canDragArchive ? 'x' : false}
+            dragDirectionLock
+            dragConstraints={{ left: -100, right: 0 }}
+            dragElastic={{ left: 0.2, right: 0.5 }}
+            dragSnapToOrigin
+            style={{ x: canDragArchive ? dragX : undefined }}
+            onDragStart={() => { isDraggingRef.current = true }}
+            onDragEnd={canDragArchive ? handleDragEnd : undefined}
+            className="relative"
+          >
           <div
             role="button"
             tabIndex={0}
             ref={itemRef}
-            onClick={() => onSelect(session.id)}
+            onClick={() => {
+              if (isDraggingRef.current) return
+              onSelect(session.id)
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
@@ -352,6 +395,7 @@ const SessionItem = memo<SessionItemProps>(
               )}
             </div>
           </div>
+          </motion.div>
         </motion.div>
         <TouchContextMenu
           items={contextMenuItems}

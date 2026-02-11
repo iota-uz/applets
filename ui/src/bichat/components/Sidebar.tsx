@@ -2,11 +2,18 @@
  * Sidebar Component
  * Main chat sidebar with session list, search, tabs, and session management.
  * Router-agnostic: uses callbacks for navigation instead of react-router-dom.
+ *
+ * Collapse UX (matches SDK sidebar pattern):
+ * - Click empty space to toggle
+ * - Cursor hints (e-resize / w-resize)
+ * - localStorage persistence
+ * - Keyboard shortcut: Cmd+B toggle, Cmd+K focus search
  */
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { X, Plus, Archive } from '@phosphor-icons/react'
+import { X, Plus, Archive, CaretLineLeft, CaretLineRight, Gear, Users, List } from '@phosphor-icons/react'
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import SessionSkeleton from './SessionSkeleton'
 import SessionItem from './SessionItem'
 import ConfirmModal from './ConfirmModal'
@@ -25,6 +32,78 @@ import {
 } from '../animations/variants'
 import type { Session, ChatDataSource } from '../types'
 import { ToastContainer } from './ToastContainer'
+import { toErrorDisplay, type RPCErrorDisplay } from '../utils/errorDisplay'
+
+function ErrorAlert({ error }: { error: RPCErrorDisplay }) {
+  const amber = error.isPermissionDenied
+  return (
+    <div
+      className={`mx-2 mt-4 p-3 border rounded-xl cursor-default ${
+        amber
+          ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+          : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+      }`}
+    >
+      <p
+        className={`text-xs font-medium ${
+          amber
+            ? 'text-amber-700 dark:text-amber-300'
+            : 'text-red-600 dark:text-red-400'
+        }`}
+      >
+        {error.title}
+      </p>
+      {error.description && (
+        <p
+          className={`mt-1 text-xs ${
+            amber
+              ? 'text-amber-600 dark:text-amber-400'
+              : 'text-red-500 dark:text-red-300'
+          }`}
+        >
+          {error.description}
+        </p>
+      )}
+    </div>
+  )
+}
+
+const COLLAPSE_STORAGE_KEY = 'bichat-sidebar-collapsed'
+
+function useSidebarCollapse() {
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(COLLAPSE_STORAGE_KEY) === 'true'
+    } catch {
+      return false
+    }
+  })
+
+  const isCollapsedRef = useRef(isCollapsed)
+  useEffect(() => {
+    isCollapsedRef.current = isCollapsed
+  }, [isCollapsed])
+
+  const toggle = useCallback(() => {
+    setIsCollapsed((prev) => {
+      const next = !prev
+      try { localStorage.setItem(COLLAPSE_STORAGE_KEY, String(next)) } catch { /* noop */ }
+      return next
+    })
+  }, [])
+
+  const expand = useCallback(() => {
+    setIsCollapsed(false)
+    try { localStorage.setItem(COLLAPSE_STORAGE_KEY, 'false') } catch { /* noop */ }
+  }, [])
+
+  const collapse = useCallback(() => {
+    setIsCollapsed(true)
+    try { localStorage.setItem(COLLAPSE_STORAGE_KEY, 'true') } catch { /* noop */ }
+  }, [])
+
+  return { isCollapsed, isCollapsedRef, toggle, expand, collapse }
+}
 
 type ActiveTab = 'my-chats' | 'all-chats'
 
@@ -61,6 +140,73 @@ export default function Sidebar({
   const toast = useToast()
   const shouldReduceMotion = useReducedMotion()
   const sessionListRef = useRef<HTMLElement>(null)
+  const searchContainerRef = useRef<HTMLDivElement>(null)
+
+  // Collapse state — disabled when used as a mobile drawer (onClose present)
+  const { isCollapsed, isCollapsedRef, toggle, expand, collapse } = useSidebarCollapse()
+  const collapsible = !onClose // desktop only
+
+  // Click-on-empty-space to toggle (same pattern as SDK sidebar)
+  const handleSidebarClick = useCallback(
+    (e: React.MouseEvent<HTMLElement>) => {
+      if (!collapsible) return
+      const interactive = 'a, button, input, summary, [role="button"]'
+      if ((e.target as HTMLElement).closest(interactive)) return
+      toggle()
+    },
+    [collapsible, toggle]
+  )
+
+  // Focus the search input (expanding sidebar first if needed)
+  const focusSearch = useCallback(() => {
+    if (!collapsible) return
+    if (isCollapsedRef.current) {
+      expand()
+      setTimeout(() => {
+        searchContainerRef.current?.querySelector('input')?.focus()
+      }, 250)
+    } else {
+      searchContainerRef.current?.querySelector('input')?.focus()
+    }
+  }, [collapsible, expand, isCollapsedRef])
+
+  // Keyboard shortcuts: Cmd+B (toggle), Cmd+K (focus search)
+  useEffect(() => {
+    if (!collapsible) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMod = e.metaKey || e.ctrlKey
+
+      if (isMod && e.key === 'b') {
+        e.preventDefault()
+        toggle()
+      }
+
+      if (isMod && e.key === 'k') {
+        e.preventDefault()
+        focusSearch()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [collapsible, toggle, focusSearch])
+
+  // Auto-collapse when artifacts panel expands
+  useEffect(() => {
+    if (!collapsible) return
+
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ expanded: boolean }>).detail
+      if (detail?.expanded) {
+        collapse()
+      }
+    }
+    window.addEventListener('bichat:artifacts-panel-expanded', handler)
+    return () => window.removeEventListener('bichat:artifacts-panel-expanded', handler)
+  }, [collapsible, collapse])
+
+  const showCollapsed = collapsible && isCollapsed
 
   // Tab state
   const [activeTab, setActiveTab] = useState<ActiveTab>('my-chats')
@@ -71,7 +217,9 @@ export default function Sidebar({
   // Session data
   const [sessions, setSessions] = useState<Session[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<RPCErrorDisplay | null>(null)
+  const [actionError, setActionError] = useState<RPCErrorDisplay | null>(null)
+  const accessDenied = loadError?.isPermissionDenied === true
 
   // Refresh key — bump to re-fetch sessions
   const [refreshKey, setRefreshKey] = useState(0)
@@ -93,12 +241,13 @@ export default function Sidebar({
   const fetchSessions = useCallback(async () => {
     try {
       setLoading(true)
-      setError(null)
+      setLoadError(null)
+      setActionError(null)
       const result = await dataSource.listSessions({ limit: 50 })
       setSessions(result.sessions)
     } catch (err) {
       console.error('Failed to load sessions:', err)
-      setError(t('BiChat.Sidebar.FailedToLoadSessions'))
+      setLoadError(toErrorDisplay(err, t('BiChat.Sidebar.FailedToLoadSessions')))
     } finally {
       setLoading(false)
     }
@@ -161,7 +310,9 @@ export default function Sidebar({
       }
     } catch (err) {
       console.error('Failed to archive session:', err)
-      toast.error(t('BiChat.Sidebar.FailedToArchiveChat'))
+      const display = toErrorDisplay(err, t('BiChat.Sidebar.FailedToArchiveChat'))
+      setActionError(display)
+      toast.error(display.title)
     } finally {
       setShowConfirm(false)
       setSessionToArchive(null)
@@ -181,7 +332,9 @@ export default function Sidebar({
       setRefreshKey((k) => k + 1)
     } catch (err) {
       console.error('Failed to toggle pin:', err)
-      toast.error(t('BiChat.Sidebar.FailedToTogglePin'))
+      const display = toErrorDisplay(err, t('BiChat.Sidebar.FailedToTogglePin'))
+      setActionError(display)
+      toast.error(display.title)
     }
   }
 
@@ -192,7 +345,9 @@ export default function Sidebar({
       setRefreshKey((k) => k + 1)
     } catch (err) {
       console.error('Failed to update session title:', err)
-      toast.error(t('BiChat.Sidebar.FailedToRenameChat'))
+      const display = toErrorDisplay(err, t('BiChat.Sidebar.FailedToRenameChat'))
+      setActionError(display)
+      toast.error(display.title)
     }
   }
 
@@ -203,7 +358,9 @@ export default function Sidebar({
       setRefreshKey((k) => k + 1)
     } catch (err) {
       console.error('Failed to regenerate title:', err)
-      toast.error(t('BiChat.Sidebar.FailedToRegenerateTitle'))
+      const display = toErrorDisplay(err, t('BiChat.Sidebar.FailedToRegenerateTitle'))
+      setActionError(display)
+      toast.error(display.title)
     }
   }
 
@@ -285,223 +442,388 @@ export default function Sidebar({
   return (
     <>
       <aside
-        className={`w-64 bg-surface-300 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-full min-h-0 flex flex-col overflow-hidden ${className}`}
+        onClick={collapsible ? handleSidebarClick : undefined}
+        className={`relative bg-surface-300 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-full min-h-0 flex flex-col overflow-hidden transition-[width] duration-300 ease-in-out ${
+          showCollapsed
+            ? 'w-16 cursor-e-resize'
+            : collapsible
+              ? 'w-64 cursor-w-resize'
+              : 'w-64'
+        } ${className}`}
+        style={{ willChange: 'width' }}
         role="navigation"
         aria-label={t('BiChat.Sidebar.ChatSessions')}
       >
-        {/* Header — only rendered when there is content to show */}
-        {(headerSlot || onClose) && (
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            {headerSlot}
-            {onClose && (
+        {/* Collapsed overlay — absolutely positioned, fades in after width shrinks */}
+        {collapsible && (
+          <div
+            className={`absolute inset-x-0 top-0 bottom-0 z-10 flex flex-col items-center pt-3 gap-3 transition-opacity ${
+              showCollapsed
+                ? 'opacity-100 duration-150 delay-100'
+                : 'opacity-0 pointer-events-none duration-100'
+            }`}
+          >
+            <div className="group/tooltip relative">
               <motion.button
-                onClick={onClose}
-                className="cursor-pointer p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-smooth text-gray-600 dark:text-gray-400"
-                title={t('BiChat.Sidebar.CloseSidebar')}
-                aria-label={t('BiChat.Sidebar.CloseSidebar')}
-                whileHover="hover"
-                whileTap="tap"
-                variants={buttonVariants}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onNewChat()
+                }}
+                disabled={creating || loading || accessDenied}
+                className="w-10 h-10 rounded-lg bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white shadow-sm flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-primary-400/50"
+                title={t('BiChat.Chat.NewChat')}
+                aria-label={t('BiChat.Sidebar.CreateNewChat')}
+                whileTap={{ scale: 0.95 }}
               >
-                <X size={20} className="w-5 h-5" />
+                {creating ? (
+                  <div className="w-4 h-4 border-2 border-white/50 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Plus size={18} weight="bold" />
+                )}
               </motion.button>
-            )}
+              <span className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 rounded-md bg-gray-900 dark:bg-gray-100 px-2 py-1 text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
+                {t('BiChat.Chat.NewChat')}
+              </span>
+            </div>
           </div>
         )}
 
-        {/* TabBar - Only visible if consumer passes showAllChatsTab */}
-        {showAllChatsTab && (
-          <TabBar
-            tabs={tabs}
-            activeTab={activeTab}
-            onTabChange={(id) => setActiveTab(id as ActiveTab)}
-          />
-        )}
-
-        {/* Conditional content based on active tab */}
-        {activeTab === 'all-chats' && showAllChatsTab ? (
-          <AllChatsList
-            dataSource={dataSource}
-            onSessionSelect={onSessionSelect}
-            activeSessionId={activeSessionId}
-          />
-        ) : (
-          <>
-            {/* Search Input */}
-            <div className="mt-3 px-4">
-              <SearchInput
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder={t('BiChat.Sidebar.SearchChats')}
-              />
+        {/* Expanded content — fades out before width shrinks */}
+        <div
+          className={`flex flex-col flex-1 min-h-0 w-64 shrink-0 transition-opacity ${
+            showCollapsed
+              ? 'opacity-0 pointer-events-none duration-100'
+              : collapsible
+                ? 'opacity-100 duration-150 delay-[200ms]'
+                : ''
+          }`}
+        >
+          {/* Header — only rendered when there is content to show */}
+          {(headerSlot || onClose) && (
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              {headerSlot}
+              {onClose && (
+                <motion.button
+                  onClick={onClose}
+                  className="cursor-pointer p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-smooth text-gray-600 dark:text-gray-400"
+                  title={t('BiChat.Sidebar.CloseSidebar')}
+                  aria-label={t('BiChat.Sidebar.CloseSidebar')}
+                  whileHover="hover"
+                  whileTap="tap"
+                  variants={buttonVariants}
+                >
+                  <X size={20} className="w-5 h-5" />
+                </motion.button>
+              )}
             </div>
+          )}
 
-            {/* New Chat Button */}
-            <div className="p-4">
-              <motion.button
-                onClick={onNewChat}
-                disabled={creating || loading}
-                className="cursor-pointer w-full px-4 py-3 bg-primary-600 dark:bg-primary-700 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-800 transition-smooth font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                title={t('BiChat.Chat.NewChat')}
-                aria-label={t('BiChat.Sidebar.CreateNewChat')}
-                whileHover={shouldReduceMotion ? {} : { scale: 1.02 }}
-                whileTap={shouldReduceMotion ? {} : { scale: 0.95 }}
+          {/* TabBar - Only visible if consumer passes showAllChatsTab */}
+          {showAllChatsTab && (
+            <TabBar
+              tabs={tabs}
+              activeTab={activeTab}
+              onTabChange={(id) => setActiveTab(id as ActiveTab)}
+            />
+          )}
+
+          {/* Conditional content based on active tab */}
+          {activeTab === 'all-chats' && showAllChatsTab ? (
+            <AllChatsList
+              dataSource={dataSource}
+              onSessionSelect={onSessionSelect}
+              activeSessionId={activeSessionId}
+            />
+          ) : (
+            <>
+              {/* Search Input */}
+              <div ref={searchContainerRef} className="mt-3 px-4">
+                <SearchInput
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder={t('BiChat.Sidebar.SearchChats')}
+                />
+              </div>
+
+              {/* New Chat Button */}
+              <div className="p-4">
+                <motion.button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onNewChat()
+                  }}
+                  disabled={creating || loading || accessDenied}
+                  className="cursor-pointer w-full px-4 py-2.5 bg-primary-600 dark:bg-primary-700 text-white rounded-lg hover:bg-primary-700 hover:-translate-y-0.5 active:bg-primary-800 transition-all duration-150 font-medium shadow-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
+                  title={accessDenied ? t('BiChat.Sidebar.MissingPermission') : t('BiChat.Chat.NewChat')}
+                  aria-label={t('BiChat.Sidebar.CreateNewChat')}
+                  whileHover={shouldReduceMotion ? {} : { y: -1 }}
+                  whileTap={shouldReduceMotion ? {} : { scale: 0.98 }}
+                >
+                  {creating ? (
+                    <>
+                      <LoadingSpinner variant="spinner" size="sm" />
+                      <span>{t('BiChat.Common.Creating')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={16} weight="bold" />
+                      <span>{t('BiChat.Chat.NewChat')}</span>
+                    </>
+                  )}
+                </motion.button>
+              </div>
+
+              {/* Chat History */}
+              <nav
+                ref={sessionListRef}
+                className="flex-1 overflow-y-auto px-2 pb-4 hide-scrollbar"
+                aria-label={t('BiChat.Sidebar.ChatHistory')}
+                onKeyDown={handleSessionListKeyDown}
               >
-                {creating ? (
-                  <LoadingSpinner variant="spinner" size="sm" />
+                {loading && sessions.length === 0 ? (
+                  <SessionSkeleton count={5} />
                 ) : (
                   <>
-                    <Plus size={20} className="w-5 h-5" />
-                    <span className="ml-2">{t('BiChat.Chat.NewChat')}</span>
+                    {/* Pinned Sessions */}
+                    {pinnedSessions.length > 0 && (
+                      <div className="mb-4">
+                        <DateGroupHeader
+                          groupName={t('BiChat.Common.Pinned')}
+                          count={pinnedSessions.length}
+                        />
+                        <motion.div
+                          className="space-y-1 mt-2"
+                          variants={staggerContainerVariants}
+                          initial="hidden"
+                          animate="visible"
+                          role="list"
+                          aria-label={t('BiChat.Sidebar.PinnedChats')}
+                        >
+                          {pinnedSessions.map((session) => (
+                            <SessionItem
+                              key={session.id}
+                              session={session}
+                              isActive={session.id === activeSessionId}
+                              onSelect={() => onSessionSelect(session.id)}
+                              onArchive={() =>
+                                handleArchiveRequest(session.id)
+                              }
+                              onPin={() =>
+                                handleTogglePin(session.id, session.pinned)
+                              }
+                              onRename={(newTitle) =>
+                                handleRenameSession(session.id, newTitle)
+                              }
+                              onRegenerateTitle={() =>
+                                handleRegenerateTitle(session.id)
+                              }
+                            />
+                          ))}
+                        </motion.div>
+                        <div className="border-b border-gray-200 dark:border-gray-700 my-3" />
+                      </div>
+                    )}
+
+                    {/* Grouped Sessions by Date */}
+                    {sessionGroups.map((group) => (
+                      <div key={group.name} className="mb-4">
+                        <DateGroupHeader
+                          groupName={group.name}
+                          count={group.sessions.length}
+                        />
+                        <motion.div
+                          className="space-y-1 mt-2"
+                          variants={staggerContainerVariants}
+                          initial="hidden"
+                          animate="visible"
+                          role="list"
+                          aria-label={`${group.name} chats`}
+                        >
+                          {group.sessions.map((session) => (
+                            <SessionItem
+                              key={session.id}
+                              session={session}
+                              isActive={session.id === activeSessionId}
+                              onSelect={() => onSessionSelect(session.id)}
+                              onArchive={() =>
+                                handleArchiveRequest(session.id)
+                              }
+                              onPin={() =>
+                                handleTogglePin(session.id, session.pinned)
+                              }
+                              onRename={(newTitle) =>
+                                handleRenameSession(session.id, newTitle)
+                              }
+                              onRegenerateTitle={() =>
+                                handleRegenerateTitle(session.id)
+                              }
+                            />
+                          ))}
+                        </motion.div>
+                      </div>
+                    ))}
+
+                    {/* Empty State */}
+                    {filteredSessions.length === 0 && !loading && (
+                      <EmptyState
+                        title={
+                          searchQuery
+                            ? t('BiChat.Sidebar.NoChatsFound', { query: searchQuery })
+                            : t('BiChat.Sidebar.NoChatsYet')
+                        }
+                        description={
+                          searchQuery
+                            ? undefined
+                            : t('BiChat.Sidebar.CreateOneToGetStarted')
+                        }
+                        action={
+                          searchQuery ? (
+                            <button
+                              onClick={() => setSearchQuery('')}
+                              className="cursor-pointer text-sm text-primary-600 dark:text-primary-400 hover:underline"
+                            >
+                              {t('BiChat.Common.Clear')}
+                            </button>
+                          ) : undefined
+                        }
+                      />
+                    )}
                   </>
                 )}
-              </motion.button>
-            </div>
 
-            {/* Archived Chats Link */}
-            {onArchivedView && (
-              <div className="px-4 pb-2">
-                <button
-                  onClick={onArchivedView}
-                  className="cursor-pointer flex items-center gap-2 px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-smooth text-sm font-medium w-full"
-                  title={t('BiChat.Sidebar.ArchivedChats')}
-                >
-                  <Archive size={18} className="w-4.5 h-4.5" />
-                  <span>{t('BiChat.Sidebar.ArchivedChats')}</span>
-                </button>
-              </div>
-            )}
+                {loadError && <ErrorAlert error={loadError} />}
+                {actionError && !loadError && <ErrorAlert error={actionError} />}
+              </nav>
 
-            {/* Chat History */}
-            <nav
-              ref={sessionListRef}
-              className="flex-1 overflow-y-auto px-2 pb-4 hide-scrollbar"
-              aria-label={t('BiChat.Sidebar.ChatHistory')}
-              onKeyDown={handleSessionListKeyDown}
-            >
-              {loading && sessions.length === 0 ? (
-                <SessionSkeleton count={5} />
-              ) : (
-                <>
-                  {/* Pinned Sessions */}
-                  {pinnedSessions.length > 0 && (
-                    <div className="mb-4">
-                      <DateGroupHeader
-                        groupName={t('BiChat.Common.Pinned')}
-                        count={pinnedSessions.length}
-                      />
-                      <motion.div
-                        className="space-y-1 mt-2"
-                        variants={staggerContainerVariants}
-                        initial="hidden"
-                        animate="visible"
-                        role="list"
-                        aria-label={t('BiChat.Sidebar.PinnedChats')}
-                      >
-                        {pinnedSessions.map((session) => (
-                          <SessionItem
-                            key={session.id}
-                            session={session}
-                            isActive={session.id === activeSessionId}
-                            onSelect={() => onSessionSelect(session.id)}
-                            onArchive={() =>
-                              handleArchiveRequest(session.id)
-                            }
-                            onPin={() =>
-                              handleTogglePin(session.id, session.pinned)
-                            }
-                            onRename={(newTitle) =>
-                              handleRenameSession(session.id, newTitle)
-                            }
-                            onRegenerateTitle={() =>
-                              handleRegenerateTitle(session.id)
-                            }
-                          />
-                        ))}
-                      </motion.div>
-                      <div className="border-b border-gray-200 dark:border-gray-700 my-3" />
-                    </div>
-                  )}
+              {/* Footer slot */}
+              {footerSlot}
+            </>
+          )}
 
-                  {/* Grouped Sessions by Date */}
-                  {sessionGroups.map((group) => (
-                    <div key={group.name} className="mb-4">
-                      <DateGroupHeader
-                        groupName={group.name}
-                        count={group.sessions.length}
-                      />
-                      <motion.div
-                        className="space-y-1 mt-2"
-                        variants={staggerContainerVariants}
-                        initial="hidden"
-                        animate="visible"
-                        role="list"
-                        aria-label={`${group.name} chats`}
-                      >
-                        {group.sessions.map((session) => (
-                          <SessionItem
-                            key={session.id}
-                            session={session}
-                            isActive={session.id === activeSessionId}
-                            onSelect={() => onSessionSelect(session.id)}
-                            onArchive={() =>
-                              handleArchiveRequest(session.id)
-                            }
-                            onPin={() =>
-                              handleTogglePin(session.id, session.pinned)
-                            }
-                            onRename={(newTitle) =>
-                              handleRenameSession(session.id, newTitle)
-                            }
-                            onRegenerateTitle={() =>
-                              handleRegenerateTitle(session.id)
-                            }
-                          />
-                        ))}
-                      </motion.div>
-                    </div>
-                  ))}
-
-                  {/* Empty State */}
-                  {filteredSessions.length === 0 && !loading && (
-                    <EmptyState
-                      title={
-                        searchQuery
-                          ? t('BiChat.Sidebar.NoChatsFound', { query: searchQuery })
-                          : t('BiChat.Sidebar.NoChatsYet')
-                      }
-                      description={
-                        searchQuery
-                          ? undefined
-                          : t('BiChat.Sidebar.CreateOneToGetStarted')
-                      }
-                      action={
-                        searchQuery ? (
+          {/* Footer — settings (left) + collapse toggle (right) */}
+          {collapsible && (
+            <div className="mt-auto border-t border-gray-100 dark:border-gray-800/80 px-4 py-3 flex items-center justify-between">
+              {/* Gear settings menu */}
+              {(onArchivedView || showAllChatsTab) ? (
+                <Menu>
+                  <MenuButton
+                    onClick={(e: React.MouseEvent) => {
+                      e.stopPropagation()
+                    }}
+                    disabled={loading || accessDenied}
+                    className="flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 p-2"
+                    aria-label={t('BiChat.Sidebar.Settings')}
+                    title={t('BiChat.Sidebar.Settings')}
+                  >
+                    <Gear size={20} />
+                  </MenuButton>
+                  <MenuItems
+                    anchor="top start"
+                    className="w-48 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg rounded-xl shadow-lg border border-gray-200/80 dark:border-gray-700/60 z-30 [--anchor-gap:8px] mb-1 p-1.5"
+                  >
+                    {onArchivedView && (
+                      <MenuItem>
+                        {({ focus }) => (
                           <button
-                            onClick={() => setSearchQuery('')}
-                            className="cursor-pointer text-sm text-primary-600 dark:text-primary-400 hover:underline"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              onArchivedView()
+                            }}
+                            className={`cursor-pointer flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-gray-600 dark:text-gray-300 transition-colors ${
+                              focus ? 'bg-gray-100 dark:bg-gray-800/70' : ''
+                            }`}
+                            aria-label={t('BiChat.Sidebar.ArchivedChats')}
                           >
-                            {t('BiChat.Common.Clear')}
+                            <Archive size={16} className="text-gray-400 dark:text-gray-500" />
+                            {t('BiChat.Sidebar.ArchivedChats')}
                           </button>
-                        ) : undefined
-                      }
-                    />
-                  )}
-                </>
+                        )}
+                      </MenuItem>
+                    )}
+                    {showAllChatsTab && activeTab !== 'all-chats' && (
+                      <MenuItem>
+                        {({ focus }) => (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              setActiveTab('all-chats')
+                            }}
+                            className={`cursor-pointer flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-gray-600 dark:text-gray-300 transition-colors ${
+                              focus ? 'bg-gray-100 dark:bg-gray-800/70' : ''
+                            }`}
+                            aria-label={t('BiChat.Sidebar.AllChats')}
+                          >
+                            <Users size={16} className="text-gray-400 dark:text-gray-500" />
+                            {t('BiChat.Sidebar.AllChats')}
+                          </button>
+                        )}
+                      </MenuItem>
+                    )}
+                    {showAllChatsTab && activeTab === 'all-chats' && (
+                      <MenuItem>
+                        {({ focus }) => (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              setActiveTab('my-chats')
+                            }}
+                            className={`cursor-pointer flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-gray-600 dark:text-gray-300 transition-colors ${
+                              focus ? 'bg-gray-100 dark:bg-gray-800/70' : ''
+                            }`}
+                            aria-label={t('BiChat.Sidebar.MyChats')}
+                          >
+                            <List size={16} className="text-gray-400 dark:text-gray-500" />
+                            {t('BiChat.Sidebar.MyChats')}
+                          </button>
+                        )}
+                      </MenuItem>
+                    )}
+                  </MenuItems>
+                </Menu>
+              ) : (
+                <div />
               )}
 
-              {error && (
-                <div className="mx-2 mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                  <p className="text-xs text-red-600 dark:text-red-400">
-                    {error}
-                  </p>
-                </div>
-              )}
-            </nav>
+              {/* Collapse toggle */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  toggle()
+                }}
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
+                title={t('BiChat.Sidebar.CollapseSidebar')}
+                aria-label={t('BiChat.Sidebar.CollapseSidebar')}
+              >
+                <CaretLineLeft size={16} />
+                <span className="text-xs font-medium">{t('BiChat.Sidebar.Collapse')}</span>
+              </button>
+            </div>
+          )}
+        </div>
 
-            {/* Footer slot */}
-            {footerSlot}
-          </>
+        {/* Collapsed footer — expand button */}
+        {collapsible && showCollapsed && (
+          <div className="absolute bottom-0 inset-x-0 z-10 border-t border-gray-100 dark:border-gray-800/80 py-3 flex justify-center">
+            <div className="group/tooltip relative">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  toggle()
+                }}
+                className="w-10 h-10 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
+                title={t('BiChat.Sidebar.ExpandSidebar')}
+                aria-label={t('BiChat.Sidebar.ExpandSidebar')}
+              >
+                <CaretLineRight size={16} />
+              </button>
+              <span className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 rounded-md bg-gray-900 dark:bg-gray-100 px-2 py-1 text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
+                {t('BiChat.Sidebar.Expand')}
+              </span>
+            </div>
+          </div>
         )}
       </aside>
 
