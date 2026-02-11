@@ -30,8 +30,8 @@ linters:
     - testifylint
     - thelper
 
-run:
-  exclude-dirs:
-    - tmp
-    - node_modules
-    - dist
+  exclusions:
+    paths:
+      - tmp
+      - node_modules
+      - dist
