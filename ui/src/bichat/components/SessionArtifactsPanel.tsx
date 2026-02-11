@@ -130,7 +130,7 @@ export function SessionArtifactsPanel({
         if (requestID !== requestSeq.current) {
           return
         }
-        setError(err instanceof Error ? err.message : tRef.current('Artifacts.FailedToLoad'))
+        setError(err instanceof Error ? err.message : tRef.current('BiChat.Artifacts.FailedToLoad'))
       } finally {
         if (requestID === requestSeq.current) {
           setFetching(false)
@@ -268,7 +268,7 @@ export function SessionArtifactsPanel({
       }
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : tRef.current('Artifacts.FailedToLoad'))
+      setError(err instanceof Error ? err.message : tRef.current('BiChat.Artifacts.FailedToLoad'))
     }
   }, [canDropFiles, dataSource, fetchArtifacts, hasDragFiles, sessionId, setDropSuccessState])
 
@@ -321,7 +321,7 @@ export function SessionArtifactsPanel({
         isDragging ? 'bg-primary-50/40 dark:bg-primary-950/20' : '',
         className,
       ].join(' ')}
-      aria-label={t('Artifacts.Title')}
+      aria-label={t('BiChat.Artifacts.Title')}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -339,7 +339,7 @@ export function SessionArtifactsPanel({
           >
             <Paperclip className="h-5 w-5" weight="bold" />
             <span className="text-sm font-medium">
-              {dropSuccess ? t('Input.FilesAdded') : t('Input.DropFiles')}
+              {dropSuccess ? t('BiChat.Input.FilesAdded') : t('BiChat.Input.DropFiles')}
             </span>
           </div>
         </div>
@@ -348,7 +348,7 @@ export function SessionArtifactsPanel({
       <header className="flex items-center justify-between border-b border-gray-200 px-3 py-2 dark:border-gray-700/80">
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
-            {t('Artifacts.Title')} ({artifacts.length})
+            {t('BiChat.Artifacts.Title')} ({artifacts.length})
           </h2>
         </div>
       </header>
@@ -356,11 +356,11 @@ export function SessionArtifactsPanel({
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
         {fetching ? (
           <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
-            {t('Artifacts.Loading')}
+            {t('BiChat.Artifacts.Loading')}
           </div>
         ) : error ? (
           <div className="space-y-3 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-900/70 dark:bg-red-950/30">
-            <p className="text-sm font-medium text-red-800 dark:text-red-300">{t('Artifacts.FailedToLoad')}</p>
+            <p className="text-sm font-medium text-red-800 dark:text-red-300">{t('BiChat.Artifacts.FailedToLoad')}</p>
             <p className="text-xs text-red-700 dark:text-red-400">{error}</p>
             <button
               type="button"
@@ -369,12 +369,12 @@ export function SessionArtifactsPanel({
               }}
               className="cursor-pointer rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-900/40"
             >
-              {t('Alert.Retry')}
+              {t('BiChat.Alert.Retry')}
             </button>
           </div>
         ) : !canFetchArtifacts ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-200">
-            {t('Artifacts.Unsupported')}
+            {t('BiChat.Artifacts.Unsupported')}
           </div>
         ) : (
           <>
@@ -394,7 +394,7 @@ export function SessionArtifactsPanel({
                   disabled={loadingMore || refreshing || fetching}
                   className="cursor-pointer rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
                 >
-                  {loadingMore ? t('Artifacts.LoadingMore') : t('Artifacts.LoadMore')}
+                  {loadingMore ? t('BiChat.Artifacts.LoadingMore') : t('BiChat.Artifacts.LoadMore')}
                 </button>
               </div>
             )}

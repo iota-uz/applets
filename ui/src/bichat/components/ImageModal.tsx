@@ -128,7 +128,7 @@ function ImageModal({
                 aria-label={t('BiChat.Image.Retry')}
               >
                 <ArrowClockwise size={16} weight="bold" />
-                {t('BiChat.Retry')}
+                {t('BiChat.Retry.Label')}
               </button>
             </div>
           )}

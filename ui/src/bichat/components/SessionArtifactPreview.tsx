@@ -88,7 +88,7 @@ function ArtifactActions({ url }: { url: string }) {
         className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
       >
         <ArrowSquareOut className="h-3.5 w-3.5" weight="bold" />
-        {t('Artifacts.OpenInNewTab')}
+        {t('BiChat.Artifacts.OpenInNewTab')}
       </a>
       <a
         href={url}
@@ -98,7 +98,7 @@ function ArtifactActions({ url }: { url: string }) {
         className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-primary-700"
       >
         <DownloadSimple className="h-3.5 w-3.5" weight="bold" />
-        {t('Artifacts.Download')}
+        {t('BiChat.Artifacts.Download')}
       </a>
     </div>
   )
@@ -114,7 +114,7 @@ function TextArtifactPreview({ artifact }: { artifact: SessionArtifact }) {
   useEffect(() => {
     if (!artifact.url) {
       setLoading(false)
-      setError(t('Artifacts.TextPreviewFailed'))
+      setError(t('BiChat.Artifacts.TextPreviewFailed'))
       return
     }
 
@@ -141,7 +141,7 @@ function TextArtifactPreview({ artifact }: { artifact: SessionArtifact }) {
         if (err instanceof Error && err.name === 'AbortError') {
           return
         }
-        setError(t('Artifacts.TextPreviewFailed'))
+        setError(t('BiChat.Artifacts.TextPreviewFailed'))
       })
       .finally(() => {
         setLoading(false)
@@ -156,7 +156,7 @@ function TextArtifactPreview({ artifact }: { artifact: SessionArtifact }) {
     return (
       <div className="flex min-h-[320px] items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-500 dark:border-gray-700/60 dark:bg-gray-800/30 dark:text-gray-400">
         <SpinnerGap className="mr-2 h-4 w-4 animate-spin" />
-        {t('Artifacts.PreviewLoading')}
+        {t('BiChat.Artifacts.PreviewLoading')}
       </div>
     )
   }
@@ -168,10 +168,10 @@ function TextArtifactPreview({ artifact }: { artifact: SessionArtifact }) {
   return (
     <div className="space-y-2">
       <pre className="max-h-[70vh] overflow-auto rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs leading-relaxed text-gray-800 dark:border-gray-700/60 dark:bg-gray-900 dark:text-gray-100">
-        {content || t('Artifacts.PreviewUnavailable')}
+        {content || t('BiChat.Artifacts.PreviewUnavailable')}
       </pre>
       {truncated && (
-        <p className="text-xs text-gray-500 dark:text-gray-400">{t('Artifacts.TextPreviewTruncated')}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">{t('BiChat.Artifacts.TextPreviewTruncated')}</p>
       )}
     </div>
   )
@@ -192,12 +192,12 @@ export function SessionArtifactPreview({ artifact }: SessionArtifactPreviewProps
     if (chartData) {
       return <ChartCard chartData={chartData} />
     }
-    return <WarningBox message={t('Artifacts.ChartUnavailable')} />
+    return <WarningBox message={t('BiChat.Artifacts.ChartUnavailable')} />
   }
 
   if (isImageArtifact(artifact)) {
     if (!artifact.url) {
-      return <WarningBox message={t('Artifacts.ImageUnavailable')} />
+      return <WarningBox message={t('BiChat.Artifacts.ImageUnavailable')} />
     }
 
     return (
@@ -217,7 +217,7 @@ export function SessionArtifactPreview({ artifact }: SessionArtifactPreviewProps
 
   if (isPDFArtifact(artifact)) {
     if (!artifact.url) {
-      return <WarningBox message={t('Artifacts.DownloadUnavailable')} />
+      return <WarningBox message={t('BiChat.Artifacts.DownloadUnavailable')} />
     }
 
     return (
@@ -236,7 +236,7 @@ export function SessionArtifactPreview({ artifact }: SessionArtifactPreviewProps
 
   if (isOfficeDocumentArtifact(artifact)) {
     if (!artifact.url) {
-      return <WarningBox message={t('Artifacts.DownloadUnavailable')} />
+      return <WarningBox message={t('BiChat.Artifacts.DownloadUnavailable')} />
     }
 
     return (
@@ -250,7 +250,7 @@ export function SessionArtifactPreview({ artifact }: SessionArtifactPreviewProps
             />
           </div>
         ) : (
-          <WarningBox message={t('Artifacts.OfficePreviewUnavailable')} />
+          <WarningBox message={t('BiChat.Artifacts.OfficePreviewUnavailable')} />
         )}
         <ArtifactActions url={artifact.url} />
       </div>
@@ -271,13 +271,13 @@ export function SessionArtifactPreview({ artifact }: SessionArtifactPreviewProps
       <div className="space-y-3">
         <div className="flex min-h-[240px] flex-col items-center justify-center rounded-xl border border-gray-200/80 bg-gray-50/60 p-6 text-center dark:border-gray-700/60 dark:bg-gray-900">
           <FileText className="h-8 w-8 text-gray-400 dark:text-gray-500" weight="duotone" />
-          <p className="mt-3 text-sm font-medium text-gray-800 dark:text-gray-100">{t('Artifacts.PreviewUnavailable')}</p>
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('Artifacts.PreviewNotSupported')}</p>
+          <p className="mt-3 text-sm font-medium text-gray-800 dark:text-gray-100">{t('BiChat.Artifacts.PreviewUnavailable')}</p>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('BiChat.Artifacts.PreviewNotSupported')}</p>
         </div>
         <ArtifactActions url={artifact.url} />
       </div>
     )
   }
 
-  return <WarningBox message={t('Artifacts.DownloadUnavailable')} />
+  return <WarningBox message={t('BiChat.Artifacts.DownloadUnavailable')} />
 }

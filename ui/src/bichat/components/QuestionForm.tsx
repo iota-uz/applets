@@ -82,7 +82,7 @@ export default function QuestionForm({
       await onSubmit(answers)
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : t('Error.Generic')
+        err instanceof Error ? err.message : t('BiChat.Error.Generic')
       setError(errorMessage)
       setIsSubmitting(false)
     }
@@ -91,8 +91,8 @@ export default function QuestionForm({
   // Calculate progress text
   const totalSteps = questions.length + 1
   const progressText = isConfirmationStep
-    ? t('QuestionForm.Step', { current: totalSteps, total: totalSteps })
-    : t('QuestionForm.Step', { current: currentStep + 1, total: totalSteps })
+    ? t('BiChat.QuestionForm.Step', { current: totalSteps, total: totalSteps })
+    : t('BiChat.QuestionForm.Step', { current: currentStep + 1, total: totalSteps })
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
@@ -102,13 +102,13 @@ export default function QuestionForm({
         <div className="border-b border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {t('QuestionForm.Title')}
+              {t('BiChat.QuestionForm.Title')}
             </h2>
             <button
               onClick={onCancel}
               disabled={isSubmitting}
               className="cursor-pointer text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50"
-              aria-label={t('Common.Close')}
+              aria-label={t('BiChat.Common.Close')}
             >
               <X className="w-6 h-6" />
             </button>
@@ -158,7 +158,7 @@ export default function QuestionForm({
               disabled={isSubmitting}
               className="cursor-pointer px-6 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 font-medium transition-colors"
             >
-              {t('QuestionForm.Back')}
+              {t('BiChat.QuestionForm.Back')}
             </button>
           )}
 
@@ -172,7 +172,7 @@ export default function QuestionForm({
                 disabled={isSubmitting}
                 className="cursor-pointer px-6 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 font-medium transition-colors"
               >
-                {t('Message.Cancel')}
+                {t('BiChat.Message.Cancel')}
               </button>
 
               {/* Submit Button */}
@@ -182,7 +182,7 @@ export default function QuestionForm({
                 className="cursor-pointer px-6 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
               >
                 {isSubmitting && <LoadingSpinner size="sm" />}
-                {isSubmitting ? t('QuestionForm.Submitting') : t('QuestionForm.Confirm')}
+                {isSubmitting ? t('BiChat.QuestionForm.Submitting') : t('BiChat.QuestionForm.Confirm')}
               </button>
             </>
           ) : (
@@ -192,7 +192,7 @@ export default function QuestionForm({
               disabled={!currentQuestionAnswered || isSubmitting}
               className="cursor-pointer px-6 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
             >
-              {t('QuestionForm.Next')}
+              {t('BiChat.QuestionForm.Next')}
             </button>
           )}
         </div>

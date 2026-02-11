@@ -115,10 +115,10 @@ export function SessionArtifactList({
         </div>
         <div>
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            {t('Artifacts.Empty')}
+            {t('BiChat.Artifacts.Empty')}
           </p>
           <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
-            {t('Artifacts.EmptySubtitle')}
+            {t('BiChat.Artifacts.EmptySubtitle')}
           </p>
         </div>
       </div>

@@ -23,10 +23,10 @@ export default function ConfirmationStep({
       {/* Header */}
       <div>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          {t('QuestionForm.ReviewTitle')}
+          {t('BiChat.QuestionForm.ReviewTitle')}
         </h3>
         <p className="text-gray-600 dark:text-gray-400 mt-1">
-          {t('QuestionForm.ReviewDescription')}
+          {t('BiChat.QuestionForm.ReviewDescription')}
         </p>
       </div>
 
@@ -65,14 +65,14 @@ export default function ConfirmationStep({
                   {/* Custom "Other" text - displayed with distinct styling */}
                   {customText && (
                     <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium border border-amber-500 bg-amber-500/10 text-amber-600 dark:border-amber-400 dark:bg-amber-400/10 dark:text-amber-400">
-                      <span className="font-semibold mr-1">{t('Question.Other')}:</span>
+                      <span className="font-semibold mr-1">{t('BiChat.Question.Other')}:</span>
                       <span className="italic">{customText}</span>
                     </span>
                   )}
                 </div>
               ) : (
                 <p className="text-sm text-gray-400 dark:text-gray-500 italic">
-                  {t('QuestionForm.Skip')}
+                  {t('BiChat.QuestionForm.Skip')}
                 </p>
               )}
             </div>

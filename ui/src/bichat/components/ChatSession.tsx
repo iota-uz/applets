@@ -182,7 +182,7 @@ function ChatSessionCore({
   if (fetching) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="text-gray-500 dark:text-gray-400">{t('Input.Processing')}</div>
+        <div className="text-gray-500 dark:text-gray-400">{t('BiChat.Input.Processing')}</div>
       </div>
     )
   }
@@ -191,7 +191,7 @@ function ChatSessionCore({
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-red-500 dark:text-red-400">
-          {t('Error.Generic')}: {error}
+          {t('BiChat.Error.Generic')}: {error}
         </div>
       </div>
     )
@@ -239,11 +239,11 @@ function ChatSessionCore({
             ? 'bg-primary-50 text-primary-700 hover:bg-primary-100 dark:bg-primary-950/30 dark:text-primary-300 dark:hover:bg-primary-900/40'
             : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200',
         ].join(' ')}
-        aria-label={artifactsPanelExpanded ? t('Artifacts.ToggleHide') : t('Artifacts.ToggleShow')}
-        title={artifactsPanelExpanded ? t('Artifacts.ToggleHide') : t('Artifacts.ToggleShow')}
+        aria-label={artifactsPanelExpanded ? t('BiChat.Artifacts.ToggleHide') : t('BiChat.Artifacts.ToggleShow')}
+        title={artifactsPanelExpanded ? t('BiChat.Artifacts.ToggleHide') : t('BiChat.Artifacts.ToggleShow')}
       >
         <Sidebar className="h-4 w-4" weight={artifactsPanelExpanded ? 'duotone' : 'regular'} />
-        {t('Artifacts.Title')}
+        {t('BiChat.Artifacts.Title')}
       </button>
       {actionsSlot}
     </>
@@ -296,7 +296,7 @@ function ChatSessionCore({
                     />
                   )}
                   <p className="mt-4 pb-1 text-center text-xs text-gray-500 dark:text-gray-400">
-                    {t('Welcome.Disclaimer')}
+                    {t('BiChat.Welcome.Disclaimer')}
                   </p>
                 </div>
               </div>
@@ -351,7 +351,7 @@ function ChatSessionCore({
             >
               <div
                 role="separator"
-                aria-label={t('Artifacts.Resize')}
+                aria-label={t('BiChat.Artifacts.Resize')}
                 onMouseDown={handleArtifactsResizeStart}
                 className="relative flex shrink-0 cursor-col-resize touch-none items-center justify-center w-2 transition-colors lg:flex group/resize after:absolute after:inset-y-0 after:left-0 after:w-0.5 after:bg-gray-300 dark:after:bg-gray-600 after:transition-colors group-hover/resize:after:bg-primary-400 dark:group-hover/resize:after:bg-primary-500"
               >
@@ -387,7 +387,7 @@ function ChatSessionCore({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={handleToggleArtifactsPanel}
-                aria-label={t('Common.Close')}
+                aria-label={t('BiChat.Common.Close')}
               />
               <SessionArtifactsPanel
                 dataSource={dataSource}

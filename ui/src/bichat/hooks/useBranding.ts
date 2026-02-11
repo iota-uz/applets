@@ -57,8 +57,8 @@ export function useBranding() {
       appName: customBranding.appName || 'BiChat',
       logoUrl: customBranding.logoUrl,
       welcome: {
-        title: customBranding.welcome?.title || t('Welcome.Title'),
-        description: customBranding.welcome?.description || t('Welcome.Description'),
+        title: customBranding.welcome?.title || t('BiChat.Welcome.Title'),
+        description: customBranding.welcome?.description || t('BiChat.Welcome.Description'),
         examplePrompts,
       },
       theme: customBranding.theme,

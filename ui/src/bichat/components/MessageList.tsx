@@ -110,8 +110,8 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
         <div className="mx-auto space-y-6">
           {isCompacting && (
             <CompactionDoodle
-              title={t('Slash.CompactingTitle')}
-              subtitle={t('Slash.CompactingSubtitle')}
+              title={t('BiChat.Slash.CompactingTitle')}
+              subtitle={t('BiChat.Slash.CompactingSubtitle')}
             />
           )}
           {/* Loading skeleton when no turns yet */}

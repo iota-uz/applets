@@ -102,8 +102,8 @@ function WelcomeContent({
 }: WelcomeContentProps) {
   const { t } = useTranslation()
   const shouldReduceMotion = useReducedMotion()
-  const resolvedTitle = title || t('Welcome.Title')
-  const resolvedDescription = description || t('Welcome.Description')
+  const resolvedTitle = title || ''
+  const resolvedDescription = description || ''
 
   const prompts: ExamplePrompt[] = PROMPT_DEFS.map((def) => ({
     category: tOr(t, def.categoryKey, def.defaultCategory),
@@ -127,36 +127,30 @@ function WelcomeContent({
       initial="hidden"
       animate="visible"
     >
-      {/* Ambient glow */}
-      <div
-        className="pointer-events-none absolute inset-x-0 -top-8 flex justify-center overflow-hidden h-56"
-        aria-hidden
-      >
-        <div className="w-[420px] h-[260px] -mt-16 rounded-full bg-primary-300/[0.08] blur-[80px] dark:bg-primary-400/[0.05]" />
-      </div>
+      {resolvedTitle && (
+        <motion.h1
+          className="relative text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white mb-4"
+          variants={activeItemVariants}
+        >
+          {resolvedTitle}
+        </motion.h1>
+      )}
 
-      {/* Title */}
-      <motion.h1
-        className="relative text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white mb-4"
-        variants={activeItemVariants}
-      >
-        {resolvedTitle}
-      </motion.h1>
-
-      {/* Description */}
-      <motion.p
-        className="text-base text-gray-500 dark:text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed"
-        variants={activeItemVariants}
-      >
-        {resolvedDescription}
-      </motion.p>
+      {resolvedDescription && (
+        <motion.p
+          className="text-base text-gray-500 dark:text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed"
+          variants={activeItemVariants}
+        >
+          {resolvedDescription}
+        </motion.p>
+      )}
 
       {/* Example prompts */}
       <motion.div variants={activeItemVariants}>
         <div className="flex items-center gap-4 mb-5">
           <div className="h-px flex-1 bg-gradient-to-r from-transparent to-gray-200 dark:to-gray-700/70" />
           <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500 select-none">
-            {t('Welcome.QuickStart')}
+            {t('BiChat.Welcome.QuickStart')}
           </span>
           <div className="h-px flex-1 bg-gradient-to-l from-transparent to-gray-200 dark:to-gray-700/70" />
         </div>

@@ -82,9 +82,9 @@ export default function Sidebar({
 
   // Build tab items
   const tabs = useMemo(() => {
-    const items = [{ id: 'my-chats', label: t('Sidebar.MyChats') }]
+    const items = [{ id: 'my-chats', label: t('BiChat.Sidebar.MyChats') }]
     if (showAllChatsTab) {
-      items.push({ id: 'all-chats', label: t('Sidebar.AllChats') })
+      items.push({ id: 'all-chats', label: t('BiChat.Sidebar.AllChats') })
     }
     return items
   }, [showAllChatsTab, t])
@@ -98,7 +98,7 @@ export default function Sidebar({
       setSessions(result.sessions)
     } catch (err) {
       console.error('Failed to load sessions:', err)
-      setError(t('Sidebar.FailedToLoadSessions'))
+      setError(t('BiChat.Sidebar.FailedToLoadSessions'))
     } finally {
       setLoading(false)
     }
@@ -112,7 +112,7 @@ export default function Sidebar({
   // Use a stable boolean so that updating sessions inside the poll
   // does NOT re-trigger the effect (which would create overlapping intervals).
   const hasPlaceholderTitles = useMemo(() => {
-    const newChatLabel = t('Chat.NewChat')
+    const newChatLabel = t('BiChat.Chat.NewChat')
     return (
       Array.isArray(sessions) &&
       sessions.some((s) => s && (!s.title || s.title === newChatLabel))
@@ -161,7 +161,7 @@ export default function Sidebar({
       }
     } catch (err) {
       console.error('Failed to archive session:', err)
-      toast.error(t('Sidebar.FailedToArchiveChat'))
+      toast.error(t('BiChat.Sidebar.FailedToArchiveChat'))
     } finally {
       setShowConfirm(false)
       setSessionToArchive(null)
@@ -181,29 +181,29 @@ export default function Sidebar({
       setRefreshKey((k) => k + 1)
     } catch (err) {
       console.error('Failed to toggle pin:', err)
-      toast.error(t('Sidebar.FailedToTogglePin'))
+      toast.error(t('BiChat.Sidebar.FailedToTogglePin'))
     }
   }
 
   const handleRenameSession = async (sessionId: string, newTitle: string) => {
     try {
       await dataSource.renameSession(sessionId, newTitle)
-      toast.success(t('Sidebar.ChatRenamedSuccessfully'))
+      toast.success(t('BiChat.Sidebar.ChatRenamedSuccessfully'))
       setRefreshKey((k) => k + 1)
     } catch (err) {
       console.error('Failed to update session title:', err)
-      toast.error(t('Sidebar.FailedToRenameChat'))
+      toast.error(t('BiChat.Sidebar.FailedToRenameChat'))
     }
   }
 
   const handleRegenerateTitle = async (sessionId: string) => {
     try {
       await dataSource.regenerateSessionTitle(sessionId)
-      toast.success(t('Sidebar.TitleRegenerated'))
+      toast.success(t('BiChat.Sidebar.TitleRegenerated'))
       setRefreshKey((k) => k + 1)
     } catch (err) {
       console.error('Failed to regenerate title:', err)
-      toast.error(t('Sidebar.FailedToRegenerateTitle'))
+      toast.error(t('BiChat.Sidebar.FailedToRegenerateTitle'))
     }
   }
 
@@ -287,7 +287,7 @@ export default function Sidebar({
       <aside
         className={`w-64 bg-surface-300 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-full min-h-0 flex flex-col overflow-hidden ${className}`}
         role="navigation"
-        aria-label={t('Sidebar.ChatSessions')}
+        aria-label={t('BiChat.Sidebar.ChatSessions')}
       >
         {/* Header — only rendered when there is content to show */}
         {(headerSlot || onClose) && (
@@ -297,8 +297,8 @@ export default function Sidebar({
               <motion.button
                 onClick={onClose}
                 className="cursor-pointer p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-smooth text-gray-600 dark:text-gray-400"
-                title={t('Sidebar.CloseSidebar')}
-                aria-label={t('Sidebar.CloseSidebar')}
+                title={t('BiChat.Sidebar.CloseSidebar')}
+                aria-label={t('BiChat.Sidebar.CloseSidebar')}
                 whileHover="hover"
                 whileTap="tap"
                 variants={buttonVariants}
@@ -332,7 +332,7 @@ export default function Sidebar({
               <SearchInput
                 value={searchQuery}
                 onChange={setSearchQuery}
-                placeholder={t('Sidebar.SearchChats')}
+                placeholder={t('BiChat.Sidebar.SearchChats')}
               />
             </div>
 
@@ -342,8 +342,8 @@ export default function Sidebar({
                 onClick={onNewChat}
                 disabled={creating || loading}
                 className="cursor-pointer w-full px-4 py-3 bg-primary-600 dark:bg-primary-700 text-white rounded-lg hover:bg-primary-700 dark:hover:bg-primary-800 transition-smooth font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                title={t('Chat.NewChat')}
-                aria-label={t('Sidebar.CreateNewChat')}
+                title={t('BiChat.Chat.NewChat')}
+                aria-label={t('BiChat.Sidebar.CreateNewChat')}
                 whileHover={shouldReduceMotion ? {} : { scale: 1.02 }}
                 whileTap={shouldReduceMotion ? {} : { scale: 0.95 }}
               >
@@ -352,7 +352,7 @@ export default function Sidebar({
                 ) : (
                   <>
                     <Plus size={20} className="w-5 h-5" />
-                    <span className="ml-2">{t('Chat.NewChat')}</span>
+                    <span className="ml-2">{t('BiChat.Chat.NewChat')}</span>
                   </>
                 )}
               </motion.button>
@@ -364,10 +364,10 @@ export default function Sidebar({
                 <button
                   onClick={onArchivedView}
                   className="cursor-pointer flex items-center gap-2 px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-smooth text-sm font-medium w-full"
-                  title={t('Sidebar.ArchivedChats')}
+                  title={t('BiChat.Sidebar.ArchivedChats')}
                 >
                   <Archive size={18} className="w-4.5 h-4.5" />
-                  <span>{t('Sidebar.ArchivedChats')}</span>
+                  <span>{t('BiChat.Sidebar.ArchivedChats')}</span>
                 </button>
               </div>
             )}
@@ -387,7 +387,7 @@ export default function Sidebar({
                   {pinnedSessions.length > 0 && (
                     <div className="mb-4">
                       <DateGroupHeader
-                        groupName={t('Common.Pinned')}
+                        groupName={t('BiChat.Common.Pinned')}
                         count={pinnedSessions.length}
                       />
                       <motion.div
@@ -396,7 +396,7 @@ export default function Sidebar({
                         initial="hidden"
                         animate="visible"
                         role="list"
-                        aria-label={t('Sidebar.PinnedChats')}
+                        aria-label={t('BiChat.Sidebar.PinnedChats')}
                       >
                         {pinnedSessions.map((session) => (
                           <SessionItem
@@ -467,13 +467,13 @@ export default function Sidebar({
                     <EmptyState
                       title={
                         searchQuery
-                          ? t('Sidebar.NoChatsFound', { query: searchQuery })
-                          : t('Sidebar.NoChatsYet')
+                          ? t('BiChat.Sidebar.NoChatsFound', { query: searchQuery })
+                          : t('BiChat.Sidebar.NoChatsYet')
                       }
                       description={
                         searchQuery
                           ? undefined
-                          : t('Sidebar.CreateOneToGetStarted')
+                          : t('BiChat.Sidebar.CreateOneToGetStarted')
                       }
                       action={
                         searchQuery ? (
@@ -481,7 +481,7 @@ export default function Sidebar({
                             onClick={() => setSearchQuery('')}
                             className="cursor-pointer text-sm text-primary-600 dark:text-primary-400 hover:underline"
                           >
-                            {t('Common.Clear')}
+                            {t('BiChat.Common.Clear')}
                           </button>
                         ) : undefined
                       }
@@ -508,11 +508,11 @@ export default function Sidebar({
       {/* Confirm Archive Modal */}
       <ConfirmModal
         isOpen={showConfirm}
-        title={t('Sidebar.ArchiveChatSession')}
-        message={t('Sidebar.ArchiveChatMessage')}
-        confirmText={t('Sidebar.ArchiveButton')}
-        cancelText={t('Common.Cancel')}
-        isDanger={false}
+        title={t('BiChat.Sidebar.ArchiveChatSession')}
+        message={t('BiChat.Sidebar.ArchiveChatMessage')}
+        confirmText={t('BiChat.Sidebar.ArchiveButton')}
+        cancelText={t('BiChat.Common.Cancel')}
+        isDanger={true}
         onConfirm={confirmArchive}
         onCancel={() => {
           setShowConfirm(false)

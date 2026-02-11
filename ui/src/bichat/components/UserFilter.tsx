@@ -38,7 +38,7 @@ function UserFilter({ users, selectedUser, onUserChange, loading }: UserFilterPr
                 disabled:opacity-50 disabled:cursor-not-allowed
                 flex items-center justify-between gap-2
               `}
-              aria-label={t('AllChats.AllUsers')}
+              aria-label={t('BiChat.AllChats.AllUsers')}
             >
               {selectedUser ? (
                 <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -54,7 +54,7 @@ function UserFilter({ users, selectedUser, onUserChange, loading }: UserFilterPr
                 </div>
               ) : (
                 <span className="text-gray-500 dark:text-gray-400">
-                  {loading ? t('AllChats.LoadingUsers') : t('AllChats.AllUsers')}
+                  {loading ? t('BiChat.AllChats.LoadingUsers') : t('BiChat.AllChats.AllUsers')}
                 </span>
               )}
 
@@ -67,7 +67,7 @@ function UserFilter({ users, selectedUser, onUserChange, loading }: UserFilterPr
                       onUserChange(null)
                     }}
                     className="cursor-pointer p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-smooth"
-                    aria-label={t('Common.Clear')}
+                    aria-label={t('BiChat.Common.Clear')}
                   >
                     <X size={14} className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
                   </button>
@@ -114,7 +114,7 @@ function UserFilter({ users, selectedUser, onUserChange, loading }: UserFilterPr
                       }
                     `}
                   >
-                    {t('AllChats.AllUsers')}
+                    {t('BiChat.AllChats.AllUsers')}
                   </button>
                 )}
               </MenuItem>
@@ -163,7 +163,7 @@ function UserFilter({ users, selectedUser, onUserChange, loading }: UserFilterPr
               {/* Empty state */}
               {users.length === 0 && (
                 <div className="px-3 py-6 text-center">
-                  <p className="text-sm text-gray-700 dark:text-gray-300">{t('AllChats.NoUsersFound')}</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">{t('BiChat.AllChats.NoUsersFound')}</p>
                 </div>
               )}
             </MenuItems>

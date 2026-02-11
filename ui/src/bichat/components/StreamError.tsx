@@ -40,7 +40,7 @@ export function StreamError({
       />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-red-800 dark:text-red-200">
-          {t('Error.Generic')}
+          {t('BiChat.Error.Generic')}
         </p>
         <p className="text-sm text-red-600 dark:text-red-300 break-words">
           {error}
@@ -54,7 +54,7 @@ export function StreamError({
             type="button"
           >
             <ArrowClockwise className="w-4 h-4" />
-            {t('StreamError.Retry')}
+            {t('BiChat.StreamError.Retry')}
           </button>
         )}
         {onRegenerate && (
@@ -64,7 +64,7 @@ export function StreamError({
             type="button"
           >
             <ArrowsCounterClockwise className="w-4 h-4" />
-            {t('StreamError.Regenerate')}
+            {t('BiChat.StreamError.Regenerate')}
           </button>
         )}
       </div>

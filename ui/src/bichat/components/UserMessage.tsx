@@ -385,7 +385,7 @@ export function UserMessage({
                   onClick={handleCopyClick}
                   className={`cursor-pointer ${classes.actionButton} ${isCopied ? 'text-green-600 dark:text-green-400' : ''}`}
                   aria-label="Copy message"
-                  title={isCopied ? t('Message.Copied') : t('Message.Copy')}
+                  title={isCopied ? t('BiChat.Message.Copied') : t('BiChat.Message.Copy')}
                 >
                   {isCopied ? <Check size={14} weight="bold" /> : <Copy size={14} weight="regular" />}
                 </button>

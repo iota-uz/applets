@@ -68,7 +68,7 @@ export default function QuestionStep({
       {/* Multi-select hint */}
       {isMultiSelect && (
         <p className="text-sm text-gray-500 dark:text-gray-500 italic">
-          {t('Question.SelectMulti')}
+          {t('BiChat.Question.SelectMulti')}
         </p>
       )}
 
@@ -128,13 +128,13 @@ export default function QuestionStep({
       {/* "Other" Text Input - always shown */}
       <div>
         <label htmlFor="other-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          {t('Question.SpecifyOther')}:
+          {t('BiChat.Question.SpecifyOther')}:
         </label>
         <textarea
           id="other-input"
           value={otherText}
           onChange={(e) => handleOtherTextChange(e.target.value)}
-          placeholder={t('Question.Other')}
+          placeholder={t('BiChat.Question.Other')}
           rows={3}
           className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg
             bg-white dark:bg-gray-800 text-gray-900 dark:text-white

@@ -85,7 +85,7 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
       }
     }).catch(() => {
       if (!cancelled) {
-        setError(t('AllChats.FailedToLoad'))
+        setError(t('BiChat.AllChats.FailedToLoad'))
         setFetching(false)
       }
     })
@@ -165,7 +165,7 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
           />
           <span className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
             <Archive size={16} className="w-4 h-4" />
-            {t('AllChats.IncludeArchived')}
+            {t('BiChat.AllChats.IncludeArchived')}
           </span>
         </label>
 
@@ -173,14 +173,14 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
         {totalCount > 0 && (
           <p className="text-xs text-gray-500 dark:text-gray-400">
             {totalCount === 1
-              ? t('AllChats.ChatFound', { count: totalCount })
-              : t('AllChats.ChatsFound', { count: totalCount })}
+              ? t('BiChat.AllChats.ChatFound', { count: totalCount })
+              : t('BiChat.AllChats.ChatsFound', { count: totalCount })}
           </p>
         )}
       </div>
 
       {/* Chat List */}
-      <nav className="flex-1 overflow-y-auto px-2 pb-4 hide-scrollbar" aria-label={t('AllChats.OrganizationChats')}>
+      <nav className="flex-1 overflow-y-auto px-2 pb-4 hide-scrollbar" aria-label={t('BiChat.AllChats.OrganizationChats')}>
         {fetching && chats.length === 0 ? (
           <SessionSkeleton count={5} />
         ) : (
@@ -192,7 +192,7 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
                 initial="hidden"
                 animate="visible"
                 role="list"
-                aria-label={t('AllChats.OrganizationChatSessions')}
+                aria-label={t('BiChat.AllChats.OrganizationChatSessions')}
               >
                 {chats.map((chat) => (
                   <motion.div
@@ -233,7 +233,7 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
                         {/* Chat info */}
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">
-                            {chat.title || t('Common.Untitled')}
+                            {chat.title || t('BiChat.Common.Untitled')}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                             {chat.owner.firstName} {chat.owner.lastName}
@@ -241,7 +241,7 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
                           {chat.status === 'archived' && (
                             <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full text-xs">
                               <Archive size={12} className="w-3 h-3" />
-                              {t('Chat.Archived')}
+                              {t('BiChat.Chat.Archived')}
                             </span>
                           )}
                         </div>
@@ -260,7 +260,7 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
                         onClick={handleLoadMore}
                         className="text-sm text-primary-600 dark:text-primary-400 hover:underline"
                       >
-                        {t('AllChats.LoadMore')}
+                        {t('BiChat.AllChats.LoadMore')}
                       </button>
                     )}
                   </div>
@@ -268,13 +268,13 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
               </motion.div>
             ) : (
               <EmptyState
-                title={t('AllChats.NoChatsFound')}
+                title={t('BiChat.AllChats.NoChatsFound')}
                 description={
                   selectedUser
-                    ? t('AllChats.NoChatsFromUser', { firstName: selectedUser.firstName, lastName: selectedUser.lastName })
+                    ? t('BiChat.AllChats.NoChatsFromUser', { firstName: selectedUser.firstName, lastName: selectedUser.lastName })
                     : includeArchived
-                    ? t('AllChats.NoChatsInOrg')
-                    : t('AllChats.NoActiveChatsInOrg')
+                    ? t('BiChat.AllChats.NoChatsInOrg')
+                    : t('BiChat.AllChats.NoActiveChatsInOrg')
                 }
               />
             )}

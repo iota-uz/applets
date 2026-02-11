@@ -28,14 +28,14 @@ export function validateAnswers(
 ): string | null {
   const allAnswered = questions.every((q) => isQuestionAnswered(answers[q.id]))
   if (!allAnswered) {
-    return t ? t('Error.AllQuestionsRequired') : 'Please answer all questions before submitting'
+    return t ? t('BiChat.Error.AllQuestionsRequired') : 'Please answer all questions before submitting'
   }
 
   for (const q of questions) {
     const data = answers[q.id]
     if (data && (data.options?.length ?? 0) === 0 && data.customText === '') {
       return t
-        ? t('Error.CustomTextRequired', { question: q.text })
+        ? t('BiChat.Error.CustomTextRequired', { question: q.text })
         : `Please enter custom text for question: ${q.text}`
     }
   }
