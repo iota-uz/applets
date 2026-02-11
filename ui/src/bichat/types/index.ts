@@ -435,16 +435,20 @@ export interface ChatSessionStateValue {
   currentSessionId?: string
   fetching: boolean
   error: string | null
+  errorRetryable: boolean
   debugMode: boolean
   sessionDebugUsage: SessionDebugUsage
   debugLimits: DebugLimits | null
   setError: (error: string | null) => void
+  retryFetchSession: () => void
 }
 
 export interface ChatMessagingStateValue {
   turns: ConversationTurn[]
   streamingContent: string
   isStreaming: boolean
+  streamError: string | null
+  streamErrorRetryable: boolean
   loading: boolean
   pendingQuestion: PendingQuestion | null
   codeOutputs: CodeOutput[]
@@ -458,6 +462,8 @@ export interface ChatMessagingStateValue {
   handleCopy: (text: string) => Promise<void>
   handleSubmitQuestionAnswers: (answers: QuestionAnswers) => void
   handleRejectPendingQuestion: () => Promise<void>
+  retryLastMessage: () => Promise<void>
+  clearStreamError: () => void
   cancel: () => void
   setCodeOutputs: (outputs: CodeOutput[]) => void
 }

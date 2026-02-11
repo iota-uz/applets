@@ -41,6 +41,7 @@ import {
   readDebugLimitsFromGlobalContext,
   type ParsedSlashCommand,
 } from './chatHelpers'
+import { normalizeRPCError } from '../utils/errorDisplay'
 
 // ---------------------------------------------------------------------------
 // Internal contexts
@@ -61,6 +62,12 @@ interface ChatSessionProviderProps {
   /** Configuration for the built-in rate limiter (ignored when rateLimiter is provided). */
   rateLimitConfig?: RateLimiterConfig
   children: ReactNode
+}
+
+interface LastSendAttempt {
+  content: string
+  attachments: Attachment[]
+  options?: SendMessageOptions
 }
 
 const DEFAULT_RATE_LIMIT_CONFIG: RateLimiterConfig = {
@@ -84,6 +91,8 @@ export function ChatSessionProvider({
   const [session, setSession] = useState<Session | null>(null)
   const [fetching, setFetching] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [errorRetryable, setErrorRetryable] = useState(false)
+  const [sessionReloadNonce, setSessionReloadNonce] = useState(0)
   const [debugModeBySession, setDebugModeBySession] = useState<Record<string, boolean>>({})
 
   const debugSessionKey = currentSessionId || 'new'
@@ -95,12 +104,15 @@ export function ChatSessionProvider({
   const [loading, setLoading] = useState(false)
   const [streamingContent, setStreamingContent] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
+  const [streamError, setStreamError] = useState<string | null>(null)
+  const [streamErrorRetryable, setStreamErrorRetryable] = useState(false)
   const [pendingQuestion, setPendingQuestion] = useState<PendingQuestion | null>(null)
   const [codeOutputs, setCodeOutputs] = useState<CodeOutput[]>([])
   const [isCompacting, setIsCompacting] = useState(false)
   const [compactionSummary, setCompactionSummary] = useState<string | null>(null)
   const [artifactsInvalidationTrigger, setArtifactsInvalidationTrigger] = useState(0)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const lastSendAttemptRef = useRef<LastSendAttempt | null>(null)
 
   // ── Input state ────────────────────────────────────────────────────────
   const [message, setMessage] = useState('')
@@ -121,6 +133,19 @@ export function ChatSessionProvider({
 
   // ── Derived ────────────────────────────────────────────────────────────
   const sessionDebugUsage = useMemo(() => getSessionDebugUsage(turns), [turns])
+  const clearStreamError = useCallback(() => {
+    setStreamError(null)
+    setStreamErrorRetryable(false)
+  }, [])
+
+  const setSessionError = useCallback((nextError: string | null, retryable = false) => {
+    setError(nextError)
+    setErrorRetryable(nextError ? retryable : false)
+  }, [])
+
+  const retryFetchSession = useCallback(() => {
+    setSessionReloadNonce((prev) => prev + 1)
+  }, [])
 
   // ── Sync sessionId prop ────────────────────────────────────────────────
   useEffect(() => {
@@ -151,6 +176,7 @@ export function ChatSessionProvider({
       setTurns([])
       setPendingQuestion(null)
       setFetching(false)
+      setSessionError(null)
       setInputError(null)
       return
     }
@@ -158,7 +184,7 @@ export function ChatSessionProvider({
     let cancelled = false
 
     setFetching(true)
-    setError(null)
+    setSessionError(null)
     setInputError(null)
 
     dataSource
@@ -181,20 +207,21 @@ export function ChatSessionProvider({
           })
           setPendingQuestion(state.pendingQuestion || null)
         } else {
-          setError('Session not found')
+          setSessionError('Session not found')
         }
         setFetching(false)
       })
       .catch((err) => {
         if (cancelled) return
-        setError(err.message || 'Failed to load session')
+        const normalized = normalizeRPCError(err, 'Failed to load session')
+        setSessionError(normalized.userMessage, normalized.retryable)
         setFetching(false)
       })
 
     return () => {
       cancelled = true
     }
-  }, [dataSource, currentSessionId])
+  }, [dataSource, currentSessionId, sessionReloadNonce, setSessionError])
 
   // ── Handlers ───────────────────────────────────────────────────────────
 
@@ -209,8 +236,9 @@ export function ChatSessionProvider({
         return true
       }
 
-      setError(null)
+      setSessionError(null)
       setInputError(null)
+      clearStreamError()
 
       if (command.name === '/debug') {
         const curDebugMode = sessionRef.current.debugMode
@@ -263,7 +291,8 @@ export function ChatSessionProvider({
           setCompactionSummary(null)
           setCodeOutputs([])
         } catch (err) {
-          setInputError(err instanceof Error ? err.message : 'BiChat.Slash.ErrorClearFailed')
+          const normalized = normalizeRPCError(err, 'Failed to clear session history')
+          setInputError(normalized.userMessage)
         } finally {
           setLoading(false)
           setIsStreaming(false)
@@ -295,7 +324,8 @@ export function ChatSessionProvider({
 
           setCodeOutputs([])
         } catch (err) {
-          setInputError(err instanceof Error ? err.message : 'BiChat.Slash.ErrorCompactFailed')
+          const normalized = normalizeRPCError(err, 'Failed to compact session history')
+          setInputError(normalized.userMessage)
         } finally {
           setIsCompacting(false)
           setLoading(false)
@@ -307,7 +337,7 @@ export function ChatSessionProvider({
       setInputError('BiChat.Slash.ErrorUnknownCommand')
       return true
     },
-    [dataSource]
+    [clearStreamError, dataSource, setSessionError]
   )
 
   const sendMessageDirect = useCallback(
@@ -336,14 +366,15 @@ export function ChatSessionProvider({
       if (!rateLimiterRef.current.canMakeRequest()) {
         const timeUntilNext = rateLimiterRef.current.getTimeUntilNextRequest()
         const seconds = Math.ceil(timeUntilNext / 1000)
-        setError(`Rate limit exceeded. Please wait ${seconds} seconds before sending another message.`)
+        setInputError(`Rate limit exceeded. Please wait ${seconds} seconds before sending another message.`)
         return
       }
 
       setMessage('')
       setLoading(true)
-      setError(null)
+      setSessionError(null)
       setInputError(null)
+      clearStreamError()
       setStreamingContent('')
       setCompactionSummary(null)
 
@@ -353,6 +384,7 @@ export function ChatSessionProvider({
       const curDebugMode = sessionRef.current.debugMode
       const tempTurn = createPendingTurn(curSessionId || 'new', content, attachments)
       const replaceFromMessageID = options?.replaceFromMessageID
+      lastSendAttemptRef.current = { content, attachments, options }
       setTurns((prev) => {
         if (!replaceFromMessageID) {
           return [...prev, tempTurn]
@@ -446,16 +478,21 @@ export function ChatSessionProvider({
         if (shouldNavigateAfter && targetSessionId && targetSessionId !== 'new') {
           dataSource.navigateToSession?.(targetSessionId)
         }
+        clearStreamError()
+        lastSendAttemptRef.current = null
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') {
           setMessage(content)
+          clearStreamError()
           return
         }
 
         setTurns((prev) => prev.filter((t) => t.id !== tempTurn.id))
 
-        const errorMessage = err instanceof Error ? err.message : 'Error.NetworkError'
-        setInputError(errorMessage)
+        const normalized = normalizeRPCError(err, 'Failed to send message')
+        setInputError(normalized.userMessage)
+        setStreamError(normalized.userMessage)
+        setStreamErrorRetryable(normalized.retryable)
         console.error('Send message error:', err)
       } finally {
         setLoading(false)
@@ -464,8 +501,16 @@ export function ChatSessionProvider({
         abortControllerRef.current = null
       }
     },
-    [dataSource, executeSlashCommand]
+    [clearStreamError, dataSource, executeSlashCommand, setSessionError]
   )
+
+  const retryLastMessage = useCallback(async () => {
+    const lastAttempt = lastSendAttemptRef.current
+    if (!lastAttempt || messagingRef.current.loading) return
+    clearStreamError()
+    setInputError(null)
+    await sendMessageDirect(lastAttempt.content, lastAttempt.attachments, lastAttempt.options)
+  }, [clearStreamError, sendMessageDirect])
 
   const cancelStream = useCallback(() => {
     if (abortControllerRef.current) {
@@ -481,6 +526,7 @@ export function ChatSessionProvider({
       e.preventDefault()
       if (!message.trim() && attachments.length === 0) return
       setInputError(null)
+      clearStreamError()
 
       const convertedAttachments: Attachment[] = attachments.map(att => ({
         clientKey: att.clientKey || crypto.randomUUID(),
@@ -494,7 +540,7 @@ export function ChatSessionProvider({
 
       sendMessageDirect(message, convertedAttachments)
     },
-    [message, sendMessageDirect]
+    [clearStreamError, message, sendMessageDirect]
   )
 
   const handleUnqueue = useCallback(() => {
@@ -519,19 +565,19 @@ export function ChatSessionProvider({
       const turn = messagingRef.current.turns.find((t) => t.id === turnId)
       if (!turn) return
 
-      setError(null)
+      setSessionError(null)
 
       try {
         await sendMessageDirect(turn.userTurn.content, turn.userTurn.attachments, {
           replaceFromMessageID: turn.userTurn.id,
         })
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to regenerate response'
-        setError(errorMessage)
+        const normalized = normalizeRPCError(err, 'Failed to regenerate response')
+        setSessionError(normalized.userMessage, normalized.retryable)
         console.error('Regenerate error:', err)
       }
     },
-    [sendMessageDirect]
+    [sendMessageDirect, setSessionError]
   )
 
   const handleEdit = useCallback(
@@ -545,23 +591,23 @@ export function ChatSessionProvider({
 
       const turn = messagingRef.current.turns.find((t) => t.id === turnId)
       if (!turn) {
-        setError('Failed to edit message')
+        setSessionError('Failed to edit message')
         return
       }
 
-      setError(null)
+      setSessionError(null)
 
       try {
         await sendMessageDirect(newContent, turn.userTurn.attachments, {
           replaceFromMessageID: turn.userTurn.id,
         })
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to edit message'
-        setError(errorMessage)
+        const normalized = normalizeRPCError(err, 'Failed to edit message')
+        setSessionError(normalized.userMessage, normalized.retryable)
         console.error('Edit error:', err)
       }
     },
-    [sendMessageDirect]
+    [sendMessageDirect, setSessionError]
   )
 
   const handleSubmitQuestionAnswers = useCallback(
@@ -571,7 +617,7 @@ export function ChatSessionProvider({
       if (!curSessionId || !curPendingQuestion) return
 
       setLoading(true)
-      setError(null)
+      setSessionError(null)
       const previousPendingQuestion = curPendingQuestion
       setPendingQuestion(null)
 
@@ -592,32 +638,28 @@ export function ChatSessionProvider({
                   setPendingQuestion(state.pendingQuestion || null)
                 } else {
                   setPendingQuestion(previousPendingQuestion)
-                  setError('Failed to load updated session')
+                  setSessionError('Failed to load updated session')
                 }
               } catch (fetchErr) {
                 setPendingQuestion(previousPendingQuestion)
-                const errorMessage =
-                  fetchErr instanceof Error
-                    ? fetchErr.message
-                    : 'Failed to load updated session'
-                setError(errorMessage)
+                const normalized = normalizeRPCError(fetchErr, 'Failed to load updated session')
+                setSessionError(normalized.userMessage, normalized.retryable)
               }
             }
           } else {
             setPendingQuestion(previousPendingQuestion)
-            setError(result.error || 'Failed to submit answers')
+            setSessionError(result.error || 'Failed to submit answers')
           }
         } catch (err) {
           setPendingQuestion(previousPendingQuestion)
-          const errorMessage =
-            err instanceof Error ? err.message : 'Failed to submit answers'
-          setError(errorMessage)
+          const normalized = normalizeRPCError(err, 'Failed to submit answers')
+          setSessionError(normalized.userMessage, normalized.retryable)
         } finally {
           setLoading(false)
         }
       })()
     },
-    [dataSource]
+    [dataSource, setSessionError]
   )
 
   const handleRejectPendingQuestion = useCallback(async () => {
@@ -649,14 +691,13 @@ export function ChatSessionProvider({
           }
         }
       } else {
-        setError(result.error || 'Failed to reject question')
+        setSessionError(result.error || 'Failed to reject question')
       }
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to reject question'
-      setError(errorMessage)
+      const normalized = normalizeRPCError(err, 'Failed to reject question')
+      setSessionError(normalized.userMessage, normalized.retryable)
     }
-  }, [dataSource])
+  }, [dataSource, setSessionError])
 
   // ── Context values (memoized per-context) ──────────────────────────────
 
@@ -665,16 +706,20 @@ export function ChatSessionProvider({
     currentSessionId,
     fetching,
     error,
+    errorRetryable,
     debugMode,
     sessionDebugUsage,
     debugLimits,
-    setError,
-  }), [session, currentSessionId, fetching, error, debugMode, sessionDebugUsage, debugLimits])
+    setError: setSessionError,
+    retryFetchSession,
+  }), [session, currentSessionId, fetching, error, errorRetryable, debugMode, sessionDebugUsage, debugLimits, setSessionError, retryFetchSession])
 
   const messagingValue: ChatMessagingStateValue = useMemo(() => ({
     turns,
     streamingContent,
     isStreaming,
+    streamError,
+    streamErrorRetryable,
     loading,
     pendingQuestion,
     codeOutputs,
@@ -687,13 +732,15 @@ export function ChatSessionProvider({
     handleCopy,
     handleSubmitQuestionAnswers,
     handleRejectPendingQuestion,
+    retryLastMessage,
+    clearStreamError,
     cancel: cancelStream,
     setCodeOutputs,
   }), [
-    turns, streamingContent, isStreaming, loading, pendingQuestion,
+    turns, streamingContent, isStreaming, streamError, streamErrorRetryable, loading, pendingQuestion,
     codeOutputs, isCompacting, compactionSummary, artifactsInvalidationTrigger,
     sendMessageDirect, handleRegenerate, handleEdit, handleCopy,
-    handleSubmitQuestionAnswers, handleRejectPendingQuestion, cancelStream,
+    handleSubmitQuestionAnswers, handleRejectPendingQuestion, retryLastMessage, clearStreamError, cancelStream,
   ])
 
   const inputValue: ChatInputStateValue = useMemo(() => ({
@@ -749,4 +796,3 @@ export function useChatInput(): ChatInputStateValue {
   }
   return context
 }
-

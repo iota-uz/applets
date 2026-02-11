@@ -26,6 +26,8 @@ import WelcomeContent from './WelcomeContent'
 import ArchiveBanner from './ArchiveBanner'
 import { useTranslation } from '../hooks/useTranslation'
 import { SessionArtifactsPanel } from './SessionArtifactsPanel'
+import Alert from './Alert'
+import { StreamError } from './StreamError'
 
 interface ChatSessionProps {
   dataSource: ChatDataSource
@@ -85,9 +87,29 @@ function ChatSessionCore({
   artifactsPanelStorageKey = 'bichat.artifacts-panel.expanded',
 }: Omit<ChatSessionProps, 'sessionId'>) {
   const { t } = useTranslation()
-  const { session, fetching, error, debugMode, sessionDebugUsage, debugLimits, currentSessionId } =
+  const {
+    session,
+    fetching,
+    error,
+    errorRetryable,
+    debugMode,
+    sessionDebugUsage,
+    debugLimits,
+    currentSessionId,
+    setError,
+    retryFetchSession,
+  } =
     useChatSession()
-  const { turns, loading, isStreaming, isCompacting } = useChatMessaging()
+  const {
+    turns,
+    loading,
+    isStreaming,
+    streamError,
+    streamErrorRetryable,
+    isCompacting,
+    retryLastMessage,
+    clearStreamError,
+  } = useChatMessaging()
   const {
     inputError,
     message,
@@ -197,20 +219,10 @@ function ChatSessionCore({
     }
   }, [isResizingArtifactsPanel, artifactsPanelStorageKey])
 
-  if (fetching) {
+  if (fetching && turns.length === 0 && !session) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-gray-500 dark:text-gray-400">{t('BiChat.Input.Processing')}</div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-red-500 dark:text-red-400">
-          {t('BiChat.Error.Generic')}: {error}
-        </div>
       </div>
     )
   }
@@ -282,6 +294,15 @@ function ChatSessionCore({
           actionsSlot={headerActions}
         />
       )}
+      {error && (
+        <Alert
+          variant={errorRetryable ? 'warning' : 'error'}
+          title={t('BiChat.Error.Generic')}
+          message={error}
+          onDismiss={() => setError(null)}
+          onRetry={errorRetryable ? retryFetchSession : undefined}
+        />
+      )}
 
       <div
         ref={layoutContainerRef}
@@ -294,6 +315,16 @@ function ChatSessionCore({
                 <div className="w-full max-w-5xl">
                   {welcomeSlot || (
                     <WelcomeContent onPromptSelect={handlePromptSelect} disabled={loading} />
+                  )}
+                  {streamError && (
+                    <div className="px-6 pt-4">
+                      <StreamError
+                        error={streamError}
+                        compact
+                        onRetry={streamErrorRetryable ? () => void retryLastMessage() : undefined}
+                        onDismiss={clearStreamError}
+                      />
+                    </div>
                   )}
                   {!effectiveReadOnly && (
                     <MessageInput
@@ -344,6 +375,16 @@ function ChatSessionCore({
                   </div>
                 )}
               </AnimatePresence>
+              {streamError && (
+                <div className="px-4 pb-2">
+                  <StreamError
+                    error={streamError}
+                    compact
+                    onRetry={streamErrorRetryable ? () => void retryLastMessage() : undefined}
+                    onDismiss={clearStreamError}
+                  />
+                </div>
+              )}
               {!effectiveReadOnly && (
                 <MessageInput
                   message={message}

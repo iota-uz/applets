@@ -4,7 +4,7 @@
  */
 
 import { motion } from 'framer-motion'
-import { Warning, ArrowClockwise, ArrowsCounterClockwise } from '@phosphor-icons/react'
+import { Warning, ArrowClockwise, ArrowsCounterClockwise, X } from '@phosphor-icons/react'
 import { useTranslation } from '../hooks/useTranslation'
 
 interface StreamErrorProps {
@@ -14,6 +14,8 @@ interface StreamErrorProps {
   onRetry?: () => void
   /** Callback to regenerate the message */
   onRegenerate?: () => void
+  /** Callback to dismiss the error */
+  onDismiss?: () => void
   /** Whether to show compact mode (less padding) */
   compact?: boolean
 }
@@ -22,6 +24,7 @@ export function StreamError({
   error,
   onRetry,
   onRegenerate,
+  onDismiss,
   compact = false,
 }: StreamErrorProps) {
   const { t } = useTranslation()
@@ -65,6 +68,16 @@ export function StreamError({
           >
             <ArrowsCounterClockwise className="w-4 h-4" />
             {t('BiChat.StreamError.Regenerate')}
+          </button>
+        )}
+        {onDismiss && (
+          <button
+            onClick={onDismiss}
+            className="cursor-pointer inline-flex items-center justify-center p-1.5 text-red-700 dark:text-red-200 hover:bg-red-100 dark:hover:bg-red-800 rounded-md transition-colors"
+            type="button"
+            aria-label={t('BiChat.Chat.DismissNotification')}
+          >
+            <X className="w-4 h-4" />
           </button>
         )}
       </div>

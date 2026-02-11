@@ -3,7 +3,7 @@
  * Manages toast notification state
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning'
 
@@ -31,6 +31,9 @@ function generateId(): string {
   return Math.random().toString(36).substring(7)
 }
 
+const DEDUPE_WINDOW_MS = 2500
+const MAX_ACTIVE_TOASTS = 5
+
 /**
  * Hook for managing toast notifications
  *
@@ -50,11 +53,32 @@ function generateId(): string {
  */
 export function useToast(): UseToastReturn {
   const [toasts, setToasts] = useState<ToastItem[]>([])
+  const recentToastMapRef = useRef<Map<string, number>>(new Map())
 
   const showToast = useCallback(
     (type: ToastType, message: string, duration?: number) => {
+      const normalizedMessage = message.trim().toLowerCase()
+      const key = `${type}:${normalizedMessage}`
+      const now = Date.now()
+      const lastShownAt = recentToastMapRef.current.get(key)
+      if (lastShownAt && now - lastShownAt < DEDUPE_WINDOW_MS) {
+        return
+      }
+
+      // Drop old dedupe entries to keep map small.
+      for (const [mapKey, ts] of recentToastMapRef.current.entries()) {
+        if (now - ts > DEDUPE_WINDOW_MS * 4) {
+          recentToastMapRef.current.delete(mapKey)
+        }
+      }
+      recentToastMapRef.current.set(key, now)
+
       const id = generateId()
-      setToasts((prev) => [...prev, { id, type, message, duration }])
+      setToasts((prev) => {
+        const next = [...prev, { id, type, message, duration }]
+        if (next.length <= MAX_ACTIVE_TOASTS) return next
+        return next.slice(next.length - MAX_ACTIVE_TOASTS)
+      })
     },
     []
   )
@@ -65,6 +89,7 @@ export function useToast(): UseToastReturn {
 
   const dismissAll = useCallback(() => {
     setToasts([])
+    recentToastMapRef.current.clear()
   }, [])
 
   return {
