@@ -244,7 +244,7 @@ const SessionItem = memo<SessionItemProps>(
                   </MenuButton>
                   <MenuItems
                     anchor="bottom start"
-                    className="w-52 bg-white/95 dark:bg-gray-900/95 backdrop-blur rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-30 [--anchor-gap:8px] mt-1 p-2 space-y-1"
+                    className="w-52 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-30 [--anchor-gap:8px] mt-1 p-2 space-y-1"
                   >
                     {mode !== 'archived' && onPin && (
                       <MenuItem>
