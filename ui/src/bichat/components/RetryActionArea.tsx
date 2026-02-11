@@ -43,7 +43,7 @@ export const RetryActionArea = memo(function RetryActionArea({
             weight="fill"
           />
           <span className="text-sm text-gray-700 dark:text-gray-300">
-            {t('BiChat.Retry.Description')}
+            {t('BiChat.Retry.Subtitle')}
           </span>
         </div>
         <div className="flex items-center gap-2">

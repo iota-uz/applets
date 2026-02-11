@@ -134,7 +134,7 @@ export default function QuestionStep({
           id="other-input"
           value={otherText}
           onChange={(e) => handleOtherTextChange(e.target.value)}
-          placeholder={t('BiChat.Question.Other')}
+          placeholder={t('BiChat.Question.OtherOption')}
           rows={3}
           className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-lg
             bg-white dark:bg-gray-800 text-gray-900 dark:text-white

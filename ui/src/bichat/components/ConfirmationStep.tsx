@@ -65,7 +65,7 @@ export default function ConfirmationStep({
                   {/* Custom "Other" text - displayed with distinct styling */}
                   {customText && (
                     <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium border border-amber-500 bg-amber-500/10 text-amber-600 dark:border-amber-400 dark:bg-amber-400/10 dark:text-amber-400">
-                      <span className="font-semibold mr-1">{t('BiChat.Question.Other')}:</span>
+                      <span className="font-semibold mr-1">{t('BiChat.Question.OtherOption')}:</span>
                       <span className="italic">{customText}</span>
                     </span>
                   )}

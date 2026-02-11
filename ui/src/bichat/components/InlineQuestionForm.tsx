@@ -307,7 +307,7 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
                 ? 'text-gray-900 dark:text-gray-100 font-medium'
                 : 'text-gray-700 dark:text-gray-300',
             ].join(' ')}>
-              {t('BiChat.InlineQuestion.Other')}
+              {t('BiChat.InlineQuestion.OtherOption')}
             </span>
           </label>
 
