@@ -16,7 +16,7 @@ export function useTranslation() {
    * @returns Translated string
    */
   const t = useCallback(
-    (key: string, params?: Record<string, any>): string => {
+    (key: string, params?: Record<string, string | number | boolean>): string => {
       let text = translations[key] || key
 
       // Simple interpolation: replace {{key}} with params[key]

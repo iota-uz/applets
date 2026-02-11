@@ -14,6 +14,14 @@ vet:
 fmt:
     go fmt ./...
 
+# Run golangci-lint
+lint:
+    golangci-lint run ./...
+
+# Run golangci-lint with auto-fix
+lint-fix:
+    golangci-lint run --fix ./...
+
 # Build the npm package
 build-npm:
     cd ui && pnpm build
@@ -30,8 +38,8 @@ watch-npm:
 lint-npm:
     cd ui && pnpm lint
 
-# Run all checks (vet + test)
-check: vet test
+# Run all checks (vet + lint + test)
+check: vet lint test
 
 # Clean build artifacts
 clean:

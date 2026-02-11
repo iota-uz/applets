@@ -55,8 +55,15 @@ export function ConfigProvider({ config, useGlobalConfig = false, children }: Co
   if (config) {
     resolvedConfig = config
   } else if (useGlobalConfig && typeof window !== 'undefined') {
-    const globalContext = (window as any).__APPLET_CONTEXT__
-    const globalCSRF = (window as any).__CSRF_TOKEN__
+    interface GlobalAppletContext {
+      user?: { id?: string; email?: string; firstName?: string; lastName?: string; permissions?: string[] }
+      tenant?: { id?: string; name?: string }
+      locale?: { language?: string; translations?: Record<string, string> }
+      config?: { rpcUIEndpoint?: string; streamEndpoint?: string }
+    }
+    const w = window as unknown as Record<string, unknown>
+    const globalContext = w.__APPLET_CONTEXT__ as GlobalAppletContext | undefined
+    const globalCSRF = w.__CSRF_TOKEN__ as string | undefined
 
     if (globalContext) {
       resolvedConfig = {

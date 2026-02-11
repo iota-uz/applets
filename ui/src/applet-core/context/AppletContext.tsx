@@ -77,7 +77,7 @@ export interface AppletProviderProps {
  */
 export function AppletProvider({ children, windowKey, context }: AppletProviderProps) {
   // Use provided context or read from window global
-  const raw = context ?? (window as any)[windowKey]
+  const raw = context ?? (window as unknown as Record<string, unknown>)[windowKey]
 
   if (!raw) {
     throw new Error(`${windowKey} not found on window. Ensure backend context injection is working.`)

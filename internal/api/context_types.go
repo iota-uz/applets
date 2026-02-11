@@ -7,13 +7,13 @@ import (
 
 // InitialContext is serialized and injected into the frontend (e.g. window.__APPLET_CONTEXT__).
 type InitialContext struct {
-	User       UserContext             `json:"user"`
-	Tenant     TenantContext           `json:"tenant"`
-	Locale     LocaleContext           `json:"locale"`
-	Config     AppConfig               `json:"config"`
-	Route      RouteContext            `json:"route"`
-	Session    SessionContext          `json:"session"`
-	Error      *ErrorContext           `json:"error,omitempty"`
+	User       UserContext            `json:"user"`
+	Tenant     TenantContext          `json:"tenant"`
+	Locale     LocaleContext          `json:"locale"`
+	Config     AppConfig              `json:"config"`
+	Route      RouteContext           `json:"route"`
+	Session    SessionContext         `json:"session"`
+	Error      *ErrorContext          `json:"error,omitempty"`
 	Extensions map[string]interface{} `json:"extensions,omitempty"`
 }
 

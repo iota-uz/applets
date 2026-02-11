@@ -7,17 +7,17 @@ import (
 )
 
 type (
-	Applet         = api.Applet
-	ShellMode      = api.ShellMode
-	ShellConfig   = api.ShellConfig
-	Config        = api.Config
-	LayoutFactory = api.LayoutFactory
-	MountConfig   = api.MountConfig
-	EndpointConfig = api.EndpointConfig
-	AssetConfig   = api.AssetConfig
-	DevAssetConfig = api.DevAssetConfig
-	RPCConfig     = api.RPCConfig
-	RPCMethod     = api.RPCMethod
+	Applet          = api.Applet
+	ShellMode       = api.ShellMode
+	ShellConfig     = api.ShellConfig
+	Config          = api.Config
+	LayoutFactory   = api.LayoutFactory
+	MountConfig     = api.MountConfig
+	EndpointConfig  = api.EndpointConfig
+	AssetConfig     = api.AssetConfig
+	DevAssetConfig  = api.DevAssetConfig
+	RPCConfig       = api.RPCConfig
+	RPCMethod       = api.RPCMethod
 	ContextExtender = api.ContextExtender
 )
 
@@ -27,42 +27,42 @@ type (
 )
 
 type (
-	InitialContext  = api.InitialContext
-	UserContext     = api.UserContext
-	TenantContext   = api.TenantContext
-	LocaleContext   = api.LocaleContext
-	AppConfig       = api.AppConfig
-	RouteContext    = api.RouteContext
-	SessionContext  = api.SessionContext
-	ErrorContext    = api.ErrorContext
-	RetryConfig     = api.RetryConfig
-	StreamContext   = api.StreamContext
-	SessionConfig   = api.SessionConfig
+	InitialContext = api.InitialContext
+	UserContext    = api.UserContext
+	TenantContext  = api.TenantContext
+	LocaleContext  = api.LocaleContext
+	AppConfig      = api.AppConfig
+	RouteContext   = api.RouteContext
+	SessionContext = api.SessionContext
+	ErrorContext   = api.ErrorContext
+	RetryConfig    = api.RetryConfig
+	StreamContext  = api.StreamContext
+	SessionConfig  = api.SessionConfig
 )
 
 type (
 	ErrorContextEnricher = api.ErrorContextEnricher
 	MetricsRecorder      = api.MetricsRecorder
 	SessionStore         = api.SessionStore
-	HostServices        = api.HostServices
-	TenantNameResolver  = api.TenantNameResolver
-	BuilderOption       = api.BuilderOption
+	HostServices         = api.HostServices
+	TenantNameResolver   = api.TenantNameResolver
+	BuilderOption        = api.BuilderOption
 )
 
 type (
-	AppletUser       = api.AppletUser
-	DetailedUser     = api.DetailedUser
-	ContextBuilder   = api.ContextBuilder
+	AppletUser     = api.AppletUser
+	DetailedUser   = api.DetailedUser
+	ContextBuilder = api.ContextBuilder
 )
 
 type (
-	ViteManifest     = api.ViteManifest
+	ViteManifest      = api.ViteManifest
 	ViteManifestEntry = api.ViteManifestEntry
-	ResolvedAssets   = api.ResolvedAssets
+	ResolvedAssets    = api.ResolvedAssets
 )
 
 type (
-	AppletRouter  = api.AppletRouter
+	AppletRouter     = api.AppletRouter
 	AppletController = api.AppletController
 )
 
@@ -94,10 +94,10 @@ const (
 )
 
 var (
-	ErrInvalid          = api.ErrInvalid
-	ErrValidation       = api.ErrValidation
-	ErrNotFound         = api.ErrNotFound
-	ErrPermissionDenied = api.ErrPermissionDenied
-	ErrInternal         = api.ErrInternal
+	ErrInvalid           = api.ErrInvalid
+	ErrValidation        = api.ErrValidation
+	ErrNotFound          = api.ErrNotFound
+	ErrPermissionDenied  = api.ErrPermissionDenied
+	ErrInternal          = api.ErrInternal
 	DefaultSessionConfig = api.DefaultSessionConfig
 )

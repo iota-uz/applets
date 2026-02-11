@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react'
 
-import { ConfirmModal } from './ConfirmModal'
+import { ConfirmModal, type ConfirmModalProps } from './ConfirmModal'
 import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
 
 const meta: Meta<typeof ConfirmModal> = {
@@ -12,7 +12,7 @@ const meta: Meta<typeof ConfirmModal> = {
 export default meta
 type Story = StoryObj<typeof ConfirmModal>
 
-const ModalTrigger = (props: any) => {
+const ModalTrigger = (props: Omit<ConfirmModalProps, 'isOpen' | 'onConfirm' | 'onCancel'>) => {
   const [isOpen, setIsOpen] = useState(false)
   return (
     <div>

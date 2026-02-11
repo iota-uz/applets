@@ -44,9 +44,23 @@ jobs:
         working-directory: applets
         run: go mod download
 
+      - name: Go vet
+        working-directory: applets
+        run: go vet ./...
+
+      - name: Go format check
+        working-directory: applets
+        run: gofmt -l . | tee /tmp/gofmt.out && test ! -s /tmp/gofmt.out
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.8.0
+          working-directory: applets
+
       - name: Run Go tests
         working-directory: applets
-        run: go test ./internal/... ./cmd/... -count=1
+        run: go test ./... -count=1
 
       - name: Install JS dependencies
         working-directory: applets

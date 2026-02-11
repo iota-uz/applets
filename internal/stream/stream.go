@@ -50,8 +50,8 @@ func (sw *StreamWriter) WriteJSON(event string, data interface{}) error {
 	return sw.WriteEvent(event, string(jsonData))
 }
 
-func (sw *StreamWriter) WriteDone() error   { return sw.WriteEvent("done", "") }
-func (sw *StreamWriter) WriteError(msg string) error { return sw.WriteEvent("error", msg) }
+func (sw *StreamWriter) WriteDone() error                      { return sw.WriteEvent("done", "") }
+func (sw *StreamWriter) WriteError(msg string) error           { return sw.WriteEvent("error", msg) }
 func (sw *StreamWriter) WriteErrorJSON(data interface{}) error { return sw.WriteJSON("error", data) }
 
 func (sw *StreamWriter) WriteComment(comment string) error {

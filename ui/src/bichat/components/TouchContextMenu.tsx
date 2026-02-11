@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, FC, ReactNode, CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback, FC, ReactNode, CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTranslation } from '../hooks/useTranslation';
@@ -30,10 +30,13 @@ export const TouchContextMenu: FC<TouchContextMenuProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  const enabledIndices = items.reduce<number[]>((acc, item, i) => {
-    if (!item.disabled) acc.push(i);
-    return acc;
-  }, []);
+  const enabledIndices = useMemo(
+    () => items.reduce<number[]>((acc, item, i) => {
+      if (!item.disabled) acc.push(i);
+      return acc;
+    }, []),
+    [items]
+  );
 
   const focusItem = useCallback((index: number) => {
     setFocusedIndex(index);
@@ -54,7 +57,7 @@ export const TouchContextMenu: FC<TouchContextMenuProps> = ({
       }
     });
     return () => cancelAnimationFrame(timer);
-  }, [isOpen, enabledIndices.length, focusItem]);
+  }, [isOpen, enabledIndices, focusItem]);
 
   // Keyboard navigation
   useEffect(() => {

@@ -25,8 +25,8 @@ type testApplet struct {
 	config   api.Config
 }
 
-func (a *testApplet) Name() string     { return a.name }
-func (a *testApplet) BasePath() string { return a.basePath }
+func (a *testApplet) Name() string       { return a.name }
+func (a *testApplet) BasePath() string   { return a.basePath }
 func (a *testApplet) Config() api.Config { return a.config }
 
 type testHostServices struct{}

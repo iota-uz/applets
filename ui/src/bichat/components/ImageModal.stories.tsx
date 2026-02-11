@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react'
 
 import { ImageModal } from './ImageModal'
@@ -14,7 +14,7 @@ const meta: Meta<typeof ImageModal> = {
 export default meta
 type Story = StoryObj<typeof ImageModal>
 
-const ModalTrigger = ({ attachment, allAttachments, currentIndex }: any) => {
+const ModalTrigger = ({ attachment, allAttachments, currentIndex }: Pick<React.ComponentProps<typeof ImageModal>, 'attachment' | 'allAttachments' | 'currentIndex'>) => {
   const [isOpen, setIsOpen] = useState(false)
   return (
     <div>

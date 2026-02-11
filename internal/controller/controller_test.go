@@ -35,8 +35,8 @@ func TestAppletController_ManifestLoadedOnce(t *testing.T) {
 
 	manifest := `{"index.html":{"file":"assets/main-123.js","css":["assets/main-123.css"],"isEntry":true}}`
 	mapFS := fstest.MapFS{
-		"manifest.json":      {Data: []byte(manifest)},
-		"assets/main-123.js": {Data: []byte("console.log('x')")},
+		"manifest.json":       {Data: []byte(manifest)},
+		"assets/main-123.js":  {Data: []byte("console.log('x')")},
 		"assets/main-123.css": {Data: []byte("body{}")},
 	}
 	cfs := &countingFS{fs: mapFS}
@@ -230,7 +230,7 @@ func TestAppletController_RPC(t *testing.T) {
 		{
 			name: "GenericErrorMessageExposedWhenEnabled",
 			rpcCfg: &api.RPCConfig{
-				Path: "/rpc",
+				Path:                 "/rpc",
 				ExposeInternalErrors: func() *bool { v := true; return &v }(),
 				Methods: map[string]api.RPCMethod{
 					"explode": {
@@ -370,4 +370,3 @@ func TestRequirePermissions_Allows(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, c.requirePermissions(ctx, []string{"test.secret"}))
 }
-

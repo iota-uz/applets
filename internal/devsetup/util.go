@@ -27,4 +27,3 @@ func IsNewer(source, target string) bool {
 	}
 	return srcInfo.ModTime().After(tgtInfo.ModTime())
 }
-

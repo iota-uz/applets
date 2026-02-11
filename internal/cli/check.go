@@ -40,7 +40,7 @@ func runCheck(cmd *cobra.Command, _ []string) error {
 	if found && len(violations) > 0 {
 		stderr := cmd.ErrOrStderr()
 		for _, v := range violations {
-			fmt.Fprintln(stderr, v)
+			_, _ = fmt.Fprintln(stderr, v)
 		}
 		failed = true
 	}

@@ -186,7 +186,7 @@ export function defineReactAppletElement(options: DefineReactAppletElementOption
 }
 
 function getRegistry(): Map<string, RegistryEntry> {
-  const anyGlobal = globalThis as any
-  anyGlobal.__IOTA_REACT_APPLET_HOST_REGISTRY__ ??= new Map<string, RegistryEntry>()
-  return anyGlobal.__IOTA_REACT_APPLET_HOST_REGISTRY__ as Map<string, RegistryEntry>
+  const g = globalThis as Record<string, unknown>
+  g.__IOTA_REACT_APPLET_HOST_REGISTRY__ ??= new Map<string, RegistryEntry>()
+  return g.__IOTA_REACT_APPLET_HOST_REGISTRY__ as Map<string, RegistryEntry>
 }

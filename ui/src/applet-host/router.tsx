@@ -5,8 +5,8 @@ export type RouterMode = 'url' | 'memory'
 export interface CreateAppletRouterOptions {
   mode: RouterMode
   basePath?: string
-  BrowserRouter: React.ComponentType<any>
-  MemoryRouter: React.ComponentType<any>
+  BrowserRouter: React.ComponentType<Record<string, unknown>>
+  MemoryRouter: React.ComponentType<Record<string, unknown>>
 }
 
 export function createAppletRouter(options: CreateAppletRouterOptions) {

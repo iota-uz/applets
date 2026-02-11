@@ -16,13 +16,13 @@ import (
 
 // Controller implements api.AppletController.
 type Controller struct {
-	applet          api.Applet
-	builder         *context.ContextBuilder
-	logger          *logrus.Logger
-	host            api.HostServices
-	assetsBasePath  string
-	resolvedAssets  *api.ResolvedAssets
-	devAssets       *api.DevAssetConfig
+	applet         api.Applet
+	builder        *context.ContextBuilder
+	logger         *logrus.Logger
+	host           api.HostServices
+	assetsBasePath string
+	resolvedAssets *api.ResolvedAssets
+	devAssets      *api.DevAssetConfig
 }
 
 var _ api.AppletController = (*Controller)(nil)

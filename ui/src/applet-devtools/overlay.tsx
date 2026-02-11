@@ -98,15 +98,15 @@ export function AppletDevtoolsOverlay() {
 
 function serializeError(err: unknown): unknown {
   if (err instanceof Error) {
-    const anyErr = err as any
     const out: Record<string, unknown> = {
       name: err.name,
       message: err.message,
     }
     if (err.stack) out.stack = err.stack
-    if (typeof anyErr.code === 'string') out.code = anyErr.code
-    if (anyErr.details !== undefined) out.details = anyErr.details
-    if (anyErr.cause !== undefined) out.cause = anyErr.cause
+    const errRecord = err as unknown as Record<string, unknown>
+    if ('code' in err && typeof errRecord.code === 'string') out.code = errRecord.code
+    if ('details' in err) out.details = errRecord.details
+    if ('cause' in err) out.cause = errRecord.cause
     return out
   }
   return err

@@ -50,7 +50,7 @@ export function loadQueue(sessionId: string): QueuedMessage[] {
     // Minimal validation
     return parsed
       .map((item) => {
-        const obj = item as any
+        const obj = item as Record<string, unknown>
         return {
           content: typeof obj?.content === 'string' ? obj.content : '',
           attachments: Array.isArray(obj?.attachments) ? obj.attachments : [],

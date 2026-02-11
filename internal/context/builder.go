@@ -36,9 +36,9 @@ type ContextBuilder struct {
 // Ensure ContextBuilder implements api.ContextBuilderConfigurator.
 var _ api.ContextBuilderConfigurator = (*ContextBuilder)(nil)
 
-func (b *ContextBuilder) SetTenantNameResolver(r api.TenantNameResolver)   { b.tenantNameResolver = r }
-func (b *ContextBuilder) SetErrorEnricher(e api.ErrorContextEnricher)      { b.errorEnricher = e }
-func (b *ContextBuilder) SetSessionStore(s api.SessionStore)               { b.sessionStore = s }
+func (b *ContextBuilder) SetTenantNameResolver(r api.TenantNameResolver) { b.tenantNameResolver = r }
+func (b *ContextBuilder) SetErrorEnricher(e api.ErrorContextEnricher)    { b.errorEnricher = e }
+func (b *ContextBuilder) SetSessionStore(s api.SessionStore)             { b.sessionStore = s }
 
 // NewContextBuilder creates a new ContextBuilder.
 func NewContextBuilder(
@@ -142,12 +142,12 @@ func (b *ContextBuilder) Build(ctx context.Context, r *http.Request, basePath st
 		},
 		Config: api.AppConfig{
 			GraphQLEndpoint: b.config.Endpoints.GraphQL,
-			StreamEndpoint: b.config.Endpoints.Stream,
-			RESTEndpoint:   b.config.Endpoints.REST,
-			BasePath:       basePath,
-			AssetsBasePath: assetsBasePath,
-			RPCUIEndpoint:  rpcPath,
-			ShellMode:      string(b.config.Shell.Mode),
+			StreamEndpoint:  b.config.Endpoints.Stream,
+			RESTEndpoint:    b.config.Endpoints.REST,
+			BasePath:        basePath,
+			AssetsBasePath:  assetsBasePath,
+			RPCUIEndpoint:   rpcPath,
+			ShellMode:       string(b.config.Shell.Mode),
 		},
 		Route:   route,
 		Session: session,

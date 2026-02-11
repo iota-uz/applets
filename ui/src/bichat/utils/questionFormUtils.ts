@@ -24,7 +24,7 @@ export function isQuestionAnswered(data: QuestionAnswerData | undefined): boolea
 export function validateAnswers(
   questions: Question[],
   answers: QuestionAnswers,
-  t?: (key: string, params?: Record<string, any>) => string
+  t?: (key: string, params?: Record<string, string | number | boolean>) => string
 ): string | null {
   const allAnswered = questions.every((q) => isQuestionAnswered(answers[q.id]))
   if (!allAnswered) {

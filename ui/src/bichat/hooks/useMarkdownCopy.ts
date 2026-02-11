@@ -55,9 +55,10 @@ export function useMarkdownCopy(options: UseMarkdownCopyOptions = {}): UseMarkdo
   const timeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
   useEffect(() => {
+    const timeouts = timeoutsRef.current
     return () => {
-      timeoutsRef.current.forEach((timeout) => clearTimeout(timeout))
-      timeoutsRef.current.clear()
+      timeouts.forEach((timeout) => clearTimeout(timeout))
+      timeouts.clear()
     }
   }, [])
 

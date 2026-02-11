@@ -11,7 +11,7 @@ import type { InitialContext } from '../types'
  * and testability. Use this hook only when provider setup is not possible.
  */
 export function useAppletContext<T = InitialContext>(windowKey: string): T {
-  const context = (window as any)[windowKey]
+  const context = (window as unknown as Record<string, unknown>)[windowKey]
 
   if (!context) {
     throw new Error(`${windowKey} not found on window. Ensure backend context injection is working.`)

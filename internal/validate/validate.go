@@ -35,12 +35,12 @@ func validateShell(shell api.ShellConfig) error {
 	switch shell.Mode {
 	case api.ShellModeEmbedded:
 		if shell.Layout == nil {
-			return fmt.Errorf("Layout is required when Mode is embedded")
+			return fmt.Errorf("layout is required when mode is embedded")
 		}
 	case api.ShellModeStandalone:
 		// ok
 	case "":
-		return fmt.Errorf("Mode is required (embedded or standalone)")
+		return fmt.Errorf("mode is required (embedded or standalone)")
 	default:
 		return fmt.Errorf("unknown Mode %q", shell.Mode)
 	}
@@ -58,7 +58,7 @@ func validateAssets(assets api.AssetConfig) error {
 		return fmt.Errorf("ManifestPath is required when dev proxy is disabled")
 	}
 	if strings.TrimSpace(assets.Entrypoint) == "" {
-		return fmt.Errorf("Entrypoint is required when dev proxy is disabled")
+		return fmt.Errorf("entrypoint is required when dev proxy is disabled")
 	}
 	return nil
 }

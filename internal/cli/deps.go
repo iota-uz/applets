@@ -12,18 +12,18 @@ import (
 // NewDepsCommand returns the deps command with check subcommand.
 func NewDepsCommand() *cobra.Command {
 	depsCmd := &cobra.Command{
-		Use:   "deps",
-		Short: "Applet dependency checks",
-		Long:  `Validate applet SDK dependency policy (e.g. exact version pinning, no local links).`,
+		Use:     "deps",
+		Short:   "Applet dependency checks",
+		Long:    `Validate applet SDK dependency policy (e.g. exact version pinning, no local links).`,
 		Example: `  applet deps check`,
 	}
 
 	checkCmd := &cobra.Command{
-		Use:   "check",
-		Short: "Check applet SDK dependency policy",
-		Long:  `Scans modules/*/presentation/web/package.json for @iota-uz/sdk and ensures exact version pinning with no file/link/workspace specifiers.`,
+		Use:     "check",
+		Short:   "Check applet SDK dependency policy",
+		Long:    `Scans modules/*/presentation/web/package.json for @iota-uz/sdk and ensures exact version pinning with no file/link/workspace specifiers.`,
 		Example: `  applet deps check`,
-		RunE:  runDepsCheck,
+		RunE:    runDepsCheck,
 	}
 	depsCmd.AddCommand(checkCmd)
 

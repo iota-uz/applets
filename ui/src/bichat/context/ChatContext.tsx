@@ -173,4 +173,4 @@ export function useChatInput(): ChatInputStateValue {
 
 // Helpers for useOptionalChatMessaging (must call hooks unconditionally)
 function noopSubscribe(): () => void { return () => {} }
-function nullSnapshot(): any { return null }
+function nullSnapshot(): null { return null }

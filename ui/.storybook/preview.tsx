@@ -92,7 +92,7 @@ function seedGlobals() {
     extensions: {},
   }
 
-  ;(window as any).__APPLET_CONTEXT__ = appletContext
+  ;(window as unknown as Record<string, unknown>).__APPLET_CONTEXT__ = appletContext
 }
 
 const preview: Preview = {

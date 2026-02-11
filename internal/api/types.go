@@ -52,16 +52,16 @@ type I18nConfig struct {
 // Config holds all configuration for integrating an applet with the host.
 type Config struct {
 	WindowGlobal  string
-	Endpoints    EndpointConfig
-	Assets       AssetConfig
-	Shell        ShellConfig
-	Router       AppletRouter
-	I18n         I18nConfig
+	Endpoints     EndpointConfig
+	Assets        AssetConfig
+	Shell         ShellConfig
+	Router        AppletRouter
+	I18n          I18nConfig
 	RoutePatterns []string
 	CustomContext ContextExtender
-	Middleware   []mux.MiddlewareFunc
-	Mount        MountConfig
-	RPC          *RPCConfig
+	Middleware    []mux.MiddlewareFunc
+	Mount         MountConfig
+	RPC           *RPCConfig
 }
 
 // LayoutFactory produces a layout component for an applet request.

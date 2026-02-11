@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/iota-uz/applets/internal/config"
 	"github.com/iota-uz/applets/internal/applet/rpccodegen"
+	"github.com/iota-uz/applets/internal/config"
 )
 
 // NewRPCCommand returns the `applet rpc` subcommand (gen, check, etc.).
@@ -25,9 +25,9 @@ func NewRPCCommand() *cobra.Command {
 func NewRPCCheckCommand() *cobra.Command {
 	var name string
 	cmd := &cobra.Command{
-		Use:   "check",
-		Short: "Verify RPC contract is up to date for an applet",
-		Long:  `Exits with an error if the on-disk rpc.generated.ts does not match what would be generated from the Go router. Use "applet rpc gen --name <name>" to fix.`,
+		Use:     "check",
+		Short:   "Verify RPC contract is up to date for an applet",
+		Long:    `Exits with an error if the on-disk rpc.generated.ts does not match what would be generated from the Go router. Use "applet rpc gen --name <name>" to fix.`,
 		Example: `  applet rpc check --name bichat`,
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -63,9 +63,9 @@ func NewRPCCheckCommand() *cobra.Command {
 func NewRPCGenCommand() *cobra.Command {
 	var name string
 	cmd := &cobra.Command{
-		Use:   "gen",
-		Short: "Generate RPC contract TypeScript from Go router",
-		Long:  `Generates rpc.generated.ts for the given applet. Requires --name.`,
+		Use:     "gen",
+		Short:   "Generate RPC contract TypeScript from Go router",
+		Long:    `Generates rpc.generated.ts for the given applet. Requires --name.`,
 		Example: `  applet rpc gen --name bichat`,
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
