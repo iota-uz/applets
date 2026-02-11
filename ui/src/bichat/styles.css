@@ -535,6 +535,11 @@ bi-chat-root [tabindex]:not([tabindex="-1"]):focus-visible {
   );
 }
 
+@keyframes bichat-toast-progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bichat-thinking-shimmer,
   .animate-pulse,

@@ -251,27 +251,6 @@ export const dropdownVariants = {
 }
 
 /**
- * Toast notification
- */
-export const toastVariants = {
-  initial: { opacity: 0, y: -8 },
-  animate: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: prefersReducedMotion() ? 0 : 0.2,
-    },
-  },
-  exit: {
-    opacity: 0,
-    y: -8,
-    transition: {
-      duration: prefersReducedMotion() ? 0 : 0.15,
-    },
-  },
-}
-
-/**
  * Session item with subtle slide-right on hover
  */
 export const sessionItemVariants = {

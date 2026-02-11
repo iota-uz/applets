@@ -1,9 +1,9 @@
 /**
  * ToastContainer Component
- * Container for rendering toast notifications with animations
+ * Container for rendering toast notifications.
+ * Positioned at bottom-right to stay out of the way of primary content.
  */
 
-import { AnimatePresence } from 'framer-motion'
 import { Toast } from './Toast'
 import type { ToastItem } from '../hooks/useToast'
 
@@ -15,15 +15,18 @@ interface ToastContainerProps {
 }
 
 export function ToastContainer({ toasts, onDismiss, dismissLabel }: ToastContainerProps) {
+  if (toasts.length === 0) return null
+
   return (
-    <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-50 flex flex-col gap-2 pointer-events-none">
-      <AnimatePresence>
-        {toasts.map((toast) => (
-          <div key={toast.id} className="pointer-events-auto">
-            <Toast {...toast} onDismiss={onDismiss} dismissLabel={dismissLabel} />
-          </div>
-        ))}
-      </AnimatePresence>
+    <div
+      aria-label="Notifications"
+      className="fixed top-6 right-6 z-[var(--bichat-z-toast,60)] flex flex-col gap-2 pointer-events-none"
+    >
+      {toasts.map((toast) => (
+        <div key={toast.id} className="pointer-events-auto">
+          <Toast {...toast} onDismiss={onDismiss} dismissLabel={dismissLabel} />
+        </div>
+      ))}
     </div>
   )
 }

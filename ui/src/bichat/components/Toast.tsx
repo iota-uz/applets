@@ -1,10 +1,11 @@
 /**
  * Toast Component
- * Individual toast notification with auto-dismiss and accessibility support
+ * Individual toast notification with auto-dismiss, progress bar, and accessibility.
+ * Uses @headlessui/react Transition for CSS-driven enter/leave animations.
  */
 
-import { useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { Transition } from '@headlessui/react'
 import { CheckCircle, XCircle, Info, Warning, X } from '@phosphor-icons/react'
 import type { ToastType } from '../hooks/useToast'
 
@@ -18,27 +19,37 @@ export interface ToastProps {
   dismissLabel?: string
 }
 
-// Bumped to *-700 / dark:*-800 for WCAG AA contrast (4.5:1) with white text at text-sm
-const typeConfig = {
+const typeConfig: Record<
+  ToastType,
+  { accent: string; bg: string; icon: string; progress: string; iconEl: typeof CheckCircle }
+> = {
   success: {
-    bgColor: 'bg-green-700',
-    darkBgColor: 'dark:bg-green-800',
-    icon: <CheckCircle size={20} className="w-5 h-5 flex-shrink-0" weight="fill" />,
+    accent: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/80 dark:border-emerald-800/50',
+    icon: 'bg-emerald-100 dark:bg-emerald-900/50',
+    progress: 'bg-emerald-500 dark:bg-emerald-400',
+    iconEl: CheckCircle,
   },
   error: {
-    bgColor: 'bg-red-700',
-    darkBgColor: 'dark:bg-red-800',
-    icon: <XCircle size={20} className="w-5 h-5 flex-shrink-0" weight="fill" />,
+    accent: 'text-red-600 dark:text-red-400',
+    bg: 'bg-red-50 dark:bg-red-950/40 border-red-200/80 dark:border-red-800/50',
+    icon: 'bg-red-100 dark:bg-red-900/50',
+    progress: 'bg-red-500 dark:bg-red-400',
+    iconEl: XCircle,
   },
   info: {
-    bgColor: 'bg-blue-700',
-    darkBgColor: 'dark:bg-blue-800',
-    icon: <Info size={20} className="w-5 h-5 flex-shrink-0" weight="fill" />,
+    accent: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-blue-50 dark:bg-blue-950/40 border-blue-200/80 dark:border-blue-800/50',
+    icon: 'bg-blue-100 dark:bg-blue-900/50',
+    progress: 'bg-blue-500 dark:bg-blue-400',
+    iconEl: Info,
   },
   warning: {
-    bgColor: 'bg-amber-700',
-    darkBgColor: 'dark:bg-amber-800',
-    icon: <Warning size={20} className="w-5 h-5 flex-shrink-0" weight="fill" />,
+    accent: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-amber-50 dark:bg-amber-950/40 border-amber-200/80 dark:border-amber-800/50',
+    icon: 'bg-amber-100 dark:bg-amber-900/50',
+    progress: 'bg-amber-500 dark:bg-amber-400',
+    iconEl: Warning,
   },
 }
 
@@ -51,38 +62,94 @@ export function Toast({
   dismissLabel = 'Dismiss notification',
 }: ToastProps) {
   const config = typeConfig[type]
+  const Icon = config.iconEl
+  const [show, setShow] = useState(false)
+  const [paused, setPaused] = useState(false)
+  const remainingRef = useRef(duration)
+  const startRef = useRef(Date.now())
 
-  // Use assertive for errors, polite for others
+  // Trigger enter transition on mount
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setShow(true))
+    return () => cancelAnimationFrame(frame)
+  }, [])
+
+  // Auto-dismiss with pause/resume on hover
+  useEffect(() => {
+    if (paused) return
+
+    startRef.current = Date.now()
+    const timer = setTimeout(() => {
+      setShow(false)
+      // Wait for leave transition before removing from DOM
+      setTimeout(() => onDismiss(id), 200)
+    }, remainingRef.current)
+
+    return () => {
+      // Capture how much time remains when pausing
+      const elapsed = Date.now() - startRef.current
+      remainingRef.current = Math.max(0, remainingRef.current - elapsed)
+      clearTimeout(timer)
+    }
+  }, [id, paused, onDismiss])
+
+  const handleDismiss = useCallback(() => {
+    setShow(false)
+    setTimeout(() => onDismiss(id), 200)
+  }, [id, onDismiss])
+
   const ariaLive = type === 'error' ? 'assertive' : 'polite'
-  // Status for info/success, alert for errors/warnings
   const role = type === 'error' || type === 'warning' ? 'alert' : 'status'
 
-  useEffect(() => {
-    const timer = setTimeout(() => onDismiss(id), duration)
-    return () => clearTimeout(timer)
-  }, [id, duration, onDismiss])
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -50, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.2 }}
-      className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg backdrop-blur-sm min-w-[300px] max-w-[400px] text-white ${config.bgColor} ${config.darkBgColor}`}
-      role={role}
-      aria-live={ariaLive}
-      aria-atomic="true"
+    <Transition
+      show={show}
+      enter="transition duration-200 ease-out"
+      enterFrom="-translate-y-2 opacity-0 scale-95"
+      enterTo="translate-y-0 opacity-100 scale-100"
+      leave="transition duration-150 ease-in"
+      leaveFrom="translate-y-0 opacity-100 scale-100"
+      leaveTo="-translate-y-2 opacity-0 scale-95"
     >
-      {config.icon}
-      <p className="flex-1 text-sm font-medium">{message}</p>
-      <button
-        onClick={() => onDismiss(id)}
-        className="cursor-pointer ml-2 text-white hover:bg-white/20 p-1 rounded transition-colors flex-shrink-0"
-        aria-label={dismissLabel}
+      <div
+        className={`relative flex items-start gap-3 rounded-xl border px-4 py-3 shadow-lg shadow-black/5 dark:shadow-black/20 backdrop-blur-sm min-w-[320px] max-w-[420px] overflow-hidden ${config.bg}`}
+        role={role}
+        aria-live={ariaLive}
+        aria-atomic="true"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
       >
-        <X size={16} className="w-4 h-4" weight="bold" />
-      </button>
-    </motion.div>
+        {/* Icon */}
+        <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${config.icon}`}>
+          <Icon size={16} className={config.accent} weight="fill" />
+        </div>
+
+        {/* Message */}
+        <p className="flex-1 pt-0.5 text-sm font-medium leading-snug text-gray-800 dark:text-gray-100">
+          {message}
+        </p>
+
+        {/* Dismiss */}
+        <button
+          onClick={handleDismiss}
+          className="mt-0.5 -mr-1 cursor-pointer shrink-0 rounded-lg p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-200/60 dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-700/60 transition-colors duration-100"
+          aria-label={dismissLabel}
+        >
+          <X size={14} weight="bold" />
+        </button>
+
+        {/* Progress bar */}
+        <div className="absolute inset-x-0 bottom-0 h-0.5 bg-black/5 dark:bg-white/5">
+          <div
+            className={`h-full ${config.progress} origin-left`}
+            style={{
+              animation: `bichat-toast-progress ${duration}ms linear forwards`,
+              animationPlayState: paused ? 'paused' : 'running',
+            }}
+          />
+        </div>
+      </div>
+    </Transition>
   )
 }
 

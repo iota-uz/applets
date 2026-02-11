@@ -33,7 +33,6 @@ import {
   getSessionDebugUsage,
 } from '../utils/debugTrace'
 import { loadQueue, saveQueue } from '../utils/queueStorage'
-import { hasPermission } from './IotaContext'
 import {
   ARTIFACT_TOOL_NAMES,
   createPendingTurn,
@@ -214,11 +213,6 @@ export function ChatSessionProvider({
       setInputError(null)
 
       if (command.name === '/debug') {
-        if (!hasPermission('bichat.export')) {
-          setInputError('BiChat.Slash.ErrorDebugUnauthorized')
-          return true
-        }
-
         const curDebugMode = sessionRef.current.debugMode
         const curDebugSessionKey = sessionRef.current.debugSessionKey
         const curSessionId = sessionRef.current.currentSessionId
