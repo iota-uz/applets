@@ -7,6 +7,7 @@
 import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react'
 import { Paperclip, PaperPlaneRight, X, Bug, ArrowUp, ArrowDown, Stack } from '@phosphor-icons/react'
 import AttachmentGrid from './AttachmentGrid'
+import { MessageQueueList } from './MessageQueueList'
 import ImageModal from './ImageModal'
 import {
   ATTACHMENT_ACCEPT_ATTRIBUTE,
@@ -39,6 +40,8 @@ export interface MessageInputProps {
   onMessageChange: (value: string) => void
   onSubmit: (e: React.FormEvent, attachments: Attachment[]) => void
   onUnqueue?: () => { content: string; attachments: Attachment[] } | null
+  onRemoveQueueItem?: (index: number) => void
+  onUpdateQueueItem?: (index: number, content: string) => void
   placeholder?: string
   maxFiles?: number
   maxFileSize?: number
@@ -66,6 +69,8 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       onMessageChange,
       onSubmit,
       onUnqueue,
+      onRemoveQueueItem,
+      onUpdateQueueItem,
       placeholder: placeholderOverride,
       maxFiles = MAX_FILES_DEFAULT,
       maxFileSize = MAX_FILE_SIZE_DEFAULT,
@@ -390,7 +395,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
 
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault()
-        if (!loading && (message.trim() || attachments.length > 0)) {
+        if (message.trim() || attachments.length > 0) {
           handleFormSubmit(e as unknown as React.FormEvent)
         }
       }
@@ -417,7 +422,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
     const handleFormSubmit = (e: React.FormEvent) => {
       e.preventDefault()
       if (isComposing) return
-      if (loading || disabled || (!message.trim() && attachments.length === 0)) {
+      if (disabled || (!message.trim() && attachments.length === 0)) {
         return
       }
 
@@ -427,7 +432,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       setError(null)
     }
 
-    const canSubmit = !loading && !disabled && (message.trim() || attachments.length > 0)
+    const canSubmit = !disabled && (message.trim() || attachments.length > 0)
     const visibleError = error || commandError
     const visibleErrorText = visibleError ? t(visibleError) : ''
     const defaultContainerClassName = "shrink-0 px-4 pt-4 pb-6"
@@ -451,15 +456,18 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
         <form ref={formRef} onSubmit={handleFormSubmit} className={formClassName ?? "mx-auto"}>
           {/* Error display */}
           {visibleError && (
-            <div className="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400 flex items-center justify-between">
-              <span>{visibleErrorText}</span>
+            <div className="mb-3 flex items-start gap-2.5 px-3 py-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200/80 dark:border-red-900/60 rounded-xl text-sm shadow-sm">
+              <div className="flex-shrink-0 mt-0.5 flex items-center justify-center w-5 h-5 rounded-full bg-red-100 dark:bg-red-900/40">
+                <X size={10} className="text-red-600 dark:text-red-400" weight="bold" />
+              </div>
+              <span className="flex-1 text-red-700 dark:text-red-300 text-xs leading-relaxed">{visibleErrorText}</span>
               <button
                 type="button"
                 onClick={() => {
                   setError(null)
                   onClearCommandError?.()
                 }}
-                className="cursor-pointer ml-2 p-1 hover:bg-red-100 dark:hover:bg-red-800 rounded transition-colors"
+                className="cursor-pointer flex-shrink-0 p-0.5 text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-md transition-colors"
                 aria-label={t('BiChat.Input.DismissError')}
               >
                 <X size={14} />
@@ -467,13 +475,13 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
             </div>
           )}
 
-          {/* Queue badge */}
-          {messageQueue.length > 0 && (
-            <div className="mb-3 text-xs text-gray-500 dark:text-gray-400">
-              <span className="px-2.5 py-1 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded font-medium">
-                {t('BiChat.Input.MessagesQueued', { count: messageQueue.length })}
-              </span>
-            </div>
+          {/* Message queue list */}
+          {messageQueue.length > 0 && onRemoveQueueItem && onUpdateQueueItem && (
+            <MessageQueueList
+              queue={messageQueue}
+              onRemove={onRemoveQueueItem}
+              onUpdate={onUpdateQueueItem}
+            />
           )}
 
           {debugMode && (
@@ -698,7 +706,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                   className="resize-none bg-transparent border-none outline-none px-1 py-2 w-full text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm leading-relaxed"
                   style={{ maxHeight: `${MAX_HEIGHT}px` }}
                   rows={1}
-                  disabled={loading || disabled}
+                  disabled={disabled}
                   aria-busy={loading}
                   aria-label={t('BiChat.Input.MessageInput')}
                 />

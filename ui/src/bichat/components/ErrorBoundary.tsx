@@ -39,21 +39,40 @@ function DefaultErrorContent({
   const resolvedErrorTitle = errorTitle ?? t('BiChat.Error.SomethingWentWrong')
   return (
     <div className="flex flex-col items-center justify-center p-8 text-center min-h-[200px]">
-      <WarningCircle size={48} className="text-red-500 mb-4" weight="fill" />
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{resolvedErrorTitle}</h2>
-      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 max-w-md">
-        {error?.message || t('BiChat.Error.UnexpectedError')}
-      </p>
-      {onReset && (
-        <button
-          type="button"
-          onClick={onReset}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-        >
-          <ArrowClockwise size={16} weight="bold" />
-          {resolvedResetLabel}
-        </button>
-      )}
+      {/* Decorative background pattern */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.03] dark:opacity-[0.04]" aria-hidden="true">
+        <svg className="absolute -top-8 -right-8 w-64 h-64 text-red-500" viewBox="0 0 200 200" fill="currentColor">
+          <circle cx="100" cy="100" r="80" opacity="0.5" />
+          <circle cx="100" cy="100" r="50" opacity="0.3" />
+          <circle cx="100" cy="100" r="25" opacity="0.2" />
+        </svg>
+      </div>
+
+      <div className="relative flex flex-col items-center">
+        {/* Icon with soft glow ring */}
+        <div className="relative mb-5">
+          <div className="absolute inset-0 rounded-full bg-red-100 dark:bg-red-900/30 scale-150 blur-md" />
+          <div className="relative flex items-center justify-center w-14 h-14 rounded-full bg-red-50 dark:bg-red-900/20 border border-red-200/60 dark:border-red-800/40">
+            <WarningCircle size={28} className="text-red-500 dark:text-red-400" weight="fill" />
+          </div>
+        </div>
+
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1.5">{resolvedErrorTitle}</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-5 max-w-md leading-relaxed">
+          {error?.message || t('BiChat.Error.UnexpectedError')}
+        </p>
+
+        {onReset && (
+          <button
+            type="button"
+            onClick={onReset}
+            className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-lg transition-colors shadow-sm text-sm font-medium"
+          >
+            <ArrowClockwise size={16} weight="bold" />
+            {resolvedResetLabel}
+          </button>
+        )}
+      </div>
     </div>
   )
 }

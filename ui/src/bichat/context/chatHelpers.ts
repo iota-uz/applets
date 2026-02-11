@@ -96,7 +96,7 @@ export function readDebugLimitsFromGlobalContext(): DebugLimits | null {
     return null
   }
 
-  const limits = window.__BICHAT_CONTEXT__?.extensions?.debug?.limits
+  const limits = window.__APPLET_CONTEXT__?.extensions?.debug?.limits
   if (!limits) {
     return null
   }

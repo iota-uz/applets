@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/iota-uz/applets/internal/api"
-	"github.com/iota-uz/go-i18n/v2/i18n"
 	"golang.org/x/text/language"
 )
 
@@ -67,8 +66,7 @@ func (b *ContextBuilder) getAllTranslations(locale language.Tag) map[string]stri
 	}
 
 	translations := make(map[string]string)
-	localizer := i18n.NewLocalizer(b.bundle, locale.String())
-	for messageID := range localeMessages {
+	for messageID, mt := range localeMessages {
 		if mode == api.TranslationModePrefixes {
 			matched := false
 			for _, p := range prefixes {
@@ -81,14 +79,10 @@ func (b *ContextBuilder) getAllTranslations(locale language.Tag) map[string]stri
 				continue
 			}
 		}
-		translation, err := localizer.Localize(&i18n.LocalizeConfig{MessageID: messageID})
-		if err != nil {
-			if b.logger != nil {
-				b.logger.WithError(err).WithField("message_id", messageID).Debug("Skipping message ID with no direct string")
-			}
+		if mt.Other == "" {
 			continue
 		}
-		translations[messageID] = translation
+		translations[messageID] = mt.Other
 	}
 	b.translationsCache[localeKey] = translations
 	return maps.Clone(translations)

@@ -118,6 +118,8 @@ function ChatSessionCore({
     handleSubmit,
     messageQueue,
     handleUnqueue,
+    removeQueueItem,
+    updateQueueItem,
   } = useChatInput()
 
   const isArchived = session?.status === 'archived'
@@ -340,6 +342,8 @@ function ChatSessionCore({
                       onSubmit={handleSubmit}
                       messageQueue={messageQueue}
                       onUnqueue={handleUnqueue}
+                      onRemoveQueueItem={removeQueueItem}
+                      onUpdateQueueItem={updateQueueItem}
                       containerClassName="pt-6 px-6"
                       formClassName="mx-auto"
                     />
@@ -399,6 +403,8 @@ function ChatSessionCore({
                   onSubmit={handleSubmit}
                   messageQueue={messageQueue}
                   onUnqueue={handleUnqueue}
+                  onRemoveQueueItem={removeQueueItem}
+                  onUpdateQueueItem={updateQueueItem}
                 />
               )}
             </>

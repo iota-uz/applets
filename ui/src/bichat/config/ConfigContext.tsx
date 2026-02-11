@@ -41,7 +41,7 @@ interface ConfigProviderProps {
  * Provides configuration to the BiChat library
  *
  * @param config - Configuration object (preferred method)
- * @param useGlobalConfig - If true, falls back to window.__BICHAT_CONTEXT__ when config is not provided
+ * @param useGlobalConfig - If true, falls back to window.__APPLET_CONTEXT__ when config is not provided
  * @param children - React children
  */
 export function ConfigProvider({ config, useGlobalConfig = false, children }: ConfigProviderProps) {
@@ -50,7 +50,7 @@ export function ConfigProvider({ config, useGlobalConfig = false, children }: Co
   if (config) {
     resolvedConfig = config
   } else if (useGlobalConfig && typeof window !== 'undefined') {
-    const globalContext = (window as any).__BICHAT_CONTEXT__
+    const globalContext = (window as any).__APPLET_CONTEXT__
     const globalCSRF = (window as any).__CSRF_TOKEN__
 
     if (globalContext) {

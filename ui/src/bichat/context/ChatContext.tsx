@@ -70,6 +70,8 @@ interface LastSendAttempt {
   options?: SendMessageOptions
 }
 
+const MAX_QUEUE_SIZE = 5
+
 const DEFAULT_RATE_LIMIT_CONFIG: RateLimiterConfig = {
   maxRequests: 20,
   windowMs: 60000,
@@ -118,6 +120,7 @@ export function ChatSessionProvider({
   const [message, setMessage] = useState('')
   const [inputError, setInputError] = useState<string | null>(null)
   const [messageQueue, setMessageQueue] = useState<QueuedMessage[]>([])
+  const messageQueueRef = useRef<QueuedMessage[]>([])
 
   // ── Rate limiter ───────────────────────────────────────────────────────
   const rateLimiterRef = useRef<RateLimiter>(
@@ -130,6 +133,8 @@ export function ChatSessionProvider({
 
   const messagingRef = useRef({ turns, pendingQuestion, loading })
   messagingRef.current = { turns, pendingQuestion, loading }
+
+  useEffect(() => { messageQueueRef.current = messageQueue }, [messageQueue])
 
   // ── Derived ────────────────────────────────────────────────────────────
   const sessionDebugUsage = useMemo(() => getSessionDebugUsage(turns), [turns])
@@ -399,6 +404,8 @@ export function ChatSessionProvider({
         return [...prev.slice(0, replaceIndex), tempTurn]
       })
 
+      let shouldDrainQueue = true
+
       try {
         let activeSessionId = curSessionId
         let shouldNavigateAfter = false
@@ -484,6 +491,7 @@ export function ChatSessionProvider({
         if (err instanceof Error && err.name === 'AbortError') {
           setMessage(content)
           clearStreamError()
+          shouldDrainQueue = false
           return
         }
 
@@ -494,11 +502,25 @@ export function ChatSessionProvider({
         setStreamError(normalized.userMessage)
         setStreamErrorRetryable(normalized.retryable)
         console.error('Send message error:', err)
+        shouldDrainQueue = false
       } finally {
         setLoading(false)
         setStreamingContent('')
         setIsStreaming(false)
         abortControllerRef.current = null
+
+        // Auto-drain: send next queued message if any (only on success)
+        if (shouldDrainQueue) {
+          const queue = messageQueueRef.current
+          if (queue.length > 0) {
+            const next = queue[0]
+            setMessageQueue(prev => prev.slice(1))
+            // Use setTimeout to avoid calling sendMessageDirect during its own cleanup
+            setTimeout(() => {
+              sendMessageDirect(next.content, next.attachments)
+            }, 0)
+          }
+        }
       }
     },
     [clearStreamError, dataSource, executeSlashCommand, setSessionError]
@@ -521,6 +543,23 @@ export function ChatSessionProvider({
     }
   }, [])
 
+  const enqueueMessage = useCallback((content: string, attachments: Attachment[]): boolean => {
+    if (messageQueueRef.current.length >= MAX_QUEUE_SIZE) {
+      setInputError('BiChat.Input.QueueFull')
+      return false
+    }
+    setMessageQueue(prev => [...prev, { content, attachments }])
+    return true
+  }, [])
+
+  const removeQueueItem = useCallback((index: number) => {
+    setMessageQueue(prev => prev.filter((_, i) => i !== index))
+  }, [])
+
+  const updateQueueItem = useCallback((index: number, content: string) => {
+    setMessageQueue(prev => prev.map((item, i) => i === index ? { ...item, content } : item))
+  }, [])
+
   const handleSubmit = useCallback(
     (e: React.FormEvent, attachments: Attachment[] = []) => {
       e.preventDefault()
@@ -538,9 +577,18 @@ export function ChatSessionProvider({
         preview: att.preview,
       }))
 
+      // Queue if currently generating
+      if (messagingRef.current.loading) {
+        const ok = enqueueMessage(message.trim(), convertedAttachments)
+        if (ok) {
+          setMessage('')
+        }
+        return
+      }
+
       sendMessageDirect(message, convertedAttachments)
     },
-    [clearStreamError, message, sendMessageDirect]
+    [clearStreamError, message, sendMessageDirect, enqueueMessage]
   )
 
   const handleUnqueue = useCallback(() => {
@@ -751,7 +799,10 @@ export function ChatSessionProvider({
     setInputError,
     handleSubmit,
     handleUnqueue,
-  }), [message, inputError, messageQueue, handleSubmit, handleUnqueue])
+    enqueueMessage,
+    removeQueueItem,
+    updateQueueItem,
+  }), [message, inputError, messageQueue, handleSubmit, handleUnqueue, enqueueMessage, removeQueueItem, updateQueueItem])
 
   return (
     <SessionCtx.Provider value={sessionValue}>

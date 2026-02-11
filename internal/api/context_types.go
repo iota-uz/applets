@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// InitialContext is serialized and injected into the frontend (e.g. window.__BICHAT_CONTEXT__).
+// InitialContext is serialized and injected into the frontend (e.g. window.__APPLET_CONTEXT__).
 type InitialContext struct {
 	User       UserContext             `json:"user"`
 	Tenant     TenantContext           `json:"tenant"`

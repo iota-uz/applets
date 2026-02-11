@@ -76,7 +76,7 @@ export type IotaContext = Omit<AppletInitialContext, 'config' | 'extensions'> & 
 
 declare global {
   interface Window {
-    __BICHAT_CONTEXT__: IotaContext
+    __APPLET_CONTEXT__: IotaContext
     __CSRF_TOKEN__: string
   }
 }

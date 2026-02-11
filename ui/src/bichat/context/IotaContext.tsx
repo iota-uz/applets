@@ -1,6 +1,6 @@
 /**
  * IOTA SDK integration context provider
- * Consumes server-side context from window.__BICHAT_CONTEXT__
+ * Consumes server-side context from window.__APPLET_CONTEXT__
  */
 
 import { createContext, useContext, ReactNode } from 'react'
@@ -14,10 +14,10 @@ interface IotaContextProviderProps {
 
 export function IotaContextProvider({ children }: IotaContextProviderProps) {
   // Read initial context from window object injected by server
-  const initialContext = window.__BICHAT_CONTEXT__
+  const initialContext = window.__APPLET_CONTEXT__
 
   if (!initialContext) {
-    throw new Error('BICHAT_CONTEXT not found. Ensure server injected context into window object.')
+    throw new Error('APPLET_CONTEXT not found. Ensure server injected context into window object.')
   }
 
   return (
@@ -39,7 +39,7 @@ export function useIotaContext(): IotaContextType {
  * Check if user has a specific permission
  */
 export function hasPermission(permission: string): boolean {
-  const context = window.__BICHAT_CONTEXT__
+  const context = window.__APPLET_CONTEXT__
   if (!context) {
     return false
   }

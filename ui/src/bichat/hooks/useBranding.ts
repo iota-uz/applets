@@ -2,7 +2,7 @@
  * Branding hook for UI customization.
  *
  * Provides access to branding configuration injected from the backend
- * via window.__BICHAT_CONTEXT__.extensions.branding
+ * via window.__APPLET_CONTEXT__.extensions.branding
  */
 
 import { useMemo } from 'react'

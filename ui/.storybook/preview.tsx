@@ -62,7 +62,7 @@ function seedGlobals() {
     },
   }
 
-  window.__BICHAT_CONTEXT__ = bichatContext
+  window.__APPLET_CONTEXT__ = bichatContext
   window.__CSRF_TOKEN__ = 'storybook-csrf-token'
 
   // Used by applet-core `AppletProvider` (windowKey-driven).

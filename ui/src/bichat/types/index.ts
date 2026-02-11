@@ -476,6 +476,9 @@ export interface ChatInputStateValue {
   setInputError: (error: string | null) => void
   handleSubmit: (e: React.FormEvent, attachments?: Attachment[]) => void
   handleUnqueue: () => { content: string; attachments: Attachment[] } | null
+  enqueueMessage: (content: string, attachments: Attachment[]) => boolean
+  removeQueueItem: (index: number) => void
+  updateQueueItem: (index: number, content: string) => void
 }
 
 // ============================================================================

@@ -71,7 +71,7 @@ export interface AppletProviderProps {
  * AppletProvider reads context from window global and provides it to hooks.
  *
  * Usage:
- * <AppletProvider windowKey="__BICHAT_CONTEXT__">
+ * <AppletProvider windowKey="__APPLET_CONTEXT__">
  *   <App />
  * </AppletProvider>
  */

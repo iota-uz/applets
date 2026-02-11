@@ -5,7 +5,7 @@ import type { InitialContext } from '../types'
  * This is a standalone version that doesn't require AppletProvider.
  *
  * Usage:
- * const context = useAppletContext('__BICHAT_CONTEXT__')
+ * const context = useAppletContext('__APPLET_CONTEXT__')
  *
  * Note: Prefer using AppletProvider + context hooks for better type safety
  * and testability. Use this hook only when provider setup is not possible.
