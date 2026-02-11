@@ -18,11 +18,11 @@ export function groupSessionsByDate(sessions: Session[], t?: (key: string) => st
 
   // Map internal keys to translation keys
   const dateLabels: Record<string, string> = {
-    'Today': translate('DateGroup.Today'),
-    'Yesterday': translate('DateGroup.Yesterday'),
-    'Last 7 Days': translate('DateGroup.Last7Days'),
-    'Last 30 Days': translate('DateGroup.Last30Days'),
-    'Older': translate('DateGroup.Older'),
+    'Today': translate('BiChat.DateGroup.Today'),
+    'Yesterday': translate('BiChat.DateGroup.Yesterday'),
+    'Last 7 Days': translate('BiChat.DateGroup.Last7Days'),
+    'Last 30 Days': translate('BiChat.DateGroup.Last30Days'),
+    'Older': translate('BiChat.DateGroup.Older'),
   }
 
   // Initialize all groups in the desired order
