@@ -67,6 +67,9 @@ func (b *ContextBuilder) getAllTranslations(locale language.Tag) map[string]stri
 
 	translations := make(map[string]string)
 	for messageID, mt := range localeMessages {
+		if mt == nil {
+			continue
+		}
 		if mode == api.TranslationModePrefixes {
 			matched := false
 			for _, p := range prefixes {
