@@ -60,6 +60,11 @@
       "import": "./dist/applet/vite.mjs",
       "require": "./dist/applet/vite.cjs"
     },
+    "./applet-runtime": {
+      "types": "./dist/applet-runtime/index.d.ts",
+      "import": "./dist/applet-runtime/index.mjs",
+      "require": "./dist/applet-runtime/index.cjs"
+    },
     "./tailwind/main.css": "./tailwind/main.css",
     "./tailwind/iota.css": "./tailwind/iota.css",
     "./tailwind/compiled.css": "./tailwind/compiled.css",

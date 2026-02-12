@@ -21,5 +21,6 @@ export default defineConfig({
     'node:module',
     'node:child_process',
     'node:os',
+    'node:async_hooks',
   ],
 })

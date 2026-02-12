@@ -7,4 +7,5 @@ export const sharedEntry = {
   'applet/core': 'ui/src/applet-core/index.ts',
   'applet/host': 'ui/src/applet-host/index.ts',
   'applet/devtools': 'ui/src/applet-devtools/index.ts',
+  'applet-runtime/index': 'ui/src/applet-runtime/index.ts',
 }

@@ -89,16 +89,6 @@ func (c *Controller) RegisterRoutes(router *mux.Router) {
 			appletRouter.Use(mw)
 		}
 	}
-	if config.RPC != nil {
-		rpcPath := strings.TrimSpace(config.RPC.Path)
-		if rpcPath == "" {
-			rpcPath = "/rpc"
-		}
-		if !strings.HasPrefix(rpcPath, "/") {
-			rpcPath = "/" + rpcPath
-		}
-		appletRouter.HandleFunc(rpcPath, c.handleRPC).Methods(http.MethodPost)
-	}
 	for _, p := range config.RoutePatterns {
 		p = strings.TrimSpace(p)
 		if p == "" {
