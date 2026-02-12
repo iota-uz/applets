@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
 
 import { db } from './db'
+import { files } from './files'
 import { jobs } from './jobs'
 import { kv } from './kv'
 import { secrets } from './secrets'
@@ -50,6 +51,13 @@ describe('kv/db wrappers', () => {
     await jobs.list()
     await jobs.cancel('job-1')
     await secrets.get('openai_api_key')
+    await files.store({
+      name: 'report.txt',
+      contentType: 'text/plain',
+      data: new Uint8Array([114, 101, 112, 111, 114, 116]),
+    })
+    await files.get('file-1')
+    await files.delete('file-1')
 
     expect(calledMethods).toEqual([
       'bichat.kv.get',
@@ -67,6 +75,9 @@ describe('kv/db wrappers', () => {
       'bichat.jobs.list',
       'bichat.jobs.cancel',
       'bichat.secrets.get',
+      'bichat.files.store',
+      'bichat.files.get',
+      'bichat.files.delete',
     ])
   })
 })
