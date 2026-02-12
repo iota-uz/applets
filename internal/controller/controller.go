@@ -83,13 +83,32 @@ func (c *Controller) RegisterRoutes(router *mux.Router) {
 	if c.devAssets != nil || config.Assets.FS != nil {
 		c.registerAssetRoutes(router, fullAssetsPath)
 	}
-	appletRouter := router.PathPrefix(c.applet.BasePath()).Subrouter()
-	if config.Middleware != nil {
-		for _, mw := range config.Middleware {
-			appletRouter.Use(mw)
+	pathRouter := router.PathPrefix(c.applet.BasePath()).Subrouter()
+	c.applyMiddleware(pathRouter, config.Middleware)
+	c.registerAppRoutes(pathRouter, config.RoutePatterns)
+
+	for _, host := range config.Hosts {
+		host = strings.TrimSpace(host)
+		if host == "" {
+			continue
 		}
+		hostRouter := router.Host(host).Subrouter()
+		if c.devAssets != nil || config.Assets.FS != nil {
+			c.registerAssetRoutes(hostRouter, config.Assets.BasePath)
+		}
+		c.applyMiddleware(hostRouter, config.Middleware)
+		c.registerAppRoutes(hostRouter, config.RoutePatterns)
 	}
-	for _, p := range config.RoutePatterns {
+}
+
+func (c *Controller) applyMiddleware(router *mux.Router, middleware []mux.MiddlewareFunc) {
+	for _, mw := range middleware {
+		router.Use(mw)
+	}
+}
+
+func (c *Controller) registerAppRoutes(router *mux.Router, routePatterns []string) {
+	for _, p := range routePatterns {
 		p = strings.TrimSpace(p)
 		if p == "" {
 			continue
@@ -97,9 +116,9 @@ func (c *Controller) RegisterRoutes(router *mux.Router) {
 		if !strings.HasPrefix(p, "/") {
 			p = "/" + p
 		}
-		appletRouter.HandleFunc(p, c.RenderApp).Methods(http.MethodGet, http.MethodHead)
+		router.HandleFunc(p, c.RenderApp).Methods(http.MethodGet, http.MethodHead)
 	}
-	appletRouter.HandleFunc("", c.RenderApp).Methods(http.MethodGet, http.MethodHead)
-	appletRouter.HandleFunc("/", c.RenderApp).Methods(http.MethodGet, http.MethodHead)
-	appletRouter.PathPrefix("/").HandlerFunc(c.RenderApp).Methods(http.MethodGet, http.MethodHead)
+	router.HandleFunc("", c.RenderApp).Methods(http.MethodGet, http.MethodHead)
+	router.HandleFunc("/", c.RenderApp).Methods(http.MethodGet, http.MethodHead)
+	router.PathPrefix("/").HandlerFunc(c.RenderApp).Methods(http.MethodGet, http.MethodHead)
 }

@@ -57,6 +57,7 @@ type Config struct {
 	Shell         ShellConfig
 	Router        AppletRouter
 	I18n          I18nConfig
+	Hosts         []string
 	RoutePatterns []string
 	CustomContext ContextExtender
 	Middleware    []mux.MiddlewareFunc
