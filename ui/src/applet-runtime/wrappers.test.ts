@@ -27,7 +27,49 @@ describe('kv/db wrappers', () => {
   it('routes kv/db helper calls to expected rpc methods', async () => {
     const calledMethods: string[] = []
 
-    globalThis.fetch = mock(async (_url: string, init: any) => {
+    globalThis.fetch = mock(async (url: string, init: any) => {
+      if (url.includes('/files/store')) {
+        calledMethods.push('__files.store')
+        return new Response(
+          JSON.stringify({
+            id: 'file-1',
+            name: 'report.txt',
+            contentType: 'text/plain',
+            size: 6,
+            path: '/tmp/file-1-report.txt',
+            createdAt: new Date().toISOString(),
+          }),
+          {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          },
+        )
+      }
+      if (url.includes('/files/get')) {
+        calledMethods.push('__files.get')
+        return new Response(
+          JSON.stringify({
+            id: 'file-1',
+            name: 'report.txt',
+            contentType: 'text/plain',
+            size: 6,
+            path: '/tmp/file-1-report.txt',
+            createdAt: new Date().toISOString(),
+          }),
+          {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          },
+        )
+      }
+      if (url.includes('/files/delete')) {
+        calledMethods.push('__files.delete')
+        return new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      }
+
       const body = JSON.parse(String(init.body))
       calledMethods.push(body.method)
       return new Response(JSON.stringify({ jsonrpc: '2.0', id: body.id, result: true }), {
@@ -79,9 +121,9 @@ describe('kv/db wrappers', () => {
       'bichat.jobs.list',
       'bichat.jobs.cancel',
       'bichat.secrets.get',
-      'bichat.files.store',
-      'bichat.files.get',
-      'bichat.files.delete',
+      '__files.store',
+      '__files.get',
+      '__files.delete',
       'bichat.ws.send',
     ])
   })

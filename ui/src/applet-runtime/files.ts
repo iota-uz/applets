@@ -1,3 +1,4 @@
+import { currentRequestOptional } from './context'
 import { engine } from './engine'
 
 export type StoredFile = {
@@ -9,6 +10,14 @@ export type StoredFile = {
   createdAt: string
 }
 
+function readEnv(name: string): string {
+  const value = process.env[name]
+  if (!value || value.trim() === '') {
+    throw new Error(`${name} is required`)
+  }
+  return value
+}
+
 function appletMethod(op: string): string {
   const appletID = process.env.IOTA_APPLET_ID
   if (!appletID || appletID.trim() === '') {
@@ -17,15 +26,65 @@ function appletMethod(op: string): string {
   return `${appletID}.files.${op}`
 }
 
-async function toBase64(data: Blob | ArrayBuffer | Uint8Array): Promise<string> {
+function buildEngineURL(pathname: string): string {
+  const socketPath = readEnv('IOTA_ENGINE_SOCKET')
+  const path = pathname.startsWith('/') ? pathname : `/${pathname}`
+  return `http://localhost${path}?socket=${encodeURIComponent(socketPath)}`
+}
+
+function forwardedHeaders(): Record<string, string> {
+  const request = currentRequestOptional()
+  const headers: Record<string, string> = {}
+  if (!request) {
+    return headers
+  }
+  const maybeForwardHeader = (headerName: string) => {
+    const value = request.headers.get(headerName)
+    if (value && value.trim() !== '') {
+      headers[headerName] = value
+    }
+  }
+  maybeForwardHeader('x-iota-tenant-id')
+  maybeForwardHeader('x-iota-user-id')
+  maybeForwardHeader('x-iota-request-id')
+  return headers
+}
+
+async function toBytes(data: Blob | ArrayBuffer | Uint8Array): Promise<Uint8Array> {
   if (data instanceof Blob) {
     const buffer = await data.arrayBuffer()
-    return Buffer.from(buffer).toString('base64')
+    return new Uint8Array(buffer)
   }
   if (data instanceof ArrayBuffer) {
-    return Buffer.from(data).toString('base64')
+    return new Uint8Array(data)
   }
-  return Buffer.from(data).toString('base64')
+  return data
+}
+
+async function toBase64(data: Blob | ArrayBuffer | Uint8Array): Promise<string> {
+  const bytes = await toBytes(data)
+  return Buffer.from(bytes).toString('base64')
+}
+
+async function requestFilesEndpoint<T>(
+  path: string,
+  options: RequestInit & { unix?: string; appletId: string },
+): Promise<T> {
+  const socketPath = readEnv('IOTA_ENGINE_SOCKET')
+  const headers = new Headers(options.headers)
+  headers.set('X-Iota-Applet-Id', options.appletId)
+  for (const [name, value] of Object.entries(forwardedHeaders())) {
+    headers.set(name, value)
+  }
+  const response = await fetch(buildEngineURL(path), {
+    ...options,
+    headers,
+    unix: socketPath,
+  } as any)
+  if (!response.ok) {
+    throw new Error(`files endpoint HTTP ${response.status}`)
+  }
+  return (await response.json()) as T
 }
 
 export const files = {
@@ -34,17 +93,50 @@ export const files = {
     contentType?: string
     data: Blob | ArrayBuffer | Uint8Array
   }): Promise<StoredFile> {
-    const dataBase64 = await toBase64(input.data)
-    return engine.call<StoredFile>(appletMethod('store'), {
-      name: input.name,
-      contentType: input.contentType ?? '',
-      dataBase64,
-    })
+    const appletID = readEnv('IOTA_APPLET_ID')
+    try {
+      const bytes = await toBytes(input.data)
+      const binary = Uint8Array.from(bytes)
+      return await requestFilesEndpoint<StoredFile>('/files/store', {
+        appletId: appletID,
+        method: 'POST',
+        headers: {
+          'X-Iota-File-Name': input.name,
+          'X-Iota-Content-Type': input.contentType ?? '',
+          'Content-Type': input.contentType ?? 'application/octet-stream',
+        },
+        body: new Blob([binary.buffer], { type: input.contentType ?? 'application/octet-stream' }),
+      })
+    } catch {
+      const dataBase64 = await toBase64(input.data)
+      return engine.call<StoredFile>(appletMethod('store'), {
+        name: input.name,
+        contentType: input.contentType ?? '',
+        dataBase64,
+      })
+    }
   },
-  get(id: string): Promise<StoredFile | null> {
-    return engine.call<StoredFile | null>(appletMethod('get'), { id })
+  async get(id: string): Promise<StoredFile | null> {
+    const appletID = readEnv('IOTA_APPLET_ID')
+    try {
+      return await requestFilesEndpoint<StoredFile | null>(`/files/get?id=${encodeURIComponent(id)}&applet=${encodeURIComponent(appletID)}`, {
+        appletId: appletID,
+        method: 'GET',
+      })
+    } catch {
+      return engine.call<StoredFile | null>(appletMethod('get'), { id })
+    }
   },
-  delete(id: string): Promise<boolean> {
-    return engine.call<boolean>(appletMethod('delete'), { id })
+  async delete(id: string): Promise<boolean> {
+    const appletID = readEnv('IOTA_APPLET_ID')
+    try {
+      const result = await requestFilesEndpoint<{ ok: boolean }>(`/files/delete?id=${encodeURIComponent(id)}&applet=${encodeURIComponent(appletID)}`, {
+        appletId: appletID,
+        method: 'DELETE',
+      })
+      return result.ok
+    } catch {
+      return engine.call<boolean>(appletMethod('delete'), { id })
+    }
   },
 }
