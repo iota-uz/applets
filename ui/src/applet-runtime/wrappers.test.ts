@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
 import { db } from './db'
 import { jobs } from './jobs'
 import { kv } from './kv'
+import { secrets } from './secrets'
 
 describe('kv/db wrappers', () => {
   const originalFetch = globalThis.fetch
@@ -48,6 +49,7 @@ describe('kv/db wrappers', () => {
     await jobs.schedule('0 * * * *', 'bichat.worker.schedule', { z: 2 })
     await jobs.list()
     await jobs.cancel('job-1')
+    await secrets.get('openai_api_key')
 
     expect(calledMethods).toEqual([
       'bichat.kv.get',
@@ -64,6 +66,7 @@ describe('kv/db wrappers', () => {
       'bichat.jobs.schedule',
       'bichat.jobs.list',
       'bichat.jobs.cancel',
+      'bichat.secrets.get',
     ])
   })
 })
