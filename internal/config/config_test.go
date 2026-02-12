@@ -15,6 +15,8 @@ func TestLoad(t *testing.T) {
 	require.NoError(t, os.MkdirAll(dir, 0755))
 
 	content := `
+version = 2
+
 [[dev.processes]]
 name = "air"
 command = "air"
@@ -48,6 +50,7 @@ base_path = "/bi-chat"
 
 func TestApplyDefaults(t *testing.T) {
 	cfg := &ProjectConfig{
+		Version: ConfigVersion,
 		Applets: map[string]*AppletConfig{
 			"alpha": {BasePath: "/alpha"},
 			"beta":  {BasePath: "/beta", Web: "custom/web"},
@@ -74,6 +77,7 @@ func TestApplyDefaults(t *testing.T) {
 
 func TestValidate_MissingBasePath(t *testing.T) {
 	cfg := &ProjectConfig{
+		Version: ConfigVersion,
 		Applets: map[string]*AppletConfig{
 			"myapp": {},
 		},
@@ -85,6 +89,7 @@ func TestValidate_MissingBasePath(t *testing.T) {
 
 func TestValidate_DuplicateVitePorts(t *testing.T) {
 	cfg := &ProjectConfig{
+		Version: ConfigVersion,
 		Applets: map[string]*AppletConfig{
 			"app1": {BasePath: "/a", Dev: &AppletDevConfig{VitePort: 5173}},
 			"app2": {BasePath: "/b", Dev: &AppletDevConfig{VitePort: 5173}},
@@ -100,6 +105,8 @@ func TestProcessEnv(t *testing.T) {
 	require.NoError(t, os.MkdirAll(dir, 0755))
 
 	content := `
+version = 2
+
 [[dev.processes]]
 name = "air"
 command = "air"

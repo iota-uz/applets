@@ -64,11 +64,13 @@ applet list                # list configured applets
 
 ## Configuration
 
-The CLI expects a project root where `.applets/config.toml` exists (or, for `applet deps check`, a repo with a `go.mod` for `github.com/iota-uz/iota-sdk` or `github.com/iota-uz/eai`).
+The CLI expects a project root where `.applets/config.toml` exists.
 
-Minimal `.applets/config.toml` — only `base_path` is required per applet:
+Minimal `.applets/config.toml` (schema v2):
 
 ```toml
+version = 2
+
 # Project-level dev processes
 [[dev.processes]]
 name = "air"
@@ -83,6 +85,16 @@ args = ["generate", "--watch"]
 # Applets: only base_path is required. Everything else is convention.
 [applets.bichat]
 base_path = "/bi-chat"
+
+[applets.bichat.engine]
+runtime = "off"
+
+[applets.bichat.engine.backends]
+kv = "memory"
+db = "memory"
+jobs = "memory"
+files = "local"
+secrets = "env"
 ```
 
 **Convention defaults:**
