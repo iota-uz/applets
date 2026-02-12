@@ -24,6 +24,10 @@ critical = true
 
 [applets.bichat]
 base_path = "/bi-chat"
+hosts = ["chat.example.com"]
+
+[applets.bichat.frontend]
+type = "ssr"
 
 [applets.bichat.engine]
 runtime = "bun"
@@ -46,6 +50,8 @@ url = "redis://localhost:6379"
 	assert.Equal(t, ConfigVersion, cfg.Version)
 	require.Contains(t, cfg.Applets, "bichat")
 	assert.Equal(t, "/bi-chat", cfg.Applets["bichat"].BasePath)
+	assert.Equal(t, []string{"chat.example.com"}, cfg.Applets["bichat"].Hosts)
+	assert.Equal(t, FrontendTypeSSR, cfg.Applets["bichat"].Frontend.Type)
 	assert.Equal(t, EngineRuntimeBun, cfg.Applets["bichat"].Engine.Runtime)
 	assert.Equal(t, "redis://localhost:6379", cfg.Applets["bichat"].Engine.Redis.URL)
 }
@@ -67,6 +73,7 @@ func TestEffectiveEngineConfig_DefaultsWhenMissing(t *testing.T) {
 	assert.Equal(t, JobsBackendMemory, engine.Backends.Jobs)
 	assert.Equal(t, FilesBackendLocal, engine.Backends.Files)
 	assert.Equal(t, SecretsBackendEnv, engine.Backends.Secrets)
+	assert.Equal(t, FrontendTypeStatic, cfg.Applets["alpha"].Frontend.Type)
 }
 
 func TestValidate_InvalidVersion(t *testing.T) {
@@ -121,6 +128,81 @@ func TestValidate_KVRedisRequiresURL(t *testing.T) {
 	err := Validate(cfg)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "redis.url is required")
+}
+
+func TestValidate_FilesS3RequiresCoreFields(t *testing.T) {
+	cfg := &ProjectConfig{
+		Version: ConfigVersion,
+		Applets: map[string]*AppletConfig{
+			"bichat": {
+				BasePath: "/bi-chat",
+				Engine: &AppletEngineConfig{
+					Backends: AppletEngineBackendsConfig{
+						Files: FilesBackendS3,
+					},
+				},
+			},
+		},
+	}
+	ApplyDefaults(cfg)
+	err := Validate(cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "engine.s3.bucket is required")
+}
+
+func TestValidate_SecretsRequiredRejectsBlankEntries(t *testing.T) {
+	cfg := &ProjectConfig{
+		Version: ConfigVersion,
+		Applets: map[string]*AppletConfig{
+			"bichat": {
+				BasePath: "/bi-chat",
+				Engine: &AppletEngineConfig{
+					Secrets: AppletEngineSecretsConfig{
+						Required: []string{"OPENAI_API_KEY", "  "},
+					},
+				},
+			},
+		},
+	}
+	ApplyDefaults(cfg)
+	err := Validate(cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "engine.secrets.required[1] must be non-empty")
+}
+
+func TestValidate_FrontendTypeEnum(t *testing.T) {
+	cfg := &ProjectConfig{
+		Version: ConfigVersion,
+		Applets: map[string]*AppletConfig{
+			"demo": {
+				BasePath: "/demo",
+				Frontend: &AppletFrontendConfig{
+					Type: "legacy",
+				},
+			},
+		},
+	}
+	ApplyDefaults(cfg)
+	err := Validate(cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "applets.demo.frontend.type must be one of [static, ssr]")
+}
+
+func TestValidate_FrontendSSRRequiresBunRuntime(t *testing.T) {
+	cfg := &ProjectConfig{
+		Version: ConfigVersion,
+		Applets: map[string]*AppletConfig{
+			"demo": {
+				BasePath: "/demo",
+				Frontend: &AppletFrontendConfig{Type: FrontendTypeSSR},
+				Engine:   &AppletEngineConfig{Runtime: EngineRuntimeOff},
+			},
+		},
+	}
+	ApplyDefaults(cfg)
+	err := Validate(cfg)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "frontend.type=ssr requires")
 }
 
 func TestLoadFromCWD_WalksUpToConfig(t *testing.T) {

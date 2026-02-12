@@ -63,6 +63,8 @@ async function postJSON(pathname: string, body: unknown, timeoutMs?: number): Pr
     maybeForwardHeader('x-iota-user-id')
     maybeForwardHeader('x-iota-permissions')
     maybeForwardHeader('x-iota-request-id')
+    maybeForwardHeader('cookie')
+    maybeForwardHeader('authorization')
   }
 
   const abortController = typeof timeoutMs === 'number' && timeoutMs > 0 ? new AbortController() : undefined

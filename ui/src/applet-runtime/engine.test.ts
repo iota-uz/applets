@@ -23,6 +23,8 @@ describe('engine.call', () => {
       expect(init.headers['x-iota-tenant-id']).toBe('tenant-1')
       expect(init.headers['x-iota-user-id']).toBe('user-1')
       expect(init.headers['x-iota-request-id']).toBe('req-1')
+      expect(init.headers.cookie).toBe('sid=abc123')
+      expect(init.headers.authorization).toBe('Bearer token-1')
 
       const body = JSON.parse(String(init.body))
       expect(body.method).toBe('bichat.kv.get')
@@ -44,6 +46,8 @@ describe('engine.call', () => {
         'x-iota-tenant-id': 'tenant-1',
         'x-iota-user-id': 'user-1',
         'x-iota-request-id': 'req-1',
+        cookie: 'sid=abc123',
+        authorization: 'Bearer token-1',
       },
     })
 

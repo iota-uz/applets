@@ -23,6 +23,9 @@ const (
 	EngineRuntimeOff = "off"
 	EngineRuntimeBun = "bun"
 
+	FrontendTypeStatic = "static"
+	FrontendTypeSSR    = "ssr"
+
 	KVBackendMemory = "memory"
 	KVBackendRedis  = "redis"
 
@@ -34,6 +37,7 @@ const (
 
 	FilesBackendLocal    = "local"
 	FilesBackendPostgres = "postgres"
+	FilesBackendS3       = "s3"
 
 	SecretsBackendEnv      = "env"
 	SecretsBackendPostgres = "postgres"
@@ -62,11 +66,18 @@ type ProcessConfig struct {
 
 // AppletConfig holds per-applet configuration.
 type AppletConfig struct {
-	BasePath string              `toml:"base_path"`
-	Web      string              `toml:"web"`
-	Dev      *AppletDevConfig    `toml:"dev"`
-	RPC      *AppletRPCConfig    `toml:"rpc"`
-	Engine   *AppletEngineConfig `toml:"engine"`
+	BasePath string                `toml:"base_path"`
+	Web      string                `toml:"web"`
+	Hosts    []string              `toml:"hosts"`
+	Frontend *AppletFrontendConfig `toml:"frontend"`
+	Dev      *AppletDevConfig      `toml:"dev"`
+	RPC      *AppletRPCConfig      `toml:"rpc"`
+	Engine   *AppletEngineConfig   `toml:"engine"`
+}
+
+// AppletFrontendConfig holds applet frontend runtime mode settings.
+type AppletFrontendConfig struct {
+	Type string `toml:"type"`
 }
 
 // AppletDevConfig holds applet-specific dev settings.
@@ -85,6 +96,7 @@ type AppletEngineConfig struct {
 	BunBin   string                     `toml:"bun_bin"`
 	Backends AppletEngineBackendsConfig `toml:"backends"`
 	Redis    AppletEngineRedisConfig    `toml:"redis"`
+	S3       AppletEngineS3Config       `toml:"s3"`
 	Files    AppletEngineFilesConfig    `toml:"files"`
 	Secrets  AppletEngineSecretsConfig  `toml:"secrets"`
 }
@@ -105,8 +117,18 @@ type AppletEngineFilesConfig struct {
 	Dir string `toml:"dir"`
 }
 
+type AppletEngineS3Config struct {
+	Bucket         string `toml:"bucket"`
+	Region         string `toml:"region"`
+	Endpoint       string `toml:"endpoint"`
+	AccessKeyEnv   string `toml:"access_key_env"`
+	SecretKeyEnv   string `toml:"secret_key_env"`
+	ForcePathStyle bool   `toml:"force_path_style"`
+}
+
 type AppletEngineSecretsConfig struct {
-	MasterKeyFile string `toml:"master_key_file"`
+	MasterKeyFile string   `toml:"master_key_file"`
+	Required      []string `toml:"required"`
 }
 
 const configDir = ".applets"
@@ -228,8 +250,15 @@ func withEngineDefaults(engine *AppletEngineConfig) AppletEngineConfig {
 		effective.Backends.Secrets = strings.TrimSpace(engine.Backends.Secrets)
 	}
 	effective.Redis.URL = strings.TrimSpace(engine.Redis.URL)
+	effective.S3.Bucket = strings.TrimSpace(engine.S3.Bucket)
+	effective.S3.Region = strings.TrimSpace(engine.S3.Region)
+	effective.S3.Endpoint = strings.TrimSpace(engine.S3.Endpoint)
+	effective.S3.AccessKeyEnv = strings.TrimSpace(engine.S3.AccessKeyEnv)
+	effective.S3.SecretKeyEnv = strings.TrimSpace(engine.S3.SecretKeyEnv)
+	effective.S3.ForcePathStyle = engine.S3.ForcePathStyle
 	effective.Files.Dir = strings.TrimSpace(engine.Files.Dir)
 	effective.Secrets.MasterKeyFile = strings.TrimSpace(engine.Secrets.MasterKeyFile)
+	effective.Secrets.Required = append([]string(nil), engine.Secrets.Required...)
 	return effective
 }
 
@@ -264,6 +293,12 @@ func ApplyDefaults(cfg *ProjectConfig) {
 		}
 		if applet.Dev == nil {
 			applet.Dev = &AppletDevConfig{}
+		}
+		if applet.Frontend == nil {
+			applet.Frontend = &AppletFrontendConfig{}
+		}
+		if strings.TrimSpace(applet.Frontend.Type) == "" {
+			applet.Frontend.Type = FrontendTypeStatic
 		}
 		if applet.Dev.VitePort == 0 {
 			applet.Dev.VitePort = DefaultViteBasePort + i
@@ -300,7 +335,7 @@ func validateAppletEngine(appletName string, cfg AppletEngineConfig) error {
 	if err := validateEnum(fmt.Sprintf("applets.%s.engine.backends.jobs", appletName), cfg.Backends.Jobs, JobsBackendMemory, JobsBackendPostgres); err != nil {
 		return err
 	}
-	if err := validateEnum(fmt.Sprintf("applets.%s.engine.backends.files", appletName), cfg.Backends.Files, FilesBackendLocal, FilesBackendPostgres); err != nil {
+	if err := validateEnum(fmt.Sprintf("applets.%s.engine.backends.files", appletName), cfg.Backends.Files, FilesBackendLocal, FilesBackendPostgres, FilesBackendS3); err != nil {
 		return err
 	}
 	if err := validateEnum(fmt.Sprintf("applets.%s.engine.backends.secrets", appletName), cfg.Backends.Secrets, SecretsBackendEnv, SecretsBackendPostgres); err != nil {
@@ -309,8 +344,27 @@ func validateAppletEngine(appletName string, cfg AppletEngineConfig) error {
 	if cfg.Backends.KV == KVBackendRedis && cfg.Redis.URL == "" {
 		return fmt.Errorf("applets.%s.engine.redis.url is required when backends.kv=redis", appletName)
 	}
+	if cfg.Backends.Files == FilesBackendS3 {
+		if cfg.S3.Bucket == "" {
+			return fmt.Errorf("applets.%s.engine.s3.bucket is required when backends.files=s3", appletName)
+		}
+		if cfg.S3.Region == "" {
+			return fmt.Errorf("applets.%s.engine.s3.region is required when backends.files=s3", appletName)
+		}
+		if cfg.S3.AccessKeyEnv == "" {
+			return fmt.Errorf("applets.%s.engine.s3.access_key_env is required when backends.files=s3", appletName)
+		}
+		if cfg.S3.SecretKeyEnv == "" {
+			return fmt.Errorf("applets.%s.engine.s3.secret_key_env is required when backends.files=s3", appletName)
+		}
+	}
 	if cfg.Backends.Secrets == SecretsBackendPostgres && cfg.Secrets.MasterKeyFile == "" {
 		return fmt.Errorf("applets.%s.engine.secrets.master_key_file is required when backends.secrets=postgres", appletName)
+	}
+	for i, name := range cfg.Secrets.Required {
+		if strings.TrimSpace(name) == "" {
+			return fmt.Errorf("applets.%s.engine.secrets.required[%d] must be non-empty", appletName, i)
+		}
 	}
 	return nil
 }
@@ -336,6 +390,21 @@ func Validate(cfg *ProjectConfig) error {
 		applet := cfg.Applets[name]
 		if applet.BasePath == "" {
 			return fmt.Errorf("applets.%s: base_path is required", name)
+		}
+		if applet.Frontend != nil {
+			frontendType := strings.TrimSpace(applet.Frontend.Type)
+			if frontendType == "" {
+				frontendType = FrontendTypeStatic
+			}
+			if err := validateEnum(fmt.Sprintf("applets.%s.frontend.type", name), frontendType, FrontendTypeStatic, FrontendTypeSSR); err != nil {
+				return err
+			}
+			if frontendType == FrontendTypeSSR {
+				engineCfg := withEngineDefaults(applet.Engine)
+				if engineCfg.Runtime != EngineRuntimeBun {
+					return fmt.Errorf("applets.%s.frontend.type=ssr requires applets.%s.engine.runtime=bun", name, name)
+				}
+			}
 		}
 		if applet.Dev != nil && applet.Dev.VitePort != 0 {
 			if other, ok := usedPorts[applet.Dev.VitePort]; ok {
