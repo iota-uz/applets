@@ -6,6 +6,7 @@ import { files } from './files'
 import { jobs } from './jobs'
 import { kv } from './kv'
 import { secrets } from './secrets'
+import { ws } from './ws'
 
 describe('kv/db wrappers', () => {
   const originalFetch = globalThis.fetch
@@ -41,7 +42,8 @@ describe('kv/db wrappers', () => {
     await kv.mget(['k1', 'k2'])
 
     await db.get('d1')
-    await db.query('messages')
+    await db.query('messages').collect()
+    await db.query('messages').first()
     await db.insert('messages', { text: 'hello' })
     await db.patch('d1', { text: 'patched' })
     await db.replace('d1', { text: 'replaced' })
@@ -58,6 +60,7 @@ describe('kv/db wrappers', () => {
     })
     await files.get('file-1')
     await files.delete('file-1')
+    await ws.send('conn-1', { hello: 'world' })
 
     expect(calledMethods).toEqual([
       'bichat.kv.get',
@@ -65,6 +68,7 @@ describe('kv/db wrappers', () => {
       'bichat.kv.del',
       'bichat.kv.mget',
       'bichat.db.get',
+      'bichat.db.query',
       'bichat.db.query',
       'bichat.db.insert',
       'bichat.db.patch',
@@ -78,6 +82,7 @@ describe('kv/db wrappers', () => {
       'bichat.files.store',
       'bichat.files.get',
       'bichat.files.delete',
+      'bichat.ws.send',
     ])
   })
 })

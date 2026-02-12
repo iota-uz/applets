@@ -1,0 +1,9 @@
+{
+  "name": "@iota-uz/create-applet",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "create-applet": "./index.mjs"
+  }
+}

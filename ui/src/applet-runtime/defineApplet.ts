@@ -1,4 +1,5 @@
 import { withRequestContext } from './context'
+import { dispatchBridgeEvent } from './ws'
 
 export type AppletDefinition = {
   fetch: (request: Request) => Response | Promise<Response>
@@ -31,7 +32,22 @@ export function defineApplet(definition: AppletDefinition): BunServeLike {
   }
   return bun.serve({
     unix: socketPath,
-    fetch: (request) => withRequestContext(request, () => definition.fetch(request)),
+    fetch: (request) =>
+      withRequestContext(request, async () => {
+        const url = new URL(request.url)
+        if (request.method === 'POST' && url.pathname === '/__ws') {
+          const payload = (await request.json()) as {
+            connectionId: string
+            event: 'open' | 'message' | 'close'
+            dataBase64?: string
+          }
+          await dispatchBridgeEvent(payload)
+          return new Response(JSON.stringify({ ok: true }), {
+            status: 202,
+            headers: { 'content-type': 'application/json; charset=utf-8' },
+          })
+        }
+        return definition.fetch(request)
+      }),
   })
 }
-
