@@ -7,6 +7,10 @@ export type ScheduledJob = {
   method: string
   params: unknown
   status: string
+  nextRunAt?: string
+  lastRunAt?: string
+  lastStatus?: string
+  lastError?: string
   createdAt?: string
   updatedAt?: string
 }
