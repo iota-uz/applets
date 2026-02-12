@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
 
 import { db } from './db'
+import { jobs } from './jobs'
 import { kv } from './kv'
 
 describe('kv/db wrappers', () => {
@@ -43,6 +44,10 @@ describe('kv/db wrappers', () => {
     await db.patch('d1', { text: 'patched' })
     await db.replace('d1', { text: 'replaced' })
     await db.delete('d1')
+    await jobs.enqueue('bichat.worker.run', { z: 1 })
+    await jobs.schedule('0 * * * *', 'bichat.worker.schedule', { z: 2 })
+    await jobs.list()
+    await jobs.cancel('job-1')
 
     expect(calledMethods).toEqual([
       'bichat.kv.get',
@@ -55,6 +60,10 @@ describe('kv/db wrappers', () => {
       'bichat.db.patch',
       'bichat.db.replace',
       'bichat.db.delete',
+      'bichat.jobs.enqueue',
+      'bichat.jobs.schedule',
+      'bichat.jobs.list',
+      'bichat.jobs.cancel',
     ])
   })
 })

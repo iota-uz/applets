@@ -3,4 +3,4 @@ export { auth, type CurrentUser } from './auth'
 export { engine } from './engine'
 export { kv } from './kv'
 export { db } from './db'
-
+export { jobs, type ScheduledJob } from './jobs'
