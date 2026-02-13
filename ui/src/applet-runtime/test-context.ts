@@ -144,6 +144,26 @@ export function createTestContext(options: TestContextOptions = {}) {
         return { _id: id, table: record.table, value: record.value } as T
       }
       case 'patch':
+      {
+        const id = String(params.id ?? '')
+        const current = dbStore.get(id)
+        if (!current) {
+          return null as T
+        }
+        const currentValue = current.value
+        const nextValue = params.value
+        const next: TestDocument = {
+          ...current,
+          value:
+            currentValue && typeof currentValue === 'object' && !Array.isArray(currentValue) &&
+            nextValue && typeof nextValue === 'object' && !Array.isArray(nextValue)
+              ? { ...(currentValue as Record<string, unknown>), ...(nextValue as Record<string, unknown>) }
+              : nextValue,
+          updatedAt: Date.now(),
+        }
+        dbStore.set(id, next)
+        return { _id: id, table: next.table, value: next.value } as T
+      }
       case 'replace': {
         const id = String(params.id ?? '')
         const current = dbStore.get(id)
@@ -309,6 +329,7 @@ export function createTestContext(options: TestContextOptions = {}) {
           kvStore.delete(scopedKey(key))
           return
         }
+        // Test KV store intentionally ignores positive TTL values; callers can still verify scopedKey+kvStore behavior.
         kvStore.set(scopedKey(key), value)
       },
       async del(key: string): Promise<boolean> {
@@ -360,4 +381,3 @@ export function createTestContext(options: TestContextOptions = {}) {
     },
   }
 }
-

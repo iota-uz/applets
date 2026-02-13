@@ -36,10 +36,34 @@ export function defineApplet(definition: AppletDefinition): BunServeLike {
       withRequestContext(request, async () => {
         const url = new URL(request.url)
         if (request.method === 'POST' && url.pathname === '/__ws') {
-          const payload = (await request.json()) as {
+          let payload: {
             connectionId: string
             event: 'open' | 'message' | 'close'
             dataBase64?: string
+          }
+          try {
+            payload = (await request.json()) as {
+              connectionId: string
+              event: 'open' | 'message' | 'close'
+              dataBase64?: string
+            }
+          } catch {
+            return new Response(JSON.stringify({ error: 'invalid_json' }), {
+              status: 400,
+              headers: { 'content-type': 'application/json; charset=utf-8' },
+            })
+          }
+          if (!payload?.connectionId || !payload?.event) {
+            return new Response(JSON.stringify({ error: 'invalid_payload' }), {
+              status: 400,
+              headers: { 'content-type': 'application/json; charset=utf-8' },
+            })
+          }
+          if (!['open', 'message', 'close'].includes(payload.event)) {
+            return new Response(JSON.stringify({ error: 'invalid_payload' }), {
+              status: 400,
+              headers: { 'content-type': 'application/json; charset=utf-8' },
+            })
           }
           await dispatchBridgeEvent(payload)
           return new Response(JSON.stringify({ ok: true }), {

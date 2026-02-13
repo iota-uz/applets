@@ -39,7 +39,12 @@ function responseJSON(payload, status = 200) {
 }
 
 function resolveScope(method) {
-  const appletId = method.split('.')[0] || process.env.APPLET_DEV_APPLET_ID || 'applet'
+  const fallbackAppletId = process.env.APPLET_DEV_APPLET_ID || 'applet'
+  const parts = String(method || '').split('.').filter(Boolean)
+  const appletId =
+    parts.length >= 3
+      ? parts[0]
+      : fallbackAppletId
   const tenantId = process.env.APPLET_DEV_TENANT_ID || 'dev-tenant'
   return { appletId, tenantId }
 }
@@ -130,7 +135,10 @@ function handleRPC(payload) {
       return rpcResult(id, dbStore.get(keyFor(scope, params.id)) ?? null)
     }
     if (op === 'query') {
-      const rows = [...dbStore.values()].filter((row) => row.table === params.table)
+      const prefix = `${scope.tenantId}::${scope.appletId}::`
+      const rows = [...dbStore.entries()]
+        .filter(([key, row]) => key.startsWith(prefix) && row.table === params.table)
+        .map(([, row]) => row)
       return rpcResult(id, rows)
     }
     if (op === 'patch' || op === 'replace') {
@@ -238,7 +246,17 @@ Bun.serve({
     const url = new URL(request.url)
     if (url.pathname === '/rpc' && request.method === 'POST') {
       const startedAt = Date.now()
-      const payload = await request.json()
+      let payload
+      try {
+        payload = await request.json()
+      } catch {
+        logRPC('<parse>', 'error', startedAt)
+        return responseJSON({
+          jsonrpc: '2.0',
+          id: null,
+          error: { code: -32700, message: 'Parse error' },
+        })
+      }
       if (Array.isArray(payload)) {
         const responses = payload.map((item) => {
           const method = String(item?.method || '').trim()

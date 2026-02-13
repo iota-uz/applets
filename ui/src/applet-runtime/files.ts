@@ -26,8 +26,7 @@ function appletMethod(op: string): string {
   return `${appletID}.files.${op}`
 }
 
-function buildEngineURL(pathname: string): string {
-  const socketPath = readEnv('IOTA_ENGINE_SOCKET')
+function buildEngineURL(pathname: string, socketPath: string): string {
   const path = pathname.startsWith('/') ? pathname : `/${pathname}`
   return `http://localhost${path}?socket=${encodeURIComponent(socketPath)}`
 }
@@ -76,7 +75,7 @@ async function requestFilesEndpoint<T>(
   for (const [name, value] of Object.entries(forwardedHeaders())) {
     headers.set(name, value)
   }
-  const response = await fetch(buildEngineURL(path), {
+  const response = await fetch(buildEngineURL(path, socketPath), {
     ...options,
     headers,
     unix: socketPath,
@@ -96,7 +95,10 @@ export const files = {
     const appletID = readEnv('IOTA_APPLET_ID')
     try {
       const bytes = await toBytes(input.data)
-      const binary = Uint8Array.from(bytes)
+      const exactBuffer =
+        bytes.buffer instanceof ArrayBuffer
+          ? bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
+          : Uint8Array.from(bytes).buffer
       return await requestFilesEndpoint<StoredFile>('/files/store', {
         appletId: appletID,
         method: 'POST',
@@ -105,9 +107,12 @@ export const files = {
           'X-Iota-Content-Type': input.contentType ?? '',
           'Content-Type': input.contentType ?? 'application/octet-stream',
         },
-        body: new Blob([binary.buffer], { type: input.contentType ?? 'application/octet-stream' }),
+        body: new Blob([exactBuffer], { type: input.contentType ?? 'application/octet-stream' }),
       })
-    } catch {
+    } catch (error) {
+      if (error instanceof TypeError || error instanceof ReferenceError) {
+        throw error
+      }
       const dataBase64 = await toBase64(input.data)
       return engine.call<StoredFile>(appletMethod('store'), {
         name: input.name,
@@ -123,7 +128,10 @@ export const files = {
         appletId: appletID,
         method: 'GET',
       })
-    } catch {
+    } catch (error) {
+      if (error instanceof TypeError || error instanceof ReferenceError) {
+        throw error
+      }
       return engine.call<StoredFile | null>(appletMethod('get'), { id })
     }
   },
@@ -135,7 +143,10 @@ export const files = {
         method: 'DELETE',
       })
       return result.ok
-    } catch {
+    } catch (error) {
+      if (error instanceof TypeError || error instanceof ReferenceError) {
+        throw error
+      }
       return engine.call<boolean>(appletMethod('delete'), { id })
     }
   },

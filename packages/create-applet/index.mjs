@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-import { mkdirSync, writeFileSync, existsSync } from 'node:fs'
-import { resolve, join } from 'node:path'
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs'
+import { resolve, join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 function fail(message) {
   console.error(message)
@@ -11,9 +12,25 @@ const name = (process.argv[2] || '').trim()
 if (!name) {
   fail('Usage: create-applet <name>')
 }
-if (!/^[a-z0-9-]+$/.test(name)) {
-  fail('Applet name must contain only lowercase letters, digits, and dashes.')
+if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(name)) {
+  fail('Applet name must start with a letter and contain lowercase letters, digits, and non-consecutive dashes.')
 }
+
+function readWorkspaceSDKVersion() {
+  try {
+    const scriptDir = dirname(fileURLToPath(import.meta.url))
+    const workspacePackagePath = resolve(scriptDir, '..', '..', 'package.json')
+    const pkg = JSON.parse(readFileSync(workspacePackagePath, 'utf8'))
+    const version = String(pkg?.version || '').trim()
+    if (version) {
+      return `^${version}`
+    }
+  } catch {
+    // Fallback to previous default if workspace package.json cannot be resolved.
+  }
+  return '^0.4.13'
+}
+const sdkVersion = readWorkspaceSDKVersion()
 
 const targetDir = resolve(process.cwd(), name)
 if (existsSync(targetDir)) {
@@ -126,7 +143,7 @@ writeFileSync(
         test: 'bun test/runtime.test.ts',
       },
       dependencies: {
-        '@iota-uz/sdk': '^0.4.13',
+        '@iota-uz/sdk': sdkVersion,
       },
     },
     null,

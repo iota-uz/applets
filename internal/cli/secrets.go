@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -99,6 +100,9 @@ DO UPDATE SET cipher_text = EXCLUDED.cipher_text, updated_at = NOW()
 	cmd.Flags().StringVar(&appletName, "name", "", "Applet name")
 	cmd.Flags().StringVar(&key, "key", "", "Secret key")
 	cmd.Flags().StringVar(&value, "value", "", "Secret value")
+	_ = cmd.MarkFlagRequired("name")
+	_ = cmd.MarkFlagRequired("key")
+	_ = cmd.MarkFlagRequired("value")
 	return cmd
 }
 
@@ -172,6 +176,7 @@ ORDER BY secret_name ASC
 		},
 	}
 	cmd.Flags().StringVar(&appletName, "name", "", "Applet name")
+	_ = cmd.MarkFlagRequired("name")
 	return cmd
 }
 
@@ -233,6 +238,8 @@ WHERE applet_id = $1 AND secret_name = $2
 	}
 	cmd.Flags().StringVar(&appletName, "name", "", "Applet name")
 	cmd.Flags().StringVar(&key, "key", "", "Secret key")
+	_ = cmd.MarkFlagRequired("name")
+	_ = cmd.MarkFlagRequired("key")
 	return cmd
 }
 
@@ -256,7 +263,7 @@ func resolvePath(root, value string) string {
 	if strings.HasPrefix(value, "/") {
 		return value
 	}
-	return strings.TrimSpace(root + string(os.PathSeparator) + value)
+	return filepath.Join(root, value)
 }
 
 func appletSecretEnvKey(appletName, key string) string {
