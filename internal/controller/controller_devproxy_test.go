@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"testing/fstest"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -203,4 +204,54 @@ func TestRegisterDevProxy_502WhenUpstreamReturns502(t *testing.T) {
 	router.ServeHTTP(rec, req)
 
 	require.Equal(t, http.StatusBadGateway, rec.Code, "proxy should pass through upstream 502")
+}
+
+func TestRegisterRoutes_HostBasedMountServesAppletAtRoot(t *testing.T) {
+	t.Parallel()
+
+	bundle := i18n.NewBundle(language.Russian)
+	bundle.RegisterUnmarshalFunc("json", json.Unmarshal)
+	bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
+
+	a := &testApplet{
+		name:     "chat",
+		basePath: "/bi-chat",
+		config: api.Config{
+			WindowGlobal: "__T__",
+			Shell:        api.ShellConfig{Mode: api.ShellModeStandalone, Title: "Test"},
+			Hosts:        []string{"chat.example.com"},
+			Assets: api.AssetConfig{
+				FS: fstest.MapFS{
+					"manifest.json":  {Data: []byte(`{"index.html":{"file":"assets/main.js","isEntry":true}}`)},
+					"assets/main.js": {Data: []byte("console.log('ok')")},
+				},
+				BasePath:     "/assets",
+				ManifestPath: "manifest.json",
+				Entrypoint:   "index.html",
+			},
+		},
+	}
+
+	c, err := New(a, bundle, api.DefaultSessionConfig, nil, nil, &testHostServices{})
+	require.NoError(t, err)
+	router := mux.NewRouter()
+	c.RegisterRoutes(router)
+
+	tenantID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	mockU := &mockUser{id: 1, email: "test@example.com", firstName: "Test", lastName: "User"}
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, testUserKey, api.AppletUser(mockU))
+	ctx = context.WithValue(ctx, testTenantIDKey, tenantID)
+	ctx = context.WithValue(ctx, testLocaleKey, language.English)
+
+	hostReq := httptest.NewRequest(http.MethodGet, "http://chat.example.com/", nil).WithContext(ctx)
+	hostRec := httptest.NewRecorder()
+	router.ServeHTTP(hostRec, hostReq)
+	require.Equal(t, http.StatusOK, hostRec.Code)
+	require.Contains(t, hostRec.Body.String(), "/assets/main.js")
+
+	rootReq := httptest.NewRequest(http.MethodGet, "http://localhost/", nil).WithContext(ctx)
+	rootRec := httptest.NewRecorder()
+	router.ServeHTTP(rootRec, rootReq)
+	require.Equal(t, http.StatusNotFound, rootRec.Code)
 }

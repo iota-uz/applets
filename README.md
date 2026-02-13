@@ -52,9 +52,13 @@ applet rpc gen --name <applet-name>
 applet rpc check --name <applet-name>
 applet deps check
 applet check               # deps + RPC drift for all applets
+applet schema export --name <applet>
 applet dev                 # start dev environment (all configured applets)
 applet build [name]        # build production bundle
 applet list                # list configured applets
+applet secrets set --name <applet> --key OPENAI_API_KEY --value ...
+applet secrets list --name <applet>
+applet secrets delete --name <applet> --key OPENAI_API_KEY
 ```
 
 - **Specific version:** `go install github.com/iota-uz/applets/cmd/applet@v0.4.4`
@@ -64,11 +68,13 @@ applet list                # list configured applets
 
 ## Configuration
 
-The CLI expects a project root where `.applets/config.toml` exists (or, for `applet deps check`, a repo with a `go.mod` for `github.com/iota-uz/iota-sdk` or `github.com/iota-uz/eai`).
+The CLI expects a project root where `.applets/config.toml` exists.
 
-Minimal `.applets/config.toml` — only `base_path` is required per applet:
+Minimal `.applets/config.toml` (schema v2):
 
 ```toml
+version = 2
+
 # Project-level dev processes
 [[dev.processes]]
 name = "air"
@@ -83,6 +89,20 @@ args = ["generate", "--watch"]
 # Applets: only base_path is required. Everything else is convention.
 [applets.bichat]
 base_path = "/bi-chat"
+hosts = ["chat.example.com"] # optional
+
+[applets.bichat.engine]
+runtime = "off"
+
+[applets.bichat.engine.backends]
+kv = "memory"
+db = "memory"
+jobs = "memory"
+files = "local"
+secrets = "env"
+
+[applets.bichat.frontend]
+type = "static" # static|ssr
 ```
 
 **Convention defaults:**
@@ -94,5 +114,9 @@ base_path = "/bi-chat"
 **Optional overrides:**
 - `web` — custom web directory path (rare)
 - `[applets.<name>.rpc] needs_reexport_shim = true` — for SDK applets that re-export RPC contracts
+- `hosts` — additional host-based mounts (subdomain/custom-domain)
+- `[applets.<name>.frontend] type = "static"|"ssr"` — SSR mode requires `engine.runtime = "bun"`
+- `[applets.<name>.engine.s3]` — required when `engine.backends.files = "s3"`
+- `[applets.<name>.engine.secrets] required = ["OPENAI_API_KEY"]` — startup-required secret keys
 
 Run `applet doctor` to validate config and environment.

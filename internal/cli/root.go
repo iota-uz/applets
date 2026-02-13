@@ -24,6 +24,8 @@ Requires .applets/config.toml at the project root.`,
   applet rpc gen --name bichat
   applet rpc check --name bichat
   applet deps check
+  applet schema export --name bichat
+  applet secrets set --name bichat --key OPENAI_API_KEY --value ...
   applet version`,
 		SilenceErrors: true,
 		SilenceUsage:  true,
@@ -46,6 +48,8 @@ Requires .applets/config.toml at the project root.`,
 	root.AddCommand(NewCheckCommand())
 	root.AddCommand(NewRPCCommand())
 	root.AddCommand(NewDepsCommand())
+	root.AddCommand(NewSchemaCommand())
+	root.AddCommand(NewSecretsCommand())
 
 	return root
 }

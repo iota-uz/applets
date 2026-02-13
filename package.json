@@ -60,6 +60,11 @@
       "import": "./dist/applet/vite.mjs",
       "require": "./dist/applet/vite.cjs"
     },
+    "./applet-runtime": {
+      "types": "./dist/applet-runtime/index.d.ts",
+      "import": "./dist/applet-runtime/index.mjs",
+      "require": "./dist/applet-runtime/index.cjs"
+    },
     "./tailwind/main.css": "./tailwind/main.css",
     "./tailwind/iota.css": "./tailwind/iota.css",
     "./tailwind/compiled.css": "./tailwind/compiled.css",
@@ -95,7 +100,8 @@
     "react-markdown": "^9.0.1",
     "react-syntax-highlighter": "^15.5.0",
     "rehype-sanitize": "^6.0.0",
-    "remark-gfm": "^4.0.0"
+    "remark-gfm": "^4.0.0",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@iota-uz/sdk": "0.3.x",

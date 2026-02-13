@@ -54,6 +54,19 @@ export default [
     },
   },
   {
+    files: ['ui/src/applet-runtime/**/*.test.ts'],
+    rules: {
+      '@typescript-eslint/ban-ts-comment': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  {
+    files: ['ui/src/applet-runtime/files.ts', 'ui/src/applet-runtime/schema.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  {
     files: ['ui/bichat/examples/**/*.ts', 'ui/bichat/examples/**/*.tsx'],
     languageOptions: {
       parserOptions: { ecmaFeatures: { jsx: true } },

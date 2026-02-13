@@ -13,5 +13,5 @@ export default defineConfig({
   clean: false,
   treeshake: false,
   splitting: false,
-  external: ['react', 'react-dom'],
+  external: ['react', 'react-dom', 'node:async_hooks'],
 })

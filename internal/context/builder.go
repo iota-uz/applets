@@ -111,11 +111,8 @@ func (b *ContextBuilder) Build(ctx context.Context, r *http.Request, basePath st
 	assetsBasePath := path.Join("/", strings.TrimPrefix(basePath, "/"), strings.TrimPrefix(assetsPath, "/"))
 	rpcPath := ""
 	if b.config.RPC != nil {
-		rpcPath = b.config.RPC.Path
-		if rpcPath == "" {
-			rpcPath = "/rpc"
-		}
-		rpcPath = path.Join("/", strings.TrimPrefix(basePath, "/"), strings.TrimPrefix(rpcPath, "/"))
+		// Global applet RPC endpoint is always exposed as /rpc.
+		rpcPath = "/rpc"
 	}
 
 	userCtx := api.UserContext{

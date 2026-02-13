@@ -29,8 +29,8 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 	root, cfg, err := config.LoadFromCWD()
 	if err != nil {
 		if errors.Is(err, config.ErrConfigNotFound) {
-			cmd.PrintErrln("No .applets/config.toml found (or project root with go.mod for iota-sdk/eai).")
-			cmd.PrintErrln("Run from the repo that contains the applet (e.g. iota-sdk or eai) or create .applets/config.toml.")
+			cmd.PrintErrln("No .applets/config.toml found.")
+			cmd.PrintErrln("Run from the repo root and ensure .applets/config.toml exists.")
 			return NewExitError(FailureCode, err)
 		}
 		return err

@@ -13,6 +13,7 @@ import (
 
 	"testing/fstest"
 
+	"github.com/gorilla/mux"
 	"github.com/iota-uz/applets/internal/api"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -94,6 +95,41 @@ func TestAppletController_DevProxy_SkipsManifestRequirements(t *testing.T) {
 	assert.Contains(t, scripts, "@react-refresh")
 	assert.Contains(t, scripts, "/@vite/client")
 	assert.Contains(t, scripts, "/src/main.tsx")
+}
+
+func TestAppletController_DoesNotMountPerAppletRPCRoute(t *testing.T) {
+	t.Parallel()
+
+	a := &testApplet{
+		name:     "t",
+		basePath: "/t",
+		config: api.Config{
+			WindowGlobal: "__T__",
+			Shell:        api.ShellConfig{Mode: api.ShellModeStandalone},
+			Assets: api.AssetConfig{
+				FS:           fstest.MapFS{"manifest.json": {Data: []byte(`{"index.html":{"file":"a.js","isEntry":true}}`)}, "a.js": {Data: []byte("console.log('ok')")}},
+				BasePath:     "/assets",
+				ManifestPath: "manifest.json",
+				Entrypoint:   "index.html",
+			},
+			RPC: &api.RPCConfig{
+				Path: "/rpc",
+				Methods: map[string]api.RPCMethod{
+					"t.ping": {Handler: func(ctx context.Context, params json.RawMessage) (any, error) { return map[string]any{"ok": true}, nil }},
+				},
+			},
+		},
+	}
+
+	c, err := New(a, nil, api.DefaultSessionConfig, nil, nil, &testHostServices{})
+	require.NoError(t, err)
+	r := mux.NewRouter()
+	c.RegisterRoutes(r)
+
+	req := httptest.NewRequest(http.MethodPost, "/t/rpc", bytes.NewBufferString(`{"id":"1","method":"t.ping","params":{}}`))
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
 func TestAppletController_RPC(t *testing.T) {
