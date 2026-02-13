@@ -3,6 +3,7 @@ package context
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -60,7 +61,7 @@ func TestBuild_UsesGlobalRPCEndpoint(t *testing.T) {
 		&builderTestHost{},
 	)
 
-	req := httptest.NewRequest("GET", "http://example.test/bi-chat", nil)
+	req := httptest.NewRequest(http.MethodGet, "http://example.test/bi-chat", nil)
 	initial, err := builder.Build(context.Background(), req, "/bi-chat")
 	require.NoError(t, err)
 	assert.Equal(t, "/rpc", initial.Config.RPCUIEndpoint)
@@ -84,8 +85,8 @@ func TestBuild_EmptyRPCEndpointWhenRPCDisabled(t *testing.T) {
 		&builderTestHost{},
 	)
 
-	req := httptest.NewRequest("GET", "http://example.test/bi-chat", nil)
+	req := httptest.NewRequest(http.MethodGet, "http://example.test/bi-chat", nil)
 	initial, err := builder.Build(context.Background(), req, "/bi-chat")
 	require.NoError(t, err)
-	assert.Equal(t, "", initial.Config.RPCUIEndpoint)
+	assert.Empty(t, initial.Config.RPCUIEndpoint)
 }

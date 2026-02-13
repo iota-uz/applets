@@ -299,7 +299,9 @@ func encryptWithMasterKey(rawMasterKey, plaintext string) (string, error) {
 		return "", fmt.Errorf("generate nonce: %w", err)
 	}
 	cipherText := gcm.Seal(nil, nonce, []byte(plaintext), nil)
-	payload := append(nonce, cipherText...)
+	payload := make([]byte, 0, len(nonce)+len(cipherText))
+	payload = append(payload, nonce...)
+	payload = append(payload, cipherText...)
 	return base64.StdEncoding.EncodeToString(payload), nil
 }
 
