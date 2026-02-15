@@ -132,7 +132,11 @@ const EditableText = forwardRef<EditableTextRef, EditableTextProps>(
       return (
         <div
           className="flex items-center gap-2 flex-1"
-          onClick={(e) => e.preventDefault()}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
         >
           <input
             ref={inputRef}
@@ -143,6 +147,8 @@ const EditableText = forwardRef<EditableTextRef, EditableTextProps>(
             onBlur={handleBlur}
             maxLength={maxLength}
             placeholder={resolvedPlaceholder}
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
             className={`flex-1 px-2 py-1 ${sizeClass} bg-white dark:bg-gray-700 border border-primary-500 dark:border-primary-600 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 dark:focus-visible:ring-primary-600/30 text-gray-900 dark:text-white ${inputClassName}`}
             aria-label={t('BiChat.EditableText.AriaLabel')}
           />

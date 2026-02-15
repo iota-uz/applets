@@ -30,6 +30,8 @@ export interface AssistantTurnViewProps {
   hideActions?: boolean
   /** Hide timestamp */
   hideTimestamp?: boolean
+  /** Whether regenerate action should be available */
+  allowRegenerate?: boolean
 }
 
 export function AssistantTurnView({
@@ -41,6 +43,7 @@ export function AssistantTurnView({
   hideAvatar,
   hideActions,
   hideTimestamp,
+  allowRegenerate = true,
 }: AssistantTurnViewProps) {
   const { debugMode } = useChatSession()
   const { handleCopy, handleRegenerate, pendingQuestion, sendMessage, loading } = useChatMessaging()
@@ -70,7 +73,7 @@ export function AssistantTurnView({
       slots={slots}
       classNames={classNames}
       onCopy={handleCopy}
-      onRegenerate={handleRegenerate}
+      onRegenerate={allowRegenerate ? handleRegenerate : undefined}
       onSendMessage={sendMessage}
       sendDisabled={loading || isStreaming}
       hideAvatar={hideAvatar}

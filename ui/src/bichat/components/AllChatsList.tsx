@@ -139,7 +139,11 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
   }, [chats, users, dataSource.listUsers])
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div
+      className="flex flex-col h-full overflow-hidden"
+      onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
       {/* Filter Controls */}
       <div className="px-4 py-3 space-y-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
         {/* User filter */}

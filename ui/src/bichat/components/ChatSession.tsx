@@ -138,11 +138,15 @@ function ChatSessionCore({
     setRestoring(true)
     try {
       await dataSource.unarchiveSession(session.id)
+      retryFetchSession()
+      window.dispatchEvent(new CustomEvent('bichat:sessions-updated', {
+        detail: { reason: 'restored', sessionId: session.id },
+      }))
       onSessionRestored?.(session.id)
     } finally {
       setRestoring(false)
     }
-  }, [dataSource, session?.id, onSessionRestored])
+  }, [dataSource, onSessionRestored, retryFetchSession, session?.id])
 
   const [artifactsPanelExpanded, setArtifactsPanelExpanded] = useState(
     artifactsPanelDefaultExpanded

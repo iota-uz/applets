@@ -40,8 +40,8 @@ function ConfirmModalBase({
   isDanger = false,
 }: ConfirmModalProps) {
   const { t } = useTranslation()
-  const resolvedConfirmText = confirmText ?? t('BiChat.Common.Confirm')
-  const resolvedCancelText = cancelText ?? t('BiChat.Common.Cancel')
+  const resolvedConfirmText = confirmText?.trim() ? confirmText : t('BiChat.Common.Confirm')
+  const resolvedCancelText = cancelText?.trim() ? cancelText : t('BiChat.Common.Cancel')
   return (
     <Dialog open={isOpen} onClose={onCancel} className="relative z-40">
       {/* Backdrop */}
