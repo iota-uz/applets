@@ -75,8 +75,9 @@ const SessionItem = memo<SessionItemProps>(
       setIsTouch('ontouchend' in document)
     }, [])
 
-    // Check if title is being generated (null, empty, or "New Chat")
-    const isTitleGenerating = !session.title || session.title === t('BiChat.Chat.NewChat')
+    // Only treat empty/whitespace title as generating.
+    // Non-empty placeholders should be displayed as-is.
+    const isTitleGenerating = !session.title?.trim()
 
     // Generate title from session (use existing title or show generating state)
     const displayTitle = isTitleGenerating ? t('BiChat.Common.Generating') : (session.title ?? t('BiChat.Common.Untitled'))

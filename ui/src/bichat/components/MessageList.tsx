@@ -141,10 +141,10 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
               renderAssistantTurn={renderAssistantTurn}
               userTurnProps={
                 readOnly
-                  ? { hideActions: true, allowEdit: false }
+                  ? { allowEdit: false }
                   : { allowEdit: index === turns.length - 1 }
               }
-              assistantTurnProps={readOnly ? { hideActions: true } : undefined}
+              assistantTurnProps={readOnly ? { allowRegenerate: false } : undefined}
             />
           ))}
           {/* Typing Indicator — shown while waiting for first token */}

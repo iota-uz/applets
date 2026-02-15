@@ -140,6 +140,7 @@ export default function Sidebar({
   const shouldReduceMotion = useReducedMotion()
   const sessionListRef = useRef<HTMLElement>(null)
   const searchContainerRef = useRef<HTMLDivElement>(null)
+  const refreshForActiveSessionRef = useRef<string | null>(null)
 
   // Collapse state — disabled when used as a mobile drawer (onClose present)
   const { isCollapsed, toggle, collapse } = useSidebarCollapse()
@@ -149,7 +150,7 @@ export default function Sidebar({
   const handleSidebarClick = useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
       if (!collapsible) return
-      const interactive = 'a, button, input, summary, [role="button"]'
+      const interactive = 'a, button, input, textarea, select, summary, label, [role="button"], [role="link"], [contenteditable="true"], [data-no-sidebar-toggle]'
       if ((e.target as HTMLElement).closest(interactive)) return
       toggle()
     },
@@ -229,6 +230,27 @@ export default function Sidebar({
     fetchSessions()
   }, [fetchSessions, refreshKey])
 
+  useEffect(() => {
+    if (!activeSessionId) {
+      refreshForActiveSessionRef.current = null
+      return
+    }
+    if (loading) return
+
+    const hasActiveSession = sessions.some((session) => session.id === activeSessionId)
+    if (hasActiveSession) {
+      if (refreshForActiveSessionRef.current === activeSessionId) {
+        refreshForActiveSessionRef.current = null
+      }
+      return
+    }
+
+    if (refreshForActiveSessionRef.current !== activeSessionId) {
+      refreshForActiveSessionRef.current = activeSessionId
+      setRefreshKey((k) => k + 1)
+    }
+  }, [activeSessionId, loading, sessions])
+
   // Poll for title updates on sessions with placeholder titles.
   // Use a stable boolean so that updating sessions inside the poll
   // does NOT re-trigger the effect (which would create overlapping intervals).
@@ -276,6 +298,9 @@ export default function Sidebar({
     try {
       await dataSource.archiveSession(sessionToArchive)
       setRefreshKey((k) => k + 1)
+      window.dispatchEvent(new CustomEvent('bichat:sessions-updated', {
+        detail: { reason: 'archived', sessionId: sessionToArchive },
+      }))
 
       if (wasCurrentSession) {
         onSessionSelect('')

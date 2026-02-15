@@ -60,13 +60,15 @@ export function ChatHeader({ session, onBack, readOnly, logoSlot, actionsSlot }:
     )
   }
 
+  const resolvedSessionTitle = session.title?.trim() || t('BiChat.Chat.NewChat')
+
   return (
     <header className="bichat-header border-b border-gray-200 dark:border-gray-700 px-4 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           {BackButton}
           {Logo}
-          <h1 className="text-lg font-semibold text-[var(--bichat-text)]">{session.title}</h1>
+          <h1 className="text-lg font-semibold text-[var(--bichat-text)]">{resolvedSessionTitle}</h1>
           {session.pinned && (
             <svg
               className="w-4 h-4 text-[var(--bichat-primary)]"
