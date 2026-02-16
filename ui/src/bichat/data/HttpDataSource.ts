@@ -375,7 +375,7 @@ export class HttpDataSource implements ChatDataSource {
   constructor(config: HttpDataSourceConfig) {
     this.config = {
       streamEndpoint: '/stream',
-      timeout: 30000,
+      timeout: 120000,
       ...config,
     }
     if (config.navigateToSession) {
