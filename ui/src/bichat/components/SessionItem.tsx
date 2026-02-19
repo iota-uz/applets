@@ -206,6 +206,10 @@ const SessionItem = memo<SessionItemProps>(
               onSelect(session.id)
             }}
             onKeyDown={(e) => {
+              const target = e.target as HTMLElement | null
+              const isFromEditable = !!target?.closest('input, textarea, [contenteditable="true"]')
+              if (isFromEditable) return
+
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
                 onSelect(session.id)

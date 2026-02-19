@@ -17,7 +17,8 @@ export function useTranslation() {
    */
   const t = useCallback(
     (key: string, params?: Record<string, string | number | boolean>): string => {
-      let text = translations[key] || key
+      const raw = translations[key]
+      let text = typeof raw === 'string' && raw.trim() ? raw : key
 
       // Simple interpolation: replace {{key}} with params[key]
       if (params) {
@@ -27,7 +28,7 @@ export function useTranslation() {
         })
       }
 
-      return text
+      return text.trim() ? text : key
     },
     [translations]
   )
