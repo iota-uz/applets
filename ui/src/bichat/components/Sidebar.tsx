@@ -231,6 +231,17 @@ export default function Sidebar({
   }, [fetchSessions, refreshKey])
 
   useEffect(() => {
+    const handleSessionsUpdated = () => {
+      setRefreshKey((k) => k + 1)
+    }
+
+    window.addEventListener('bichat:sessions-updated', handleSessionsUpdated)
+    return () => {
+      window.removeEventListener('bichat:sessions-updated', handleSessionsUpdated)
+    }
+  }, [])
+
+  useEffect(() => {
     if (!activeSessionId) {
       refreshForActiveSessionRef.current = null
       return
@@ -711,12 +722,13 @@ export default function Sidebar({
                   >
                     {onArchivedView && (
                       <MenuItem>
-                        {({ focus }) => (
+                        {({ focus, close }) => (
                           <button
                             onClick={(e) => {
                               e.preventDefault()
                               e.stopPropagation()
                               onArchivedView()
+                              close()
                             }}
                             className={`cursor-pointer flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-gray-600 dark:text-gray-300 transition-colors ${
                               focus ? 'bg-gray-100 dark:bg-gray-800/70' : ''
@@ -731,12 +743,13 @@ export default function Sidebar({
                     )}
                     {showAllChatsTab && activeTab !== 'all-chats' && (
                       <MenuItem>
-                        {({ focus }) => (
+                        {({ focus, close }) => (
                           <button
                             onClick={(e) => {
                               e.preventDefault()
                               e.stopPropagation()
                               setActiveTab('all-chats')
+                              close()
                             }}
                             className={`cursor-pointer flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-gray-600 dark:text-gray-300 transition-colors ${
                               focus ? 'bg-gray-100 dark:bg-gray-800/70' : ''
@@ -751,12 +764,13 @@ export default function Sidebar({
                     )}
                     {showAllChatsTab && activeTab === 'all-chats' && (
                       <MenuItem>
-                        {({ focus }) => (
+                        {({ focus, close }) => (
                           <button
                             onClick={(e) => {
                               e.preventDefault()
                               e.stopPropagation()
                               setActiveTab('my-chats')
+                              close()
                             }}
                             className={`cursor-pointer flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-gray-600 dark:text-gray-300 transition-colors ${
                               focus ? 'bg-gray-100 dark:bg-gray-800/70' : ''

@@ -82,7 +82,7 @@ func (b *ContextBuilder) getAllTranslations(locale language.Tag) map[string]stri
 				continue
 			}
 		}
-		if mt.Other == "" {
+		if strings.TrimSpace(mt.Other) == "" {
 			continue
 		}
 		translations[messageID] = mt.Other

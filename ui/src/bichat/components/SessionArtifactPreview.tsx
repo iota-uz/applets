@@ -78,6 +78,8 @@ function WarningBox({ message }: { message: string }) {
 
 function ArtifactActions({ url }: { url: string }) {
   const { t } = useTranslation()
+  const openLabel = t('BiChat.Artifacts.OpenInNewTab').trim() || 'Open'
+  const downloadLabel = t('BiChat.Artifacts.Download').trim() || 'Download'
 
   return (
     <div className="flex items-center gap-2">
@@ -88,7 +90,7 @@ function ArtifactActions({ url }: { url: string }) {
         className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
       >
         <ArrowSquareOut className="h-3.5 w-3.5" weight="bold" />
-        {t('BiChat.Artifacts.OpenInNewTab')}
+        {openLabel}
       </a>
       <a
         href={url}
@@ -98,7 +100,7 @@ function ArtifactActions({ url }: { url: string }) {
         className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-primary-700"
       >
         <DownloadSimple className="h-3.5 w-3.5" weight="bold" />
-        {t('BiChat.Artifacts.Download')}
+        {downloadLabel}
       </a>
     </div>
   )

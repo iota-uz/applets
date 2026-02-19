@@ -85,7 +85,11 @@ export default function ArchivedChatList({
     if (!sessionToRestore) return
 
     try {
-      await dataSource.unarchiveSession(sessionToRestore)
+      const restoredSessionID = sessionToRestore
+      await dataSource.unarchiveSession(restoredSessionID)
+      window.dispatchEvent(new CustomEvent('bichat:sessions-updated', {
+        detail: { reason: 'restored', sessionId: restoredSessionID },
+      }))
       setRefreshKey((k) => k + 1)
       toast.success(t('BiChat.Archived.ChatRestoredSuccessfully'))
     } catch (err) {

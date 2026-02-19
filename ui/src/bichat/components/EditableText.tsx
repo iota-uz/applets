@@ -109,6 +109,8 @@ const EditableText = forwardRef<EditableTextRef, EditableTextProps>(
     }
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      e.stopPropagation()
+
       if (e.key === 'Enter') {
         e.preventDefault()
         handleSave()
@@ -144,6 +146,7 @@ const EditableText = forwardRef<EditableTextRef, EditableTextProps>(
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyDown}
+            onKeyUp={(e) => e.stopPropagation()}
             onBlur={handleBlur}
             maxLength={maxLength}
             placeholder={resolvedPlaceholder}
