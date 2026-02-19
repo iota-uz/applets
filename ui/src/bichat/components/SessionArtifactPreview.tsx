@@ -78,8 +78,8 @@ function WarningBox({ message }: { message: string }) {
 
 function ArtifactActions({ url }: { url: string }) {
   const { t } = useTranslation()
-  const openLabel = t('BiChat.Artifacts.OpenInNewTab').trim() || 'Open'
-  const downloadLabel = t('BiChat.Artifacts.Download').trim() || 'Download'
+  const openLabel = t('BiChat.Artifacts.OpenInNewTab')
+  const downloadLabel = t('BiChat.Artifacts.Download')
 
   return (
     <div className="flex items-center gap-2">
