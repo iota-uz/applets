@@ -20,6 +20,17 @@ interface ErrorBoundaryState {
   error: Error | null
 }
 
+interface FallbackGuardProps {
+  primaryError: Error | null
+  onReset: () => void
+  renderFallback: () => ReactNode
+  onFallbackError?: (error: Error, errorInfo: ErrorInfo) => void
+}
+
+interface FallbackGuardState {
+  fallbackFailed: boolean
+}
+
 /**
  * Default error UI component
  */
@@ -77,6 +88,68 @@ function DefaultErrorContent({
   )
 }
 
+/**
+ * Hook-free emergency fallback used when the configured fallback crashes.
+ */
+function StaticEmergencyErrorContent({
+  error,
+  onReset,
+}: {
+  error: Error | null
+  onReset?: () => void
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center p-8 text-center min-h-[200px]">
+      <div className="relative flex flex-col items-center">
+        <div className="relative mb-5">
+          <div className="absolute inset-0 rounded-full bg-red-100 scale-150 blur-md" />
+          <div className="relative flex items-center justify-center w-14 h-14 rounded-full bg-red-50 border border-red-200/60">
+            <WarningCircle size={28} className="text-red-500" weight="fill" />
+          </div>
+        </div>
+
+        <h2 className="text-lg font-semibold text-gray-900 mb-1.5">Something went wrong</h2>
+        <p className="text-sm text-gray-500 mb-5 max-w-md leading-relaxed">
+          {error?.message || 'An unexpected UI error occurred.'}
+        </p>
+
+        {onReset && (
+          <button
+            type="button"
+            onClick={onReset}
+            className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-lg transition-colors shadow-sm text-sm font-medium"
+          >
+            <ArrowClockwise size={16} weight="bold" />
+            Try again
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+class FallbackGuard extends Component<FallbackGuardProps, FallbackGuardState> {
+  constructor(props: FallbackGuardProps) {
+    super(props)
+    this.state = { fallbackFailed: false }
+  }
+
+  static getDerivedStateFromError(): FallbackGuardState {
+    return { fallbackFailed: true }
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    this.props.onFallbackError?.(error, errorInfo)
+  }
+
+  render() {
+    if (this.state.fallbackFailed) {
+      return <StaticEmergencyErrorContent error={this.props.primaryError} onReset={this.props.onReset} />
+    }
+    return this.props.renderFallback()
+  }
+}
+
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props)
@@ -96,18 +169,37 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     this.setState({ hasError: false, error: null })
   }
 
+  handleFallbackError = (error: Error, errorInfo: ErrorInfo) => {
+    console.error('React Error Boundary fallback crashed:', {
+      primaryError: this.state.error,
+      fallbackError: error,
+      errorInfo,
+    })
+    this.props.onError?.(error, errorInfo)
+  }
+
   render() {
     if (this.state.hasError) {
-      // Custom fallback
-      if (this.props.fallback) {
-        if (typeof this.props.fallback === 'function') {
-          return this.props.fallback(this.state.error, this.handleReset)
-        }
-        return this.props.fallback
-      }
+      return (
+        <FallbackGuard
+          key={`${this.state.error?.name ?? 'Error'}:${this.state.error?.message ?? ''}`}
+          primaryError={this.state.error}
+          onReset={this.handleReset}
+          onFallbackError={this.handleFallbackError}
+          renderFallback={() => {
+            // Custom fallback
+            if (this.props.fallback) {
+              if (typeof this.props.fallback === 'function') {
+                return this.props.fallback(this.state.error, this.handleReset)
+              }
+              return this.props.fallback
+            }
 
-      // Default error UI
-      return <DefaultErrorContent error={this.state.error} onReset={this.handleReset} />
+            // Default error UI
+            return <DefaultErrorContent error={this.state.error} onReset={this.handleReset} />
+          }}
+        />
+      )
     }
 
     return this.props.children

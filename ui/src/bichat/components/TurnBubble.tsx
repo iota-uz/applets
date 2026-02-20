@@ -76,8 +76,9 @@ export function TurnBubble({
     userTurn: classNames?.userTurn ?? defaultClassNames.userTurn,
     assistantTurn: classNames?.assistantTurn ?? defaultClassNames.assistantTurn,
   }
+  const userContent = typeof turn.userTurn?.content === 'string' ? turn.userTurn.content : ''
   const isSystemSummaryTurn =
-    turn.userTurn.content.trim() === '' && turn.assistantTurn?.role === 'system'
+    userContent.trim() === '' && turn.assistantTurn?.role === 'system'
 
   return (
     <div className={classes.root} data-turn-id={turn.id}>

@@ -97,25 +97,343 @@ function toSessionArtifact(artifact: RPCArtifact): SessionArtifact {
   }
 }
 
-function toPendingQuestion(
-  rpc: RPCPendingQuestion | null | undefined
-): PendingQuestion | null {
-  if (!rpc) return null
+function warnMalformedSessionPayload(message: string, details?: Record<string, unknown>): void {
+  console.warn(`[BiChat] ${message}`, details || {})
+}
 
-  const questions: Question[] = (rpc.questions || []).map((q) => ({
-    id: q.id,
-    text: q.text,
-    type: q.type as 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE',
-    options: (q.options || []).map((o) => ({
-      id: o.id,
-      label: o.label,
-      value: o.label,
-    })),
-  }))
+function readString(value: unknown, fallback = ''): string {
+  return typeof value === 'string' ? value : fallback
+}
+
+function readNonEmptyString(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : null
+}
+
+function readFiniteNumber(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback
+}
+
+function readOptionalFiniteNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
+}
+
+function normalizeQuestionType(rawType: unknown): 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' {
+  const normalized = readString(rawType).trim().toUpperCase().replace(/[\s-]+/g, '_')
+  return normalized === 'MULTIPLE_CHOICE' ? 'MULTIPLE_CHOICE' : 'SINGLE_CHOICE'
+}
+
+function normalizeMessageRole(rawRole: unknown): MessageRole {
+  const normalized = readString(rawRole).trim().toLowerCase()
+  if (normalized === MessageRole.User) return MessageRole.User
+  if (normalized === MessageRole.System) return MessageRole.System
+  if (normalized === MessageRole.Tool) return MessageRole.Tool
+  return MessageRole.Assistant
+}
+
+function sanitizeAttachment(rawAttachment: unknown, turnId: string, index: number): Attachment | null {
+  if (!isRecord(rawAttachment)) {
+    warnMalformedSessionPayload('Dropped malformed attachment entry', { turnId, index })
+    return null
+  }
+
+  const filename = readString(rawAttachment.filename, 'attachment')
+  const mimeType = readString(rawAttachment.mimeType, 'application/octet-stream')
+  const id = readNonEmptyString(rawAttachment.id) || undefined
+  const clientKey =
+    readNonEmptyString(rawAttachment.clientKey) ||
+    id ||
+    `${turnId}-attachment-${index}`
 
   return {
-    id: rpc.checkpointId,
-    turnId: rpc.turnId || '',
+    id,
+    clientKey,
+    filename,
+    mimeType,
+    sizeBytes: readFiniteNumber(rawAttachment.sizeBytes),
+    base64Data: readNonEmptyString(rawAttachment.base64Data) || undefined,
+    url: readNonEmptyString(rawAttachment.url) || undefined,
+    preview: readNonEmptyString(rawAttachment.preview) || undefined,
+  }
+}
+
+function sanitizeUserAttachments(rawAttachments: unknown, turnId: string): Attachment[] {
+  if (!Array.isArray(rawAttachments)) return []
+  const result: Attachment[] = []
+  for (let i = 0; i < rawAttachments.length; i++) {
+    const sanitized = sanitizeAttachment(rawAttachments[i], turnId, i)
+    if (sanitized) result.push(sanitized)
+  }
+  return result
+}
+
+function sanitizeAssistantArtifacts(rawArtifacts: unknown, turnId: string): DownloadArtifact[] {
+  if (!Array.isArray(rawArtifacts)) return []
+  const artifacts: DownloadArtifact[] = []
+  for (let i = 0; i < rawArtifacts.length; i++) {
+    const raw = rawArtifacts[i]
+    if (!isRecord(raw)) {
+      warnMalformedSessionPayload('Dropped malformed assistant artifact', { turnId, index: i })
+      continue
+    }
+    const type = readString(raw.type).toLowerCase()
+    if (type !== 'excel' && type !== 'pdf') {
+      continue
+    }
+    const url = readNonEmptyString(raw.url)
+    if (!url) {
+      warnMalformedSessionPayload('Dropped assistant artifact without url', { turnId, index: i })
+      continue
+    }
+    artifacts.push({
+      type,
+      filename: readString(raw.filename, 'download'),
+      url,
+      sizeReadable: readNonEmptyString(raw.sizeReadable) || undefined,
+      rowCount:
+        typeof raw.rowCount === 'number' && Number.isFinite(raw.rowCount) ? raw.rowCount : undefined,
+      description: readNonEmptyString(raw.description) || undefined,
+    })
+  }
+  return artifacts
+}
+
+function sanitizeAssistantTurn(
+  rawAssistantTurn: unknown,
+  fallbackCreatedAt: string,
+  turnId: string
+): AssistantTurn | undefined {
+  if (rawAssistantTurn == null) return undefined
+  if (!isRecord(rawAssistantTurn)) {
+    warnMalformedSessionPayload('Dropped malformed assistant turn payload', { turnId })
+    return undefined
+  }
+
+  const assistantID = readNonEmptyString(rawAssistantTurn.id)
+  if (!assistantID) {
+    warnMalformedSessionPayload('Dropped assistant turn without id', { turnId })
+    return undefined
+  }
+
+  const citations = Array.isArray(rawAssistantTurn.citations)
+    ? rawAssistantTurn.citations
+      .filter((item) => isRecord(item))
+      .map((item, index) => ({
+        id: readString(item.id, `${assistantID}-citation-${index}`),
+        type: readString(item.type),
+        title: readString(item.title),
+        url: readString(item.url),
+        startIndex: readFiniteNumber(item.startIndex),
+        endIndex: readFiniteNumber(item.endIndex),
+        excerpt: readNonEmptyString(item.excerpt) || undefined,
+      }))
+    : []
+
+  const toolCalls = Array.isArray(rawAssistantTurn.toolCalls)
+    ? rawAssistantTurn.toolCalls
+      .filter((item) => isRecord(item))
+      .map((item, index) => ({
+        id: readString(item.id, `${assistantID}-tool-${index}`),
+        name: readString(item.name),
+        arguments: readString(item.arguments),
+        result: readNonEmptyString(item.result) || undefined,
+        error: readNonEmptyString(item.error) || undefined,
+        durationMs: readFiniteNumber(item.durationMs),
+      }))
+    : []
+
+  const codeOutputs = Array.isArray(rawAssistantTurn.codeOutputs)
+    ? rawAssistantTurn.codeOutputs
+      .filter((item) => isRecord(item))
+      .map((item) => ({
+        type: ((): 'image' | 'text' | 'error' => {
+          const normalizedType = readString(item.type, 'text').toLowerCase()
+          if (normalizedType === 'image' || normalizedType === 'error') return normalizedType
+          return 'text'
+        })(),
+        content: readString(item.content),
+        filename: readNonEmptyString(item.filename) || undefined,
+        mimeType: readNonEmptyString(item.mimeType) || undefined,
+        sizeBytes: readOptionalFiniteNumber(item.sizeBytes),
+      }))
+    : []
+
+  const debugTrace = isRecord(rawAssistantTurn.debug)
+    ? {
+      generationMs: readOptionalFiniteNumber(rawAssistantTurn.debug.generationMs),
+      usage: isRecord(rawAssistantTurn.debug.usage)
+        ? {
+          promptTokens: readFiniteNumber(rawAssistantTurn.debug.usage.promptTokens),
+          completionTokens: readFiniteNumber(rawAssistantTurn.debug.usage.completionTokens),
+          totalTokens: readFiniteNumber(rawAssistantTurn.debug.usage.totalTokens),
+          cachedTokens: readOptionalFiniteNumber(rawAssistantTurn.debug.usage.cachedTokens),
+          cost: readOptionalFiniteNumber(rawAssistantTurn.debug.usage.cost),
+        }
+        : undefined,
+      tools: Array.isArray(rawAssistantTurn.debug.tools)
+        ? rawAssistantTurn.debug.tools
+          .filter((tool) => isRecord(tool))
+          .map((tool) => ({
+            callId: readNonEmptyString(tool.callId) || undefined,
+            name: readString(tool.name),
+            arguments: readNonEmptyString(tool.arguments) || undefined,
+            result: readNonEmptyString(tool.result) || undefined,
+            error: readNonEmptyString(tool.error) || undefined,
+            durationMs: readOptionalFiniteNumber(tool.durationMs),
+          }))
+        : [],
+    }
+    : undefined
+
+  return {
+    id: assistantID,
+    role: normalizeMessageRole(rawAssistantTurn.role),
+    content: readString(rawAssistantTurn.content),
+    explanation: readNonEmptyString(rawAssistantTurn.explanation) || undefined,
+    citations,
+    toolCalls,
+    chartData: undefined,
+    artifacts: sanitizeAssistantArtifacts(rawAssistantTurn.artifacts, turnId),
+    codeOutputs,
+    debug: debugTrace,
+    createdAt: readString(rawAssistantTurn.createdAt, fallbackCreatedAt),
+  }
+}
+
+function sanitizeConversationTurn(rawTurn: unknown, index: number, fallbackSessionID: string): ConversationTurn | null {
+  if (!isRecord(rawTurn)) {
+    warnMalformedSessionPayload('Dropped malformed turn payload (not an object)', { index })
+    return null
+  }
+
+  if (!isRecord(rawTurn.userTurn)) {
+    warnMalformedSessionPayload('Dropped malformed turn payload (missing user turn)', { index })
+    return null
+  }
+
+  const userTurnID = readNonEmptyString(rawTurn.userTurn.id)
+  if (!userTurnID) {
+    warnMalformedSessionPayload('Dropped malformed turn payload (missing user turn id)', { index })
+    return null
+  }
+
+  const turnID = readString(rawTurn.id, userTurnID)
+  const createdAt = readString(
+    rawTurn.createdAt,
+    readString(rawTurn.userTurn.createdAt, new Date().toISOString())
+  )
+
+  return {
+    id: turnID,
+    sessionId: readString(rawTurn.sessionId, fallbackSessionID),
+    userTurn: {
+      id: userTurnID,
+      content: readString(rawTurn.userTurn.content),
+      attachments: sanitizeUserAttachments(rawTurn.userTurn.attachments, turnID),
+      createdAt: readString(rawTurn.userTurn.createdAt, createdAt),
+    },
+    assistantTurn: sanitizeAssistantTurn(rawTurn.assistantTurn, createdAt, turnID),
+    createdAt,
+  }
+}
+
+function sanitizeConversationTurns(rawTurns: unknown, sessionID: string): ConversationTurn[] {
+  if (!Array.isArray(rawTurns)) {
+    warnMalformedSessionPayload('Session payload contained non-array turns field', { sessionID })
+    return []
+  }
+
+  const turns: ConversationTurn[] = []
+  let dropped = 0
+  for (let i = 0; i < rawTurns.length; i++) {
+    const sanitizedTurn = sanitizeConversationTurn(rawTurns[i], i, sessionID)
+    if (sanitizedTurn) {
+      turns.push(sanitizedTurn)
+    } else {
+      dropped++
+    }
+  }
+
+  if (dropped > 0) {
+    warnMalformedSessionPayload('Dropped malformed turns from session payload', {
+      sessionID,
+      dropped,
+      total: rawTurns.length,
+    })
+  }
+
+  return turns
+}
+
+function sanitizePendingQuestion(
+  rawPendingQuestion: RPCPendingQuestion | null | undefined,
+  sessionID: string
+): PendingQuestion | null {
+  if (!rawPendingQuestion) return null
+
+  const checkpointID = readNonEmptyString(rawPendingQuestion.checkpointId)
+  if (!checkpointID) {
+    warnMalformedSessionPayload('Dropped malformed pendingQuestion without checkpointId', { sessionID })
+    return null
+  }
+
+  if (!Array.isArray(rawPendingQuestion.questions)) {
+    warnMalformedSessionPayload('Pending question had non-array questions payload', {
+      sessionID,
+      checkpointID,
+    })
+  }
+
+  const questions: Question[] = Array.isArray(rawPendingQuestion.questions)
+    ? rawPendingQuestion.questions
+      .filter((question) => {
+        if (!question || !isRecord(question)) {
+          warnMalformedSessionPayload('Dropped malformed question from pendingQuestion', {
+            sessionID,
+            checkpointID,
+          })
+          return false
+        }
+        return true
+      })
+      .map((question, index) => {
+        const questionID = readString(question.id, `${checkpointID}-q-${index}`)
+        const options = Array.isArray(question.options)
+          ? question.options
+            .filter((option) => {
+              if (!option || !isRecord(option)) {
+                warnMalformedSessionPayload('Dropped malformed pendingQuestion option', {
+                  sessionID,
+                  checkpointID,
+                  questionID,
+                })
+                return false
+              }
+              return true
+            })
+            .map((option, optionIndex) => {
+              const label = readString(option.label)
+              return {
+                id: readString(option.id, `${questionID}-opt-${optionIndex}`),
+                label,
+                value: label,
+              }
+            })
+          : []
+
+        return {
+          id: questionID,
+          text: readString(question.text),
+          type: normalizeQuestionType(question.type),
+          options,
+        }
+      })
+    : []
+
+  return {
+    id: checkpointID,
+    turnId: readString(rawPendingQuestion.turnId),
     questions,
     status: 'PENDING',
   }
@@ -445,12 +763,24 @@ export class HttpDataSource implements ChatDataSource {
         }),
       ])
 
-      const turns = attachArtifactsToTurns(normalizeTurns(data.turns as ConversationTurn[]), artifactsData.artifacts || [])
+      const sanitizedTurns = sanitizeConversationTurns(data.turns, id)
+      const turns = attachArtifactsToTurns(
+        normalizeTurns(sanitizedTurns),
+        artifactsData.artifacts || []
+      )
+      const pendingQuestion = sanitizePendingQuestion(data.pendingQuestion, id)
+
+      if (data.pendingQuestion && pendingQuestion && pendingQuestion.questions.length === 0) {
+        warnMalformedSessionPayload('Pending question normalized to zero renderable questions', {
+          sessionID: id,
+          checkpointID: pendingQuestion.id,
+        })
+      }
 
       return {
         session: toSession(data.session),
         turns,
-        pendingQuestion: toPendingQuestion(data.pendingQuestion),
+        pendingQuestion,
       }
     } catch (err) {
       if (isSessionNotFoundError(err)) {

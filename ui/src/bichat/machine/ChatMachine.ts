@@ -395,6 +395,10 @@ export class ChatMachine {
 
   /** Sets turns from fetch, preserving pending user-only turns if server hasn't caught up. */
   private _setTurnsFromFetch(fetchedTurns: ConversationTurn[]): void {
+    if (!Array.isArray(fetchedTurns)) {
+      console.warn('[ChatMachine] Ignoring malformed turns payload from fetchSession')
+      return
+    }
     const prev = this.state.messaging.turns
     const hasPendingUserOnly = prev.length > 0 && !prev[prev.length - 1].assistantTurn
     if (hasPendingUserOnly && (!fetchedTurns || fetchedTurns.length === 0)) {
@@ -857,6 +861,7 @@ export class ChatMachine {
     const curPendingQuestion = this.state.messaging.pendingQuestion
     if (!curSessionId || !curPendingQuestion) return
 
+    const previousTurns = this.state.messaging.turns
     this._updateMessaging({ loading: true })
     this._updateSession({ error: null, errorRetryable: false })
     const previousPendingQuestion = curPendingQuestion
@@ -876,19 +881,33 @@ export class ChatMachine {
             const fetchResult = await this.dataSource.fetchSession(curSessionId)
             if (this.disposed) return
             if (fetchResult) {
-              this._updateMessaging({
-                turns: fetchResult.turns,
-                pendingQuestion: fetchResult.pendingQuestion || null,
-              })
+              this._updateSession({ session: fetchResult.session })
+              this._updateMessaging({ pendingQuestion: fetchResult.pendingQuestion || null })
+
+              const hasMalformedRefresh =
+                previousTurns.length > 0 &&
+                Array.isArray(fetchResult.turns) &&
+                fetchResult.turns.length === 0
+
+              if (hasMalformedRefresh) {
+                console.warn('[ChatMachine] Preserving previous turns due to empty post-HITL refetch payload', {
+                  sessionId: curSessionId,
+                  previousTurnCount: previousTurns.length,
+                })
+                this._updateSession({
+                  error: 'Failed to fully refresh session. Showing last known messages.',
+                  errorRetryable: true,
+                })
+              } else {
+                this._setTurnsFromFetch(fetchResult.turns)
+              }
             } else {
-              this._updateMessaging({ pendingQuestion: previousPendingQuestion })
-              this._updateSession({ error: 'Failed to load updated session', errorRetryable: false })
+              this._updateSession({ error: 'Failed to load updated session', errorRetryable: true })
             }
           } catch (fetchErr) {
             if (this.disposed) return
-            this._updateMessaging({ pendingQuestion: previousPendingQuestion })
             const normalized = normalizeRPCError(fetchErr, 'Failed to load updated session')
-            this._updateSession({ error: normalized.userMessage, errorRetryable: normalized.retryable })
+            this._updateSession({ error: normalized.userMessage, errorRetryable: true })
           }
         }
       } else {

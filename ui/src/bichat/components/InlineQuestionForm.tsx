@@ -32,7 +32,7 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
   const [answers, setAnswers] = useState<QuestionAnswers>({})
   const [otherTexts, setOtherTexts] = useState<Record<string, string>>({})
 
-  const questions = pendingQuestion.questions
+  const questions = Array.isArray(pendingQuestion.questions) ? pendingQuestion.questions : []
   const currentQuestion = questions[currentStep]
   const isLastStep = currentStep === questions.length - 1
   const isFirstStep = currentStep === 0
@@ -151,10 +151,38 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
     handleNext()
   }
 
-  if (!currentQuestion) return null
+  if (!currentQuestion) {
+    return (
+      <div className="animate-slide-up rounded-2xl border border-amber-200 dark:border-amber-700/50 bg-gradient-to-b from-amber-50/70 to-white dark:from-amber-950/20 dark:to-gray-900/80 shadow-sm overflow-hidden p-4">
+        <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+          {t('BiChat.Error.SomethingWentWrong')}
+        </p>
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          {t('BiChat.Error.UnexpectedError')}
+        </p>
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={handleRejectPendingQuestion}
+            disabled={loading}
+            className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40"
+          >
+            <X size={14} weight="bold" />
+            {t('BiChat.InlineQuestion.Dismiss')}
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const isMultiSelect = currentQuestion.type === 'MULTIPLE_CHOICE'
-  const options = currentQuestion.options || []
+  const options = (currentQuestion.options || [])
+    .filter((option) => Boolean(option && typeof option.label === 'string'))
+    .map((option, index) => ({
+      id: option.id || `${currentQuestion.id}-option-${index}`,
+      label: option.label,
+      value: option.value || option.label,
+    }))
   const isOtherSelected = currentAnswer?.customText !== undefined
   const canProceed = isCurrentAnswerValid()
 
