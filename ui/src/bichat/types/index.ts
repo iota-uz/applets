@@ -114,6 +114,7 @@ export interface Citation {
 export interface Attachment {
   id?: string
   clientKey: string
+  uploadId?: number
   filename: string
   mimeType: string
   sizeBytes: number
@@ -201,6 +202,7 @@ export interface SessionArtifact {
   id: string
   sessionId: string
   messageId?: string
+  uploadId?: number
   type: string
   name: string
   description?: string

@@ -24,7 +24,7 @@ import type {
 } from '../types'
 import { MessageRole } from '../types'
 import { parseChartDataFromSpec, parseChartDataFromJsonString, isRecord } from '../utils/chartSpec'
-import { convertToBase64, validateAttachmentFile, validateFileCount } from '../utils/fileUtils'
+import { validateAttachmentFile, validateFileCount } from '../utils/fileUtils'
 import { parseBichatStream } from '../utils/sseParser'
 import type { PendingQuestion as RPCPendingQuestion } from './rpc.generated'
 
@@ -32,6 +32,7 @@ export interface HttpDataSourceConfig {
   baseUrl: string
   rpcEndpoint: string
   streamEndpoint?: string
+  uploadEndpoint?: string
   csrfToken?: string | (() => string)
   headers?: Record<string, string>
   timeout?: number
@@ -59,6 +60,7 @@ interface RPCArtifact {
   id: string
   sessionId: string
   messageId?: string
+  uploadId?: number
   type: string
   name: string
   description?: string
@@ -67,6 +69,15 @@ interface RPCArtifact {
   sizeBytes: number
   metadata?: Record<string, unknown>
   createdAt: string
+}
+
+interface CoreUploadResponse {
+  id: number
+  url: string
+  path: string
+  name: string
+  mimetype: string
+  size: number
 }
 
 function isSessionNotFoundError(err: unknown): boolean {
@@ -86,6 +97,7 @@ function toSessionArtifact(artifact: RPCArtifact): SessionArtifact {
     id: artifact.id,
     sessionId: artifact.sessionId,
     messageId: artifact.messageId,
+    uploadId: artifact.uploadId,
     type: artifact.type,
     name: artifact.name,
     description: artifact.description,
@@ -152,6 +164,7 @@ function sanitizeAttachment(rawAttachment: unknown, turnId: string, index: numbe
     filename,
     mimeType,
     sizeBytes: readFiniteNumber(rawAttachment.sizeBytes),
+    uploadId: readOptionalFiniteNumber(rawAttachment.uploadId),
     base64Data: readNonEmptyString(rawAttachment.base64Data) || undefined,
     url: readNonEmptyString(rawAttachment.url) || undefined,
     preview: readNonEmptyString(rawAttachment.preview) || undefined,
@@ -693,6 +706,7 @@ export class HttpDataSource implements ChatDataSource {
   constructor(config: HttpDataSourceConfig) {
     this.config = {
       streamEndpoint: '/stream',
+      uploadEndpoint: '/api/uploads',
       timeout: 120000,
       ...config,
     }
@@ -733,6 +747,101 @@ export class HttpDataSource implements ChatDataSource {
     }
 
     return headers
+  }
+
+  private createUploadHeaders(additionalHeaders?: Record<string, string>): Headers {
+    const headers = new Headers({
+      ...this.config.headers,
+      ...additionalHeaders,
+    })
+
+    const csrfToken = this.getCSRFToken()
+    if (csrfToken) {
+      headers.set('X-CSRF-Token', csrfToken)
+    }
+    headers.delete('Content-Type')
+
+    return headers
+  }
+
+  private async uploadFile(file: File): Promise<CoreUploadResponse> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch(`${this.config.baseUrl}${this.config.uploadEndpoint}`, {
+      method: 'POST',
+      headers: this.createUploadHeaders(),
+      body: formData,
+    })
+
+    let payload: unknown = null
+    try {
+      payload = await response.json()
+    } catch {
+      payload = null
+    }
+
+    if (!response.ok) {
+      const errorMessage = isRecord(payload) && typeof payload.error === 'string'
+        ? payload.error
+        : `Upload failed: HTTP ${response.status}`
+      throw new Error(errorMessage)
+    }
+
+    if (!isRecord(payload) || typeof payload.id !== 'number' || payload.id <= 0) {
+      throw new Error('Upload failed: invalid response payload')
+    }
+
+    return {
+      id: payload.id,
+      url: typeof payload.url === 'string' ? payload.url : '',
+      path: typeof payload.path === 'string' ? payload.path : '',
+      name: typeof payload.name === 'string' ? payload.name : file.name,
+      mimetype: typeof payload.mimetype === 'string' ? payload.mimetype : file.type,
+      size: typeof payload.size === 'number' && Number.isFinite(payload.size) ? payload.size : file.size,
+    }
+  }
+
+  private async attachmentToFile(attachment: Attachment): Promise<File> {
+    if (attachment.base64Data && attachment.base64Data.trim().length > 0) {
+      const base64Data = attachment.base64Data.trim()
+      const dataUrl = base64Data.startsWith('data:')
+        ? base64Data
+        : `data:${attachment.mimeType || 'application/octet-stream'};base64,${base64Data}`
+      const blob = await fetch(dataUrl).then((response) => response.blob())
+      return new File([blob], attachment.filename, {
+        type: attachment.mimeType || blob.type || 'application/octet-stream',
+      })
+    }
+
+    if (attachment.url) {
+      const response = await fetch(attachment.url)
+      if (!response.ok) {
+        throw new Error(`Failed to read attachment source: HTTP ${response.status}`)
+      }
+      const blob = await response.blob()
+      return new File([blob], attachment.filename, {
+        type: attachment.mimeType || blob.type || 'application/octet-stream',
+      })
+    }
+
+    throw new Error(`Attachment "${attachment.filename}" has no uploadable data`)
+  }
+
+  private async ensureAttachmentUpload(attachment: Attachment): Promise<CoreUploadResponse> {
+    if (typeof attachment.uploadId === 'number' && attachment.uploadId > 0) {
+      return {
+        id: attachment.uploadId,
+        url: attachment.url || '',
+        path: '',
+        name: attachment.filename,
+        mimetype: attachment.mimeType,
+        size: attachment.sizeBytes,
+      }
+    }
+
+    const file = await this.attachmentToFile(attachment)
+    return this.uploadFile(file)
   }
 
   private async callRPC<TMethod extends keyof BichatRPC & string>(
@@ -829,27 +938,13 @@ export class HttpDataSource implements ChatDataSource {
     }
 
     validateFileCount(0, files.length, 10)
-    const attachments: Attachment[] = []
-    for (const file of files) {
-      validateAttachmentFile(file)
-      const base64Data = await convertToBase64(file)
-      attachments.push({
-        clientKey: crypto.randomUUID(),
-        filename: file.name,
-        mimeType: file.type,
-        sizeBytes: file.size,
-        base64Data,
-      })
-    }
+    files.forEach((file) => validateAttachmentFile(file))
+    const uploads = await Promise.all(files.map((file) => this.uploadFile(file)))
 
     const data = await this.callRPC('bichat.session.uploadArtifacts', {
       sessionId,
-      attachments: attachments.map((a) => ({
-        id: '', // Backend will assign ID
-        filename: a.filename,
-        mimeType: a.mimeType,
-        sizeBytes: a.sizeBytes,
-        base64Data: a.base64Data,
+      attachments: uploads.map((upload) => ({
+        uploadId: upload.id,
       })),
     })
 
@@ -897,23 +992,22 @@ export class HttpDataSource implements ChatDataSource {
 
     const url = `${this.config.baseUrl}${this.config.streamEndpoint}`
 
-    const payload = {
-      sessionId,
-      content,
-      debugMode: options?.debugMode ?? false,
-      replaceFromMessageId: options?.replaceFromMessageID,
-      attachments: attachments.map((a) => ({
-        filename: a.filename,
-        mimeType: a.mimeType,
-        sizeBytes: a.sizeBytes,
-        base64Data: a.base64Data,
-        url: a.url,
-      })),
-    }
-
     let connectionTimeoutID: ReturnType<typeof setTimeout> | undefined
     let connectionTimedOut = false
     try {
+      const uploads = await Promise.all(
+        attachments.map((attachment) => this.ensureAttachmentUpload(attachment))
+      )
+      const payload = {
+        sessionId,
+        content,
+        debugMode: options?.debugMode ?? false,
+        replaceFromMessageId: options?.replaceFromMessageID,
+        attachments: uploads.map((upload) => ({
+          uploadId: upload.id,
+        })),
+      }
+
       const timeoutMs = this.config.timeout ?? 0
       if (timeoutMs > 0) {
         connectionTimeoutID = setTimeout(() => {
