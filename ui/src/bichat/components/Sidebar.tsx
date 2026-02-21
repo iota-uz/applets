@@ -194,6 +194,17 @@ export default function Sidebar({
 
   const showCollapsed = collapsible && isCollapsed
 
+  // Allow tooltips to escape sidebar bounds once collapse transition settles
+  const [collapsedOverflowVisible, setCollapsedOverflowVisible] = useState(false)
+  useEffect(() => {
+    if (!showCollapsed) {
+      setCollapsedOverflowVisible(false)
+      return
+    }
+    const timer = setTimeout(() => setCollapsedOverflowVisible(true), 300)
+    return () => clearTimeout(timer)
+  }, [showCollapsed])
+
   // View state (my chats vs all chats)
   const [activeTab, setActiveTab] = useState<ActiveTab>('my-chats')
 
@@ -486,7 +497,7 @@ export default function Sidebar({
     <>
       <aside
         onClick={collapsible ? handleSidebarClick : undefined}
-        className={`relative bg-surface-300 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-full min-h-0 flex flex-col overflow-hidden transition-[width] duration-300 ease-in-out ${
+        className={`relative bg-surface-300 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-full min-h-0 flex flex-col ${collapsedOverflowVisible ? 'overflow-visible' : 'overflow-hidden'} transition-[width] duration-300 ease-in-out ${
           showCollapsed
             ? 'w-16 cursor-e-resize'
             : collapsible
