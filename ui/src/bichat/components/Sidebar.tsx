@@ -33,6 +33,9 @@ import type { Session, ChatDataSource } from '../types'
 import { ToastContainer } from './ToastContainer'
 import { toErrorDisplay, type RPCErrorDisplay } from '../utils/errorDisplay'
 
+/** Matches sidebar width transition (duration-300) + small buffer for focus-after-expand */
+const SIDEBAR_EXPAND_FOCUS_DELAY_MS = 350
+
 function ErrorAlert({ error }: { error: RPCErrorDisplay }) {
   const amber = error.isPermissionDenied
   return (
@@ -590,7 +593,7 @@ export default function Sidebar({
                   setTimeout(() => {
                     const input = searchContainerRef.current?.querySelector('input')
                     input?.focus()
-                  }, 350)
+                  }, SIDEBAR_EXPAND_FOCUS_DELAY_MS)
                 }}
                 className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 flex items-center justify-center cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none"
                 aria-label={t('BiChat.Sidebar.SearchChats')}

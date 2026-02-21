@@ -187,12 +187,12 @@ export function useDataTable(
 
   const totalFilteredRows = sortedRows.length
 
-  // Compute stats on filtered numeric columns
+  // Compute stats on filtered numeric columns (only visible columns when stats are shown)
   const columnStats = useMemo<Map<number, ColumnStats>>(() => {
     if (!showStats) return new Map()
 
     const stats = new Map<number, ColumnStats>()
-    for (const col of columns) {
+    for (const col of visibleColumns) {
       if (col.type !== 'number') continue
       let sum = 0
       let min = Infinity
@@ -226,7 +226,7 @@ export function useDataTable(
       }
     }
     return stats
-  }, [showStats, columns, sortedRows])
+  }, [showStats, visibleColumns, sortedRows])
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(totalFilteredRows / pageSize))
@@ -314,18 +314,17 @@ export function useDataTable(
 
   const formatCell = useCallback(
     (value: unknown, columnIndex: number): FormattedCell => {
-      const col = columns[columnIndex]
-      return formatCellValue(value, col?.type ?? 'string')
+      const type = columnTypes[columnIndex] ?? 'string'
+      return formatCellValue(value, type)
     },
-    [columns],
+    [columnTypes],
   )
 
   const getCellAlignment = useCallback(
     (columnIndex: number): 'left' | 'right' => {
-      const col = columns[columnIndex]
-      return col?.type === 'number' ? 'right' : 'left'
+      return columnTypes[columnIndex] === 'number' ? 'right' : 'left'
     },
-    [columns],
+    [columnTypes],
   )
 
   const clearSort = useCallback(() => setSort(null), [])

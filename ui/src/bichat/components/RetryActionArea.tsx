@@ -45,9 +45,9 @@ export const RetryActionArea = memo(function RetryActionArea({
           </span>
         </div>
         <button
+          type="button"
           onClick={onRetry}
-          className="cursor-pointer self-start inline-flex items-center gap-1.5 px-2.5 py-1 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
-          aria-label={t('BiChat.Retry.Title')}
+          className="self-start inline-flex items-center gap-1.5 px-2.5 py-1 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
         >
           <ArrowClockwise size={14} />
           {t('BiChat.Retry.Button')}

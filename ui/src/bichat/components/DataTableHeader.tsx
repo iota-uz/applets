@@ -218,9 +218,11 @@ const HeaderCell = memo(function HeaderCell({
 
       {/* Resize handle */}
       <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label={t('BiChat.DataTable.ResizeColumn')}
         className="absolute right-0 top-0 h-full w-1 cursor-col-resize opacity-0 transition-opacity hover:bg-blue-400 hover:opacity-100 group-hover:opacity-40"
         onPointerDown={handleResizeStart}
-        aria-hidden
       />
     </th>
   )

@@ -99,15 +99,17 @@ export function formatCellValue(value: unknown, type: ColumnType): FormattedCell
         return { display: str, raw: value, type, isNull: false }
       }
       const now = new Date()
-      const diffMs = now.getTime() - date.getTime()
-      const diffDays = Math.abs(diffMs) / (1000 * 60 * 60 * 24)
+      const sameCalendarDay = date.toDateString() === now.toDateString()
       let display: string
-      if (diffDays < 1) {
+      if (sameCalendarDay) {
         display = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-      } else if (diffDays < 365) {
-        display = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
       } else {
-        display = date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+        const diffDays = Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+        if (diffDays < 365) {
+          display = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        } else {
+          display = date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+        }
       }
       return { display, raw: value, type, isNull: false }
     }

@@ -17,11 +17,23 @@ type CellRenderer = (props: {
   onMouseLeave: () => void
 }) => ReactNode
 
+const SAFE_URL_PROTOCOLS = ['http:', 'https:', 'mailto:']
+
+function safeHref(input: string): string {
+  if (!input || typeof input !== 'string') return '#'
+  try {
+    const url = new URL(input, 'https://example.com')
+    return SAFE_URL_PROTOCOLS.includes(url.protocol) ? url.href : '#'
+  } catch {
+    return '#'
+  }
+}
+
 const cellRenderers: Record<string, CellRenderer> = {
   boolean: ({ formatted }) => (
     <span
       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-        formatted.display === 'true'
+        formatted.raw === true
           ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
           : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
       }`}
@@ -29,24 +41,39 @@ const cellRenderers: Record<string, CellRenderer> = {
       {formatted.display}
     </span>
   ),
-  url: ({ formatted, tooltipRef, onMouseEnter, onMouseLeave }) => (
-    <a
-      href={formatted.display}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-blue-600 underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <span
-        ref={tooltipRef}
-        className="block max-w-[420px] truncate"
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
+  url: ({ formatted, tooltipRef, onMouseEnter, onMouseLeave }) => {
+    const href = safeHref(formatted.display)
+    if (href === '#') {
+      return (
+        <span
+          ref={tooltipRef}
+          className="block max-w-[420px] truncate text-gray-700 dark:text-gray-300"
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+        >
+          {formatted.display}
+        </span>
+      )
+    }
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+        onClick={(e) => e.stopPropagation()}
       >
-        {formatted.display}
-      </span>
-    </a>
-  ),
+        <span
+          ref={tooltipRef}
+          className="block max-w-[420px] truncate"
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+        >
+          {formatted.display}
+        </span>
+      </a>
+    )
+  },
   number: ({ formatted, tooltipRef, onMouseEnter, onMouseLeave }) => (
     <span
       ref={tooltipRef}

@@ -55,8 +55,8 @@ function parseToolParams(
 ): Record<string, string> | undefined {
   if (name === 'task' && args) {
     try {
-      const parsed = JSON.parse(args) as Record<string, string>
-      return { agent: parsed.description || parsed.subagent_type || 'specialist' }
+      const parsed = JSON.parse(args) as Record<string, unknown>
+      return { agent: String(parsed.description ?? parsed.subagent_type ?? 'specialist') }
     } catch {
       return { agent: 'specialist' }
     }
