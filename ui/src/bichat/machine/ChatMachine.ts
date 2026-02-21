@@ -429,6 +429,13 @@ export class ChatMachine {
     })
   }
 
+  private _notifySessionsUpdated(reason: string, sessionId?: string): void {
+    if (typeof window === 'undefined') return
+    window.dispatchEvent(new CustomEvent('bichat:sessions-updated', {
+      detail: { reason, sessionId },
+    }))
+  }
+
   private _cancel(): void {
     if (this.abortController) {
       this.abortController.abort()
@@ -742,7 +749,11 @@ export class ChatMachine {
       }
 
       const targetSessionId = createdSessionId || activeSessionId
+      if (targetSessionId && targetSessionId !== 'new') {
+        this._notifySessionsUpdated('message_sent', targetSessionId)
+      }
       if (shouldNavigateAfter && targetSessionId && targetSessionId !== 'new') {
+        this._notifySessionsUpdated('session_created', targetSessionId)
         // Prefer callback prop over deprecated data source method
         if (this.onSessionCreated) {
           this.onSessionCreated(targetSessionId)
@@ -966,6 +977,8 @@ export class ChatMachine {
 
     const convertedAttachments: Attachment[] = attachments.map((att) => ({
       clientKey: att.clientKey || crypto.randomUUID(),
+      id: att.id,
+      uploadId: att.uploadId,
       filename: att.filename,
       mimeType: att.mimeType,
       sizeBytes: att.sizeBytes,

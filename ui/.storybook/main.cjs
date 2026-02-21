@@ -11,12 +11,6 @@ const config = {
     name: '@storybook/react-vite',
     options: {},
   },
-  staticDirs: [
-    {
-      from: '../../modules/core/presentation/assets',
-      to: '/assets',
-    },
-  ],
   async viteFinal(viteConfig) {
     const { mergeConfig } = await import('vite')
     return mergeConfig(viteConfig, {

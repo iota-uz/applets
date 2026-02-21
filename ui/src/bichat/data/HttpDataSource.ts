@@ -21,17 +21,20 @@ import type {
   QuestionAnswers,
   SendMessageOptions,
   AssistantTurn,
+  RenderTableData,
 } from '../types'
 import { MessageRole } from '../types'
 import { parseChartDataFromSpec, parseChartDataFromJsonString, isRecord } from '../utils/chartSpec'
-import { convertToBase64, validateAttachmentFile, validateFileCount } from '../utils/fileUtils'
+import { validateAttachmentFile, validateFileCount } from '../utils/fileUtils'
 import { parseBichatStream } from '../utils/sseParser'
+import { parseRenderTableDataFromJsonString } from '../utils/tableSpec'
 import type { PendingQuestion as RPCPendingQuestion } from './rpc.generated'
 
 export interface HttpDataSourceConfig {
   baseUrl: string
   rpcEndpoint: string
   streamEndpoint?: string
+  uploadEndpoint?: string
   csrfToken?: string | (() => string)
   headers?: Record<string, string>
   timeout?: number
@@ -59,6 +62,7 @@ interface RPCArtifact {
   id: string
   sessionId: string
   messageId?: string
+  uploadId?: number
   type: string
   name: string
   description?: string
@@ -67,6 +71,15 @@ interface RPCArtifact {
   sizeBytes: number
   metadata?: Record<string, unknown>
   createdAt: string
+}
+
+interface CoreUploadResponse {
+  id: number
+  url: string
+  path: string
+  name: string
+  mimetype: string
+  size: number
 }
 
 function isSessionNotFoundError(err: unknown): boolean {
@@ -86,6 +99,7 @@ function toSessionArtifact(artifact: RPCArtifact): SessionArtifact {
     id: artifact.id,
     sessionId: artifact.sessionId,
     messageId: artifact.messageId,
+    uploadId: artifact.uploadId,
     type: artifact.type,
     name: artifact.name,
     description: artifact.description,
@@ -117,6 +131,71 @@ function readFiniteNumber(value: unknown, fallback = 0): number {
 
 function readOptionalFiniteNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined
+}
+
+const MIME_TO_EXTENSION: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/gif': 'gif',
+  'application/pdf': 'pdf',
+}
+
+const SAFE_AUTOCORRECT_MIME_TYPES = new Set(Object.keys(MIME_TO_EXTENSION))
+
+function detectMimeFromSignature(bytes: Uint8Array): string | undefined {
+  if (bytes.length >= 8) {
+    const isPng =
+      bytes[0] === 0x89 &&
+      bytes[1] === 0x50 &&
+      bytes[2] === 0x4e &&
+      bytes[3] === 0x47 &&
+      bytes[4] === 0x0d &&
+      bytes[5] === 0x0a &&
+      bytes[6] === 0x1a &&
+      bytes[7] === 0x0a
+    if (isPng) return 'image/png'
+  }
+
+  if (bytes.length >= 3) {
+    const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff
+    if (isJpeg) return 'image/jpeg'
+  }
+
+  if (bytes.length >= 6) {
+    const isGif =
+      bytes[0] === 0x47 &&
+      bytes[1] === 0x49 &&
+      bytes[2] === 0x46 &&
+      bytes[3] === 0x38 &&
+      (bytes[4] === 0x37 || bytes[4] === 0x39) &&
+      bytes[5] === 0x61
+    if (isGif) return 'image/gif'
+  }
+
+  if (bytes.length >= 4) {
+    const isPdf =
+      bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46
+    if (isPdf) return 'application/pdf'
+  }
+
+  return undefined
+}
+
+function normalizeFilenameForMime(filename: string, mimeType: string): string {
+  const expectedExt = MIME_TO_EXTENSION[mimeType]
+  if (!expectedExt) return filename
+
+  const lower = filename.toLowerCase()
+  if (mimeType === 'image/jpeg' && (lower.endsWith('.jpg') || lower.endsWith('.jpeg'))) {
+    return filename
+  }
+  if (lower.endsWith(`.${expectedExt}`)) {
+    return filename
+  }
+
+  const dotIndex = filename.lastIndexOf('.')
+  const baseName = dotIndex > 0 ? filename.slice(0, dotIndex) : filename
+  return `${baseName}.${expectedExt}`
 }
 
 function normalizeQuestionType(rawType: unknown): 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' {
@@ -152,6 +231,7 @@ function sanitizeAttachment(rawAttachment: unknown, turnId: string, index: numbe
     filename,
     mimeType,
     sizeBytes: readFiniteNumber(rawAttachment.sizeBytes),
+    uploadId: readOptionalFiniteNumber(rawAttachment.uploadId),
     base64Data: readNonEmptyString(rawAttachment.base64Data) || undefined,
     url: readNonEmptyString(rawAttachment.url) || undefined,
     preview: readNonEmptyString(rawAttachment.preview) || undefined,
@@ -294,6 +374,7 @@ function sanitizeAssistantTurn(
     citations,
     toolCalls,
     chartData: undefined,
+    renderTables: undefined,
     artifacts: sanitizeAssistantArtifacts(rawAssistantTurn.artifacts, turnId),
     codeOutputs,
     debug: debugTrace,
@@ -525,6 +606,21 @@ function extractChartDataFromToolCalls(toolCalls?: Array<{ name: string; result?
   return undefined
 }
 
+function extractRenderTablesFromToolCalls(toolCalls?: Array<{ id: string; name: string; result?: string }>): RenderTableData[] {
+  if (!toolCalls) return []
+
+  const tables: RenderTableData[] = []
+  for (const tc of toolCalls) {
+    if (tc.name !== 'renderTable' || !tc.result) continue
+    const parsed = parseRenderTableDataFromJsonString(tc.result, tc.id)
+    if (parsed) {
+      tables.push(parsed)
+    }
+  }
+
+  return tables
+}
+
 const EXPORT_TOOL_NAMES: Record<string, DownloadArtifact['type']> = {
   export_query_to_excel: 'excel',
   export_data_to_excel: 'excel',
@@ -564,6 +660,7 @@ function extractDownloadArtifactsFromToolCalls(toolCalls?: Array<{ name: string;
 function normalizeAssistantTurn(turn: Partial<AssistantTurn> & { id: string; content: string; createdAt: string }): AssistantTurn {
   const existingArtifacts = turn.artifacts || []
   const fromToolCalls = extractDownloadArtifactsFromToolCalls(turn.toolCalls)
+  const renderTables = turn.renderTables || extractRenderTablesFromToolCalls(turn.toolCalls)
   // Merge: add tool-call artifacts that aren't already present (by URL + filename)
   const merged = [...existingArtifacts]
   for (const a of fromToolCalls) {
@@ -576,6 +673,7 @@ function normalizeAssistantTurn(turn: Partial<AssistantTurn> & { id: string; con
     ...turn,
     role: (turn.role as MessageRole) || MessageRole.Assistant,
     chartData: turn.chartData || extractChartDataFromToolCalls(turn.toolCalls),
+    renderTables,
     citations: turn.citations || [],
     artifacts: merged,
     codeOutputs: turn.codeOutputs || [],
@@ -693,6 +791,7 @@ export class HttpDataSource implements ChatDataSource {
   constructor(config: HttpDataSourceConfig) {
     this.config = {
       streamEndpoint: '/stream',
+      uploadEndpoint: '/api/uploads',
       timeout: 120000,
       ...config,
     }
@@ -733,6 +832,260 @@ export class HttpDataSource implements ChatDataSource {
     }
 
     return headers
+  }
+
+  private createUploadHeaders(additionalHeaders?: Record<string, string>): Headers {
+    const headers = new Headers({
+      ...this.config.headers,
+      ...additionalHeaders,
+    })
+
+    const csrfToken = this.getCSRFToken()
+    if (csrfToken) {
+      headers.set('X-CSRF-Token', csrfToken)
+    }
+    headers.delete('Content-Type')
+
+    return headers
+  }
+
+  private logAttachmentLifecycle(
+    event: 'attachment_decode_start' | 'attachment_decode_success' | 'attachment_decode_fail'
+    | 'attachment_upload_start' | 'attachment_upload_success' | 'attachment_upload_fail'
+    | 'stream_send_with_upload_ids',
+    details: Record<string, unknown>
+  ): void {
+    const payload = {
+      source: 'HttpDataSource',
+      event,
+      ...details,
+    }
+
+    if (event.endsWith('_fail')) {
+      console.warn('[bichat.attachments]', payload)
+      return
+    }
+    // Non-failure lifecycle events: no console output (ESLint allows only warn/error)
+  }
+
+  private async normalizeAttachmentFile(attachment: Attachment, file: File): Promise<File> {
+    const signatureBytes = new Uint8Array(await file.slice(0, 16).arrayBuffer())
+    const detectedMimeType = detectMimeFromSignature(signatureBytes)
+    const declaredMimeType = (attachment.mimeType || file.type || '').trim().toLowerCase()
+
+    let resolvedMimeType = declaredMimeType || detectedMimeType || 'application/octet-stream'
+    let correctedFromDeclared = false
+
+    if (detectedMimeType && declaredMimeType && detectedMimeType !== declaredMimeType) {
+      const safeToCorrect =
+        SAFE_AUTOCORRECT_MIME_TYPES.has(detectedMimeType) &&
+        SAFE_AUTOCORRECT_MIME_TYPES.has(declaredMimeType)
+
+      if (!safeToCorrect) {
+        throw new Error(
+          `Attachment "${attachment.filename}" MIME mismatch: declared "${declaredMimeType}", detected "${detectedMimeType}"`
+        )
+      }
+
+      resolvedMimeType = detectedMimeType
+      correctedFromDeclared = true
+    } else if (detectedMimeType && !declaredMimeType) {
+      resolvedMimeType = detectedMimeType
+    }
+
+    const normalizedName = normalizeFilenameForMime(attachment.filename, resolvedMimeType)
+    const normalized = new File([file], normalizedName, {
+      type: resolvedMimeType,
+      lastModified: file.lastModified,
+    })
+
+    this.logAttachmentLifecycle('attachment_decode_success', {
+      attachmentKey: attachment.clientKey,
+      filename: attachment.filename,
+      normalizedFilename: normalized.name,
+      declaredMimeType: declaredMimeType || undefined,
+      detectedMimeType,
+      resolvedMimeType,
+      correctedFromDeclared,
+      sizeBytes: normalized.size,
+    })
+
+    return normalized
+  }
+
+  private async uploadFile(file: File): Promise<CoreUploadResponse> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch(`${this.config.baseUrl}${this.config.uploadEndpoint}`, {
+      method: 'POST',
+      headers: this.createUploadHeaders(),
+      body: formData,
+    })
+
+    let payload: unknown = null
+    try {
+      payload = await response.json()
+    } catch {
+      payload = null
+    }
+
+    if (!response.ok) {
+      const errorMessage = isRecord(payload) && typeof payload.error === 'string'
+        ? payload.error
+        : `Upload failed: HTTP ${response.status}`
+      throw new Error(errorMessage)
+    }
+
+    if (!isRecord(payload) || typeof payload.id !== 'number' || payload.id <= 0) {
+      throw new Error('Upload failed: invalid response payload')
+    }
+
+    return {
+      id: payload.id,
+      url: typeof payload.url === 'string' ? payload.url : '',
+      path: typeof payload.path === 'string' ? payload.path : '',
+      name: typeof payload.name === 'string' ? payload.name : file.name,
+      mimetype: typeof payload.mimetype === 'string' ? payload.mimetype : file.type,
+      size: typeof payload.size === 'number' && Number.isFinite(payload.size) ? payload.size : file.size,
+    }
+  }
+
+  private async attachmentToFile(attachment: Attachment): Promise<File> {
+    if (attachment.base64Data && attachment.base64Data.trim().length > 0) {
+      try {
+        const base64Data = attachment.base64Data.trim()
+        const dataUrl = base64Data.startsWith('data:')
+          ? base64Data
+          : `data:${attachment.mimeType || 'application/octet-stream'};base64,${base64Data}`
+        const blob = await fetch(dataUrl).then((response) => response.blob())
+        return new File([blob], attachment.filename, {
+          type: attachment.mimeType || blob.type || 'application/octet-stream',
+        })
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown decode error'
+        throw new Error(`Attachment "${attachment.filename}" decode failed: ${message}`)
+      }
+    }
+
+    if (attachment.url) {
+      let parsed: URL
+      try {
+        parsed = new URL(attachment.url, window.location?.origin ?? 'https://localhost')
+        if (!['http:', 'https:'].includes(parsed.protocol)) {
+          throw new Error(`Attachment "${attachment.filename}" URL has disallowed protocol: ${parsed.protocol}`)
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message.includes('Attachment')) throw err
+        throw new Error(`Attachment "${attachment.filename}" has invalid or malformed URL`)
+      }
+      const response = await fetch(parsed.href)
+      if (!response.ok) {
+        throw new Error(`Attachment "${attachment.filename}" decode failed: source HTTP ${response.status}`)
+      }
+      const blob = await response.blob()
+      return new File([blob], attachment.filename, {
+        type: attachment.mimeType || blob.type || 'application/octet-stream',
+      })
+    }
+
+    throw new Error(`Attachment "${attachment.filename}" has no uploadable data`)
+  }
+
+  private assertUploadReferences(uploads: CoreUploadResponse[]): Array<{ uploadId: number }> {
+    return uploads.map((upload, index) => {
+      if (typeof upload.id !== 'number' || !Number.isFinite(upload.id) || upload.id <= 0) {
+        throw new Error(`Attachment upload reference is invalid at index ${index}`)
+      }
+      return { uploadId: upload.id }
+    })
+  }
+
+  private async ensureAttachmentUpload(
+    attachment: Attachment,
+    context: { sessionId: string; attachmentIndex: number }
+  ): Promise<CoreUploadResponse> {
+    if (typeof attachment.uploadId === 'number' && attachment.uploadId > 0) {
+      this.logAttachmentLifecycle('attachment_upload_success', {
+        sessionId: context.sessionId,
+        attachmentIndex: context.attachmentIndex,
+        attachmentKey: attachment.clientKey,
+        filename: attachment.filename,
+        uploadId: attachment.uploadId,
+        reusedUploadId: true,
+      })
+      return {
+        id: attachment.uploadId,
+        url: attachment.url || '',
+        path: '',
+        name: attachment.filename,
+        mimetype: attachment.mimeType,
+        size: attachment.sizeBytes,
+      }
+    }
+
+    this.logAttachmentLifecycle('attachment_decode_start', {
+      sessionId: context.sessionId,
+      attachmentIndex: context.attachmentIndex,
+      attachmentKey: attachment.clientKey,
+      filename: attachment.filename,
+      hasBase64Data: Boolean(attachment.base64Data && attachment.base64Data.trim().length > 0),
+      hasURL: Boolean(attachment.url),
+    })
+
+    let file: File
+    try {
+      const rawFile = await this.attachmentToFile(attachment)
+      file = await this.normalizeAttachmentFile(attachment, rawFile)
+      validateAttachmentFile(file)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown attachment decode/validation error'
+      this.logAttachmentLifecycle('attachment_decode_fail', {
+        sessionId: context.sessionId,
+        attachmentIndex: context.attachmentIndex,
+        attachmentKey: attachment.clientKey,
+        filename: attachment.filename,
+        error: message,
+      })
+      throw new Error(message)
+    }
+
+    this.logAttachmentLifecycle('attachment_upload_start', {
+      sessionId: context.sessionId,
+      attachmentIndex: context.attachmentIndex,
+      attachmentKey: attachment.clientKey,
+      filename: file.name,
+      mimeType: file.type,
+      sizeBytes: file.size,
+    })
+
+    try {
+      const upload = await this.uploadFile(file)
+      // TODO: Refactor to return updated attachment instead of mutating; callers currently rely on this in-place update.
+      attachment.uploadId = upload.id
+      attachment.mimeType = upload.mimetype || file.type
+      attachment.filename = upload.name || file.name
+      attachment.sizeBytes = upload.size || file.size
+      this.logAttachmentLifecycle('attachment_upload_success', {
+        sessionId: context.sessionId,
+        attachmentIndex: context.attachmentIndex,
+        attachmentKey: attachment.clientKey,
+        filename: attachment.filename,
+        uploadId: upload.id,
+        reusedUploadId: false,
+      })
+      return upload
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown upload error'
+      this.logAttachmentLifecycle('attachment_upload_fail', {
+        sessionId: context.sessionId,
+        attachmentIndex: context.attachmentIndex,
+        attachmentKey: attachment.clientKey,
+        filename: file.name,
+        error: message,
+      })
+      throw new Error(`Attachment "${attachment.filename}" upload failed: ${message}`)
+    }
   }
 
   private async callRPC<TMethod extends keyof BichatRPC & string>(
@@ -829,27 +1182,13 @@ export class HttpDataSource implements ChatDataSource {
     }
 
     validateFileCount(0, files.length, 10)
-    const attachments: Attachment[] = []
-    for (const file of files) {
-      validateAttachmentFile(file)
-      const base64Data = await convertToBase64(file)
-      attachments.push({
-        clientKey: crypto.randomUUID(),
-        filename: file.name,
-        mimeType: file.type,
-        sizeBytes: file.size,
-        base64Data,
-      })
-    }
+    files.forEach((file) => validateAttachmentFile(file))
+    const uploads = await Promise.all(files.map((file) => this.uploadFile(file)))
 
     const data = await this.callRPC('bichat.session.uploadArtifacts', {
       sessionId,
-      attachments: attachments.map((a) => ({
-        id: '', // Backend will assign ID
-        filename: a.filename,
-        mimeType: a.mimeType,
-        sizeBytes: a.sizeBytes,
-        base64Data: a.base64Data,
+      attachments: uploads.map((upload) => ({
+        uploadId: upload.id,
       })),
     })
 
@@ -897,23 +1236,27 @@ export class HttpDataSource implements ChatDataSource {
 
     const url = `${this.config.baseUrl}${this.config.streamEndpoint}`
 
-    const payload = {
-      sessionId,
-      content,
-      debugMode: options?.debugMode ?? false,
-      replaceFromMessageId: options?.replaceFromMessageID,
-      attachments: attachments.map((a) => ({
-        filename: a.filename,
-        mimeType: a.mimeType,
-        sizeBytes: a.sizeBytes,
-        base64Data: a.base64Data,
-        url: a.url,
-      })),
-    }
-
     let connectionTimeoutID: ReturnType<typeof setTimeout> | undefined
     let connectionTimedOut = false
     try {
+      const uploads = await Promise.all(
+        attachments.map((attachment, attachmentIndex) =>
+          this.ensureAttachmentUpload(attachment, { sessionId, attachmentIndex })
+        )
+      )
+      const streamAttachments = this.assertUploadReferences(uploads)
+      this.logAttachmentLifecycle('stream_send_with_upload_ids', {
+        sessionId,
+        attachmentCount: streamAttachments.length,
+      })
+      const payload = {
+        sessionId,
+        content,
+        debugMode: options?.debugMode ?? false,
+        replaceFromMessageId: options?.replaceFromMessageID,
+        attachments: streamAttachments,
+      }
+
       const timeoutMs = this.config.timeout ?? 0
       if (timeoutMs > 0) {
         connectionTimeoutID = setTimeout(() => {

@@ -9,10 +9,20 @@ import { formatRelativeTime } from '../utils/dateFormatting'
 import CodeOutputsPanel from './CodeOutputsPanel'
 import StreamingCursor from './StreamingCursor'
 import { ChartCard } from './ChartCard'
+import { InteractiveTableCard } from './InteractiveTableCard'
 import { SourcesPanel } from './SourcesPanel'
 import { DownloadCard } from './DownloadCard'
 import { InlineQuestionForm } from './InlineQuestionForm'
-import type { AssistantTurn, Citation, ChartData, Artifact, CodeOutput, PendingQuestion } from '../types'
+import { RetryActionArea } from './RetryActionArea'
+import type {
+  AssistantTurn,
+  Citation,
+  ChartData,
+  Artifact,
+  CodeOutput,
+  PendingQuestion,
+  RenderTableData,
+} from '../types'
 import { DebugPanel } from './DebugPanel'
 import { useTranslation } from '../hooks/useTranslation'
 
@@ -51,6 +61,11 @@ export interface AssistantMessageChartsSlotProps {
 export interface AssistantMessageCodeOutputsSlotProps {
   /** Code execution outputs */
   outputs: CodeOutput[]
+}
+
+export interface AssistantMessageTablesSlotProps {
+  /** Interactive table payloads */
+  tables: RenderTableData[]
 }
 
 export interface AssistantMessageArtifactsSlotProps {
@@ -95,6 +110,8 @@ export interface AssistantMessageSlots {
   charts?: ReactNode | ((props: AssistantMessageChartsSlotProps) => ReactNode)
   /** Custom code outputs renderer */
   codeOutputs?: ReactNode | ((props: AssistantMessageCodeOutputsSlotProps) => ReactNode)
+  /** Custom table renderer */
+  tables?: ReactNode | ((props: AssistantMessageTablesSlotProps) => ReactNode)
   /** Custom artifacts renderer */
   artifacts?: ReactNode | ((props: AssistantMessageArtifactsSlotProps) => ReactNode)
   /** Custom actions renderer */
@@ -116,6 +133,8 @@ export interface AssistantMessageClassNames {
   codeOutputs?: string
   /** Charts container */
   charts?: string
+  /** Tables container */
+  tables?: string
   /** Artifacts container */
   artifacts?: string
   /** Sources container */
@@ -176,6 +195,7 @@ const defaultClassNames: Required<AssistantMessageClassNames> = {
   bubble: 'bg-white dark:bg-gray-800 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm',
   codeOutputs: '',
   charts: 'mb-1 w-full',
+  tables: 'mb-1 flex flex-col gap-3',
   artifacts: 'mb-1 flex flex-wrap gap-2',
   sources: '',
   explanation: 'mt-4 border-t border-gray-100 dark:border-gray-700 pt-4',
@@ -196,6 +216,7 @@ function mergeClassNames(
     bubble: overrides.bubble ?? defaults.bubble,
     codeOutputs: overrides.codeOutputs ?? defaults.codeOutputs,
     charts: overrides.charts ?? defaults.charts,
+    tables: overrides.tables ?? defaults.tables,
     artifacts: overrides.artifacts ?? defaults.artifacts,
     sources: overrides.sources ?? defaults.sources,
     explanation: overrides.explanation ?? defaults.explanation,
@@ -254,6 +275,22 @@ export function AssistantMessage({
     !!pendingQuestion &&
     pendingQuestion.status === 'PENDING' &&
     pendingQuestion.turnId === turnId
+  const hasCodeOutputs = !!turn.codeOutputs?.length
+  const hasChart = !!turn.chartData
+  const hasTables = !!turn.renderTables?.length
+  const hasArtifacts = !!turn.artifacts?.length
+  const hasDebug = showDebug && !!turn.debug
+  const hasRenderablePayload =
+    hasContent ||
+    hasExplanation ||
+    hasPendingQuestion ||
+    hasCodeOutputs ||
+    hasChart ||
+    hasTables ||
+    hasArtifacts ||
+    hasDebug
+  const canRegenerate = !!onRegenerate && !!turnId && !isSystemMessage && isLastTurn
+  const showInlineRetry = !hasRenderablePayload && canRegenerate
 
   const handleCopyClick = useCallback(async () => {
     try {
@@ -301,15 +338,18 @@ export function AssistantMessage({
   const codeOutputsSlotProps: AssistantMessageCodeOutputsSlotProps = {
     outputs: turn.codeOutputs || [],
   }
+  const tablesSlotProps: AssistantMessageTablesSlotProps = {
+    tables: turn.renderTables || [],
+  }
   const artifactsSlotProps: AssistantMessageArtifactsSlotProps = {
     artifacts: turn.artifacts || [],
   }
   const actionsSlotProps: AssistantMessageActionsSlotProps = {
     onCopy: handleCopyClick,
-    onRegenerate: onRegenerate && turnId && !isSystemMessage && isLastTurn ? handleRegenerateClick : undefined,
+    onRegenerate: canRegenerate ? handleRegenerateClick : undefined,
     timestamp,
     canCopy: hasContent,
-    canRegenerate: !!onRegenerate && !!turnId && !isSystemMessage && isLastTurn,
+    canRegenerate,
   }
   const explanationSlotProps: AssistantMessageExplanationSlotProps = {
     explanation: turn.explanation || '',
@@ -331,13 +371,16 @@ export function AssistantMessage({
   return (
     <div className={classes.root}>
       {/* Avatar */}
-      {!hideAvatar && (
+      {!hideAvatar && !showInlineRetry && (
         <div className={avatarClassName}>
           {renderSlot(slots?.avatar, avatarSlotProps, isSystemMessage ? 'SYS' : 'AI')}
         </div>
       )}
 
       <div className={classes.wrapper}>
+        {/* Inline recovery for empty assistant responses */}
+        {showInlineRetry && <RetryActionArea onRetry={() => { void handleRegenerateClick() }} />}
+
         {/* Code outputs */}
         {turn.codeOutputs && turn.codeOutputs.length > 0 && (
           <div className={classes.codeOutputs}>
@@ -353,6 +396,24 @@ export function AssistantMessage({
         {turn.chartData && (
           <div className={classes.charts}>
             {renderSlot(slots?.charts, chartsSlotProps, <ChartCard chartData={turn.chartData} />)}
+          </div>
+        )}
+
+        {/* Interactive tables */}
+        {turn.renderTables && turn.renderTables.length > 0 && (
+          <div className={classes.tables}>
+            {renderSlot(
+              slots?.tables,
+              tablesSlotProps,
+              turn.renderTables.map((table) => (
+                <InteractiveTableCard
+                  key={table.id}
+                  table={table}
+                  onSendMessage={onSendMessage}
+                  sendDisabled={sendDisabled || isStreaming}
+                />
+              ))
+            )}
           </div>
         )}
 
@@ -473,7 +534,7 @@ export function AssistantMessage({
                   {isCopied ? <Check size={14} weight="bold" /> : <Copy size={14} weight="regular" />}
                 </button>
 
-                {onRegenerate && turnId && !isSystemMessage && isLastTurn && (
+                {canRegenerate && (
                   <button
                     onClick={handleRegenerateClick}
                     className={`cursor-pointer ${classes.actionButton}`}

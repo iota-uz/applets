@@ -26,6 +26,7 @@ export interface Artifact {
   id: string
   sessionId: string
   messageId?: string
+  uploadId?: number
   type: string
   name: string
   description?: string
@@ -64,11 +65,11 @@ export interface AssistantTurn {
 }
 
 export interface Attachment {
-  id: string
-  filename: string
-  mimeType: string
-  sizeBytes: number
-  base64Data?: string
+  id?: string
+  uploadId?: number
+  filename?: string
+  mimeType?: string
+  sizeBytes?: number
   url?: string
 }
 
@@ -258,4 +259,3 @@ export interface UserTurn {
   attachments: Attachment[]
   createdAt: string
 }
-

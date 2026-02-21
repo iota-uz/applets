@@ -52,6 +52,7 @@ export interface AssistantTurn {
   citations: Citation[]
   toolCalls?: ToolCall[]
   chartData?: ChartData
+  renderTables?: RenderTableData[]
   artifacts: Artifact[]
   codeOutputs: CodeOutput[]
   debug?: DebugTrace
@@ -114,6 +115,7 @@ export interface Citation {
 export interface Attachment {
   id?: string
   clientKey: string
+  uploadId?: number
   filename: string
   mimeType: string
   sizeBytes: number
@@ -188,6 +190,28 @@ export interface ChartSeries {
   data: number[]
 }
 
+export interface RenderTableExport {
+  url: string
+  filename: string
+  rowCount?: number
+  fileSizeKB?: number
+}
+
+export interface RenderTableData {
+  id: string
+  title?: string
+  query: string
+  columns: string[]
+  headers: string[]
+  rows: unknown[][]
+  totalRows: number
+  pageSize: number
+  truncated: boolean
+  truncatedReason?: string
+  export?: RenderTableExport
+  exportPrompt?: string
+}
+
 export interface Artifact {
   type: 'excel' | 'pdf'
   filename: string
@@ -201,6 +225,7 @@ export interface SessionArtifact {
   id: string
   sessionId: string
   messageId?: string
+  uploadId?: number
   type: string
   name: string
   description?: string

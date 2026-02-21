@@ -68,6 +68,10 @@ function ErrorAlert({ error }: { error: RPCErrorDisplay }) {
 }
 
 const COLLAPSE_STORAGE_KEY = 'bichat-sidebar-collapsed'
+const SESSION_RECONCILE_POLL_INTERVAL_MS = 2000
+const SESSION_RECONCILE_MAX_POLLS = 30
+const ACTIVE_SESSION_MISS_MAX_RETRIES = 8
+const ACTIVE_SESSION_MISS_RETRY_DELAY_MS = 1000
 
 function useSidebarCollapse() {
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -140,7 +144,7 @@ export default function Sidebar({
   const shouldReduceMotion = useReducedMotion()
   const sessionListRef = useRef<HTMLElement>(null)
   const searchContainerRef = useRef<HTMLDivElement>(null)
-  const refreshForActiveSessionRef = useRef<string | null>(null)
+  const activeSessionMissRetriesRef = useRef<Record<string, number>>({})
 
   // Collapse state — disabled when used as a mobile drawer (onClose present)
   const { isCollapsed, toggle, collapse } = useSidebarCollapse()
@@ -205,6 +209,7 @@ export default function Sidebar({
 
   // Refresh key — bump to re-fetch sessions
   const [refreshKey, setRefreshKey] = useState(0)
+  const [reconcilePollToken, setReconcilePollToken] = useState(0)
 
   // Confirm modal state
   const [showConfirm, setShowConfirm] = useState(false)
@@ -231,8 +236,14 @@ export default function Sidebar({
   }, [fetchSessions, refreshKey])
 
   useEffect(() => {
-    const handleSessionsUpdated = () => {
+    const handleSessionsUpdated = (event: Event) => {
       setRefreshKey((k) => k + 1)
+
+      const detail = (event as CustomEvent<{ reason?: string }>).detail
+      const reason = detail?.reason
+      if (!reason || reason === 'session_created' || reason === 'message_sent' || reason === 'title_regenerate_requested') {
+        setReconcilePollToken((k) => k + 1)
+      }
     }
 
     window.addEventListener('bichat:sessions-updated', handleSessionsUpdated)
@@ -242,24 +253,31 @@ export default function Sidebar({
   }, [])
 
   useEffect(() => {
-    if (!activeSessionId) {
-      refreshForActiveSessionRef.current = null
-      return
-    }
+    activeSessionMissRetriesRef.current = {}
+  }, [activeSessionId])
+
+  useEffect(() => {
+    if (!activeSessionId) return
     if (loading) return
 
     const hasActiveSession = sessions.some((session) => session.id === activeSessionId)
     if (hasActiveSession) {
-      if (refreshForActiveSessionRef.current === activeSessionId) {
-        refreshForActiveSessionRef.current = null
-      }
+      delete activeSessionMissRetriesRef.current[activeSessionId]
       return
     }
 
-    if (refreshForActiveSessionRef.current !== activeSessionId) {
-      refreshForActiveSessionRef.current = activeSessionId
-      setRefreshKey((k) => k + 1)
+    const attempts = activeSessionMissRetriesRef.current[activeSessionId] ?? 0
+    if (attempts >= ACTIVE_SESSION_MISS_MAX_RETRIES) {
+      return
     }
+    activeSessionMissRetriesRef.current[activeSessionId] = attempts + 1
+
+    const timeoutId = window.setTimeout(() => {
+      setRefreshKey((k) => k + 1)
+      setReconcilePollToken((k) => k + 1)
+    }, ACTIVE_SESSION_MISS_RETRY_DELAY_MS)
+
+    return () => window.clearTimeout(timeoutId)
   }, [activeSessionId, loading, sessions])
 
   // Poll for title updates on sessions with placeholder titles.
@@ -274,10 +292,8 @@ export default function Sidebar({
   }, [sessions, t])
 
   useEffect(() => {
-    if (!hasPlaceholderTitles) return
+    if (!hasPlaceholderTitles && reconcilePollToken === 0) return
 
-    const pollInterval = 2000
-    const maxPolls = 5
     let pollCount = 0
 
     const intervalId = setInterval(async () => {
@@ -288,13 +304,13 @@ export default function Sidebar({
       } catch {
         // ignore poll errors
       }
-      if (pollCount >= maxPolls) {
+      if (pollCount >= SESSION_RECONCILE_MAX_POLLS) {
         clearInterval(intervalId)
       }
-    }, pollInterval)
+    }, SESSION_RECONCILE_POLL_INTERVAL_MS)
 
     return () => clearInterval(intervalId)
-  }, [hasPlaceholderTitles, dataSource])
+  }, [hasPlaceholderTitles, dataSource, reconcilePollToken])
 
   const handleArchiveRequest = (sessionId: string) => {
     setSessionToArchive(sessionId)
@@ -363,7 +379,9 @@ export default function Sidebar({
     try {
       await dataSource.regenerateSessionTitle(sessionId)
       toast.success(t('BiChat.Sidebar.TitleRegenerated'))
-      setRefreshKey((k) => k + 1)
+      window.dispatchEvent(new CustomEvent('bichat:sessions-updated', {
+        detail: { reason: 'title_regenerate_requested', sessionId },
+      }))
     } catch (err) {
       console.error('Failed to regenerate title:', err)
       const display = toErrorDisplay(err, t('BiChat.Sidebar.FailedToRegenerateTitle'))
