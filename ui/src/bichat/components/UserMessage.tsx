@@ -382,11 +382,11 @@ export function UserMessage({
                   />
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-[11px] text-white/30 select-none hidden sm:inline">
-                      Esc · {/mac|iphone|ipad/i.test(
-                      (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform
-                        ?? navigator?.platform
-                        ?? ''
-                    ) ? '⌘' : 'Ctrl'}+Enter
+                      Esc · {typeof navigator !== 'undefined' && /mac|iphone|ipad/i.test(
+                        (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform
+                          ?? navigator?.platform
+                          ?? ''
+                      ) ? '⌘' : 'Ctrl'}+Enter
                     </span>
                     <div className="flex items-center gap-2 ml-auto">
                       <button

@@ -865,7 +865,7 @@ export class HttpDataSource implements ChatDataSource {
       console.warn('[bichat.attachments]', payload)
       return
     }
-    console.debug('[bichat.attachments]', payload)
+    // Non-failure lifecycle events: no console output (ESLint allows only warn/error)
   }
 
   private async normalizeAttachmentFile(attachment: Attachment, file: File): Promise<File> {
@@ -969,8 +969,9 @@ export class HttpDataSource implements ChatDataSource {
     }
 
     if (attachment.url) {
+      let parsed: URL
       try {
-        const parsed = new URL(attachment.url, window.location?.origin ?? 'https://localhost')
+        parsed = new URL(attachment.url, window.location?.origin ?? 'https://localhost')
         if (!['http:', 'https:'].includes(parsed.protocol)) {
           throw new Error(`Attachment "${attachment.filename}" URL has disallowed protocol: ${parsed.protocol}`)
         }
@@ -978,7 +979,7 @@ export class HttpDataSource implements ChatDataSource {
         if (err instanceof Error && err.message.includes('Attachment')) throw err
         throw new Error(`Attachment "${attachment.filename}" has invalid or malformed URL`)
       }
-      const response = await fetch(attachment.url)
+      const response = await fetch(parsed.href)
       if (!response.ok) {
         throw new Error(`Attachment "${attachment.filename}" decode failed: source HTTP ${response.status}`)
       }
@@ -1060,6 +1061,7 @@ export class HttpDataSource implements ChatDataSource {
 
     try {
       const upload = await this.uploadFile(file)
+      // TODO: Refactor to return updated attachment instead of mutating; callers currently rely on this in-place update.
       attachment.uploadId = upload.id
       attachment.mimeType = upload.mimetype || file.type
       attachment.filename = upload.name || file.name

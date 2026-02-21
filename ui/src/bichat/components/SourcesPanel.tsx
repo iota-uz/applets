@@ -116,7 +116,7 @@ export function SourcesPanel({ citations }: SourcesPanelProps) {
           const cardContent = (
             <>
               <h4 className="text-sm font-medium leading-snug text-[var(--bichat-color-accent,theme(colors.blue.600))] dark:text-blue-400">
-                {citation.title || `Source ${index + 1}`}
+                {citation.title || t('BiChat.Sources.SourceN', { n: String(index + 1) })}
               </h4>
               {citation.excerpt && (
                 <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">

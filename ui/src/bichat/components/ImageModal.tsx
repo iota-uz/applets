@@ -103,10 +103,11 @@ function ImageModal({
     if (!el || !isOpen) return
 
     const handler = (e: WheelEvent) => {
-      e.preventDefault()
       const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP
       const current = scaleRef.current
       const newScale = Math.min(Math.max(current + delta, MIN_SCALE), MAX_SCALE)
+      if (newScale === current) return
+      e.preventDefault()
       setScale(newScale)
       if (newScale <= 1) setPosition({ x: 0, y: 0 })
     }

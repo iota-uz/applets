@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import type { RenderTableData } from '../types'
+import { useTranslation } from '../hooks/useTranslation'
 import { TableExportButton } from './TableExportButton'
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200]
@@ -27,6 +28,7 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
   onSendMessage,
   sendDisabled = false,
 }: InteractiveTableCardProps) {
+  const { t } = useTranslation()
   const defaultPageSize = Math.min(Math.max(table.pageSize || 25, 1), 200)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(defaultPageSize)
@@ -94,19 +96,21 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 dark:border-gray-700 px-3 py-2">
         <div className="min-w-0">
           <h4 className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
-            {table.title || 'Query Results'}
+            {table.title || t('BiChat.Table.QueryResults')}
           </h4>
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            {totalRows.toLocaleString()} row{totalRows === 1 ? '' : 's'} loaded
-            {table.truncated ? ' (truncated)' : ''}
+            {totalRows === 1
+              ? t('BiChat.Table.OneRowLoaded')
+              : t('BiChat.Table.RowsLoaded', { count: String(totalRows) })}
+            {table.truncated ? ` ${t('BiChat.Table.TruncatedSuffix')}` : ''}
           </p>
         </div>
 
         <TableExportButton
           onClick={handleExport}
           disabled={exportDisabled}
-          label="Export to Excel"
-          disabledTooltip={sendDisabled ? 'Please wait' : 'Export is unavailable'}
+          label={t('BiChat.Table.ExportToExcel')}
+          disabledTooltip={sendDisabled ? t('BiChat.Table.PleaseWait') : t('BiChat.Table.ExportUnavailable')}
         />
       </header>
 
@@ -148,7 +152,7 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
                   colSpan={table.columns.length}
                   className="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400"
                 >
-                  No rows to display.
+                  {t('BiChat.Table.NoRows')}
                 </td>
               </tr>
             )}
@@ -158,12 +162,16 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
 
       <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 dark:border-gray-700 px-3 py-2">
         <div className="text-xs text-gray-500 dark:text-gray-400">
-          Showing {from.toLocaleString()}-{to.toLocaleString()} of {totalRows.toLocaleString()}
+          {t('BiChat.Table.Showing', {
+            from: String(from),
+            to: String(to),
+            total: String(totalRows),
+          })}
         </div>
 
         <div className="flex items-center gap-2">
           <label className="text-xs text-gray-500 dark:text-gray-400" htmlFor={`${table.id}-page-size`}>
-            Rows
+            {t('BiChat.Table.RowsLabel')}
           </label>
           <select
             id={`${table.id}-page-size`}
@@ -187,10 +195,10 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
             disabled={page <= 1}
             className="cursor-pointer rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs text-gray-700 dark:text-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Prev
+            {t('BiChat.Table.Prev')}
           </button>
           <span className="text-xs text-gray-500 dark:text-gray-400">
-            Page {page.toLocaleString()} / {totalPages.toLocaleString()}
+            {t('BiChat.Table.PageOf', { page: String(page), total: String(totalPages) })}
           </span>
           <button
             type="button"
@@ -198,14 +206,14 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
             disabled={page >= totalPages}
             className="cursor-pointer rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs text-gray-700 dark:text-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Next
+            {t('BiChat.Table.Next')}
           </button>
         </div>
       </footer>
 
       {table.truncated && (
         <p className="border-t border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-700/60 dark:bg-amber-900/20 dark:text-amber-300">
-          This table is truncated by the tool response limit. Refine the SQL query or export for a fuller dataset.
+          {t('BiChat.Table.TruncatedNotice')}
         </p>
       )}
     </section>
