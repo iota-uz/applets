@@ -4,7 +4,7 @@
  * Router-agnostic: uses onSelect callback instead of Link
  */
 
-import React, { useRef, memo, useState, useEffect } from 'react'
+import React, { useRef, memo, useState, useEffect, useMemo } from 'react'
 import { motion, useMotionValue, useTransform, type PanInfo } from 'framer-motion'
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import { DotsThree, Check, Bookmark, PencilSimple, Archive, ArrowsClockwise, ArrowUUpLeft, Trash } from '@phosphor-icons/react'
@@ -114,55 +114,59 @@ const SessionItem = memo<SessionItemProps>(
       return () => element.removeEventListener('contextmenu', handleContextMenu)
     }, [itemRef])
 
-    const contextMenuItems: ContextMenuItem[] = mode === 'archived'
-      ? [
-        ...(onRestore ? [{
-          id: 'restore',
-          label: t('BiChat.Archived.RestoreButton'),
-          icon: <ArrowUUpLeft size={20} />,
-          onClick: () => onRestore(),
-        }] : []),
-        ...(onRename ? [{
-          id: 'rename',
-          label: t('BiChat.Sidebar.RenameChat'),
-          icon: <PencilSimple size={20} />,
-          onClick: () => editableTitleRef.current?.startEditing(),
-        }] : []),
-      ]
-      : [
-        ...(onPin ? [{
-          id: 'pin',
-          label: session.pinned ? t('BiChat.Sidebar.UnpinChat') : t('BiChat.Sidebar.PinChat'),
-          icon: session.pinned ? <Check size={20} /> : <Bookmark size={20} />,
-          onClick: () => onPin(),
-        }] : []),
-        ...(onRename ? [{
-          id: 'rename',
-          label: t('BiChat.Sidebar.RenameChat'),
-          icon: <PencilSimple size={20} />,
-          onClick: () => editableTitleRef.current?.startEditing(),
-        }] : []),
-        ...(onRegenerateTitle ? [{
-          id: 'regenerate',
-          label: t('BiChat.Sidebar.RegenerateTitle'),
-          icon: <ArrowsClockwise size={20} />,
-          onClick: () => onRegenerateTitle(),
-        }] : []),
-        ...(onArchive ? [{
-          id: 'archive',
-          label: t('BiChat.Sidebar.ArchiveChat'),
-          icon: <Archive size={20} />,
-          onClick: () => onArchive(),
-          variant: 'danger' as const,
-        }] : []),
-        ...(onDelete ? [{
-          id: 'delete',
-          label: t('BiChat.Sidebar.DeleteChat'),
-          icon: <Trash size={20} />,
-          onClick: () => onDelete(),
-          variant: 'danger' as const,
-        }] : []),
-      ]
+    const contextMenuItems: ContextMenuItem[] = useMemo(
+      () =>
+        mode === 'archived'
+          ? [
+            ...(onRestore ? [{
+              id: 'restore',
+              label: t('BiChat.Archived.RestoreButton'),
+              icon: <ArrowUUpLeft size={20} />,
+              onClick: () => onRestore(),
+            }] : []),
+            ...(onRename ? [{
+              id: 'rename',
+              label: t('BiChat.Sidebar.RenameChat'),
+              icon: <PencilSimple size={20} />,
+              onClick: () => editableTitleRef.current?.startEditing(),
+            }] : []),
+          ]
+          : [
+            ...(onPin ? [{
+              id: 'pin',
+              label: session.pinned ? t('BiChat.Sidebar.UnpinChat') : t('BiChat.Sidebar.PinChat'),
+              icon: session.pinned ? <Check size={20} /> : <Bookmark size={20} />,
+              onClick: () => onPin(),
+            }] : []),
+            ...(onRename ? [{
+              id: 'rename',
+              label: t('BiChat.Sidebar.RenameChat'),
+              icon: <PencilSimple size={20} />,
+              onClick: () => editableTitleRef.current?.startEditing(),
+            }] : []),
+            ...(onRegenerateTitle ? [{
+              id: 'regenerate',
+              label: t('BiChat.Sidebar.RegenerateTitle'),
+              icon: <ArrowsClockwise size={20} />,
+              onClick: () => onRegenerateTitle(),
+            }] : []),
+            ...(onArchive ? [{
+              id: 'archive',
+              label: t('BiChat.Sidebar.ArchiveChat'),
+              icon: <Archive size={20} />,
+              onClick: () => onArchive(),
+              variant: 'danger' as const,
+            }] : []),
+            ...(onDelete ? [{
+              id: 'delete',
+              label: t('BiChat.Sidebar.DeleteChat'),
+              icon: <Trash size={20} />,
+              onClick: () => onDelete(),
+              variant: 'danger' as const,
+            }] : []),
+          ],
+      [mode, session.pinned, onRestore, onPin, onRename, onRegenerateTitle, onArchive, onDelete, t],
+    )
 
     const hasContextMenu = contextMenuItems.length > 0
 

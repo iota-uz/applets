@@ -328,11 +328,23 @@ export default function Sidebar({
     setShowConfirm(true)
   }
 
+  const handleUndoArchive = useCallback(async (sessionId: string) => {
+    try {
+      await dataSource.unarchiveSession(sessionId)
+      setRefreshKey((k) => k + 1)
+      window.dispatchEvent(new CustomEvent('bichat:sessions-updated', {
+        detail: { reason: 'unarchived', sessionId },
+      }))
+    } catch (undoErr) {
+      console.error('Failed to restore session:', undoErr)
+      toast.error(t('BiChat.Sidebar.FailedToRestoreChat'))
+    }
+  }, [dataSource, t, toast])
+
   const confirmArchive = async () => {
     if (!sessionToArchive) return
 
     const wasCurrentSession = activeSessionId === sessionToArchive
-
     const archivedId = sessionToArchive
 
     try {
@@ -348,18 +360,7 @@ export default function Sidebar({
 
       toast.success(t('BiChat.Sidebar.ChatArchived'), 8000, {
         label: t('BiChat.Common.Undo'),
-        onClick: async () => {
-          try {
-            await dataSource.unarchiveSession(archivedId)
-            setRefreshKey((k) => k + 1)
-            window.dispatchEvent(new CustomEvent('bichat:sessions-updated', {
-              detail: { reason: 'unarchived', sessionId: archivedId },
-            }))
-          } catch (undoErr) {
-            console.error('Failed to restore session:', undoErr)
-            toast.error(t('BiChat.Sidebar.FailedToRestoreChat'))
-          }
-        },
+        onClick: () => handleUndoArchive(archivedId),
       })
     } catch (err) {
       console.error('Failed to archive session:', err)
@@ -418,6 +419,28 @@ export default function Sidebar({
       toast.error(display.title)
     }
   }
+
+  // Stable callbacks for SessionItem — accept session ID as parameter
+  const handleSessionSelect = useCallback(
+    (sessionId: string) => onSessionSelect(sessionId),
+    [onSessionSelect],
+  )
+  const handleSessionArchive = useCallback(
+    (sessionId: string) => handleArchiveRequest(sessionId),
+    [],
+  )
+  const handleSessionPin = useCallback(
+    (sessionId: string, pinned: boolean) => handleTogglePin(sessionId, pinned),
+    [handleTogglePin],
+  )
+  const handleSessionRename = useCallback(
+    (sessionId: string, newTitle: string) => handleRenameSession(sessionId, newTitle),
+    [handleRenameSession],
+  )
+  const handleSessionRegenerateTitle = useCallback(
+    (sessionId: string) => handleRegenerateTitle(sessionId),
+    [handleRegenerateTitle],
+  )
 
   // Filter sessions by search
   const filteredSessions = useMemo(() => {
@@ -769,19 +792,11 @@ export default function Sidebar({
                               key={session.id}
                               session={session}
                               isActive={session.id === activeSessionId}
-                              onSelect={() => onSessionSelect(session.id)}
-                              onArchive={() =>
-                                handleArchiveRequest(session.id)
-                              }
-                              onPin={() =>
-                                handleTogglePin(session.id, session.pinned)
-                              }
-                              onRename={(newTitle) =>
-                                handleRenameSession(session.id, newTitle)
-                              }
-                              onRegenerateTitle={() =>
-                                handleRegenerateTitle(session.id)
-                              }
+                              onSelect={() => handleSessionSelect(session.id)}
+                              onArchive={() => handleSessionArchive(session.id)}
+                              onPin={() => handleSessionPin(session.id, session.pinned)}
+                              onRename={(newTitle) => handleSessionRename(session.id, newTitle)}
+                              onRegenerateTitle={() => handleSessionRegenerateTitle(session.id)}
                             />
                           ))}
                         </motion.div>
@@ -809,19 +824,11 @@ export default function Sidebar({
                               key={session.id}
                               session={session}
                               isActive={session.id === activeSessionId}
-                              onSelect={() => onSessionSelect(session.id)}
-                              onArchive={() =>
-                                handleArchiveRequest(session.id)
-                              }
-                              onPin={() =>
-                                handleTogglePin(session.id, session.pinned)
-                              }
-                              onRename={(newTitle) =>
-                                handleRenameSession(session.id, newTitle)
-                              }
-                              onRegenerateTitle={() =>
-                                handleRegenerateTitle(session.id)
-                              }
+                              onSelect={() => handleSessionSelect(session.id)}
+                              onArchive={() => handleSessionArchive(session.id)}
+                              onPin={() => handleSessionPin(session.id, session.pinned)}
+                              onRename={(newTitle) => handleSessionRename(session.id, newTitle)}
+                              onRegenerateTitle={() => handleSessionRegenerateTitle(session.id)}
                             />
                           ))}
                         </motion.div>

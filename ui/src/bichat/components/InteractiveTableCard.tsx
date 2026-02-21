@@ -202,9 +202,6 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
               {dt.visibleColumns.map((col, colIdx) => (
                 <DataTableCell
                   key={`${table.id}-cell-${rowIndex}-${col.index}`}
-                  tableId={table.id}
-                  rowIndex={rowIndex}
-                  columnIndex={col.index}
                   formatted={dt.formatCell(row[col.index], col.index)}
                   alignment={dt.getCellAlignment(col.index)}
                   onCopy={handleCellCopy}

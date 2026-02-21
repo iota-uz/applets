@@ -18,6 +18,14 @@ import { getToolLabel } from '../utils/toolLabels'
 import { groupSteps } from '../utils/activitySteps'
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function formatDuration(ms: number): string {
+  return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`
+}
+
+// ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
 
@@ -154,11 +162,7 @@ function StepItem({ step, t, toolLabelPrefix }: StepItemProps) {
 
   const isCompleted = step.status === 'completed'
   const isFailed = step.status === 'failed'
-  const duration = step.durationMs != null
-    ? step.durationMs < 1000
-      ? `${step.durationMs}ms`
-      : `${(step.durationMs / 1000).toFixed(1)}s`
-    : null
+  const duration = step.durationMs != null ? formatDuration(step.durationMs) : null
 
   return (
     <motion.div
@@ -176,7 +180,7 @@ function StepItem({ step, t, toolLabelPrefix }: StepItemProps) {
       }`}
       aria-label={`${label}, ${isFailed ? 'failed' : isCompleted ? 'completed' : 'in progress'}`}
     >
-      <StatusIndicator completed={isCompleted} failed={isFailed} />
+      <StatusIndicator status={step.status} />
       <span className={isCompleted || isFailed ? '' : 'font-medium'}>{label}</span>
       {step.error && (
         <span
@@ -258,8 +262,8 @@ function AgentGroup({ agentName, steps, t, toolLabelPrefix }: AgentGroupProps) {
 // StatusIndicator
 // ---------------------------------------------------------------------------
 
-function StatusIndicator({ completed, failed }: { completed: boolean; failed?: boolean }) {
-  if (failed) {
+function StatusIndicator({ status }: { status: ActivityStep['status'] }) {
+  if (status === 'failed') {
     return (
       <motion.div
         initial={{ scale: 0.5, opacity: 0 }}
@@ -272,7 +276,7 @@ function StatusIndicator({ completed, failed }: { completed: boolean; failed?: b
     )
   }
 
-  if (completed) {
+  if (status === 'completed') {
     return (
       <motion.svg
         initial={{ scale: 0.5, opacity: 0 }}

@@ -98,12 +98,29 @@ export function useToast(): UseToastReturn {
     recentToastMapRef.current.clear()
   }, [])
 
+  const success = useCallback(
+    (msg: string, duration?: number, action?: ToastAction) => showToast('success', msg, duration, action),
+    [showToast],
+  )
+  const error = useCallback(
+    (msg: string, duration?: number, action?: ToastAction) => showToast('error', msg, duration, action),
+    [showToast],
+  )
+  const info = useCallback(
+    (msg: string, duration?: number, action?: ToastAction) => showToast('info', msg, duration, action),
+    [showToast],
+  )
+  const warning = useCallback(
+    (msg: string, duration?: number, action?: ToastAction) => showToast('warning', msg, duration, action),
+    [showToast],
+  )
+
   return {
     toasts,
-    success: (msg: string, duration?: number, action?: ToastAction) => showToast('success', msg, duration, action),
-    error: (msg: string, duration?: number, action?: ToastAction) => showToast('error', msg, duration, action),
-    info: (msg: string, duration?: number, action?: ToastAction) => showToast('info', msg, duration, action),
-    warning: (msg: string, duration?: number, action?: ToastAction) => showToast('warning', msg, duration, action),
+    success,
+    error,
+    info,
+    warning,
     dismiss,
     dismissAll,
   }

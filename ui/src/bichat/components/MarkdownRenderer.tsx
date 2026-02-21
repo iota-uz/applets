@@ -109,125 +109,128 @@ function MarkdownRenderer({
     return processCitations(content, citations)
   }, [content, citations])
 
-  const components: Components = {
-    // Remove <pre> wrapper for code blocks - CodeBlock provides its own container
-    pre: ({ children }) => <>{children}</>,
-    code({ inline, className, children, node }: CodeProps) {
-      const match = /language-(\w+)/.exec(className || '')
-      const language = match ? match[1] : ''
-      const value = String(children).replace(/\n$/, '')
+  const components: Components = useMemo(
+    () => ({
+      // Remove <pre> wrapper for code blocks - CodeBlock provides its own container
+      pre: ({ children }) => <>{children}</>,
+      code({ inline, className, children, node }: CodeProps) {
+        const match = /language-(\w+)/.exec(className || '')
+        const language = match ? match[1] : ''
+        const value = String(children).replace(/\n$/, '')
 
-      // Some react-markdown versions may omit `inline`.
-      // In that case, infer inline code conservatively from content shape.
-      const hasLineBreak = value.includes('\n')
-      const startLine = node?.position?.start?.line
-      const endLine = node?.position?.end?.line
-      const spansSingleLine = startLine !== undefined && endLine !== undefined && startLine === endLine
-      const inferredInline = !className && !hasLineBreak && (spansSingleLine || startLine === undefined || endLine === undefined)
-      const isInline = inline === true || (inline !== false && inferredInline)
+        // Some react-markdown versions may omit `inline`.
+        // In that case, infer inline code conservatively from content shape.
+        const hasLineBreak = value.includes('\n')
+        const startLine = node?.position?.start?.line
+        const endLine = node?.position?.end?.line
+        const spansSingleLine = startLine !== undefined && endLine !== undefined && startLine === endLine
+        const inferredInline = !className && !hasLineBreak && (spansSingleLine || startLine === undefined || endLine === undefined)
+        const isInline = inline === true || (inline !== false && inferredInline)
 
-      if (isInline) {
-        return (
-          <code className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded text-sm font-mono">
-            {value}
-          </code>
-        )
-      }
+        if (isInline) {
+          return (
+            <code className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded text-sm font-mono">
+              {value}
+            </code>
+          )
+        }
 
-      const lang = language.toLowerCase()
-      const chartData =
-        lang === 'chart'
-          ? parseChartDataFromJsonString(value, 'Chart')
-          : lang === 'json' && value.includes('"chartType"')
+        const lang = language.toLowerCase()
+        const chartData =
+          lang === 'chart'
             ? parseChartDataFromJsonString(value, 'Chart')
-            : null
+            : lang === 'json' && value.includes('"chartType"')
+              ? parseChartDataFromJsonString(value, 'Chart')
+              : null
 
-      if (chartData) {
+        if (chartData) {
+          return (
+            <div className="my-4">
+              <ChartCard chartData={chartData} />
+            </div>
+          )
+        }
+
+        // Block code - rendered outside of <p> context due to pre handler above
         return (
-          <div className="my-4">
-            <ChartCard chartData={chartData} />
-          </div>
+          <Suspense
+            fallback={
+              <pre className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 overflow-x-auto my-4">
+                <code className="text-sm font-mono">{value}</code>
+              </pre>
+            }
+          >
+            <CodeBlock
+              language={language}
+              value={value}
+              inline={false}
+              copyLabel={resolvedCopyLabel}
+              copiedLabel={resolvedCopiedLabel}
+            />
+          </Suspense>
         )
-      }
+      },
+      p: ({ children }) => {
+        if (hasBlockChildren(children)) {
+          return <div className="markdown-p my-2">{children}</div>
+        }
 
-      // Block code - rendered outside of <p> context due to pre handler above
-      return (
-        <Suspense
-          fallback={
-            <pre className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 overflow-x-auto my-4">
-              <code className="text-sm font-mono">{value}</code>
-            </pre>
-          }
+        return <p className="markdown-p my-2">{children}</p>
+      },
+      a: ({ href, children }) => (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="markdown-link text-[var(--bichat-color-accent)] underline decoration-[var(--bichat-color-accent)] decoration-from-font hover:text-[var(--bichat-color-accent-hover)] hover:decoration-[var(--bichat-color-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--bichat-color-accent)] focus-visible:ring-offset-2 rounded"
         >
-          <CodeBlock
-            language={language}
-            value={value}
-            inline={false}
-            copyLabel={resolvedCopyLabel}
-            copiedLabel={resolvedCopiedLabel}
-          />
-        </Suspense>
-      )
-    },
-    p: ({ children }) => {
-      if (hasBlockChildren(children)) {
-        return <div className="markdown-p my-2">{children}</div>
-      }
-
-      return <p className="markdown-p my-2">{children}</p>
-    },
-    a: ({ href, children }) => (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="markdown-link text-[var(--bichat-color-accent)] underline decoration-[var(--bichat-color-accent)] decoration-from-font hover:text-[var(--bichat-color-accent-hover)] hover:decoration-[var(--bichat-color-accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--bichat-color-accent)] focus-visible:ring-offset-2 rounded"
-      >
-        {children}
-      </a>
-    ),
-    h1: ({ children }) => <h1 className="markdown-h1 text-2xl font-bold mt-6 mb-3">{children}</h1>,
-    h2: ({ children }) => <h2 className="markdown-h2 text-xl font-bold mt-5 mb-2">{children}</h2>,
-    h3: ({ children }) => <h3 className="markdown-h3 text-lg font-semibold mt-4 mb-2">{children}</h3>,
-    h4: ({ children }) => <h4 className="markdown-h4 text-base font-semibold mt-3 mb-1">{children}</h4>,
-    h5: ({ children }) => <h5 className="markdown-h5 text-sm font-semibold mt-2 mb-1">{children}</h5>,
-    h6: ({ children }) => <h6 className="markdown-h6 text-sm font-medium mt-2 mb-1">{children}</h6>,
-    ul: ({ children }) => <ul className="markdown-ul list-disc list-inside my-2 space-y-1">{children}</ul>,
-    ol: ({ children }) => <ol className="markdown-ol list-decimal list-inside my-2 space-y-1">{children}</ol>,
-    li: ({ children }) => <li className="markdown-li">{children}</li>,
-    blockquote: ({ children }) => (
-      <blockquote className="markdown-blockquote border-l-4 border-gray-300 dark:border-gray-600 pl-4 my-2 italic text-gray-600 dark:text-gray-400">
-        {children}
-      </blockquote>
-    ),
-    table: ({ children }) => (
-      <TableWithExport
-        sendMessage={sendMessage}
-        disabled={sendDisabled}
-        exportLabel={resolvedExportLabel}
-      >
-        {children}
-      </TableWithExport>
-    ),
-    thead: ({ children }) => (
-      <thead className="markdown-thead bg-gray-100 dark:bg-gray-800">{children}</thead>
-    ),
-    tbody: ({ children }) => <tbody className="markdown-tbody">{children}</tbody>,
-    tr: ({ children }) => (
-      <tr className="markdown-tr border-b border-gray-200 dark:border-gray-700">{children}</tr>
-    ),
-    th: ({ children }) => (
-      <th className="markdown-th px-3 py-2 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
-        {children}
-      </th>
-    ),
-    td: ({ children }) => (
-      <td className="markdown-td px-3 py-2 text-sm text-gray-600 dark:text-gray-400">{children}</td>
-    ),
-    hr: () => <hr className="markdown-hr my-4 border-gray-200 dark:border-gray-700" />,
-    strong: ({ children }) => <strong className="markdown-strong font-semibold">{children}</strong>,
-    em: ({ children }) => <em className="markdown-em italic">{children}</em>,
-  }
+          {children}
+        </a>
+      ),
+      h1: ({ children }) => <h1 className="markdown-h1 text-2xl font-bold mt-6 mb-3">{children}</h1>,
+      h2: ({ children }) => <h2 className="markdown-h2 text-xl font-bold mt-5 mb-2">{children}</h2>,
+      h3: ({ children }) => <h3 className="markdown-h3 text-lg font-semibold mt-4 mb-2">{children}</h3>,
+      h4: ({ children }) => <h4 className="markdown-h4 text-base font-semibold mt-3 mb-1">{children}</h4>,
+      h5: ({ children }) => <h5 className="markdown-h5 text-sm font-semibold mt-2 mb-1">{children}</h5>,
+      h6: ({ children }) => <h6 className="markdown-h6 text-sm font-medium mt-2 mb-1">{children}</h6>,
+      ul: ({ children }) => <ul className="markdown-ul list-disc list-inside my-2 space-y-1">{children}</ul>,
+      ol: ({ children }) => <ol className="markdown-ol list-decimal list-inside my-2 space-y-1">{children}</ol>,
+      li: ({ children }) => <li className="markdown-li">{children}</li>,
+      blockquote: ({ children }) => (
+        <blockquote className="markdown-blockquote border-l-4 border-gray-300 dark:border-gray-600 pl-4 my-2 italic text-gray-600 dark:text-gray-400">
+          {children}
+        </blockquote>
+      ),
+      table: ({ children }) => (
+        <TableWithExport
+          sendMessage={sendMessage}
+          disabled={sendDisabled}
+          exportLabel={resolvedExportLabel}
+        >
+          {children}
+        </TableWithExport>
+      ),
+      thead: ({ children }) => (
+        <thead className="markdown-thead bg-gray-100 dark:bg-gray-800">{children}</thead>
+      ),
+      tbody: ({ children }) => <tbody className="markdown-tbody">{children}</tbody>,
+      tr: ({ children }) => (
+        <tr className="markdown-tr border-b border-gray-200 dark:border-gray-700">{children}</tr>
+      ),
+      th: ({ children }) => (
+        <th className="markdown-th px-3 py-2 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
+          {children}
+        </th>
+      ),
+      td: ({ children }) => (
+        <td className="markdown-td px-3 py-2 text-sm text-gray-600 dark:text-gray-400">{children}</td>
+      ),
+      hr: () => <hr className="markdown-hr my-4 border-gray-200 dark:border-gray-700" />,
+      strong: ({ children }) => <strong className="markdown-strong font-semibold">{children}</strong>,
+      em: ({ children }) => <em className="markdown-em italic">{children}</em>,
+    }),
+    [resolvedCopyLabel, resolvedCopiedLabel, resolvedExportLabel, sendMessage, sendDisabled],
+  )
 
   return (
     <div className="markdown-content">

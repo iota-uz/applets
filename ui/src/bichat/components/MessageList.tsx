@@ -24,6 +24,57 @@ const MarkdownRenderer = lazy(() =>
   import('./MarkdownRenderer').then((m) => ({ default: m.MarkdownRenderer }))
 )
 
+function MessageListSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden="true">
+      {/* User message skeleton */}
+      <div className="flex justify-end">
+        <div className="w-3/5 max-w-md rounded-2xl bg-gray-100 dark:bg-gray-800 p-4 space-y-2">
+          <div className="h-3 w-full rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+          <div className="h-3 w-4/5 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+        </div>
+      </div>
+      {/* Assistant message skeleton */}
+      <div className="flex gap-3">
+        <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse shrink-0" />
+        <div className="w-4/5 max-w-lg rounded-2xl bg-gray-100 dark:bg-gray-800 p-4 space-y-2">
+          <div className="h-3 w-full rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+          <div className="h-3 w-5/6 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+          <div className="h-3 w-3/5 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+        </div>
+      </div>
+      {/* Second user message skeleton */}
+      <div className="flex justify-end">
+        <div className="w-2/5 max-w-xs rounded-2xl bg-gray-100 dark:bg-gray-800 p-4 space-y-2">
+          <div className="h-3 w-full rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StreamingBubble({ content, normalizedContent }: { content: string; normalizedContent: string }) {
+  return (
+    <div className="flex gap-3">
+      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-medium text-xs">
+        AI
+      </div>
+      <div className="flex-1 max-w-[85%] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-bl-sm px-4 py-3 text-gray-900 dark:text-gray-100">
+        <Suspense
+          fallback={
+            <div className="prose prose-sm max-w-none dark:prose-invert whitespace-pre-wrap">
+              {content}
+            </div>
+          }
+        >
+          <MarkdownRenderer content={normalizedContent} sendDisabled />
+        </Suspense>
+        <StreamingCursor />
+      </div>
+    </div>
+  )
+}
+
 interface MessageListProps {
   /** Custom render function for user turns */
   renderUserTurn?: (turn: ConversationTurn) => ReactNode
@@ -142,37 +193,17 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
     [streamingContent]
   )
 
+  const handleScrollToBottom = useCallback(() => {
+    scrollToBottom('smooth')
+    setUnreadCount(0)
+  }, [scrollToBottom])
+
   return (
     <div className="relative flex-1 min-h-0">
       <div ref={containerRef} className="h-full overflow-y-auto px-4 py-6">
         <div className="mx-auto space-y-6">
           {/* Loading skeleton when no turns yet */}
-          {fetching && turns.length === 0 && (
-            <div className="space-y-6" aria-hidden="true">
-              {/* User message skeleton */}
-              <div className="flex justify-end">
-                <div className="w-3/5 max-w-md rounded-2xl bg-gray-100 dark:bg-gray-800 p-4 space-y-2">
-                  <div className="h-3 w-full rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                  <div className="h-3 w-4/5 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                </div>
-              </div>
-              {/* Assistant message skeleton */}
-              <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse shrink-0" />
-                <div className="w-4/5 max-w-lg rounded-2xl bg-gray-100 dark:bg-gray-800 p-4 space-y-2">
-                  <div className="h-3 w-full rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                  <div className="h-3 w-5/6 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                  <div className="h-3 w-3/5 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                </div>
-              </div>
-              {/* Second user message skeleton */}
-              <div className="flex justify-end">
-                <div className="w-2/5 max-w-xs rounded-2xl bg-gray-100 dark:bg-gray-800 p-4 space-y-2">
-                  <div className="h-3 w-full rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                </div>
-              </div>
-            </div>
-          )}
+          {fetching && turns.length === 0 && <MessageListSkeleton />}
           {turns.map((turn, index) => {
             const turnDate = new Date(turn.createdAt)
             const prevDate = index > 0 ? new Date(turns[index - 1].createdAt) : null
@@ -219,33 +250,14 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
           </AnimatePresence>
           {/* Streaming content — shown once final answer tokens arrive */}
           {isStreaming && streamingContent && (
-            <div className="flex gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-medium text-xs">
-                AI
-              </div>
-              <div className="flex-1 max-w-[85%] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-bl-sm px-4 py-3 text-gray-900 dark:text-gray-100">
-                <Suspense
-                  fallback={
-                    <div className="prose prose-sm max-w-none dark:prose-invert whitespace-pre-wrap">
-                      {streamingContent}
-                    </div>
-                  }
-                >
-                  <MarkdownRenderer content={normalizedStreaming} sendDisabled />
-                </Suspense>
-                <StreamingCursor />
-              </div>
-            </div>
+            <StreamingBubble content={streamingContent} normalizedContent={normalizedStreaming} />
           )}
           <div ref={messagesEndRef} />
         </div>
       </div>
       <ScrollToBottomButton
         show={showScrollButton}
-        onClick={() => {
-          scrollToBottom('smooth')
-          setUnreadCount(0)
-        }}
+        onClick={handleScrollToBottom}
         unreadCount={unreadCount}
         label={isStreaming && showScrollButton ? 'New messages' : undefined}
       />

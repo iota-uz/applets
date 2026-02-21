@@ -330,6 +330,14 @@ export function useDataTable(
 
   const clearSort = useCallback(() => setSort(null), [])
 
+  const handleSetPageSize = useCallback(
+    (size: number) => {
+      setPageSize(size)
+      setPage(1)
+    },
+    [],
+  )
+
   const getTableAsTSV = useCallback((): string => {
     const escape = (v: string) => v.replace(/[\t\r\n]/g, ' ')
     const visCols = columns.filter((c) => c.visible)
@@ -355,13 +363,7 @@ export function useDataTable(
     pageSizeOptions,
     pageRows,
     setPage,
-    setPageSize: useCallback(
-      (size: number) => {
-        setPageSize(size)
-        setPage(1)
-      },
-      [],
-    ),
+    setPageSize: handleSetPageSize,
 
     sort,
     toggleSort,

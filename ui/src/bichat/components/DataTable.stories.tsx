@@ -43,7 +43,7 @@ export const Cell: Story = {
           name: 'Text cell (left-aligned)',
           content: (
             <table><tbody><tr>
-              <DataTableCell tableId="t" rowIndex={0} columnIndex={0} formatted={{ display: 'EMEA', raw: 'EMEA', type: 'string', isNull: false }} alignment="left" onCopy={fn()} />
+              <DataTableCell formatted={{ display: 'EMEA', raw: 'EMEA', type: 'string', isNull: false }} alignment="left" onCopy={fn()} />
             </tr></tbody></table>
           ),
         },
@@ -51,7 +51,7 @@ export const Cell: Story = {
           name: 'Number cell (right-aligned)',
           content: (
             <table><tbody><tr>
-              <DataTableCell tableId="t" rowIndex={0} columnIndex={1} formatted={{ display: '$1,240,000', raw: 1240000, type: 'number', isNull: false }} alignment="right" onCopy={fn()} />
+              <DataTableCell formatted={{ display: '$1,240,000', raw: 1240000, type: 'number', isNull: false }} alignment="right" onCopy={fn()} />
             </tr></tbody></table>
           ),
         },
@@ -59,7 +59,7 @@ export const Cell: Story = {
           name: 'Null cell',
           content: (
             <table><tbody><tr>
-              <DataTableCell tableId="t" rowIndex={0} columnIndex={2} formatted={{ display: 'NULL', raw: null, type: 'string', isNull: true }} alignment="left" />
+              <DataTableCell formatted={{ display: 'NULL', raw: null, type: 'string', isNull: true }} alignment="left" />
             </tr></tbody></table>
           ),
         },

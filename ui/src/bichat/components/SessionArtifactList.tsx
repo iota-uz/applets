@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useState, useMemo } from 'react'
 import {
   ChartBar,
   Code,
@@ -9,6 +9,7 @@ import {
 import type { SessionArtifact } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
 import { formatFileSize, getFileVisual, CHART_VISUAL, type FileVisual } from '../utils/fileUtils'
+import { getArtifactName, isImageArtifact } from '../utils/artifactHelpers'
 
 interface SessionArtifactListProps {
   artifacts: SessionArtifact[]
@@ -22,13 +23,6 @@ const TYPE_LABEL_KEYS: Record<string, string> = {
   export: 'BiChat.Artifacts.GroupExports',
   attachment: 'BiChat.Artifacts.GroupAttachments',
   other: 'BiChat.Artifacts.GroupOther',
-}
-
-const FALLBACK_ARTIFACT_NAME = 'Untitled artifact'
-
-function getArtifactName(artifact: SessionArtifact): string {
-  const name = artifact.name?.trim()
-  return name && name.length > 0 ? name : FALLBACK_ARTIFACT_NAME
 }
 
 function getGroupIcon(type: string): ReactNode {
@@ -45,12 +39,6 @@ function getGroupIcon(type: string): ReactNode {
     default:
       return <Package className={cls} weight="bold" />
   }
-}
-
-function isImageArtifact(artifact: SessionArtifact): boolean {
-  const mime = artifact.mimeType?.toLowerCase() || ''
-  const name = getArtifactName(artifact).toLowerCase()
-  return mime.startsWith('image/') || /\.(png|jpe?g|gif|webp|svg|bmp)$/.test(name)
 }
 
 function ImageThumbnail({ src, alt }: { src: string; alt: string }) {
@@ -112,7 +100,7 @@ export function SessionArtifactList({
   onSelect,
 }: SessionArtifactListProps) {
   const { t } = useTranslation()
-  const grouped = groupArtifactsByType(artifacts)
+  const grouped = useMemo(() => groupArtifactsByType(artifacts), [artifacts])
 
   if (artifacts.length === 0) {
     return (

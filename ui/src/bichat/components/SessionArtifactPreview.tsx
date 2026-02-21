@@ -4,18 +4,19 @@ import type { SessionArtifact } from '../types'
 import { parseChartDataFromSpec, isRecord } from '../utils/chartSpec'
 import { ChartCard } from './ChartCard'
 import { useTranslation } from '../hooks/useTranslation'
+import {
+  getArtifactName,
+  isImageArtifact,
+  isPDFArtifact,
+  isOfficeDocumentArtifact,
+  isTextArtifact,
+} from '../utils/artifactHelpers'
 
 interface SessionArtifactPreviewProps {
   artifact: SessionArtifact
 }
 
 const TEXT_PREVIEW_MAX_CHARS = 24000
-const FALLBACK_ARTIFACT_NAME = 'Untitled artifact'
-
-function getArtifactName(artifact: SessionArtifact): string {
-  const name = artifact.name?.trim()
-  return name && name.length > 0 ? name : FALLBACK_ARTIFACT_NAME
-}
 
 function parseChartDataFromArtifact(artifact: SessionArtifact) {
   const metadata = artifact.metadata
@@ -29,44 +30,6 @@ function parseChartDataFromArtifact(artifact: SessionArtifact) {
   }
 
   return parseChartDataFromSpec(spec, getArtifactName(artifact))
-}
-
-function isImageArtifact(artifact: SessionArtifact): boolean {
-  const mime = artifact.mimeType?.toLowerCase() || ''
-  const name = getArtifactName(artifact).toLowerCase()
-  return mime.startsWith('image/') || /\.(png|jpe?g|gif|webp|svg|bmp)$/.test(name)
-}
-
-function isPDFArtifact(artifact: SessionArtifact): boolean {
-  const mime = artifact.mimeType?.toLowerCase() || ''
-  const name = getArtifactName(artifact).toLowerCase()
-  return mime.includes('pdf') || name.endsWith('.pdf')
-}
-
-function isOfficeDocumentArtifact(artifact: SessionArtifact): boolean {
-  const mime = artifact.mimeType?.toLowerCase() || ''
-  const name = getArtifactName(artifact).toLowerCase()
-  return (
-    mime.includes('wordprocessingml') ||
-    mime.includes('msword') ||
-    mime.includes('excel') ||
-    mime.includes('spreadsheet') ||
-    /\.(docx?|xlsx?|xlsm|xlsb)$/.test(name)
-  )
-}
-
-function isTextArtifact(artifact: SessionArtifact): boolean {
-  const mime = artifact.mimeType?.toLowerCase() || ''
-  const name = getArtifactName(artifact).toLowerCase()
-  return (
-    mime.startsWith('text/') ||
-    mime.includes('json') ||
-    mime.includes('xml') ||
-    mime.includes('yaml') ||
-    mime.includes('csv') ||
-    mime.includes('tab-separated') ||
-    /\.(txt|md|json|xml|ya?ml|csv|tsv|log|sql)$/.test(name)
-  )
 }
 
 function isAbsoluteHTTPURL(url: string): boolean {

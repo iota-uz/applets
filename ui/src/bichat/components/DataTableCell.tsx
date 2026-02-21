@@ -1,11 +1,8 @@
-import { memo, useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { memo, useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import type { FormattedCell } from '../utils/columnTypes'
 
 interface DataTableCellProps {
-  tableId: string
-  rowIndex: number
-  columnIndex: number
   formatted: FormattedCell
   alignment: 'left' | 'right'
   onCopy?: (value: string) => void
@@ -13,10 +10,77 @@ interface DataTableCellProps {
   stickyClassName?: string
 }
 
+type CellRenderer = (props: {
+  formatted: FormattedCell
+  tooltipRef: React.RefObject<HTMLSpanElement | null>
+  onMouseEnter: () => void
+  onMouseLeave: () => void
+}) => ReactNode
+
+const cellRenderers: Record<string, CellRenderer> = {
+  boolean: ({ formatted }) => (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+        formatted.display === 'true'
+          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+          : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+      }`}
+    >
+      {formatted.display}
+    </span>
+  ),
+  url: ({ formatted, tooltipRef, onMouseEnter, onMouseLeave }) => (
+    <a
+      href={formatted.display}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-blue-600 underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <span
+        ref={tooltipRef}
+        className="block max-w-[420px] truncate"
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+      >
+        {formatted.display}
+      </span>
+    </a>
+  ),
+  number: ({ formatted, tooltipRef, onMouseEnter, onMouseLeave }) => (
+    <span
+      ref={tooltipRef}
+      className="block font-mono text-gray-700 dark:text-gray-300 tabular-nums"
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      {formatted.display}
+    </span>
+  ),
+  date: ({ formatted, tooltipRef, onMouseEnter, onMouseLeave }) => (
+    <span
+      ref={tooltipRef}
+      className="block text-gray-700 dark:text-gray-300"
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      {formatted.display}
+    </span>
+  ),
+}
+
+const defaultRenderer: CellRenderer = ({ formatted, tooltipRef, onMouseEnter, onMouseLeave }) => (
+  <span
+    ref={tooltipRef}
+    className="block max-w-[420px] truncate text-gray-700 dark:text-gray-300"
+    onMouseEnter={onMouseEnter}
+    onMouseLeave={onMouseLeave}
+  >
+    {formatted.display}
+  </span>
+)
+
 export const DataTableCell = memo(function DataTableCell({
-  tableId: _tableId,
-  rowIndex: _rowIndex,
-  columnIndex: _columnIndex,
   formatted,
   alignment,
   onCopy,
@@ -68,6 +132,8 @@ export const DataTableCell = memo(function DataTableCell({
   const hasOverflow = formatted.type === 'string' || formatted.type === 'url' || formatted.type === 'date' || formatted.type === 'number'
   const tooltipContent = formatted.isNull ? null : (formatted.type === 'number' || formatted.type === 'date') ? String(formatted.raw) : formatted.display
 
+  const rendererProps = { formatted, tooltipRef, onMouseEnter: handleMouseEnter, onMouseLeave: handleMouseLeave }
+
   return (
     <td
       className={`px-3 py-2 align-top ${alignment === 'right' ? 'text-right' : 'text-left'} ${isSticky ? stickyClassName ?? '' : ''}`}
@@ -78,60 +144,8 @@ export const DataTableCell = memo(function DataTableCell({
     >
       {formatted.isNull ? (
         <span className="text-xs text-gray-400 dark:text-gray-500">&mdash;</span>
-      ) : formatted.type === 'boolean' ? (
-        <span
-          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-            formatted.display === 'true'
-              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-              : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-          }`}
-        >
-          {formatted.display}
-        </span>
-      ) : formatted.type === 'url' ? (
-        <a
-          href={formatted.display}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-600 underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <span
-            ref={tooltipRef}
-            className="block max-w-[420px] truncate"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-          >
-            {formatted.display}
-          </span>
-        </a>
-      ) : formatted.type === 'number' ? (
-        <span
-          ref={tooltipRef}
-          className="block font-mono text-gray-700 dark:text-gray-300 tabular-nums"
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        >
-          {formatted.display}
-        </span>
-      ) : formatted.type === 'date' ? (
-        <span
-          ref={tooltipRef}
-          className="block text-gray-700 dark:text-gray-300"
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        >
-          {formatted.display}
-        </span>
       ) : (
-        <span
-          ref={tooltipRef}
-          className="block max-w-[420px] truncate text-gray-700 dark:text-gray-300"
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        >
-          {formatted.display}
-        </span>
+        (cellRenderers[formatted.type] ?? defaultRenderer)(rendererProps)
       )}
       {tooltip && hasOverflow && tooltipContent && createPortal(
         <div
