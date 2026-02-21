@@ -102,15 +102,17 @@ export const DataTableToolbar = memo(function DataTableToolbar({
               {({ focus }) => (
                 <button
                   type="button"
+                  role="checkbox"
+                  aria-checked={col.visible}
                   className={`flex w-full items-center gap-2 px-3 py-1.5 text-left ${focus ? 'bg-gray-100 dark:bg-gray-700' : ''} text-gray-700 dark:text-gray-200`}
                   onClick={() => onToggleColumnVisibility(col.index)}
                 >
-                  <input
-                    type="checkbox"
-                    checked={col.visible}
-                    readOnly
-                    className="h-3.5 w-3.5 rounded border-gray-300 accent-blue-600"
-                  />
+                  <span
+                    aria-hidden="true"
+                    className={`flex h-3.5 w-3.5 items-center justify-center rounded border ${col.visible ? 'border-blue-600 bg-blue-600' : 'border-gray-300 dark:border-gray-500'}`}
+                  >
+                    {col.visible && <span className="block h-2 w-2 rounded-sm bg-white" />}
+                  </span>
                   <span className="truncate text-xs">{col.header}</span>
                 </button>
               )}
@@ -139,7 +141,7 @@ export const DataTableToolbar = memo(function DataTableToolbar({
         <button
           type="button"
           disabled={sendDisabled}
-          onClick={() => onSendMessage('Create a chart visualization from this data')}
+          onClick={() => onSendMessage(t('BiChat.DataTable.Prompt.VisualizeChart'))}
           className="flex cursor-pointer items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800"
           aria-label={t('BiChat.DataTable.Visualize')}
         >

@@ -1,8 +1,10 @@
-import { memo, useCallback, useRef } from 'react'
+import { memo, useCallback, useEffect, useRef } from 'react'
 import { CaretUp, CaretDown, DotsThreeVertical } from '@phosphor-icons/react'
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import type { ColumnMeta, SortState } from '../hooks/useDataTable'
 import { useTranslation } from '../hooks/useTranslation'
+
+const MIN_COLUMN_WIDTH = 40
 
 interface DataTableHeaderProps {
   tableId: string
@@ -66,8 +68,16 @@ const HeaderCell = memo(function HeaderCell({
 }: HeaderCellProps) {
   const { t } = useTranslation()
   const thRef = useRef<HTMLTableCellElement>(null)
+  const resizeTeardownRef = useRef<(() => void) | null>(null)
   const isActive = sort?.columnIndex === column.index
   const direction = isActive ? sort.direction : null
+
+  useEffect(() => {
+    return () => {
+      resizeTeardownRef.current?.()
+      resizeTeardownRef.current = null
+    }
+  }, [])
 
   const handleResizeStart = useCallback(
     (e: React.PointerEvent) => {
@@ -78,19 +88,38 @@ const HeaderCell = memo(function HeaderCell({
 
       const startX = e.clientX
       const startWidth = th.offsetWidth
+      const pointerId = e.pointerId
+      const target = e.currentTarget as Element
 
       const onMove = (moveEvent: PointerEvent) => {
         const delta = moveEvent.clientX - startX
-        onColumnResize(column.index, startWidth + delta)
+        const newWidth = Math.max(MIN_COLUMN_WIDTH, startWidth + delta)
+        onColumnResize(column.index, newWidth)
       }
 
-      const onUp = () => {
+      const teardown = () => {
         document.removeEventListener('pointermove', onMove)
         document.removeEventListener('pointerup', onUp)
+        document.removeEventListener('pointercancel', onUp)
+        resizeTeardownRef.current = null
+        try {
+          target.releasePointerCapture(pointerId)
+        } catch {
+          // ignore
+        }
       }
 
+      const onUp = () => teardown()
+
+      resizeTeardownRef.current = teardown
       document.addEventListener('pointermove', onMove)
       document.addEventListener('pointerup', onUp)
+      document.addEventListener('pointercancel', onUp)
+      try {
+        target.setPointerCapture(pointerId)
+      } catch {
+        // ignore
+      }
     },
     [column.index, onColumnResize],
   )
@@ -138,7 +167,7 @@ const HeaderCell = memo(function HeaderCell({
                     type="button"
                     className={`w-full px-3 py-1.5 text-left ${focus ? 'bg-gray-100 dark:bg-gray-700' : ''} text-gray-700 dark:text-gray-200`}
                     disabled={sendDisabled}
-                    onClick={() => onSendMessage(`Summarize the "${column.header}" column from the query results`)}
+                    onClick={() => onSendMessage(t('BiChat.DataTable.Prompt.SummarizeColumn', { column: column.header }))}
                   >
                     {t('BiChat.DataTable.SummarizeColumn')}
                   </button>
@@ -151,7 +180,7 @@ const HeaderCell = memo(function HeaderCell({
                     className={`w-full px-3 py-1.5 text-left ${focus ? 'bg-gray-100 dark:bg-gray-700' : ''} text-gray-700 dark:text-gray-200`}
                     disabled={sendDisabled}
                     onClick={() =>
-                      onSendMessage(`List unique values in the "${column.header}" column from the query results`)
+                      onSendMessage(t('BiChat.DataTable.Prompt.UniqueValues', { column: column.header }))
                     }
                   >
                     {t('BiChat.DataTable.UniqueValues')}

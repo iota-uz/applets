@@ -8,7 +8,7 @@ export interface FormattedCell {
 }
 
 const URL_PATTERN = /^https?:\/\//i
-const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2})?$/
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?)?$/
 const MAX_SAMPLE = 20
 
 export function inferColumnType(values: unknown[], backendHint?: string): ColumnType {
@@ -42,7 +42,7 @@ export function inferColumnType(values: unknown[], backendHint?: string): Column
     return 'date'
   }
 
-  if (sample.some((v) => typeof v === 'string' && URL_PATTERN.test(v))) {
+  if (sample.length > 0 && sample.every((v) => typeof v === 'string' && URL_PATTERN.test(v))) {
     return 'url'
   }
 

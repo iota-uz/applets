@@ -87,25 +87,31 @@ export function useDataTable(
     setPageSize(Math.min(Math.max(table.pageSize || options?.defaultPageSize || 25, 1), 200))
     setSort(null)
     setSearchQuery('')
+    setShowStats(false)
     setColumnVisibility(new Map())
     setColumnWidths(new Map())
   }, [table.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Compute column metadata with type inference
-  const columns: ColumnMeta[] = useMemo(() => {
-    return table.columns.map((name, index) => {
+  // Type inference depends only on table data
+  const columnTypes = useMemo(() => {
+    return table.columns.map((_, index) => {
       const backendHint = table.columnTypes?.[index]
       const columnValues = table.rows.map((row) => row[index])
-      return {
-        index,
-        name,
-        header: table.headers[index] || name,
-        type: inferColumnType(columnValues, backendHint),
-        width: columnWidths.get(index) ?? null,
-        visible: columnVisibility.get(index) ?? true,
-      }
+      return inferColumnType(columnValues, backendHint)
     })
-  }, [table.columns, table.headers, table.rows, table.columnTypes, columnWidths, columnVisibility])
+  }, [table.columns, table.rows, table.columnTypes])
+
+  // Column metadata: types + width/visibility
+  const columns: ColumnMeta[] = useMemo(() => {
+    return table.columns.map((name, index) => ({
+      index,
+      name,
+      header: table.headers[index] || name,
+      type: columnTypes[index],
+      width: columnWidths.get(index) ?? null,
+      visible: columnVisibility.get(index) ?? true,
+    }))
+  }, [table.columns, table.headers, columnTypes, columnWidths, columnVisibility])
 
   const visibleColumns = useMemo(() => columns.filter((c) => c.visible), [columns])
 
@@ -149,6 +155,7 @@ export function useDataTable(
         case 'number': {
           const aNum = typeof aVal === 'number' ? aVal : Number(aVal)
           const bNum = typeof bVal === 'number' ? bVal : Number(bVal)
+          if (isNaN(aNum) && isNaN(bNum)) return 0
           if (isNaN(aNum)) return 1
           if (isNaN(bNum)) return -1
           return (aNum - bNum) * dir
@@ -156,6 +163,7 @@ export function useDataTable(
         case 'date': {
           const aTime = new Date(String(aVal)).getTime()
           const bTime = new Date(String(bVal)).getTime()
+          if (isNaN(aTime) && isNaN(bTime)) return 0
           if (isNaN(aTime)) return 1
           if (isNaN(bTime)) return -1
           return (aTime - bTime) * dir
@@ -221,8 +229,8 @@ export function useDataTable(
   const totalPages = Math.max(1, Math.ceil(totalFilteredRows / pageSize))
 
   useEffect(() => {
-    if (page > totalPages) setPage(totalPages)
-  }, [page, totalPages])
+    setPage((prev) => Math.min(prev, totalPages))
+  }, [totalPages])
 
   const pageRows = useMemo(() => {
     const start = (page - 1) * pageSize
@@ -267,18 +275,22 @@ export function useDataTable(
   const toggleColumnVisibility = useCallback(
     (columnIndex: number) => {
       if (options?.enableColumnVisibility === false) return
+      const numColumns = table.columns.length
       setColumnVisibility((prev) => {
         const next = new Map(prev)
         const currentlyVisible = prev.get(columnIndex) ?? true
         if (currentlyVisible) {
-          const visibleCount = columns.filter((c) => prev.get(c.index) ?? true).length
+          let visibleCount = 0
+          for (let i = 0; i < numColumns; i++) {
+            if (prev.get(i) ?? true) visibleCount++
+          }
           if (visibleCount <= 1) return prev
         }
         next.set(columnIndex, !currentlyVisible)
         return next
       })
     },
-    [options?.enableColumnVisibility, columns],
+    [options?.enableColumnVisibility, table.columns.length],
   )
 
   const resetColumnVisibility = useCallback(() => {

@@ -1,6 +1,7 @@
 import { memo, useCallback } from 'react'
 import type { RenderTableData } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
+import { useToast } from '../hooks/useToast'
 import { useDataTable, type DataTableOptions } from '../hooks/useDataTable'
 import { TableExportButton } from './TableExportButton'
 import { DataTableHeader } from './DataTableHeader'
@@ -22,6 +23,7 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
   options,
 }: InteractiveTableCardProps) {
   const { t } = useTranslation()
+  const toast = useToast()
 
   const dt = useDataTable(table, options)
 
@@ -55,9 +57,15 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
     }
   }, [canExportViaPrompt, onSendMessage, table.export, table.exportPrompt])
 
-  const handleCellCopy = useCallback((text: string) => {
-    navigator.clipboard.writeText(text).catch(() => {})
-  }, [])
+  const handleCellCopy = useCallback(
+    (text: string) => {
+      navigator.clipboard
+        .writeText(text)
+        .then(() => toast.success(t('BiChat.Message.CopiedToClipboard')))
+        .catch(() => toast.error(t('BiChat.Message.FailedToCopy')))
+    },
+    [toast, t],
+  )
 
   const hasHiddenColumns = dt.columns.some((c) => !c.visible)
   const from = dt.totalFilteredRows === 0 ? 0 : (dt.page - 1) * dt.pageSize + 1

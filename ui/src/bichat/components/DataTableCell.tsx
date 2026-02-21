@@ -11,9 +11,9 @@ interface DataTableCellProps {
 }
 
 export const DataTableCell = memo(function DataTableCell({
-  tableId,
-  rowIndex,
-  columnIndex,
+  tableId: _tableId,
+  rowIndex: _rowIndex,
+  columnIndex: _columnIndex,
   formatted,
   alignment,
   onCopy,
@@ -38,7 +38,7 @@ export const DataTableCell = memo(function DataTableCell({
   return (
     <td
       className={`px-3 py-2 align-top ${alignment === 'right' ? 'text-right' : 'text-left'}`}
-      onClick={handleClick}
+      onClick={onCopy ? handleClick : undefined}
       onKeyDown={onCopy ? handleKeyDown : undefined}
       role={onCopy ? 'button' : undefined}
       tabIndex={onCopy ? 0 : undefined}
