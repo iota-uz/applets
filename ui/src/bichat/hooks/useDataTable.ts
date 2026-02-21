@@ -1,0 +1,353 @@
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { RenderTableData } from '../types'
+import { type ColumnType, type FormattedCell, inferColumnType, formatCellValue } from '../utils/columnTypes'
+
+export interface ColumnMeta {
+  index: number
+  name: string
+  header: string
+  type: ColumnType
+  width: number | null
+  visible: boolean
+}
+
+export interface SortState {
+  columnIndex: number
+  direction: 'asc' | 'desc'
+}
+
+export interface ColumnStats {
+  sum: number
+  avg: number
+  min: number
+  max: number
+  count: number
+  nullCount: number
+}
+
+export interface DataTableOptions {
+  defaultPageSize?: number
+  enableSearch?: boolean
+  enableSort?: boolean
+  enableResize?: boolean
+  enableColumnVisibility?: boolean
+  enableStats?: boolean
+}
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200]
+
+export interface UseDataTableReturn {
+  columns: ColumnMeta[]
+  visibleColumns: ColumnMeta[]
+
+  page: number
+  pageSize: number
+  totalPages: number
+  totalFilteredRows: number
+  pageSizeOptions: number[]
+  pageRows: unknown[][]
+  setPage: (page: number) => void
+  setPageSize: (size: number) => void
+
+  sort: SortState | null
+  toggleSort: (columnIndex: number) => void
+
+  searchQuery: string
+  setSearchQuery: (query: string) => void
+
+  showStats: boolean
+  setShowStats: (show: boolean) => void
+  columnStats: Map<number, ColumnStats>
+
+  toggleColumnVisibility: (columnIndex: number) => void
+  resetColumnVisibility: () => void
+
+  setColumnWidth: (columnIndex: number, width: number) => void
+
+  formatCell: (value: unknown, columnIndex: number) => FormattedCell
+  getCellAlignment: (columnIndex: number) => 'left' | 'right'
+}
+
+export function useDataTable(
+  table: RenderTableData,
+  options?: DataTableOptions,
+): UseDataTableReturn {
+  const defaultPageSize = Math.min(Math.max(table.pageSize || options?.defaultPageSize || 25, 1), 200)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(defaultPageSize)
+  const [sort, setSort] = useState<SortState | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showStats, setShowStats] = useState(false)
+  const [columnVisibility, setColumnVisibility] = useState<Map<number, boolean>>(new Map())
+  const [columnWidths, setColumnWidths] = useState<Map<number, number>>(new Map())
+
+  // Reset state when table identity changes
+  useEffect(() => {
+    setPage(1)
+    setPageSize(Math.min(Math.max(table.pageSize || options?.defaultPageSize || 25, 1), 200))
+    setSort(null)
+    setSearchQuery('')
+    setColumnVisibility(new Map())
+    setColumnWidths(new Map())
+  }, [table.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Compute column metadata with type inference
+  const columns: ColumnMeta[] = useMemo(() => {
+    return table.columns.map((name, index) => {
+      const backendHint = table.columnTypes?.[index]
+      const columnValues = table.rows.map((row) => row[index])
+      return {
+        index,
+        name,
+        header: table.headers[index] || name,
+        type: inferColumnType(columnValues, backendHint),
+        width: columnWidths.get(index) ?? null,
+        visible: columnVisibility.get(index) ?? true,
+      }
+    })
+  }, [table.columns, table.headers, table.rows, table.columnTypes, columnWidths, columnVisibility])
+
+  const visibleColumns = useMemo(() => columns.filter((c) => c.visible), [columns])
+
+  // Apply search filter
+  const searchFilteredRows = useMemo(() => {
+    if (!searchQuery.trim()) return table.rows
+    const query = searchQuery.toLowerCase()
+    const visibleIndices = new Set(visibleColumns.map((c) => c.index))
+    return table.rows.filter((row) =>
+      row.some((cell, i) => {
+        if (!visibleIndices.has(i)) return false
+        if (cell === null || cell === undefined) return false
+        return String(cell).toLowerCase().includes(query)
+      }),
+    )
+  }, [table.rows, searchQuery, visibleColumns])
+
+  // Apply sort
+  const sortedRows = useMemo(() => {
+    if (!sort) return searchFilteredRows
+
+    const col = columns[sort.columnIndex]
+    if (!col) return searchFilteredRows
+
+    const sorted = [...searchFilteredRows]
+    const colIdx = sort.columnIndex
+    const dir = sort.direction === 'asc' ? 1 : -1
+
+    sorted.sort((a, b) => {
+      const aVal = a[colIdx]
+      const bVal = b[colIdx]
+
+      // Nulls always last
+      const aNull = aVal === null || aVal === undefined
+      const bNull = bVal === null || bVal === undefined
+      if (aNull && bNull) return 0
+      if (aNull) return 1
+      if (bNull) return -1
+
+      switch (col.type) {
+        case 'number': {
+          const aNum = typeof aVal === 'number' ? aVal : Number(aVal)
+          const bNum = typeof bVal === 'number' ? bVal : Number(bVal)
+          if (isNaN(aNum)) return 1
+          if (isNaN(bNum)) return -1
+          return (aNum - bNum) * dir
+        }
+        case 'date': {
+          const aTime = new Date(String(aVal)).getTime()
+          const bTime = new Date(String(bVal)).getTime()
+          if (isNaN(aTime)) return 1
+          if (isNaN(bTime)) return -1
+          return (aTime - bTime) * dir
+        }
+        case 'boolean': {
+          const aBool = aVal === true || aVal === 'true' ? 1 : 0
+          const bBool = bVal === true || bVal === 'true' ? 1 : 0
+          return (aBool - bBool) * dir
+        }
+        default: {
+          return String(aVal).localeCompare(String(bVal)) * dir
+        }
+      }
+    })
+
+    return sorted
+  }, [searchFilteredRows, sort, columns])
+
+  const totalFilteredRows = sortedRows.length
+
+  // Compute stats on filtered numeric columns
+  const columnStats = useMemo<Map<number, ColumnStats>>(() => {
+    if (!showStats) return new Map()
+
+    const stats = new Map<number, ColumnStats>()
+    for (const col of columns) {
+      if (col.type !== 'number') continue
+      let sum = 0
+      let min = Infinity
+      let max = -Infinity
+      let count = 0
+      let nullCount = 0
+
+      for (const row of sortedRows) {
+        const val = row[col.index]
+        if (val === null || val === undefined) {
+          nullCount++
+          continue
+        }
+        const num = typeof val === 'number' ? val : Number(val)
+        if (isNaN(num)) continue
+        sum += num
+        min = Math.min(min, num)
+        max = Math.max(max, num)
+        count++
+      }
+
+      if (count > 0) {
+        stats.set(col.index, {
+          sum,
+          avg: sum / count,
+          min,
+          max,
+          count,
+          nullCount,
+        })
+      }
+    }
+    return stats
+  }, [showStats, columns, sortedRows])
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(totalFilteredRows / pageSize))
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages)
+  }, [page, totalPages])
+
+  const pageRows = useMemo(() => {
+    const start = (page - 1) * pageSize
+    return sortedRows.slice(start, start + pageSize)
+  }, [page, pageSize, sortedRows])
+
+  const pageSizeOptions = useMemo(() => {
+    const set = new Set([...PAGE_SIZE_OPTIONS, defaultPageSize])
+    return [...set].sort((a, b) => a - b)
+  }, [defaultPageSize])
+
+  // Reset page on search/sort change
+  useEffect(() => {
+    setPage(1)
+  }, [searchQuery, sort])
+
+  // Actions
+  const toggleSort = useCallback(
+    (columnIndex: number) => {
+      if (options?.enableSort === false) return
+      setSort((prev) => {
+        if (!prev || prev.columnIndex !== columnIndex) {
+          return { columnIndex, direction: 'asc' }
+        }
+        if (prev.direction === 'asc') {
+          return { columnIndex, direction: 'desc' }
+        }
+        return null
+      })
+    },
+    [options?.enableSort],
+  )
+
+  const handleSetSearchQuery = useCallback(
+    (query: string) => {
+      if (options?.enableSearch === false) return
+      setSearchQuery(query)
+    },
+    [options?.enableSearch],
+  )
+
+  const toggleColumnVisibility = useCallback(
+    (columnIndex: number) => {
+      if (options?.enableColumnVisibility === false) return
+      setColumnVisibility((prev) => {
+        const next = new Map(prev)
+        const currentlyVisible = prev.get(columnIndex) ?? true
+        if (currentlyVisible) {
+          const visibleCount = columns.filter((c) => prev.get(c.index) ?? true).length
+          if (visibleCount <= 1) return prev
+        }
+        next.set(columnIndex, !currentlyVisible)
+        return next
+      })
+    },
+    [options?.enableColumnVisibility, columns],
+  )
+
+  const resetColumnVisibility = useCallback(() => {
+    setColumnVisibility(new Map())
+  }, [])
+
+  const setColumnWidthCb = useCallback(
+    (columnIndex: number, width: number) => {
+      if (options?.enableResize === false) return
+      setColumnWidths((prev) => {
+        const next = new Map(prev)
+        next.set(columnIndex, Math.max(60, width))
+        return next
+      })
+    },
+    [options?.enableResize],
+  )
+
+  const formatCell = useCallback(
+    (value: unknown, columnIndex: number): FormattedCell => {
+      const col = columns[columnIndex]
+      return formatCellValue(value, col?.type ?? 'string')
+    },
+    [columns],
+  )
+
+  const getCellAlignment = useCallback(
+    (columnIndex: number): 'left' | 'right' => {
+      const col = columns[columnIndex]
+      return col?.type === 'number' ? 'right' : 'left'
+    },
+    [columns],
+  )
+
+  return {
+    columns,
+    visibleColumns,
+
+    page,
+    pageSize,
+    totalPages,
+    totalFilteredRows,
+    pageSizeOptions,
+    pageRows,
+    setPage,
+    setPageSize: useCallback(
+      (size: number) => {
+        setPageSize(size)
+        setPage(1)
+      },
+      [],
+    ),
+
+    sort,
+    toggleSort,
+
+    searchQuery,
+    setSearchQuery: handleSetSearchQuery,
+
+    showStats,
+    setShowStats,
+    columnStats,
+
+    toggleColumnVisibility,
+    resetColumnVisibility,
+
+    setColumnWidth: setColumnWidthCb,
+
+    formatCell,
+    getCellAlignment,
+  }
+}

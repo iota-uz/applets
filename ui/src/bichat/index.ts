@@ -52,6 +52,15 @@ export { LoadingSpinner } from './components/LoadingSpinner'
 export { TableExportButton } from './components/TableExportButton'
 export { TableWithExport } from './components/TableWithExport'
 export { InteractiveTableCard } from './components/InteractiveTableCard'
+export {
+  useDataTable,
+  type UseDataTableReturn,
+  type DataTableOptions,
+  type ColumnMeta,
+  type SortState,
+  type ColumnStats,
+} from './hooks/useDataTable'
+export { type ColumnType, type FormattedCell } from './utils/columnTypes'
 
 // Phase 5 generic components
 export { Toast, type ToastProps } from './components/Toast'

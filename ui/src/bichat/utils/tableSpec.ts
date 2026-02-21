@@ -72,6 +72,16 @@ export function parseRenderTableDataFromJsonString(
     : []
   const headers = headersRaw.length === columns.length ? headersRaw : columns
 
+  const columnTypesRaw = Array.isArray(parsed.column_types)
+    ? parsed.column_types
+    : Array.isArray(parsed.columnTypes)
+      ? parsed.columnTypes
+      : []
+  const columnTypes =
+    columnTypesRaw.length === columns.length
+      ? columnTypesRaw.map((t) => readString(t) || 'string')
+      : undefined
+
   const totalRows = readPositiveInteger(parsed.total_rows) || readPositiveInteger(parsed.totalRows) || rows.length
   const pageSize = readPositiveInteger(parsed.page_size) || readPositiveInteger(parsed.pageSize) || 25
 
@@ -83,6 +93,7 @@ export function parseRenderTableDataFromJsonString(
     title: readString(parsed.title) || undefined,
     query,
     columns,
+    columnTypes,
     headers,
     rows,
     totalRows,

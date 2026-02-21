@@ -202,6 +202,7 @@ export interface RenderTableData {
   title?: string
   query: string
   columns: string[]
+  columnTypes?: string[]
   headers: string[]
   rows: unknown[][]
   totalRows: number
