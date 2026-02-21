@@ -52,6 +52,7 @@ export interface AssistantTurn {
   citations: Citation[]
   toolCalls?: ToolCall[]
   chartData?: ChartData
+  renderTables?: RenderTableData[]
   artifacts: Artifact[]
   codeOutputs: CodeOutput[]
   debug?: DebugTrace
@@ -187,6 +188,28 @@ export interface ChartSeries {
   name: string
   /** Numeric data values */
   data: number[]
+}
+
+export interface RenderTableExport {
+  url: string
+  filename: string
+  rowCount?: number
+  fileSizeKB?: number
+}
+
+export interface RenderTableData {
+  id: string
+  title?: string
+  query: string
+  columns: string[]
+  headers: string[]
+  rows: unknown[][]
+  totalRows: number
+  pageSize: number
+  truncated: boolean
+  truncatedReason?: string
+  export?: RenderTableExport
+  exportPrompt?: string
 }
 
 export interface Artifact {

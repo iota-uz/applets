@@ -9,10 +9,19 @@ import { formatRelativeTime } from '../utils/dateFormatting'
 import CodeOutputsPanel from './CodeOutputsPanel'
 import StreamingCursor from './StreamingCursor'
 import { ChartCard } from './ChartCard'
+import { InteractiveTableCard } from './InteractiveTableCard'
 import { SourcesPanel } from './SourcesPanel'
 import { DownloadCard } from './DownloadCard'
 import { InlineQuestionForm } from './InlineQuestionForm'
-import type { AssistantTurn, Citation, ChartData, Artifact, CodeOutput, PendingQuestion } from '../types'
+import type {
+  AssistantTurn,
+  Citation,
+  ChartData,
+  Artifact,
+  CodeOutput,
+  PendingQuestion,
+  RenderTableData,
+} from '../types'
 import { DebugPanel } from './DebugPanel'
 import { useTranslation } from '../hooks/useTranslation'
 
@@ -51,6 +60,11 @@ export interface AssistantMessageChartsSlotProps {
 export interface AssistantMessageCodeOutputsSlotProps {
   /** Code execution outputs */
   outputs: CodeOutput[]
+}
+
+export interface AssistantMessageTablesSlotProps {
+  /** Interactive table payloads */
+  tables: RenderTableData[]
 }
 
 export interface AssistantMessageArtifactsSlotProps {
@@ -95,6 +109,8 @@ export interface AssistantMessageSlots {
   charts?: ReactNode | ((props: AssistantMessageChartsSlotProps) => ReactNode)
   /** Custom code outputs renderer */
   codeOutputs?: ReactNode | ((props: AssistantMessageCodeOutputsSlotProps) => ReactNode)
+  /** Custom table renderer */
+  tables?: ReactNode | ((props: AssistantMessageTablesSlotProps) => ReactNode)
   /** Custom artifacts renderer */
   artifacts?: ReactNode | ((props: AssistantMessageArtifactsSlotProps) => ReactNode)
   /** Custom actions renderer */
@@ -116,6 +132,8 @@ export interface AssistantMessageClassNames {
   codeOutputs?: string
   /** Charts container */
   charts?: string
+  /** Tables container */
+  tables?: string
   /** Artifacts container */
   artifacts?: string
   /** Sources container */
@@ -176,6 +194,7 @@ const defaultClassNames: Required<AssistantMessageClassNames> = {
   bubble: 'bg-white dark:bg-gray-800 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm',
   codeOutputs: '',
   charts: 'mb-1 w-full',
+  tables: 'mb-1 flex flex-col gap-3',
   artifacts: 'mb-1 flex flex-wrap gap-2',
   sources: '',
   explanation: 'mt-4 border-t border-gray-100 dark:border-gray-700 pt-4',
@@ -196,6 +215,7 @@ function mergeClassNames(
     bubble: overrides.bubble ?? defaults.bubble,
     codeOutputs: overrides.codeOutputs ?? defaults.codeOutputs,
     charts: overrides.charts ?? defaults.charts,
+    tables: overrides.tables ?? defaults.tables,
     artifacts: overrides.artifacts ?? defaults.artifacts,
     sources: overrides.sources ?? defaults.sources,
     explanation: overrides.explanation ?? defaults.explanation,
@@ -301,6 +321,9 @@ export function AssistantMessage({
   const codeOutputsSlotProps: AssistantMessageCodeOutputsSlotProps = {
     outputs: turn.codeOutputs || [],
   }
+  const tablesSlotProps: AssistantMessageTablesSlotProps = {
+    tables: turn.renderTables || [],
+  }
   const artifactsSlotProps: AssistantMessageArtifactsSlotProps = {
     artifacts: turn.artifacts || [],
   }
@@ -353,6 +376,24 @@ export function AssistantMessage({
         {turn.chartData && (
           <div className={classes.charts}>
             {renderSlot(slots?.charts, chartsSlotProps, <ChartCard chartData={turn.chartData} />)}
+          </div>
+        )}
+
+        {/* Interactive tables */}
+        {turn.renderTables && turn.renderTables.length > 0 && (
+          <div className={classes.tables}>
+            {renderSlot(
+              slots?.tables,
+              tablesSlotProps,
+              turn.renderTables.map((table) => (
+                <InteractiveTableCard
+                  key={table.id}
+                  table={table}
+                  onSendMessage={onSendMessage}
+                  sendDisabled={sendDisabled || isStreaming}
+                />
+              ))
+            )}
           </div>
         )}
 

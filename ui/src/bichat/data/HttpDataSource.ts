@@ -21,11 +21,13 @@ import type {
   QuestionAnswers,
   SendMessageOptions,
   AssistantTurn,
+  RenderTableData,
 } from '../types'
 import { MessageRole } from '../types'
 import { parseChartDataFromSpec, parseChartDataFromJsonString, isRecord } from '../utils/chartSpec'
 import { validateAttachmentFile, validateFileCount } from '../utils/fileUtils'
 import { parseBichatStream } from '../utils/sseParser'
+import { parseRenderTableDataFromJsonString } from '../utils/tableSpec'
 import type { PendingQuestion as RPCPendingQuestion } from './rpc.generated'
 
 export interface HttpDataSourceConfig {
@@ -372,6 +374,7 @@ function sanitizeAssistantTurn(
     citations,
     toolCalls,
     chartData: undefined,
+    renderTables: undefined,
     artifacts: sanitizeAssistantArtifacts(rawAssistantTurn.artifacts, turnId),
     codeOutputs,
     debug: debugTrace,
@@ -603,6 +606,21 @@ function extractChartDataFromToolCalls(toolCalls?: Array<{ name: string; result?
   return undefined
 }
 
+function extractRenderTablesFromToolCalls(toolCalls?: Array<{ id: string; name: string; result?: string }>): RenderTableData[] {
+  if (!toolCalls) return []
+
+  const tables: RenderTableData[] = []
+  for (const tc of toolCalls) {
+    if (tc.name !== 'renderTable' || !tc.result) continue
+    const parsed = parseRenderTableDataFromJsonString(tc.result, tc.id)
+    if (parsed) {
+      tables.push(parsed)
+    }
+  }
+
+  return tables
+}
+
 const EXPORT_TOOL_NAMES: Record<string, DownloadArtifact['type']> = {
   export_query_to_excel: 'excel',
   export_data_to_excel: 'excel',
@@ -642,6 +660,7 @@ function extractDownloadArtifactsFromToolCalls(toolCalls?: Array<{ name: string;
 function normalizeAssistantTurn(turn: Partial<AssistantTurn> & { id: string; content: string; createdAt: string }): AssistantTurn {
   const existingArtifacts = turn.artifacts || []
   const fromToolCalls = extractDownloadArtifactsFromToolCalls(turn.toolCalls)
+  const renderTables = turn.renderTables || extractRenderTablesFromToolCalls(turn.toolCalls)
   // Merge: add tool-call artifacts that aren't already present (by URL + filename)
   const merged = [...existingArtifacts]
   for (const a of fromToolCalls) {
@@ -654,6 +673,7 @@ function normalizeAssistantTurn(turn: Partial<AssistantTurn> & { id: string; con
     ...turn,
     role: (turn.role as MessageRole) || MessageRole.Assistant,
     chartData: turn.chartData || extractChartDataFromToolCalls(turn.toolCalls),
+    renderTables,
     citations: turn.citations || [],
     artifacts: merged,
     codeOutputs: turn.codeOutputs || [],
@@ -845,7 +865,7 @@ export class HttpDataSource implements ChatDataSource {
       console.warn('[bichat.attachments]', payload)
       return
     }
-    console.info('[bichat.attachments]', payload)
+    console.warn('[bichat.attachments]', payload)
   }
 
   private async normalizeAttachmentFile(attachment: Attachment, file: File): Promise<File> {

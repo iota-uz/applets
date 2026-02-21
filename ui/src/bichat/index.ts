@@ -51,6 +51,7 @@ export { CodeBlock } from './components/CodeBlock'
 export { LoadingSpinner } from './components/LoadingSpinner'
 export { TableExportButton } from './components/TableExportButton'
 export { TableWithExport } from './components/TableWithExport'
+export { InteractiveTableCard } from './components/InteractiveTableCard'
 
 // Phase 5 generic components
 export { Toast, type ToastProps } from './components/Toast'
@@ -120,6 +121,7 @@ export {
   type AssistantMessageSourcesSlotProps,
   type AssistantMessageChartsSlotProps,
   type AssistantMessageCodeOutputsSlotProps,
+  type AssistantMessageTablesSlotProps,
   type AssistantMessageArtifactsSlotProps,
   type AssistantMessageActionsSlotProps,
   type AssistantMessageExplanationSlotProps,
@@ -256,6 +258,8 @@ export type {
   CodeOutput,
   ChartData,
   ChartSeries,
+  RenderTableData,
+  RenderTableExport,
   Artifact,
   SessionArtifact,
   // HITL question types
