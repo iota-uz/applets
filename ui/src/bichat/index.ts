@@ -250,6 +250,7 @@ export { parseBichatStream, parseBichatStreamEvents, parseSSEStream } from './ut
 
 export { RateLimiter } from './utils/RateLimiter'
 export { getToolLabel } from './utils/toolLabels'
+export { groupSteps } from './utils/activitySteps'
 export * from './utils/fileUtils'
 export { groupSessionsByDate } from './utils/sessionGrouping'
 export { toErrorDisplay, isPermissionDeniedError, type RPCErrorDisplay } from './utils/errorDisplay'

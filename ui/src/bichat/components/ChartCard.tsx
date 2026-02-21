@@ -75,6 +75,9 @@ export function ChartCard({ chartData }: ChartCardProps) {
     colors: colors?.length ? colors : DEFAULT_COLORS,
     xaxis: xaxisConfig,
     labels: labelsConfig,
+    plotOptions: {
+      bar: { columnWidth: '60%' },
+    },
     legend: { position: 'bottom', horizontalAlign: 'center' },
     dataLabels: { enabled: chartType === 'pie' || chartType === 'donut' },
     stroke: {
@@ -118,7 +121,10 @@ export function ChartCard({ chartData }: ChartCardProps) {
 
   return (
     <div className="group/chart rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow dark:border-gray-700/60 dark:bg-gray-800">
-      <div className="w-full min-w-0">
+      {/* translateZ(0) creates a containing block at the chart level so
+          ApexCharts tooltip/crosshair positioning isn't offset by distant
+          framer-motion transforms on ancestor elements. */}
+      <div className="w-full min-w-0" style={{ transform: 'translateZ(0)' }}>
         <ReactApexChart
           options={options}
           series={apexSeries}

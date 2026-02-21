@@ -822,8 +822,13 @@ export class ChatMachine {
   // ── Ephemeral activity trace helpers ─────────────────────────────────
 
   private _handleThinkingChunk(content: string): void {
+    const THINKING_BUFFER_LIMIT = 500
     const prev = this.state.messaging.thinkingContent
-    this._updateMessaging({ thinkingContent: prev + content })
+    let updated = prev + content
+    if (updated.length > THINKING_BUFFER_LIMIT) {
+      updated = updated.slice(-THINKING_BUFFER_LIMIT)
+    }
+    this._updateMessaging({ thinkingContent: updated })
 
     // Upsert a "thinking" step if not already active
     const steps = this.state.messaging.activeSteps
@@ -832,7 +837,7 @@ export class ChatMachine {
       const step: ActivityStep = {
         id: `thinking-${Date.now()}`,
         type: 'thinking',
-        label: 'thinking',
+        toolName: 'thinking',
         status: 'active',
         startedAt: Date.now(),
       }
@@ -852,7 +857,7 @@ export class ChatMachine {
     const step: ActivityStep = {
       id: tool.callId || `tool-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       type: isAgentDelegation ? 'agent_delegation' : 'tool',
-      label: tool.name,
+      toolName: tool.name,
       arguments: tool.arguments,
       agentName: tool.agentName,
       status: 'active',
@@ -864,20 +869,19 @@ export class ChatMachine {
   }
 
   private _handleToolEnd(tool: { callId?: string; name: string; durationMs?: number; agentName?: string }): void {
-    const steps = this.state.messaging.activeSteps.map((s) => {
-      if (s.status === 'active' && this._matchStep(s, tool)) {
-        return {
-          ...s,
-          status: 'completed' as const,
-          completedAt: Date.now(),
-          durationMs: tool.durationMs,
-        }
+    const steps = [...this.state.messaging.activeSteps]
+    const idx = steps.findIndex((s) => s.status === 'active' && this._matchStep(s, tool))
+    if (idx !== -1) {
+      steps[idx] = {
+        ...steps[idx],
+        status: 'completed' as const,
+        completedAt: Date.now(),
+        durationMs: tool.durationMs,
       }
-      return s
-    })
+    }
     this._updateMessaging({ activeSteps: steps })
 
-    // Artifact invalidation (moved from the streaming loop)
+    // Artifact invalidation
     if (tool.name && ARTIFACT_TOOL_NAMES.has(tool.name)) {
       this._updateMessaging({
         artifactsInvalidationTrigger: this.state.messaging.artifactsInvalidationTrigger + 1,
@@ -885,13 +889,14 @@ export class ChatMachine {
     }
   }
 
-  /** Match a step to a tool_end event. Prefer callId match, fall back to name + active status. */
+  /** Match a step to a tool_end event. Use callId when present; fall back to name + agentName. */
   private _matchStep(
     step: ActivityStep,
     tool: { callId?: string; name: string; agentName?: string }
   ): boolean {
-    if (step.id === tool.callId) return true
-    return step.label === tool.name && step.agentName === tool.agentName
+    // When the backend provides a callId, use it exclusively — no fallback.
+    if (tool.callId) return step.id === tool.callId
+    return step.toolName === tool.name && step.agentName === tool.agentName
   }
 
   // ── Retry ───────────────────────────────────────────────────────────────

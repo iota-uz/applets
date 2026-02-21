@@ -7,6 +7,15 @@
 
 type TranslateFn = (key: string, params?: Record<string, string | number | boolean>) => string
 
+const ACRONYMS = new Set(['sql', 'kb', 'pdf', 'api', 'csv', 'http', 'url', 'id'])
+
+function humanizeToolName(name: string): string {
+  return name
+    .split('_')
+    .map((word) => (ACRONYMS.has(word) ? word.toUpperCase() : word.charAt(0).toUpperCase() + word.slice(1)))
+    .join(' ')
+}
+
 /**
  * Resolve a human-readable label for a tool invocation.
  *
@@ -34,9 +43,7 @@ export function getToolLabel(
   if (sdkLabel !== sdkKey) return sdkLabel
 
   // 3. Humanise fallback
-  return name
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
+  return humanizeToolName(name)
 }
 
 /**

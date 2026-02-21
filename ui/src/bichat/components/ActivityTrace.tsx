@@ -10,22 +10,11 @@
  */
 
 import { memo, useMemo } from 'react'
-import { motion, AnimatePresence, type Transition } from 'framer-motion'
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion'
 import type { ActivityStep } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
 import { getToolLabel } from '../utils/toolLabels'
-
-// ---------------------------------------------------------------------------
-// Reduced-motion-safe transitions
-// ---------------------------------------------------------------------------
-
-const prefersReducedMotion = () => {
-  if (typeof window === 'undefined') return false
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
-const safeTransition = (t: Transition): Transition =>
-  prefersReducedMotion() ? { duration: 0 } : t
+import { groupSteps } from '../utils/activitySteps'
 
 // ---------------------------------------------------------------------------
 // Props
@@ -58,62 +47,64 @@ function ActivityTraceInner({
   if (!hasContent) return null
 
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      className={`flex gap-3 ${className}`}
-    >
-      {/* AI avatar */}
-      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-medium text-xs">
-        AI
-      </div>
+    <MotionConfig reducedMotion="user">
+      <div
+        role="status"
+        aria-live="polite"
+        className={`flex gap-3 ${className}`}
+      >
+        {/* AI avatar */}
+        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-medium text-xs">
+          AI
+        </div>
 
-      {/* Trace content */}
-      <div className="flex-1 max-w-[85%] space-y-2">
-        {/* Thinking bubble */}
-        <AnimatePresence>
-          {thinkingContent && (
-            <motion.div
-              key="thinking-bubble"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={safeTransition({ duration: 0.2, ease: [0.4, 0, 0.2, 1] })}
-              className="overflow-hidden"
-            >
-              <ThinkingBubble content={thinkingContent} />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Activity steps */}
-        <div className="space-y-1">
-          <AnimatePresence initial={false}>
-            {topLevel.map((step) => (
-              <StepItem
-                key={step.id}
-                step={step}
-                t={t}
-                toolLabelPrefix={toolLabelPrefix}
-              />
-            ))}
+        {/* Trace content */}
+        <div className="flex-1 max-w-[85%] space-y-2">
+          {/* Thinking bubble */}
+          <AnimatePresence>
+            {thinkingContent && (
+              <motion.div
+                key="thinking-bubble"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                className="overflow-hidden"
+              >
+                <ThinkingBubble content={thinkingContent} />
+              </motion.div>
+            )}
           </AnimatePresence>
 
-          {/* Agent groups (sub-agent tool calls) */}
-          <AnimatePresence initial={false}>
-            {agentGroups.map(([agentName, steps]) => (
-              <AgentGroup
-                key={agentName}
-                agentName={agentName}
-                steps={steps}
-                t={t}
-                toolLabelPrefix={toolLabelPrefix}
-              />
-            ))}
-          </AnimatePresence>
+          {/* Activity steps */}
+          <div className="space-y-1">
+            <AnimatePresence initial={false}>
+              {topLevel.map((step) => (
+                <StepItem
+                  key={step.id}
+                  step={step}
+                  t={t}
+                  toolLabelPrefix={toolLabelPrefix}
+                />
+              ))}
+            </AnimatePresence>
+
+            {/* Agent groups (sub-agent tool calls) */}
+            <AnimatePresence initial={false}>
+              {agentGroups.map(([agentName, steps]) => (
+                <AgentGroup
+                  key={agentName}
+                  agentName={agentName}
+                  steps={steps}
+                  t={t}
+                  toolLabelPrefix={toolLabelPrefix}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
-    </div>
+    </MotionConfig>
   )
 }
 
@@ -156,8 +147,8 @@ function StepItem({ step, t, toolLabelPrefix }: StepItemProps) {
     () =>
       step.type === 'thinking'
         ? t('BiChat.Thinking.Thinking')
-        : getToolLabel(t, step.label, step.arguments, toolLabelPrefix),
-    [step.type, step.label, step.arguments, t, toolLabelPrefix]
+        : getToolLabel(t, step.toolName, step.arguments, toolLabelPrefix),
+    [step.type, step.toolName, step.arguments, t, toolLabelPrefix]
   )
 
   const isCompleted = step.status === 'completed'
@@ -173,7 +164,7 @@ function StepItem({ step, t, toolLabelPrefix }: StepItemProps) {
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -8 }}
-      transition={safeTransition({ duration: 0.2, ease: [0.4, 0, 0.2, 1] })}
+      transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
       className={`flex items-center gap-2 text-sm transition-colors duration-200 ${
         isCompleted
           ? 'text-gray-400 dark:text-gray-500'
@@ -214,7 +205,7 @@ function AgentGroup({ agentName, steps, t, toolLabelPrefix }: AgentGroupProps) {
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -4 }}
-      transition={safeTransition({ duration: 0.2 })}
+      transition={{ duration: 0.2 }}
       className="ml-4 pl-3 border-l-2 border-primary-200 dark:border-primary-800 space-y-1"
     >
       <span className="text-xs font-medium text-primary-600 dark:text-primary-400">
@@ -239,7 +230,7 @@ function StatusIndicator({ completed }: { completed: boolean }) {
       <motion.svg
         initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={safeTransition({ type: 'spring', stiffness: 400, damping: 20 })}
+        transition={{ type: 'spring', stiffness: 400, damping: 20 }}
         className="w-3.5 h-3.5 text-green-500 dark:text-green-400 shrink-0"
         viewBox="0 0 16 16"
         fill="none"
@@ -261,28 +252,6 @@ function StatusIndicator({ completed }: { completed: boolean }) {
       <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-500" />
     </span>
   )
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function groupSteps(steps: ActivityStep[]) {
-  const topLevel: ActivityStep[] = []
-  const agentMap = new Map<string, ActivityStep[]>()
-
-  for (const step of steps) {
-    if (step.agentName) {
-      const group = agentMap.get(step.agentName) || []
-      group.push(step)
-      agentMap.set(step.agentName, group)
-    } else {
-      topLevel.push(step)
-    }
-  }
-
-  const agentGroups = Array.from(agentMap.entries())
-  return { topLevel, agentGroups }
 }
 
 // ---------------------------------------------------------------------------

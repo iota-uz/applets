@@ -38,10 +38,9 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
     turns,
     streamingContent,
     isStreaming,
-    loading,
-    isCompacting,
     thinkingContent,
     activeSteps,
+    showActivityTrace,
   } = useChatMessaging()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -108,15 +107,6 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
   const normalizedStreaming = useMemo(
     () => (streamingContent ? normalizeStreamingMarkdown(streamingContent) : ''),
     [streamingContent]
-  )
-
-  // Show ActivityTrace when loading/streaming and either:
-  // - no content has arrived yet, or
-  // - there are still active (uncompleted) steps in progress
-  const hasActiveSteps = activeSteps.some((s) => s.status === 'active')
-  const showActivityTrace = !isCompacting && (
-    (loading && !streamingContent) ||
-    (isStreaming && hasActiveSteps && !streamingContent)
   )
 
   return (

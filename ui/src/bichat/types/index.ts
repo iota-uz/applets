@@ -291,7 +291,7 @@ export interface QuestionAnswers {
 export interface ActivityStep {
   id: string
   type: 'thinking' | 'tool' | 'agent_delegation'
-  label: string
+  toolName: string
   /** Raw tool arguments JSON string (used for label interpolation, e.g., delegation agent name). */
   arguments?: string
   agentName?: string
@@ -545,6 +545,7 @@ export interface ChatMessagingStateValue {
   thinkingContent: string
   /** Ephemeral activity steps (tools, thinking, delegations), cleared on done. */
   activeSteps: ActivityStep[]
+  showActivityTrace: boolean
   sendMessage: (content: string, attachments?: Attachment[]) => Promise<void>
   handleRegenerate?: (turnId: string) => Promise<void>
   handleEdit?: (turnId: string, newContent: string) => Promise<void>
