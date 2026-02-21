@@ -1,4 +1,5 @@
-import { memo, useCallback, type KeyboardEvent } from 'react'
+import { memo, useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { createPortal } from 'react-dom'
 import type { FormattedCell } from '../utils/columnTypes'
 
 interface DataTableCellProps {
@@ -8,6 +9,8 @@ interface DataTableCellProps {
   formatted: FormattedCell
   alignment: 'left' | 'right'
   onCopy?: (value: string) => void
+  isSticky?: boolean
+  stickyClassName?: string
 }
 
 export const DataTableCell = memo(function DataTableCell({
@@ -17,6 +20,8 @@ export const DataTableCell = memo(function DataTableCell({
   formatted,
   alignment,
   onCopy,
+  isSticky,
+  stickyClassName,
 }: DataTableCellProps) {
   const handleClick = useCallback(() => {
     if (!onCopy) return
@@ -35,9 +40,37 @@ export const DataTableCell = memo(function DataTableCell({
     [onCopy, handleClick],
   )
 
+  const tooltipRef = useRef<HTMLSpanElement>(null)
+  const [tooltip, setTooltip] = useState<{ x: number; y: number } | null>(null)
+  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout>>()
+
+  const handleMouseEnter = useCallback(() => {
+    const el = tooltipRef.current
+    if (!el || el.scrollWidth <= el.clientWidth) return
+    tooltipTimerRef.current = setTimeout(() => {
+      const rect = el.getBoundingClientRect()
+      setTooltip({
+        x: rect.left + rect.width / 2,
+        y: rect.bottom + 4,
+      })
+    }, 300)
+  }, [])
+
+  const handleMouseLeave = useCallback(() => {
+    clearTimeout(tooltipTimerRef.current)
+    setTooltip(null)
+  }, [])
+
+  useEffect(() => {
+    return () => clearTimeout(tooltipTimerRef.current)
+  }, [])
+
+  const hasOverflow = formatted.type === 'string' || formatted.type === 'url' || formatted.type === 'date' || formatted.type === 'number'
+  const tooltipContent = formatted.isNull ? null : (formatted.type === 'number' || formatted.type === 'date') ? String(formatted.raw) : formatted.display
+
   return (
     <td
-      className={`px-3 py-2 align-top ${alignment === 'right' ? 'text-right' : 'text-left'}`}
+      className={`px-3 py-2 align-top ${alignment === 'right' ? 'text-right' : 'text-left'} ${isSticky ? stickyClassName ?? '' : ''}`}
       onClick={onCopy ? handleClick : undefined}
       onKeyDown={onCopy ? handleKeyDown : undefined}
       role={onCopy ? 'button' : undefined}
@@ -63,20 +96,56 @@ export const DataTableCell = memo(function DataTableCell({
           className="text-blue-600 underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
           onClick={(e) => e.stopPropagation()}
         >
-          <span className="block max-w-[420px] truncate">{formatted.display}</span>
+          <span
+            ref={tooltipRef}
+            className="block max-w-[420px] truncate"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
+            {formatted.display}
+          </span>
         </a>
       ) : formatted.type === 'number' ? (
-        <span className="block font-mono text-gray-700 dark:text-gray-300 tabular-nums" title={String(formatted.raw)}>
+        <span
+          ref={tooltipRef}
+          className="block font-mono text-gray-700 dark:text-gray-300 tabular-nums"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
           {formatted.display}
         </span>
       ) : formatted.type === 'date' ? (
-        <span className="block text-gray-700 dark:text-gray-300" title={String(formatted.raw)}>
+        <span
+          ref={tooltipRef}
+          className="block text-gray-700 dark:text-gray-300"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
           {formatted.display}
         </span>
       ) : (
-        <span className="block max-w-[420px] truncate text-gray-700 dark:text-gray-300" title={formatted.display}>
+        <span
+          ref={tooltipRef}
+          className="block max-w-[420px] truncate text-gray-700 dark:text-gray-300"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
           {formatted.display}
         </span>
+      )}
+      {tooltip && hasOverflow && tooltipContent && createPortal(
+        <div
+          className="pointer-events-none fixed max-w-[400px] rounded-lg bg-gray-900 px-3 py-2 text-xs text-white shadow-lg break-words dark:bg-gray-700"
+          style={{
+            zIndex: 100001,
+            left: Math.min(tooltip.x, window.innerWidth - 420),
+            top: tooltip.y,
+            transform: 'translateX(-50%)',
+          }}
+        >
+          {tooltipContent}
+        </div>,
+        document.body,
       )}
     </td>
   )

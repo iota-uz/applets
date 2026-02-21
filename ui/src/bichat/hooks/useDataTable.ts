@@ -51,6 +51,7 @@ export interface UseDataTableReturn {
 
   sort: SortState | null
   toggleSort: (columnIndex: number) => void
+  clearSort: () => void
 
   searchQuery: string
   setSearchQuery: (query: string) => void
@@ -66,6 +67,8 @@ export interface UseDataTableReturn {
 
   formatCell: (value: unknown, columnIndex: number) => FormattedCell
   getCellAlignment: (columnIndex: number) => 'left' | 'right'
+
+  getTableAsTSV: () => string
 }
 
 export function useDataTable(
@@ -325,6 +328,22 @@ export function useDataTable(
     [columns],
   )
 
+  const clearSort = useCallback(() => setSort(null), [])
+
+  const getTableAsTSV = useCallback((): string => {
+    const escape = (v: string) => v.replace(/[\t\r\n]/g, ' ')
+    const visCols = columns.filter((c) => c.visible)
+    const headerRow = visCols.map((c) => escape(c.header)).join('\t')
+    const dataRows = sortedRows.map((row) =>
+      visCols.map((c) => {
+        const val = row[c.index]
+        if (val === null || val === undefined) return ''
+        return escape(String(val))
+      }).join('\t'),
+    )
+    return [headerRow, ...dataRows].join('\n')
+  }, [columns, sortedRows])
+
   return {
     columns,
     visibleColumns,
@@ -346,6 +365,7 @@ export function useDataTable(
 
     sort,
     toggleSort,
+    clearSort,
 
     searchQuery,
     setSearchQuery: handleSetSearchQuery,
@@ -361,5 +381,7 @@ export function useDataTable(
 
     formatCell,
     getCellAlignment,
+
+    getTableAsTSV,
   }
 }

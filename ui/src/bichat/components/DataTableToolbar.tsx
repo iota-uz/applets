@@ -1,7 +1,7 @@
 import { memo, useCallback, useState } from 'react'
-import { ChartBar, Columns, ChartLineUp, X, Check } from '@phosphor-icons/react'
+import { ArrowsIn, ArrowsOut, CaretUp, CaretDown, ChartBar, Columns, ChartLineUp, Copy, X, Check } from '@phosphor-icons/react'
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react'
-import type { ColumnMeta } from '../hooks/useDataTable'
+import type { ColumnMeta, SortState } from '../hooks/useDataTable'
 import { useTranslation } from '../hooks/useTranslation'
 
 interface DataTableToolbarProps {
@@ -15,6 +15,11 @@ interface DataTableToolbarProps {
   onSendMessage?: (content: string) => void
   sendDisabled?: boolean
   hasHiddenColumns: boolean
+  sort?: SortState | null
+  onClearSort?: () => void
+  onCopyTable?: () => void
+  isFullscreen?: boolean
+  onToggleFullscreen?: () => void
 }
 
 export const DataTableToolbar = memo(function DataTableToolbar({
@@ -28,6 +33,11 @@ export const DataTableToolbar = memo(function DataTableToolbar({
   onSendMessage,
   sendDisabled,
   hasHiddenColumns,
+  sort,
+  onClearSort,
+  onCopyTable,
+  isFullscreen,
+  onToggleFullscreen,
 }: DataTableToolbarProps) {
   const { t } = useTranslation()
   const [searchFocused, setSearchFocused] = useState(false)
@@ -133,6 +143,19 @@ export const DataTableToolbar = memo(function DataTableToolbar({
         <span>{t('BiChat.DataTable.Stats')}</span>
       </button>
 
+      {/* Copy table */}
+      {onCopyTable && (
+        <button
+          type="button"
+          onClick={onCopyTable}
+          className="flex cursor-pointer items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800"
+          aria-label={t('BiChat.DataTable.CopyTable')}
+        >
+          <Copy size={14} />
+          <span>{t('BiChat.DataTable.Copy')}</span>
+        </button>
+      )}
+
       {/* Visualize */}
       {onSendMessage && (
         <button
@@ -145,6 +168,35 @@ export const DataTableToolbar = memo(function DataTableToolbar({
           <ChartLineUp size={14} />
           <span>{t('BiChat.DataTable.Visualize')}</span>
         </button>
+      )}
+
+      {/* Expand/collapse */}
+      {onToggleFullscreen && (
+        <button
+          type="button"
+          onClick={onToggleFullscreen}
+          className="flex cursor-pointer items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800"
+          aria-label={isFullscreen ? t('BiChat.DataTable.Collapse') : t('BiChat.DataTable.Expand')}
+        >
+          {isFullscreen ? <ArrowsIn size={14} /> : <ArrowsOut size={14} />}
+          <span>{isFullscreen ? t('BiChat.DataTable.Collapse') : t('BiChat.DataTable.Expand')}</span>
+        </button>
+      )}
+
+      {/* Sort indicator pill */}
+      {sort && onClearSort && (
+        <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-700 dark:border-blue-700 dark:bg-blue-900/20 dark:text-blue-400">
+          <span>{t('BiChat.DataTable.SortedBy', { column: columns.find((c) => c.index === sort.columnIndex)?.header ?? '' })}</span>
+          {sort.direction === 'asc' ? <CaretUp size={10} weight="bold" /> : <CaretDown size={10} weight="bold" />}
+          <button
+            type="button"
+            onClick={onClearSort}
+            className="ml-0.5 cursor-pointer rounded-full p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800"
+            aria-label={t('BiChat.DataTable.ClearSort')}
+          >
+            <X size={10} />
+          </button>
+        </span>
       )}
     </div>
   )

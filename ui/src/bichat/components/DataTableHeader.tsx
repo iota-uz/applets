@@ -15,6 +15,7 @@ interface DataTableHeaderProps {
   onToggleVisibility: (columnIndex: number) => void
   onSendMessage?: (content: string) => void
   sendDisabled?: boolean
+  showRowNumbers?: boolean
 }
 
 export const DataTableHeader = memo(function DataTableHeader({
@@ -26,11 +27,17 @@ export const DataTableHeader = memo(function DataTableHeader({
   onToggleVisibility,
   onSendMessage,
   sendDisabled,
+  showRowNumbers,
 }: DataTableHeaderProps) {
   return (
     <thead className="sticky top-0 z-10 bg-gray-100 dark:bg-gray-800">
       <tr className="border-b border-gray-200 dark:border-gray-700">
-        {columns.map((col) => (
+        {showRowNumbers && (
+          <th scope="col" className="sticky left-0 z-20 w-10 bg-gray-100 px-2 py-2 text-right text-xs font-medium text-gray-400 dark:bg-gray-800 dark:text-gray-500 select-none">
+            #
+          </th>
+        )}
+        {columns.map((col, colIdx) => (
           <HeaderCell
             key={`${tableId}-header-${col.index}`}
             column={col}
@@ -40,6 +47,7 @@ export const DataTableHeader = memo(function DataTableHeader({
             onToggleVisibility={onToggleVisibility}
             onSendMessage={onSendMessage}
             sendDisabled={sendDisabled}
+            isFirstColumn={colIdx === 0 && !!showRowNumbers}
           />
         ))}
       </tr>
@@ -55,6 +63,7 @@ interface HeaderCellProps {
   onToggleVisibility: (columnIndex: number) => void
   onSendMessage?: (content: string) => void
   sendDisabled?: boolean
+  isFirstColumn?: boolean
 }
 
 const HeaderCell = memo(function HeaderCell({
@@ -65,6 +74,7 @@ const HeaderCell = memo(function HeaderCell({
   onToggleVisibility,
   onSendMessage,
   sendDisabled,
+  isFirstColumn,
 }: HeaderCellProps) {
   const { t } = useTranslation()
   const thRef = useRef<HTMLTableCellElement>(null)
@@ -129,7 +139,9 @@ const HeaderCell = memo(function HeaderCell({
       ref={thRef}
       scope="col"
       aria-sort={direction === 'asc' ? 'ascending' : direction === 'desc' ? 'descending' : 'none'}
-      className="group relative select-none whitespace-nowrap border-r border-transparent px-3 py-2 text-left font-semibold text-gray-700 dark:text-gray-200"
+      className={`group relative select-none whitespace-nowrap border-r border-transparent px-3 py-2 text-left font-semibold text-gray-700 dark:text-gray-200 ${
+        isFirstColumn ? 'sticky left-[2.5rem] z-20 bg-gray-100 dark:bg-gray-800' : ''
+      }`}
       style={column.width ? { width: column.width, minWidth: column.width } : undefined}
     >
       <div className="flex items-center gap-1">
