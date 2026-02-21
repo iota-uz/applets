@@ -114,7 +114,7 @@ const COPY_FEEDBACK_MS = 2000
 
 const defaultClassNames: Required<UserMessageClassNames> = {
   root: 'flex gap-3 justify-end group',
-  wrapper: 'flex-1 flex flex-col items-end max-w-[75%]',
+  wrapper: 'flex-1 flex flex-col items-end max-w-[var(--bichat-bubble-max-width)]',
   avatar: 'flex-shrink-0 w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-medium text-sm',
   bubble: 'bg-primary-600 text-white rounded-2xl rounded-br-sm px-4 py-3 shadow-sm',
   content: 'text-sm whitespace-pre-wrap break-words leading-relaxed',

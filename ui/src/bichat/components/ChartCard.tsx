@@ -67,6 +67,15 @@ export function ChartCard({ chartData }: ChartCardProps) {
       animations: { enabled: false },
       fontFamily: 'inherit',
     },
+    tooltip: {
+      // The default tooltip positioning converts SVG `cy` coordinates to CSS
+      // `top` without adding the inner group's `translateY`, causing vertical
+      // misalignment inside scrolled containers / Shadow DOM.
+      // `followCursor` bypasses that path entirely — it positions relative to
+      // mouse viewport coordinates (`clientY − grid.getBCR().top`), which are
+      // always accurate regardless of SVG transforms.
+      followCursor: true,
+    },
     title: {
       text: title,
       align: 'left',
@@ -121,18 +130,13 @@ export function ChartCard({ chartData }: ChartCardProps) {
 
   return (
     <div className="group/chart rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow dark:border-gray-700/60 dark:bg-gray-800">
-      {/* translateZ(0) creates a containing block at the chart level so
-          ApexCharts tooltip/crosshair positioning isn't offset by distant
-          framer-motion transforms on ancestor elements. */}
-      <div className="w-full min-w-0" style={{ transform: 'translateZ(0)' }}>
-        <ReactApexChart
-          options={options}
-          series={apexSeries}
-          type={chartType}
-          width="100%"
-          height={height}
-        />
-      </div>
+      <ReactApexChart
+        options={options}
+        series={apexSeries}
+        type={chartType}
+        width="100%"
+        height={height}
+      />
       <div className="flex justify-end pt-2">
         <button
           type="button"

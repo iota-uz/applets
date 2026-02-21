@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback, lazy, Suspense, useRef, useEffect, type ReactNode } from 'react'
-import { Check, Copy, ArrowsClockwise } from '@phosphor-icons/react'
+import { Check, Copy, ArrowsClockwise, CaretRight } from '@phosphor-icons/react'
 import { formatRelativeTime } from '../utils/dateFormatting'
 import CodeOutputsPanel from './CodeOutputsPanel'
 import StreamingCursor from './StreamingCursor'
@@ -190,7 +190,7 @@ const COPY_FEEDBACK_MS = 2000
 
 const defaultClassNames: Required<AssistantMessageClassNames> = {
   root: 'flex gap-3 group',
-  wrapper: 'flex-1 min-w-0 flex flex-col gap-3 max-w-[85%]',
+  wrapper: 'flex-1 min-w-0 flex flex-col gap-3 max-w-[var(--bichat-bubble-assistant-max-width)]',
   avatar: 'flex-shrink-0 w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-medium text-xs',
   bubble: 'bg-white dark:bg-gray-800 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm',
   codeOutputs: '',
@@ -467,19 +467,11 @@ export function AssistantMessage({
                       className="cursor-pointer flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 rounded-md p-1 -m-1"
                       aria-expanded={explanationExpanded}
                     >
-                      <svg
-                        className={`w-4 h-4 transition-transform duration-150 ${explanationExpanded ? 'rotate-90' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
+                      <CaretRight
+                        size={16}
+                        weight="bold"
+                        className={`transition-transform duration-150 ${explanationExpanded ? 'rotate-90' : ''}`}
+                      />
                       <span className="font-medium">{t('BiChat.Assistant.Explanation')}</span>
                     </button>
                     {explanationExpanded && (

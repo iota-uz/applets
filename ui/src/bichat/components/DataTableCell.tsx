@@ -44,7 +44,7 @@ export const DataTableCell = memo(function DataTableCell({
       tabIndex={onCopy ? 0 : undefined}
     >
       {formatted.isNull ? (
-        <span className="text-xs italic text-gray-400 dark:text-gray-500">NULL</span>
+        <span className="text-xs text-gray-400 dark:text-gray-500">&mdash;</span>
       ) : formatted.type === 'boolean' ? (
         <span
           className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
