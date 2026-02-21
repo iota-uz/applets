@@ -1,6 +1,6 @@
 import { memo, useCallback, useState } from 'react'
-import { ChartBar, Columns, ChartLineUp, X } from '@phosphor-icons/react'
-import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
+import { ChartBar, Columns, ChartLineUp, X, Check } from '@phosphor-icons/react'
+import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react'
 import type { ColumnMeta } from '../hooks/useDataTable'
 import { useTranslation } from '../hooks/useTranslation'
 
@@ -65,8 +65,8 @@ export const DataTableToolbar = memo(function DataTableToolbar({
       </div>
 
       {/* Column visibility */}
-      <Menu>
-        <MenuButton
+      <Popover className="relative">
+        <PopoverButton
           className={`flex cursor-pointer items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors ${
             hasHiddenColumns
               ? 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
@@ -76,50 +76,47 @@ export const DataTableToolbar = memo(function DataTableToolbar({
         >
           <Columns size={14} />
           <span>{t('BiChat.DataTable.Columns')}</span>
-        </MenuButton>
-        <MenuItems
+        </PopoverButton>
+        <PopoverPanel
           anchor="bottom start"
-          className="z-50 max-h-64 min-w-[180px] overflow-auto rounded-lg border border-gray-200 bg-white py-1 text-sm shadow-lg dark:border-gray-700 dark:bg-gray-800 [--anchor-gap:4px]"
+          className="z-50 mt-1 max-h-72 min-w-[200px] overflow-auto rounded-lg border border-gray-200 bg-white py-1.5 shadow-lg dark:border-gray-700 dark:bg-gray-800"
         >
           {hasHiddenColumns && (
             <>
-              <MenuItem>
-                {({ focus }) => (
-                  <button
-                    type="button"
-                    className={`w-full px-3 py-1.5 text-left text-xs font-medium text-blue-600 dark:text-blue-400 ${focus ? 'bg-gray-100 dark:bg-gray-700' : ''}`}
-                    onClick={onResetColumnVisibility}
-                  >
-                    {t('BiChat.DataTable.ShowAllColumns')}
-                  </button>
-                )}
-              </MenuItem>
+              <button
+                type="button"
+                className="w-full px-3 py-1.5 text-left text-xs font-medium text-blue-600 hover:bg-gray-50 dark:text-blue-400 dark:hover:bg-gray-700"
+                onClick={onResetColumnVisibility}
+              >
+                {t('BiChat.DataTable.ShowAllColumns')}
+              </button>
               <div className="my-1 border-t border-gray-200 dark:border-gray-700" />
             </>
           )}
           {columns.map((col) => (
-            <MenuItem key={col.index}>
-              {({ focus }) => (
-                <button
-                  type="button"
-                  role="checkbox"
-                  aria-checked={col.visible}
-                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left ${focus ? 'bg-gray-100 dark:bg-gray-700' : ''} text-gray-700 dark:text-gray-200`}
-                  onClick={() => onToggleColumnVisibility(col.index)}
-                >
-                  <span
-                    aria-hidden="true"
-                    className={`flex h-3.5 w-3.5 items-center justify-center rounded border ${col.visible ? 'border-blue-600 bg-blue-600' : 'border-gray-300 dark:border-gray-500'}`}
-                  >
-                    {col.visible && <span className="block h-2 w-2 rounded-sm bg-white" />}
-                  </span>
-                  <span className="truncate text-xs">{col.header}</span>
-                </button>
-              )}
-            </MenuItem>
+            <button
+              key={col.index}
+              type="button"
+              role="checkbox"
+              aria-checked={col.visible}
+              className="flex w-full cursor-pointer items-center gap-2.5 px-3 py-1.5 text-left text-xs text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700/60"
+              onClick={() => onToggleColumnVisibility(col.index)}
+            >
+              <span
+                aria-hidden="true"
+                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded transition-colors ${
+                  col.visible
+                    ? 'bg-blue-600 text-white'
+                    : 'border border-gray-300 bg-white dark:border-gray-500 dark:bg-gray-700'
+                }`}
+              >
+                {col.visible && <Check size={11} weight="bold" />}
+              </span>
+              <span className="truncate">{col.header}</span>
+            </button>
           ))}
-        </MenuItems>
-      </Menu>
+        </PopoverPanel>
+      </Popover>
 
       {/* Stats toggle */}
       <button
