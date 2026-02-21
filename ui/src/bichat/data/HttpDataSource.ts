@@ -611,7 +611,7 @@ function extractRenderTablesFromToolCalls(toolCalls?: Array<{ id: string; name: 
 
   const tables: RenderTableData[] = []
   for (const tc of toolCalls) {
-    if (tc.name !== 'renderTable' || !tc.result) continue
+    if (tc.name !== 'render_table' || !tc.result) continue
     const parsed = parseRenderTableDataFromJsonString(tc.result, tc.id)
     if (parsed) {
       tables.push(parsed)
