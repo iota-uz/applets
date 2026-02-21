@@ -236,6 +236,12 @@ export function UserMessage({
     }
   }, [])
 
+  // Reset edit state when the turn changes
+  useEffect(() => {
+    setIsEditing(false)
+    setDraftContent('')
+  }, [turnId])
+
   // Auto-focus textarea when entering edit mode
   useEffect(() => {
     if (isEditing && editTextareaRef.current) {

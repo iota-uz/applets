@@ -160,7 +160,7 @@ export function Toast({
         {/* Progress bar */}
         <div className="absolute inset-x-0 bottom-0 h-0.5 bg-black/5 dark:bg-white/5">
           <div
-            className={`h-full ${config.progress} origin-left`}
+            className={`h-full ${config.progress} origin-left motion-reduce:animate-none`}
             style={{
               animation: `bichat-toast-progress ${duration}ms linear forwards`,
               animationPlayState: paused ? 'paused' : 'running',

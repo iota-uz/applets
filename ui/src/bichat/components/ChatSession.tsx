@@ -191,6 +191,34 @@ function ChatSessionCore({
     setIsResizingArtifactsPanel(true)
   }, [])
 
+  const handleArtifactsResizeKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      const step = e.shiftKey ? 40 : 20
+      let nextWidth: number | null = null
+
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        nextWidth = Math.min(ARTIFACTS_PANEL_WIDTH_MAX, artifactsPanelWidth + step)
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        nextWidth = Math.max(ARTIFACTS_PANEL_WIDTH_MIN, artifactsPanelWidth - step)
+      } else if (e.key === 'Home') {
+        nextWidth = ARTIFACTS_PANEL_WIDTH_MAX
+      } else if (e.key === 'End') {
+        nextWidth = ARTIFACTS_PANEL_WIDTH_MIN
+      }
+
+      if (nextWidth !== null) {
+        e.preventDefault()
+        setArtifactsPanelWidth(nextWidth)
+        try {
+          window.localStorage.setItem(`${artifactsPanelStorageKey}.width`, String(nextWidth))
+        } catch {
+          // ignore
+        }
+      }
+    },
+    [artifactsPanelWidth, artifactsPanelStorageKey],
+  )
+
   const lastPanelWidthRef = useRef(artifactsPanelWidth)
   lastPanelWidthRef.current = artifactsPanelWidth
 
@@ -283,6 +311,7 @@ function ChatSessionCore({
             : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200',
         ].join(' ')}
         aria-label={artifactsPanelExpanded ? t('BiChat.Artifacts.ToggleHide') : t('BiChat.Artifacts.ToggleShow')}
+        aria-expanded={artifactsPanelExpanded}
         title={artifactsPanelExpanded ? t('BiChat.Artifacts.ToggleHide') : t('BiChat.Artifacts.ToggleShow')}
       >
         <Sidebar className="h-4 w-4" weight={artifactsPanelExpanded ? 'duotone' : 'regular'} />
@@ -444,9 +473,15 @@ function ChatSessionCore({
             >
               <div
                 role="separator"
+                tabIndex={0}
                 aria-label={t('BiChat.Artifacts.Resize')}
+                aria-orientation="vertical"
+                aria-valuenow={artifactsPanelWidth}
+                aria-valuemin={ARTIFACTS_PANEL_WIDTH_MIN}
+                aria-valuemax={ARTIFACTS_PANEL_WIDTH_MAX}
                 onMouseDown={handleArtifactsResizeStart}
-                className="relative flex shrink-0 cursor-col-resize touch-none items-center justify-center w-2 transition-colors lg:flex group/resize after:absolute after:inset-y-0 after:left-0 after:w-0.5 after:bg-gray-300 dark:after:bg-gray-600 after:transition-colors group-hover/resize:after:bg-primary-400 dark:group-hover/resize:after:bg-primary-500"
+                onKeyDown={handleArtifactsResizeKeyDown}
+                className="relative flex shrink-0 cursor-col-resize touch-none items-center justify-center w-2 transition-colors lg:flex group/resize after:absolute after:inset-y-0 after:left-0 after:w-0.5 after:bg-gray-300 dark:after:bg-gray-600 after:transition-colors group-hover/resize:after:bg-primary-400 dark:group-hover/resize:after:bg-primary-500 focus-visible:outline-none focus-visible:after:bg-primary-500 dark:focus-visible:after:bg-primary-400"
               >
                 <span className="absolute h-10 w-1.5 cursor-col-resize rounded-full bg-gray-400 transition-colors group-hover/resize:bg-primary-400 dark:bg-gray-500 dark:group-hover/resize:bg-primary-500" />
               </div>

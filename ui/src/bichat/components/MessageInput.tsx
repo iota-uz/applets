@@ -549,7 +549,9 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       }
 
       if (e.key === 'Escape') {
-        if (isSlashMode) {
+        if (isDragging) {
+          setIsDragging(false)
+        } else if (isSlashMode) {
           setCommandListDismissed(true)
         } else {
           onMessageChange('')

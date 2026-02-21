@@ -18,6 +18,7 @@ import ScrollToBottomButton from './ScrollToBottomButton'
 import { DateSeparator } from './DateSeparator'
 import { normalizeStreamingMarkdown } from '../utils/markdownStream'
 import { useKeyboardShortcuts, type ShortcutConfig } from '../hooks/useKeyboardShortcuts'
+import { useTranslation } from '../hooks/useTranslation'
 import { isSameDay } from 'date-fns'
 
 const MarkdownRenderer = lazy(() =>
@@ -87,6 +88,7 @@ interface MessageListProps {
 }
 
 export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs, readOnly }: MessageListProps) {
+  const { t } = useTranslation()
   const { currentSessionId, fetching } = useChatSession()
   const {
     turns,
@@ -259,7 +261,7 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
         show={showScrollButton}
         onClick={handleScrollToBottom}
         unreadCount={unreadCount}
-        label={isStreaming && showScrollButton ? 'New messages' : undefined}
+        label={isStreaming && showScrollButton ? t('BiChat.ScrollToBottom.NewMessages') : undefined}
       />
     </div>
   )

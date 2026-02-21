@@ -5,7 +5,7 @@
  * Uses @headlessui/react Dialog for accessible modal behavior.
  */
 
-import { memo } from 'react'
+import { memo, useRef } from 'react'
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle, Description } from '@headlessui/react'
 import { WarningCircle } from '@phosphor-icons/react'
 import { useTranslation } from '../hooks/useTranslation'
@@ -40,10 +40,11 @@ function ConfirmModalBase({
   isDanger = false,
 }: ConfirmModalProps) {
   const { t } = useTranslation()
+  const confirmRef = useRef<HTMLButtonElement>(null)
   const resolvedConfirmText = confirmText?.trim() ? confirmText : t('BiChat.Common.Confirm')
   const resolvedCancelText = cancelText?.trim() ? cancelText : t('BiChat.Common.Cancel')
   return (
-    <Dialog open={isOpen} onClose={onCancel} className="relative z-40">
+    <Dialog open={isOpen} onClose={onCancel} className="relative z-40" initialFocus={confirmRef}>
       {/* Backdrop */}
       <DialogBackdrop className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200" />
 
@@ -80,6 +81,7 @@ function ConfirmModalBase({
               {resolvedCancelText}
             </button>
             <button
+              ref={confirmRef}
               onClick={onConfirm}
               className={[
                 'cursor-pointer px-4 py-2 text-sm font-medium rounded-xl text-white',
