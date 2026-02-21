@@ -26,8 +26,30 @@ interface InlineTooltipState {
   value: string
 }
 
+interface HoverEventLike {
+  target?: EventTarget | null
+  clientX?: number
+  clientY?: number
+}
+
 // Default color palette if none provided
 const DEFAULT_COLORS = ['#6366f1', '#06b6d4', '#f59e0b', '#ef4444', '#8b5cf6']
+const TOOLTIP_X_PADDING = 12
+const TOOLTIP_Y_PADDING = 8
+const TOOLTIP_CURSOR_Y_OFFSET = 12
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max)
+}
+
+function getEventClientValue(event: unknown, key: 'clientX' | 'clientY'): number | null {
+  if (!event || typeof event !== 'object') {
+    return null
+  }
+
+  const value = (event as HoverEventLike)[key]
+  return typeof value === 'number' ? value : null
+}
 
 /**
  * ChartCard renders a single chart visualization with optional PNG export.
@@ -73,20 +95,29 @@ export function ChartCard({ chartData, onExportError }: ChartCardProps) {
     )
   }
 
-  const apexSeries =
-    chartType === 'pie' || chartType === 'donut'
-      ? series[0]?.data ?? []
-      : series.map((s) => ({ name: s.name, data: s.data }))
+  const apexSeries = useMemo(
+    () =>
+      chartType === 'pie' || chartType === 'donut'
+        ? series[0]?.data ?? []
+        : series.map((s) => ({ name: s.name, data: s.data })),
+    [chartType, series],
+  )
 
-  const xaxisConfig =
-    chartType !== 'pie' && chartType !== 'donut'
-      ? { categories: chartLabels }
-      : {}
+  const xaxisConfig = useMemo(
+    () =>
+      chartType !== 'pie' && chartType !== 'donut'
+        ? { categories: chartLabels }
+        : {},
+    [chartType, chartLabels],
+  )
 
-  const labelsConfig =
-    chartType === 'pie' || chartType === 'donut'
-      ? chartLabels
-      : []
+  const labelsConfig = useMemo(
+    () =>
+      chartType === 'pie' || chartType === 'donut'
+        ? chartLabels
+        : [],
+    [chartType, chartLabels],
+  )
 
   const handleDataPointMouseEnter = useCallback(
     (event: unknown, _chartContext: unknown, config: { seriesIndex?: number; dataPointIndex?: number }) => {
@@ -121,11 +152,23 @@ export function ChartCard({ chartData, onExportError }: ChartCardProps) {
       const label = chartLabels[dataPointIndex] || ''
       const seriesName = series?.[seriesIndex]?.name || 'Value'
 
-      const left = Math.min(
-        Math.max(barRect.left - cardRect.left + barRect.width / 2, 12),
-        Math.max(cardRect.width - 12, 12)
+      const cursorX = getEventClientValue(event, 'clientX')
+      const cursorY = getEventClientValue(event, 'clientY')
+      const fallbackLeft = barRect.left - cardRect.left + barRect.width / 2
+      const fallbackTop = barRect.top - cardRect.top - TOOLTIP_Y_PADDING
+      const maxLeft = Math.max(cardRect.width - TOOLTIP_X_PADDING, TOOLTIP_X_PADDING)
+      const maxTop = Math.max(cardRect.height - TOOLTIP_Y_PADDING, TOOLTIP_Y_PADDING)
+
+      const left = clamp(
+        cursorX !== null ? cursorX - cardRect.left : fallbackLeft,
+        TOOLTIP_X_PADDING,
+        maxLeft
       )
-      const top = Math.max(barRect.top - cardRect.top - 8, 8)
+      const top = clamp(
+        cursorY !== null ? cursorY - cardRect.top - TOOLTIP_CURSOR_Y_OFFSET : fallbackTop,
+        TOOLTIP_Y_PADDING,
+        maxTop
+      )
 
       setInlineTooltip({ left, top, label, seriesName, value })
     },
@@ -136,49 +179,52 @@ export function ChartCard({ chartData, onExportError }: ChartCardProps) {
     setInlineTooltip(null)
   }, [])
 
-  const options: ApexOptions = {
-    chart: {
-      id: chartId,
-      type: chartType as 'line' | 'bar' | 'area' | 'pie' | 'donut',
-      toolbar: { show: false },
-      animations: { enabled: false },
-      fontFamily: 'inherit',
-      ...(useInlineTooltip
-        ? {
-            events: {
-              dataPointMouseEnter: handleDataPointMouseEnter,
-              mouseLeave: handleMouseLeave,
-            },
-          }
-        : {}),
-    },
-    tooltip: {
-      enabled: !useInlineTooltip,
-      followCursor: true,
-    },
-    title: {
-      text: title,
-      align: 'left',
-      style: { fontSize: '14px', fontWeight: 600 },
-    },
-    colors: colors?.length ? colors : DEFAULT_COLORS,
-    xaxis: xaxisConfig,
-    labels: labelsConfig,
-    plotOptions: {
-      bar: { columnWidth: '60%' },
-    },
-    legend: { position: 'bottom', horizontalAlign: 'center' },
-    dataLabels: { enabled: chartType === 'pie' || chartType === 'donut' },
-    stroke: {
-      curve: 'smooth',
-      width: chartType === 'line' || chartType === 'area' ? 2 : 0,
-    },
-    fill: { opacity: chartType === 'area' ? 0.4 : 1 },
-    grid: {
-      borderColor: 'var(--bichat-color-chart-grid, rgba(148, 163, 184, 0.15))',
-      strokeDashArray: 3,
-    },
-  }
+  const options: ApexOptions = useMemo(
+    () => ({
+      chart: {
+        id: chartId,
+        type: chartType as 'line' | 'bar' | 'area' | 'pie' | 'donut',
+        toolbar: { show: false },
+        animations: { enabled: false },
+        fontFamily: 'inherit',
+        ...(useInlineTooltip
+          ? {
+              events: {
+                dataPointMouseEnter: handleDataPointMouseEnter,
+                mouseLeave: handleMouseLeave,
+              },
+            }
+          : {}),
+      },
+      tooltip: {
+        enabled: !useInlineTooltip,
+        followCursor: true,
+      },
+      title: {
+        text: title,
+        align: 'left',
+        style: { fontSize: '14px', fontWeight: 600 },
+      },
+      colors: colors?.length ? colors : DEFAULT_COLORS,
+      xaxis: xaxisConfig,
+      labels: labelsConfig,
+      plotOptions: {
+        bar: { columnWidth: '60%' },
+      },
+      legend: { position: 'bottom', horizontalAlign: 'center' },
+      dataLabels: { enabled: chartType === 'pie' || chartType === 'donut' },
+      stroke: {
+        curve: 'smooth',
+        width: chartType === 'line' || chartType === 'area' ? 2 : 0,
+      },
+      fill: { opacity: chartType === 'area' ? 0.4 : 1 },
+      grid: {
+        borderColor: 'var(--bichat-color-chart-grid, rgba(148, 163, 184, 0.15))',
+        strokeDashArray: 3,
+      },
+    }),
+    [chartId, chartType, title, colors, xaxisConfig, labelsConfig, useInlineTooltip, handleDataPointMouseEnter, handleMouseLeave],
+  )
 
   const handleExportPNG = async () => {
     setIsExporting(true)
@@ -189,7 +235,6 @@ export function ChartCard({ chartData, onExportError }: ChartCardProps) {
         const msg = 'Chart instance not available'
         console.error(msg)
         onExportError?.(msg)
-        setIsExporting(false)
         return
       }
       const result = await chart.dataURI({ scale: 2 })
