@@ -88,27 +88,19 @@ func NewStreamContextBuilder(
 
 // Build builds a StreamContext.
 func (b *StreamContextBuilder) Build(ctx context.Context, r *http.Request) (*api.StreamContext, error) {
+	const op = "StreamContextBuilder.Build"
 	start := time.Now()
-	user, err := b.host.ExtractUser(ctx)
+
+	id, err := appletctx.ExtractIdentity(ctx, b.host, op, b.logger)
 	if err != nil {
-		if b.logger != nil {
-			b.logger.WithError(err).Error("Failed to extract user for stream context")
-		}
-		return nil, fmt.Errorf("StreamContextBuilder.Build: user extraction failed: %w", err)
+		return nil, err
 	}
-	tenantID, err := b.host.ExtractTenantID(ctx)
-	if err != nil {
-		if b.logger != nil {
-			b.logger.WithError(err).WithField("user_id", user.ID()).Error("Failed to extract tenant ID")
-		}
-		return nil, fmt.Errorf("StreamContextBuilder.Build: tenant extraction failed: %w", err)
-	}
-	permissions := security.CollectUserPermissionNames(user)
+
 	session := appletctx.BuildSessionContext(r, b.sessionConfig, nil) // no store for stream
 	streamCtx := &api.StreamContext{
-		UserID:      int64(user.ID()),
-		TenantID:    tenantID.String(),
-		Permissions: permissions,
+		UserID:      int64(id.User.ID()),
+		TenantID:    id.TenantID.String(),
+		Permissions: id.Permissions,
 		CSRFToken:   csrf.Token(r),
 		Session:     session,
 	}
@@ -122,8 +114,8 @@ func (b *StreamContextBuilder) Build(ctx context.Context, r *http.Request) (*api
 	}
 	if b.logger != nil {
 		b.logger.WithFields(logrus.Fields{
-			"user_id":     user.ID(),
-			"tenant_id":   tenantID.String(),
+			"user_id":     id.User.ID(),
+			"tenant_id":   id.TenantID.String(),
 			"duration_ms": time.Since(start).Milliseconds(),
 		}).Debug("Built stream context")
 	}

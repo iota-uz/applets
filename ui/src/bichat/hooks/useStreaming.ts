@@ -1,9 +1,11 @@
 /**
  * useStreaming hook
- * Handles AsyncGenerator streaming responses with cancellation support
+ * BiChat-specific streaming hook that composes on top of applet-core's useStreaming.
+ * Adds content accumulation, error state, and chunk type dispatch.
  */
 
 import { useState, useCallback, useRef } from 'react'
+import { useStreaming as useCoreStreaming } from '../../applet-core/hooks/useStreaming'
 import { StreamChunk } from '../types'
 
 interface UseStreamingOptions {
@@ -14,87 +16,60 @@ interface UseStreamingOptions {
 
 export function useStreaming(options: UseStreamingOptions = {}) {
   const [content, setContent] = useState('')
-  const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState<Error | null>(null)
-  const abortControllerRef = useRef<AbortController | null>(null)
+  const optionsRef = useRef(options)
+  optionsRef.current = options
+
+  const core = useCoreStreaming()
 
   const processStream = useCallback(
     async (stream: AsyncGenerator<StreamChunk>, signal?: AbortSignal) => {
-      setIsStreaming(true)
       setError(null)
       setContent('')
 
-      // Create abort controller for this stream
-      abortControllerRef.current = new AbortController()
-
-      // Link external signal if provided, with cleanup
-      let onExternalAbort: (() => void) | undefined
-      if (signal) {
-        onExternalAbort = () => { abortControllerRef.current?.abort() }
-        signal.addEventListener('abort', onExternalAbort)
-      }
-
       try {
-        for await (const chunk of stream) {
-          // Check if cancelled
-          if (abortControllerRef.current?.signal.aborted) {
-            break
-          }
-
-          if ((chunk.type === 'chunk' || chunk.type === 'content') && chunk.content) {
-            setContent((prev) => {
-              const newContent = prev + chunk.content
-              options.onChunk?.(newContent)
-              return newContent
-            })
-          } else if (chunk.type === 'error') {
-            const errorMsg = chunk.error || 'Stream error'
-            const err = new Error(errorMsg)
-            setError(err)
-            options.onError?.(errorMsg)
-            break
-          } else if (chunk.type === 'done') {
-            options.onDone?.()
-            break
-          }
-        }
+        await core.processStream<StreamChunk>(
+          stream,
+          (chunk) => {
+            if ((chunk.type === 'chunk' || chunk.type === 'content') && chunk.content) {
+              setContent((prev) => {
+                const newContent = prev + chunk.content
+                optionsRef.current.onChunk?.(newContent)
+                return newContent
+              })
+            } else if (chunk.type === 'error') {
+              const errorMsg = chunk.error || 'Stream error'
+              const err = new Error(errorMsg)
+              setError(err)
+              optionsRef.current.onError?.(errorMsg)
+            } else if (chunk.type === 'done') {
+              optionsRef.current.onDone?.()
+            }
+          },
+          signal
+        )
       } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          // Stream was cancelled - this is expected
-          return
-        }
-
         const errorObj = err instanceof Error ? err : new Error('Unknown error')
         setError(errorObj)
-        options.onError?.(errorObj.message)
-      } finally {
-        if (signal && onExternalAbort) {
-          signal.removeEventListener('abort', onExternalAbort)
-        }
-        setIsStreaming(false)
-        abortControllerRef.current = null
+        optionsRef.current.onError?.(errorObj.message)
       }
     },
-    [options]
+    [core.processStream]
   )
 
   const cancel = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-      abortControllerRef.current = null
-      setIsStreaming(false)
-    }
-  }, [])
+    core.cancel()
+  }, [core.cancel])
 
   const reset = useCallback(() => {
     setContent('')
     setError(null)
-    setIsStreaming(false)
-  }, [])
+    core.reset()
+  }, [core.reset])
 
   return {
     content,
-    isStreaming,
+    isStreaming: core.isStreaming,
     error,
     processStream,
     cancel,

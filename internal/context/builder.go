@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/csrf"
 	"github.com/iota-uz/applets/internal/api"
 	"github.com/iota-uz/applets/internal/router"
@@ -16,6 +17,43 @@ import (
 	"github.com/iota-uz/go-i18n/v2/i18n"
 	"github.com/sirupsen/logrus"
 )
+
+// Identity holds the extracted user, tenant ID, and validated permissions.
+// Used by both ContextBuilder and StreamContextBuilder to avoid duplicating
+// the extraction + validation logic.
+type Identity struct {
+	User        api.AppletUser
+	TenantID    uuid.UUID
+	Permissions []string
+}
+
+// ExtractIdentity extracts user, tenant ID, and permission names from the
+// request context via the provided HostServices. The caller supplies an
+// operation name (op) for error wrapping and an optional logger.
+func ExtractIdentity(ctx context.Context, host api.HostServices, op string, logger *logrus.Logger) (*Identity, error) {
+	user, err := host.ExtractUser(ctx)
+	if err != nil {
+		if logger != nil {
+			logger.WithError(err).Error("Failed to extract user")
+		}
+		return nil, fmt.Errorf("%s: %w: user extraction failed: %w", op, api.ErrInternal, err)
+	}
+
+	tenantID, err := host.ExtractTenantID(ctx)
+	if err != nil {
+		if logger != nil {
+			logger.WithError(err).WithField("user_id", user.ID()).Error("Failed to extract tenant ID")
+		}
+		return nil, fmt.Errorf("%s: %w: tenant extraction failed: %w", op, api.ErrInternal, err)
+	}
+
+	permissions := security.CollectUserPermissionNames(user)
+	return &Identity{
+		User:        user,
+		TenantID:    tenantID,
+		Permissions: permissions,
+	}, nil
+}
 
 // ContextBuilder builds InitialContext for applets.
 type ContextBuilder struct {
@@ -70,24 +108,16 @@ func (b *ContextBuilder) Build(ctx context.Context, r *http.Request, basePath st
 	const op = "ContextBuilder.Build"
 	start := time.Now()
 
-	user, err := b.host.ExtractUser(ctx)
+	id, err := ExtractIdentity(ctx, b.host, op, b.logger)
 	if err != nil {
-		if b.logger != nil {
-			b.logger.WithError(err).Error("Failed to extract user for applet context")
-		}
-		return nil, fmt.Errorf("%s: %w: user extraction failed: %w", op, api.ErrInternal, err)
+		return nil, err
 	}
 
-	tenantID, err := b.host.ExtractTenantID(ctx)
-	if err != nil {
-		if b.logger != nil {
-			b.logger.WithError(err).WithField("user_id", user.ID()).Error("Failed to extract tenant ID")
-		}
-		return nil, fmt.Errorf("%s: %w: tenant extraction failed: %w", op, api.ErrInternal, err)
-	}
+	user := id.User
+	tenantID := id.TenantID
+	permissions := id.Permissions
 
 	userLocale := b.host.ExtractPageLocale(ctx)
-	permissions := security.CollectUserPermissionNames(user)
 	translations := b.getAllTranslations(userLocale)
 	tenantName := b.getTenantName(ctx, tenantID)
 	routeRouter := b.config.Router
