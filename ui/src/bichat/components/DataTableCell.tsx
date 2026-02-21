@@ -12,7 +12,7 @@ interface DataTableCellProps {
 
 type CellRenderer = (props: {
   formatted: FormattedCell
-  tooltipRef: React.RefObject<HTMLSpanElement | null>
+  tooltipRef: React.Ref<HTMLSpanElement>
   onMouseEnter: () => void
   onMouseLeave: () => void
 }) => ReactNode

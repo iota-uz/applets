@@ -39,7 +39,7 @@ export const DataTableFooter = memo(function DataTableFooter({
               }`}
             >
               {s ? (
-                <span className="font-mono tabular-nums" title={`Sum: ${formatStat(s.sum)} | Avg: ${formatStat(s.avg)} | Min: ${formatStat(s.min)} | Max: ${formatStat(s.max)}`}>
+                <span className="font-mono tabular-nums" title={`${t('BiChat.DataTable.StatsSum')}: ${formatStat(s.sum)} | ${t('BiChat.DataTable.StatsAvg')}: ${formatStat(s.avg)} | ${t('BiChat.DataTable.StatsMin')}: ${formatStat(s.min)} | ${t('BiChat.DataTable.StatsMax')}: ${formatStat(s.max)}`}>
                   {formatStat(s.sum)}
                 </span>
               ) : (

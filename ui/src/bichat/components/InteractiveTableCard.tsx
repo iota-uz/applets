@@ -176,7 +176,7 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
 
   const renderTable = (scrollClass: string) => (
     <div className={scrollClass}>
-      <table className="w-full border-collapse text-sm">
+      <table className="min-w-full border-collapse text-sm">
         <DataTableHeader
           tableId={table.id}
           columns={dt.visibleColumns}

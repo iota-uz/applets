@@ -202,7 +202,7 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
 
   return (
     <div className="relative flex-1 min-h-0">
-      <div ref={containerRef} className="h-full overflow-y-auto px-4 py-6">
+      <div ref={containerRef} className="h-full overflow-y-auto overflow-x-hidden px-4 py-6">
         <div className="mx-auto space-y-6">
           {/* Loading skeleton when no turns yet */}
           {fetching && turns.length === 0 && <MessageListSkeleton />}

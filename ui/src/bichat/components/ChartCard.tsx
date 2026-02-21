@@ -84,17 +84,6 @@ export function ChartCard({ chartData, onExportError }: ChartCardProps) {
     }
   }, [useInlineTooltip])
 
-  if (!hasValidData) {
-    return (
-      <div className="rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm dark:border-gray-700/60 dark:bg-gray-800">
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          {title && <span className="font-medium">{title}: </span>}
-          {t('BiChat.Chart.NoData')}
-        </p>
-      </div>
-    )
-  }
-
   const apexSeries = useMemo(
     () =>
       chartType === 'pie' || chartType === 'donut'
@@ -225,6 +214,17 @@ export function ChartCard({ chartData, onExportError }: ChartCardProps) {
     }),
     [chartId, chartType, title, colors, xaxisConfig, labelsConfig, useInlineTooltip, handleDataPointMouseEnter, handleMouseLeave],
   )
+
+  if (!hasValidData) {
+    return (
+      <div className="rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm dark:border-gray-700/60 dark:bg-gray-800">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {title && <span className="font-medium">{title}: </span>}
+          {t('BiChat.Chart.NoData')}
+        </p>
+      </div>
+    )
+  }
 
   const handleExportPNG = async () => {
     setIsExporting(true)

@@ -4,6 +4,7 @@
  */
 
 import { useState, useCallback, lazy, Suspense, useRef, useEffect, type ReactNode } from 'react'
+import { AnimatePresence } from 'framer-motion'
 import { Check, Copy, ArrowsClockwise, CaretRight } from '@phosphor-icons/react'
 import { formatRelativeTime } from '../utils/dateFormatting'
 import CodeOutputsPanel from './CodeOutputsPanel'
@@ -195,7 +196,7 @@ const defaultClassNames: Required<AssistantMessageClassNames> = {
   bubble: 'bg-white dark:bg-gray-800 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm',
   codeOutputs: '',
   charts: 'mb-1 w-full',
-  tables: 'mb-1 flex flex-col gap-3',
+  tables: 'mb-1 flex flex-col gap-3 min-w-0',
   artifacts: 'mb-1 flex flex-wrap gap-2',
   sources: '',
   explanation: 'mt-4 border-t border-gray-100 dark:border-gray-700 pt-4',
@@ -379,7 +380,9 @@ export function AssistantMessage({
 
       <div className={classes.wrapper}>
         {/* Inline recovery for empty assistant responses */}
-        {showInlineRetry && <RetryActionArea onRetry={() => { void handleRegenerateClick() }} />}
+        <AnimatePresence>
+          {showInlineRetry && <RetryActionArea key="inline-retry" onRetry={() => { void handleRegenerateClick() }} />}
+        </AnimatePresence>
 
         {/* Code outputs */}
         {turn.codeOutputs && turn.codeOutputs.length > 0 && (

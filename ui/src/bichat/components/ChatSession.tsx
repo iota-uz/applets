@@ -201,9 +201,9 @@ function ChatSessionCore({
       } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
         nextWidth = Math.max(ARTIFACTS_PANEL_WIDTH_MIN, artifactsPanelWidth - step)
       } else if (e.key === 'Home') {
-        nextWidth = ARTIFACTS_PANEL_WIDTH_MAX
-      } else if (e.key === 'End') {
         nextWidth = ARTIFACTS_PANEL_WIDTH_MIN
+      } else if (e.key === 'End') {
+        nextWidth = ARTIFACTS_PANEL_WIDTH_MAX
       }
 
       if (nextWidth !== null) {

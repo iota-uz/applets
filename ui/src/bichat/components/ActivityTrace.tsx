@@ -126,7 +126,7 @@ function ThinkingBubble({ content }: { content: string }) {
   const truncated = useMemo(() => {
     const lines = content.trim().split('\n')
     const last = lines.slice(-2).join('\n')
-    return last.length > 200 ? last.slice(-200) + '...' : last
+    return last.length > 200 ? '…' + last.slice(-200) : last
   }, [content])
 
   return (

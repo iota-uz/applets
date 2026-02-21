@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react'
+import type { ReactNode } from 'react'
 
 import { DebugPanel } from './DebugPanel'
 import type { DebugTrace } from '../types'
@@ -13,7 +14,7 @@ const meta: Meta<typeof DebugPanel> = {
 export default meta
 type Story = StoryObj<typeof DebugPanel>
 
-const Wrapper = ({ children }: { children: React.ReactNode }) => (
+const Wrapper = ({ children }: { children: ReactNode }) => (
   <div className="w-[480px] bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
     {children}
   </div>

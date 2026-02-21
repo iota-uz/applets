@@ -4,7 +4,7 @@
  * Uses @headlessui/react Transition for CSS-driven enter/leave animations.
  */
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useSyncExternalStore } from 'react'
 import { Transition } from '@headlessui/react'
 import { CheckCircle, XCircle, Info, Warning, X } from '@phosphor-icons/react'
 import type { ToastType, ToastAction } from '../hooks/useToast'
@@ -73,6 +73,16 @@ export function Toast({
   const [paused, setPaused] = useState(false)
   const remainingRef = useRef(duration)
   const startRef = useRef(Date.now())
+
+  const prefersReducedMotion = useSyncExternalStore(
+    (onStoreChange) => {
+      const mql = window.matchMedia('(prefers-reduced-motion: reduce)')
+      mql.addEventListener('change', onStoreChange)
+      return () => mql.removeEventListener('change', onStoreChange)
+    },
+    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    () => false
+  )
 
   // Trigger enter transition on mount
   useEffect(() => {
@@ -161,10 +171,14 @@ export function Toast({
         <div className="absolute inset-x-0 bottom-0 h-0.5 bg-black/5 dark:bg-white/5">
           <div
             className={`h-full ${config.progress} origin-left motion-reduce:animate-none`}
-            style={{
-              animation: `bichat-toast-progress ${duration}ms linear forwards`,
-              animationPlayState: paused ? 'paused' : 'running',
-            }}
+            style={
+              prefersReducedMotion
+                ? {}
+                : {
+                    animation: `bichat-toast-progress ${duration}ms linear forwards`,
+                    animationPlayState: paused ? 'paused' : 'running',
+                  }
+            }
           />
         </div>
       </div>
