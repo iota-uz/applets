@@ -371,7 +371,7 @@ export function AssistantMessage({
   return (
     <div className={classes.root}>
       {/* Avatar */}
-      {!hideAvatar && !showInlineRetry && (
+      {!hideAvatar && (
         <div className={avatarClassName}>
           {renderSlot(slots?.avatar, avatarSlotProps, isSystemMessage ? 'SYS' : 'AI')}
         </div>
