@@ -24,6 +24,13 @@ const TYPE_LABEL_KEYS: Record<string, string> = {
   other: 'BiChat.Artifacts.GroupOther',
 }
 
+const FALLBACK_ARTIFACT_NAME = 'Untitled artifact'
+
+function getArtifactName(artifact: SessionArtifact): string {
+  const name = artifact.name?.trim()
+  return name && name.length > 0 ? name : FALLBACK_ARTIFACT_NAME
+}
+
 function getGroupIcon(type: string): ReactNode {
   const cls = 'h-3.5 w-3.5'
   switch (type) {
@@ -42,7 +49,7 @@ function getGroupIcon(type: string): ReactNode {
 
 function isImageArtifact(artifact: SessionArtifact): boolean {
   const mime = artifact.mimeType?.toLowerCase() || ''
-  const name = artifact.name.toLowerCase()
+  const name = getArtifactName(artifact).toLowerCase()
   return mime.startsWith('image/') || /\.(png|jpe?g|gif|webp|svg|bmp)$/.test(name)
 }
 
@@ -68,14 +75,14 @@ function ImageThumbnail({ src, alt }: { src: string; alt: string }) {
 function getArtifactFileVisual(artifact: SessionArtifact): FileVisual {
   if (artifact.type === 'chart') return CHART_VISUAL
   if (artifact.type === 'code_output') {
-    const v = getFileVisual(artifact.mimeType, artifact.name)
+    const v = getFileVisual(artifact.mimeType, getArtifactName(artifact))
     // Code outputs get a sky accent unless they resolve to something specific (image, etc.)
     if (v.label === 'TEXT' || v.label === 'FILE') {
       return { ...v, iconColor: 'text-sky-600 dark:text-sky-400', bgColor: 'bg-sky-100 dark:bg-sky-900/40' }
     }
     return v
   }
-  return getFileVisual(artifact.mimeType, artifact.name)
+  return getFileVisual(artifact.mimeType, getArtifactName(artifact))
 }
 
 function groupArtifactsByType(artifacts: SessionArtifact[]): Array<{ type: string; items: SessionArtifact[] }> {
@@ -146,6 +153,7 @@ export function SessionArtifactList({
               const isSelected = artifact.id === selectedArtifactId
               const visual = getArtifactFileVisual(artifact)
               const Icon = visual.icon
+              const artifactName = getArtifactName(artifact)
               return (
                 <button
                   key={artifact.id}
@@ -159,10 +167,10 @@ export function SessionArtifactList({
                 >
                   {isImageArtifact(artifact) && artifact.url ? (
                     <div>
-                      <ImageThumbnail src={artifact.url} alt={artifact.name} />
+                      <ImageThumbnail src={artifact.url} alt={artifactName} />
                       <div className="mt-2">
                         <span className="block truncate text-[13px] font-medium text-gray-900 dark:text-gray-100">
-                          {artifact.name}
+                          {artifactName}
                         </span>
                         <span className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500">
                           <span>{formatFileSize(artifact.sizeBytes)}</span>
@@ -182,7 +190,7 @@ export function SessionArtifactList({
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[13px] font-medium text-gray-900 dark:text-gray-100">
-                          {artifact.name}
+                          {artifactName}
                         </span>
                         <span className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500">
                           <span>{formatFileSize(artifact.sizeBytes)}</span>

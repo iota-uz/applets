@@ -333,16 +333,34 @@ export default function Sidebar({
 
     const wasCurrentSession = activeSessionId === sessionToArchive
 
+    const archivedId = sessionToArchive
+
     try {
-      await dataSource.archiveSession(sessionToArchive)
+      await dataSource.archiveSession(archivedId)
       setRefreshKey((k) => k + 1)
       window.dispatchEvent(new CustomEvent('bichat:sessions-updated', {
-        detail: { reason: 'archived', sessionId: sessionToArchive },
+        detail: { reason: 'archived', sessionId: archivedId },
       }))
 
       if (wasCurrentSession) {
         onSessionSelect('')
       }
+
+      toast.success(t('BiChat.Sidebar.ChatArchived'), 8000, {
+        label: t('BiChat.Common.Undo'),
+        onClick: async () => {
+          try {
+            await dataSource.unarchiveSession(archivedId)
+            setRefreshKey((k) => k + 1)
+            window.dispatchEvent(new CustomEvent('bichat:sessions-updated', {
+              detail: { reason: 'unarchived', sessionId: archivedId },
+            }))
+          } catch (undoErr) {
+            console.error('Failed to restore session:', undoErr)
+            toast.error(t('BiChat.Sidebar.FailedToRestoreChat'))
+          }
+        },
+      })
     } catch (err) {
       console.error('Failed to archive session:', err)
       const display = toErrorDisplay(err, t('BiChat.Sidebar.FailedToArchiveChat'))
@@ -866,7 +884,7 @@ export default function Sidebar({
                   </MenuButton>
                   <MenuItems
                     anchor="top start"
-                    className="w-48 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg rounded-xl shadow-lg border border-gray-200/80 dark:border-gray-700/60 z-30 [--anchor-gap:8px] mb-1 p-1.5"
+                    className="w-48 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg rounded-xl shadow-lg border border-gray-200/80 dark:border-gray-700/60 z-[var(--bichat-z-dropdown,10)] [--anchor-gap:8px] mb-1 p-1.5"
                   >
                     {onArchivedView && (
                       <MenuItem>

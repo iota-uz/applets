@@ -11,6 +11,7 @@ import {
   CaretLeft,
   CaretRight,
   ArrowClockwise,
+  ArrowCounterClockwise,
   ImageBroken,
   MagnifyingGlassPlus,
   MagnifyingGlassMinus,
@@ -46,9 +47,10 @@ function ImageModal({
   const [imageError, setImageError] = useState(false)
   const [retryKey, setRetryKey] = useState(0)
 
-  // Zoom & pan state
+  // Zoom, pan & rotation state
   const [scale, setScale] = useState(1)
   const [position, setPosition] = useState({ x: 0, y: 0 })
+  const [rotation, setRotation] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
   const dragStartRef = useRef({ x: 0, y: 0 })
   const positionRef = useRef({ x: 0, y: 0 })
@@ -60,6 +62,7 @@ function ImageModal({
   const canNavigateNext =
     hasMultipleImages && currentIndex < (allAttachments?.length || 1) - 1
   const isZoomed = scale > 1
+  const isTransformed = isZoomed || rotation !== 0
 
   // Keep refs in sync for event handlers
   useEffect(() => { scaleRef.current = scale }, [scale])
@@ -82,6 +85,11 @@ function ImageModal({
       } else if (e.key === '0') {
         setScale(1)
         setPosition({ x: 0, y: 0 })
+        setRotation(0)
+      } else if (e.key === 'r' && !e.shiftKey) {
+        setRotation((r) => r + 90)
+      } else if (e.key === 'R' || (e.key === 'r' && e.shiftKey)) {
+        setRotation((r) => r - 90)
       }
     }
 
@@ -95,6 +103,7 @@ function ImageModal({
     setImageError(false)
     setScale(1)
     setPosition({ x: 0, y: 0 })
+    setRotation(0)
   }, [attachment])
 
   // Mouse wheel zoom (needs native listener for preventDefault on passive)
@@ -135,6 +144,7 @@ function ImageModal({
   const resetZoom = useCallback(() => {
     setScale(1)
     setPosition({ x: 0, y: 0 })
+    setRotation(0)
   }, [])
 
   // Double-click to toggle between fit and 2x zoom
@@ -171,12 +181,12 @@ function ImageModal({
     setIsDragging(false)
   }, [])
 
-  // Click background to close (only when not zoomed)
+  // Click background to close (only when not transformed)
   const handleBackdropClick = useCallback((e: React.MouseEvent) => {
-    if (e.target === e.currentTarget && !isZoomed) {
+    if (e.target === e.currentTarget && !isTransformed) {
       onClose()
     }
-  }, [isZoomed, onClose])
+  }, [isTransformed, onClose])
 
   const previewUrl =
     attachment.preview || createDataUrl(attachment.base64Data, attachment.mimeType)
@@ -270,7 +280,7 @@ function ImageModal({
               isImageLoaded ? 'opacity-100' : 'opacity-0',
             ].join(' ')}
             style={{
-              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+              transform: `translate(${position.x}px, ${position.y}px) scale(${scale}) rotate(${rotation}deg)`,
               transformOrigin: 'center center',
               transition: isDragging
                 ? 'opacity 0.3s ease-out'
@@ -350,7 +360,27 @@ function ImageModal({
                 <MagnifyingGlassPlus size={16} weight="bold" />
               </button>
 
-              {isZoomed && (
+              <div className="w-px h-4 bg-white/15 mx-1" />
+
+              <button
+                type="button"
+                onClick={() => setRotation((r) => r - 90)}
+                className="cursor-pointer flex items-center justify-center w-8 h-8 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                aria-label={t('BiChat.Image.RotateLeft')}
+              >
+                <ArrowCounterClockwise size={16} weight="bold" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setRotation((r) => r + 90)}
+                className="cursor-pointer flex items-center justify-center w-8 h-8 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                aria-label={t('BiChat.Image.RotateRight')}
+              >
+                <ArrowClockwise size={16} weight="bold" />
+              </button>
+
+              {isTransformed && (
                 <>
                   <div className="w-px h-4 bg-white/15 mx-1" />
                   <button

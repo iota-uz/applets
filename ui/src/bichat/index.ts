@@ -154,7 +154,7 @@ export { useStreaming } from './hooks/useStreaming'
 export { useTranslation } from './hooks/useTranslation'
 export { useModalLock } from './hooks/useModalLock'
 export { useFocusTrap } from './hooks/useFocusTrap'
-export { useToast, type ToastItem, type ToastType, type UseToastReturn } from './hooks/useToast'
+export { useToast, type ToastAction, type ToastItem, type ToastType, type UseToastReturn } from './hooks/useToast'
 
 // New composability hooks
 export {

@@ -9,8 +9,9 @@
  * All content is ephemeral — it disappears when the final answer arrives.
  */
 
-import { memo, useMemo } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion'
+import { CaretRight, XCircle } from '@phosphor-icons/react'
 import type { ActivityStep } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
 import { getToolLabel } from '../utils/toolLabels'
@@ -152,6 +153,7 @@ function StepItem({ step, t, toolLabelPrefix }: StepItemProps) {
   )
 
   const isCompleted = step.status === 'completed'
+  const isFailed = step.status === 'failed'
   const duration = step.durationMs != null
     ? step.durationMs < 1000
       ? `${step.durationMs}ms`
@@ -166,14 +168,24 @@ function StepItem({ step, t, toolLabelPrefix }: StepItemProps) {
       exit={{ opacity: 0, x: -8 }}
       transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
       className={`flex items-center gap-2 text-sm transition-colors duration-200 ${
-        isCompleted
-          ? 'text-gray-400 dark:text-gray-500'
-          : 'text-gray-600 dark:text-gray-300'
+        isFailed
+          ? 'text-red-500 dark:text-red-400'
+          : isCompleted
+            ? 'text-gray-400 dark:text-gray-500'
+            : 'text-gray-600 dark:text-gray-300'
       }`}
-      aria-label={`${label}, ${isCompleted ? 'completed' : 'in progress'}`}
+      aria-label={`${label}, ${isFailed ? 'failed' : isCompleted ? 'completed' : 'in progress'}`}
     >
-      <StatusIndicator completed={isCompleted} />
-      <span className={isCompleted ? '' : 'font-medium'}>{label}</span>
+      <StatusIndicator completed={isCompleted} failed={isFailed} />
+      <span className={isCompleted || isFailed ? '' : 'font-medium'}>{label}</span>
+      {step.error && (
+        <span
+          className="text-xs text-red-400 truncate max-w-[200px]"
+          title={step.error}
+        >
+          {step.error}
+        </span>
+      )}
       {duration && (
         <motion.span
           initial={{ opacity: 0 }}
@@ -199,6 +211,9 @@ interface AgentGroupProps {
 }
 
 function AgentGroup({ agentName, steps, t, toolLabelPrefix }: AgentGroupProps) {
+  const [collapsed, setCollapsed] = useState(false)
+  const completedCount = steps.filter((s) => s.status === 'completed').length
+
   return (
     <motion.div
       layout
@@ -208,14 +223,33 @@ function AgentGroup({ agentName, steps, t, toolLabelPrefix }: AgentGroupProps) {
       transition={{ duration: 0.2 }}
       className="ml-4 pl-3 border-l-2 border-primary-200 dark:border-primary-800 space-y-1"
     >
-      <span className="text-xs font-medium text-primary-600 dark:text-primary-400">
-        {agentName}
-      </span>
-      <AnimatePresence initial={false}>
-        {steps.map((step) => (
-          <StepItem key={step.id} step={step} t={t} toolLabelPrefix={toolLabelPrefix} />
-        ))}
-      </AnimatePresence>
+      <button
+        type="button"
+        onClick={() => setCollapsed((c) => !c)}
+        className="flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400 cursor-pointer hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
+        aria-expanded={!collapsed}
+      >
+        <CaretRight
+          size={12}
+          weight="bold"
+          className={`shrink-0 transition-transform duration-150 ${collapsed ? '' : 'rotate-90'}`}
+        />
+        <span>
+          {agentName}
+          {collapsed && (
+            <span className="ml-1 text-gray-400 dark:text-gray-500">
+              ({completedCount}/{steps.length})
+            </span>
+          )}
+        </span>
+      </button>
+      {!collapsed && (
+        <AnimatePresence initial={false}>
+          {steps.map((step) => (
+            <StepItem key={step.id} step={step} t={t} toolLabelPrefix={toolLabelPrefix} />
+          ))}
+        </AnimatePresence>
+      )}
     </motion.div>
   )
 }
@@ -224,7 +258,20 @@ function AgentGroup({ agentName, steps, t, toolLabelPrefix }: AgentGroupProps) {
 // StatusIndicator
 // ---------------------------------------------------------------------------
 
-function StatusIndicator({ completed }: { completed: boolean }) {
+function StatusIndicator({ completed, failed }: { completed: boolean; failed?: boolean }) {
+  if (failed) {
+    return (
+      <motion.div
+        initial={{ scale: 0.5, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+        className="shrink-0"
+      >
+        <XCircle size={14} weight="fill" className="text-red-500 dark:text-red-400" />
+      </motion.div>
+    )
+  }
+
   if (completed) {
     return (
       <motion.svg

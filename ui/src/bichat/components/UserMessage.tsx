@@ -166,6 +166,7 @@ export function UserMessage({
   const [isCopied, setIsCopied] = useState(false)
   const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const editTextareaRef = useRef<HTMLTextAreaElement>(null)
+  const bubbleRef = useRef<HTMLDivElement>(null)
   const classes = mergeClassNames(defaultClassNames, classNameOverrides)
 
   useEffect(() => {
@@ -187,6 +188,21 @@ export function UserMessage({
       textarea.style.height = 'auto'
       textarea.style.height = `${Math.min(textarea.scrollHeight, 300)}px`
     }
+  }, [isEditing])
+
+  // Click-outside to cancel edit
+  useEffect(() => {
+    if (!isEditing) return
+
+    const handleMouseDown = (e: MouseEvent) => {
+      if (bubbleRef.current && !bubbleRef.current.contains(e.target as Node)) {
+        setIsEditing(false)
+        setDraftContent('')
+      }
+    }
+
+    document.addEventListener('mousedown', handleMouseDown)
+    return () => document.removeEventListener('mousedown', handleMouseDown)
   }, [isEditing])
 
   const normalizedAttachments: Attachment[] = turn.attachments.map((attachment) => {
@@ -367,7 +383,7 @@ export function UserMessage({
 
         {/* Message bubble */}
         {turn.content && (
-          <div className={classes.bubble}>
+          <div ref={bubbleRef} className={classes.bubble}>
             <div className={classes.content}>
               {isEditing ? (
                 <div className="space-y-3">

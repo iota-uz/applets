@@ -7,7 +7,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Transition } from '@headlessui/react'
 import { CheckCircle, XCircle, Info, Warning, X } from '@phosphor-icons/react'
-import type { ToastType } from '../hooks/useToast'
+import type { ToastType, ToastAction } from '../hooks/useToast'
 import { useTranslation } from '../hooks/useTranslation'
 
 export interface ToastProps {
@@ -18,6 +18,8 @@ export interface ToastProps {
   onDismiss: (id: string) => void
   /** Label for dismiss button (defaults to "Dismiss") */
   dismissLabel?: string
+  /** Optional action button rendered in the toast */
+  action?: ToastAction
 }
 
 const typeConfig: Record<
@@ -61,6 +63,7 @@ export function Toast({
   duration = 5000,
   onDismiss,
   dismissLabel,
+  action,
 }: ToastProps) {
   const { t } = useTranslation()
   const resolvedDismissLabel = dismissLabel ?? t('BiChat.Chat.DismissNotification')
@@ -131,6 +134,19 @@ export function Toast({
         <p className="flex-1 pt-0.5 text-sm font-medium leading-snug text-gray-800 dark:text-gray-100">
           {message}
         </p>
+
+        {/* Action button */}
+        {action && (
+          <button
+            onClick={() => {
+              action.onClick()
+              handleDismiss()
+            }}
+            className={`shrink-0 text-sm font-semibold underline-offset-2 hover:underline cursor-pointer ${config.accent}`}
+          >
+            {action.label}
+          </button>
+        )}
 
         {/* Dismiss */}
         <button

@@ -74,6 +74,38 @@ function readOptionalFiniteNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined
 }
 
+function extractFilenameFromURL(value: unknown): string | null {
+  const raw = readNonEmptyString(value)
+  if (!raw) return null
+
+  try {
+    const parsed = new URL(raw)
+    const path = parsed.pathname
+    if (!path) return null
+    const segments = path.split('/').filter(Boolean)
+    if (segments.length === 0) return null
+    const candidate = decodeURIComponent(segments[segments.length - 1])
+    return readNonEmptyString(candidate)
+  } catch {
+    return null
+  }
+}
+
+function resolveArtifactName(artifact: RPCArtifact): string {
+  const explicit = readNonEmptyString(artifact.name)
+  if (explicit) {
+    return explicit
+  }
+
+  const fromURL = extractFilenameFromURL(artifact.url)
+  if (fromURL) {
+    return fromURL
+  }
+
+  const type = readNonEmptyString(artifact.type) || 'artifact'
+  return `${type.replace(/_/g, ' ')} artifact`
+}
+
 // ---------------------------------------------------------------------------
 // Session mappers
 // ---------------------------------------------------------------------------
@@ -86,19 +118,21 @@ export function toSession(session: RPCSession): Session {
 }
 
 export function toSessionArtifact(artifact: RPCArtifact): SessionArtifact {
+  const createdAt = readNonEmptyString(artifact.createdAt) || '1970-01-01T00:00:00.000Z'
+
   return {
-    id: artifact.id,
-    sessionId: artifact.sessionId,
-    messageId: artifact.messageId,
-    uploadId: artifact.uploadId,
-    type: artifact.type,
-    name: artifact.name,
-    description: artifact.description,
-    mimeType: artifact.mimeType,
-    url: artifact.url,
-    sizeBytes: artifact.sizeBytes,
-    metadata: artifact.metadata,
-    createdAt: artifact.createdAt,
+    id: readString(artifact.id),
+    sessionId: readString(artifact.sessionId),
+    messageId: readNonEmptyString(artifact.messageId) || undefined,
+    uploadId: readOptionalFiniteNumber(artifact.uploadId),
+    type: readNonEmptyString(artifact.type) || 'other',
+    name: resolveArtifactName(artifact),
+    description: readNonEmptyString(artifact.description) || undefined,
+    mimeType: readNonEmptyString(artifact.mimeType) || undefined,
+    url: readNonEmptyString(artifact.url) || undefined,
+    sizeBytes: Math.max(0, readFiniteNumber(artifact.sizeBytes)),
+    metadata: isRecord(artifact.metadata) ? artifact.metadata : undefined,
+    createdAt,
   }
 }
 

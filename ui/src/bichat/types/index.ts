@@ -295,10 +295,11 @@ export interface ActivityStep {
   /** Raw tool arguments JSON string (used for label interpolation, e.g., delegation agent name). */
   arguments?: string
   agentName?: string
-  status: 'active' | 'completed'
+  status: 'active' | 'completed' | 'failed'
   startedAt: number
   completedAt?: number
   durationMs?: number
+  error?: string
 }
 
 // ---------------------------------------------------------------------------

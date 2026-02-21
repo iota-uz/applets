@@ -6,7 +6,7 @@
  * Includes PNG export functionality and responsive styling
  */
 
-import { useState, useId } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import ReactApexChart from 'react-apexcharts'
 import ApexCharts, { ApexOptions } from 'apexcharts'
 import { DownloadSimple } from '@phosphor-icons/react'
@@ -15,6 +15,15 @@ import { useTranslation } from '../hooks/useTranslation'
 
 interface ChartCardProps {
   chartData: ChartData
+  onExportError?: (error: string) => void
+}
+
+interface InlineTooltipState {
+  left: number
+  top: number
+  label: string
+  seriesName: string
+  value: string
 }
 
 // Default color palette if none provided
@@ -23,15 +32,35 @@ const DEFAULT_COLORS = ['#6366f1', '#06b6d4', '#f59e0b', '#ef4444', '#8b5cf6']
 /**
  * ChartCard renders a single chart visualization with optional PNG export.
  */
-export function ChartCard({ chartData }: ChartCardProps) {
+export function ChartCard({ chartData, onExportError }: ChartCardProps) {
   const { t } = useTranslation()
   const chartId = useId().replace(/:/g, '_')
   const [isExporting, setIsExporting] = useState(false)
+  const [useInlineTooltip, setUseInlineTooltip] = useState(false)
+  const [inlineTooltip, setInlineTooltip] = useState<InlineTooltipState | null>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
 
   const { chartType, title, series, labels, colors, height = 350 } = chartData
+  const chartLabels = useMemo(
+    () => (labels ?? []).filter((label): label is string => label !== null),
+    [labels]
+  )
 
   const hasValidData =
     series && series.length > 0 && series.some((s) => s.data && s.data.length > 0)
+
+  useEffect(() => {
+    const rootNode = cardRef.current?.getRootNode()
+    const inShadowRoot =
+      typeof ShadowRoot !== 'undefined' && rootNode instanceof ShadowRoot
+    setUseInlineTooltip(chartType === 'bar' && inShadowRoot)
+  }, [chartType])
+
+  useEffect(() => {
+    if (!useInlineTooltip) {
+      setInlineTooltip(null)
+    }
+  }, [useInlineTooltip])
 
   if (!hasValidData) {
     return (
@@ -51,13 +80,61 @@ export function ChartCard({ chartData }: ChartCardProps) {
 
   const xaxisConfig =
     chartType !== 'pie' && chartType !== 'donut'
-      ? { categories: (labels ?? []).filter((l): l is string => l !== null) }
+      ? { categories: chartLabels }
       : {}
 
   const labelsConfig =
     chartType === 'pie' || chartType === 'donut'
-      ? (labels ?? []).filter((l): l is string => l !== null)
+      ? chartLabels
       : []
+
+  const handleDataPointMouseEnter = useCallback(
+    (event: unknown, _chartContext: unknown, config: { seriesIndex?: number; dataPointIndex?: number }) => {
+      if (!useInlineTooltip || chartType !== 'bar' || !cardRef.current) {
+        return
+      }
+
+      const target =
+        (event &&
+          typeof event === 'object' &&
+          'target' in event &&
+          (event as { target?: Element | null }).target?.closest('.apexcharts-bar-area')) ||
+        null
+
+      if (!(target instanceof SVGGraphicsElement)) {
+        return
+      }
+
+      const seriesIndex = typeof config?.seriesIndex === 'number' ? config.seriesIndex : 0
+      const dataPointIndex = typeof config?.dataPointIndex === 'number' ? config.dataPointIndex : -1
+      if (dataPointIndex < 0) {
+        return
+      }
+
+      const cardRect = cardRef.current.getBoundingClientRect()
+      const barRect = target.getBoundingClientRect()
+      const rawValue = series?.[seriesIndex]?.data?.[dataPointIndex] ?? target.getAttribute('val') ?? ''
+      const value =
+        typeof rawValue === 'number' && Number.isFinite(rawValue)
+          ? rawValue.toLocaleString()
+          : String(rawValue)
+      const label = chartLabels[dataPointIndex] || ''
+      const seriesName = series?.[seriesIndex]?.name || 'Value'
+
+      const left = Math.min(
+        Math.max(barRect.left - cardRect.left + barRect.width / 2, 12),
+        Math.max(cardRect.width - 12, 12)
+      )
+      const top = Math.max(barRect.top - cardRect.top - 8, 8)
+
+      setInlineTooltip({ left, top, label, seriesName, value })
+    },
+    [chartLabels, chartType, series, useInlineTooltip]
+  )
+
+  const handleMouseLeave = useCallback(() => {
+    setInlineTooltip(null)
+  }, [])
 
   const options: ApexOptions = {
     chart: {
@@ -66,14 +143,17 @@ export function ChartCard({ chartData }: ChartCardProps) {
       toolbar: { show: false },
       animations: { enabled: false },
       fontFamily: 'inherit',
+      ...(useInlineTooltip
+        ? {
+            events: {
+              dataPointMouseEnter: handleDataPointMouseEnter,
+              mouseLeave: handleMouseLeave,
+            },
+          }
+        : {}),
     },
     tooltip: {
-      // The default tooltip positioning converts SVG `cy` coordinates to CSS
-      // `top` without adding the inner group's `translateY`, causing vertical
-      // misalignment inside scrolled containers / Shadow DOM.
-      // `followCursor` bypasses that path entirely — it positions relative to
-      // mouse viewport coordinates (`clientY − grid.getBCR().top`), which are
-      // always accurate regardless of SVG transforms.
+      enabled: !useInlineTooltip,
       followCursor: true,
     },
     title: {
@@ -95,7 +175,7 @@ export function ChartCard({ chartData }: ChartCardProps) {
     },
     fill: { opacity: chartType === 'area' ? 0.4 : 1 },
     grid: {
-      borderColor: 'rgba(148, 163, 184, 0.15)',
+      borderColor: 'var(--bichat-color-chart-grid, rgba(148, 163, 184, 0.15))',
       strokeDashArray: 3,
     },
   }
@@ -106,14 +186,18 @@ export function ChartCard({ chartData }: ChartCardProps) {
     try {
       const chart = ApexCharts.getChartByID(chartId)
       if (!chart) {
-        console.error('Chart instance not available')
+        const msg = 'Chart instance not available'
+        console.error(msg)
+        onExportError?.(msg)
         setIsExporting(false)
         return
       }
       const result = await chart.dataURI({ scale: 2 })
 
       if (!('imgURI' in result)) {
-        console.error('Unexpected dataURI result format')
+        const msg = 'Unexpected dataURI result format'
+        console.error(msg)
+        onExportError?.(msg)
         return
       }
 
@@ -122,14 +206,20 @@ export function ChartCard({ chartData }: ChartCardProps) {
       link.download = `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_chart.png`
       link.click()
     } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Failed to export chart'
       console.error('Failed to export chart:', error)
+      onExportError?.(msg)
     } finally {
       setIsExporting(false)
     }
   }
 
   return (
-    <div className="group/chart rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow dark:border-gray-700/60 dark:bg-gray-800">
+    <div
+      ref={cardRef}
+      className="group/chart relative rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow dark:border-gray-700/60 dark:bg-gray-800"
+      onMouseLeave={handleMouseLeave}
+    >
       <ReactApexChart
         options={options}
         series={apexSeries}
@@ -137,6 +227,30 @@ export function ChartCard({ chartData }: ChartCardProps) {
         width="100%"
         height={height}
       />
+      {useInlineTooltip && inlineTooltip && (
+        <div
+          className="pointer-events-none absolute z-20"
+          style={{
+            left: `${inlineTooltip.left}px`,
+            top: `${inlineTooltip.top}px`,
+            transform: 'translate(-50%, -100%)',
+          }}
+        >
+          <div className="min-w-[140px] overflow-hidden rounded-md border border-gray-200 bg-white text-xs text-gray-700 shadow-md dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200">
+            {inlineTooltip.label && (
+              <div className="border-b border-gray-200 px-2.5 py-1.5 font-medium dark:border-gray-600">
+                {inlineTooltip.label}
+              </div>
+            )}
+            <div className="flex items-center gap-2 px-2.5 py-1.5">
+              <span className="h-2 w-2 rounded-full bg-primary-600" />
+              <span>
+                {inlineTooltip.seriesName}: <strong>{inlineTooltip.value}</strong>
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex justify-end pt-2">
         <button
           type="button"

@@ -6,7 +6,7 @@
  * a user message with its assistant response.
  */
 
-import { useCallback, useEffect, useRef, useMemo, ReactNode, useState, lazy, Suspense } from 'react'
+import { useCallback, useEffect, useRef, useMemo, ReactNode, useState, lazy, Suspense, Fragment } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useChatSession, useChatMessaging } from '../context/ChatContext'
 import { ConversationTurn } from '../types'
@@ -15,7 +15,10 @@ import { TypingIndicator } from './TypingIndicator'
 import { ActivityTrace } from './ActivityTrace'
 import StreamingCursor from './StreamingCursor'
 import ScrollToBottomButton from './ScrollToBottomButton'
+import { DateSeparator } from './DateSeparator'
 import { normalizeStreamingMarkdown } from '../utils/markdownStream'
+import { useKeyboardShortcuts, type ShortcutConfig } from '../hooks/useKeyboardShortcuts'
+import { isSameDay } from 'date-fns'
 
 const MarkdownRenderer = lazy(() =>
   import('./MarkdownRenderer').then((m) => ({ default: m.MarkdownRenderer }))
@@ -46,6 +49,8 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
   const containerRef = useRef<HTMLDivElement>(null)
   const initialScrollSessionRef = useRef<string | undefined>(undefined)
   const [showScrollButton, setShowScrollButton] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const prevTurnsLengthRef = useRef(turns.length)
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
     const container = containerRef.current
@@ -98,11 +103,39 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
       const { scrollTop, scrollHeight, clientHeight } = container
       const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
       setShowScrollButton(!isNearBottom)
+      if (isNearBottom) {
+        setUnreadCount(0)
+      }
     }
 
     container.addEventListener('scroll', handleScroll)
     return () => container.removeEventListener('scroll', handleScroll)
   }, [])
+
+  // Track unread messages when scrolled up
+  useEffect(() => {
+    const prevLength = prevTurnsLengthRef.current
+    prevTurnsLengthRef.current = turns.length
+    if (turns.length > prevLength && showScrollButton) {
+      setUnreadCount((c) => c + (turns.length - prevLength))
+    }
+  }, [turns.length, showScrollButton])
+
+  // Keyboard shortcut: End key scrolls to bottom
+  const scrollShortcuts = useMemo<ShortcutConfig[]>(
+    () => [
+      {
+        key: 'End',
+        callback: () => {
+          scrollToBottom('smooth')
+          setUnreadCount(0)
+        },
+        description: 'Scroll to bottom',
+      },
+    ],
+    [scrollToBottom]
+  )
+  useKeyboardShortcuts(scrollShortcuts)
 
   const normalizedStreaming = useMemo(
     () => (streamingContent ? normalizeStreamingMarkdown(streamingContent) : ''),
@@ -140,21 +173,29 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
               </div>
             </div>
           )}
-          {turns.map((turn, index) => (
-            <TurnBubble
-              key={turn.id}
-              turn={turn}
-              isLastTurn={index === turns.length - 1}
-              renderUserTurn={renderUserTurn}
-              renderAssistantTurn={renderAssistantTurn}
-              userTurnProps={
-                readOnly
-                  ? { allowEdit: false }
-                  : { allowEdit: index === turns.length - 1 }
-              }
-              assistantTurnProps={readOnly ? { allowRegenerate: false } : undefined}
-            />
-          ))}
+          {turns.map((turn, index) => {
+            const turnDate = new Date(turn.createdAt)
+            const prevDate = index > 0 ? new Date(turns[index - 1].createdAt) : null
+            const showDateSeparator = !prevDate || !isSameDay(turnDate, prevDate)
+
+            return (
+              <Fragment key={turn.id}>
+                {showDateSeparator && <DateSeparator date={turnDate} />}
+                <TurnBubble
+                  turn={turn}
+                  isLastTurn={index === turns.length - 1}
+                  renderUserTurn={renderUserTurn}
+                  renderAssistantTurn={renderAssistantTurn}
+                  userTurnProps={
+                    readOnly
+                      ? { allowEdit: false }
+                      : { allowEdit: index === turns.length - 1 }
+                  }
+                  assistantTurnProps={readOnly ? { allowRegenerate: false } : undefined}
+                />
+              </Fragment>
+            )
+          })}
           {/* Activity Trace — shown during thinking / tool execution phase */}
           <AnimatePresence mode="wait">
             {showActivityTrace && (
@@ -201,7 +242,11 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
       </div>
       <ScrollToBottomButton
         show={showScrollButton}
-        onClick={() => scrollToBottom('smooth')}
+        onClick={() => {
+          scrollToBottom('smooth')
+          setUnreadCount(0)
+        }}
+        unreadCount={unreadCount}
         label={isStreaming && showScrollButton ? 'New messages' : undefined}
       />
     </div>

@@ -7,19 +7,25 @@ import { useState, useCallback, useRef } from 'react'
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning'
 
+export interface ToastAction {
+  label: string
+  onClick: () => void
+}
+
 export interface ToastItem {
   id: string
   type: ToastType
   message: string
   duration?: number
+  action?: ToastAction
 }
 
 export interface UseToastReturn {
   toasts: ToastItem[]
-  success: (msg: string, duration?: number) => void
-  error: (msg: string, duration?: number) => void
-  info: (msg: string, duration?: number) => void
-  warning: (msg: string, duration?: number) => void
+  success: (msg: string, duration?: number, action?: ToastAction) => void
+  error: (msg: string, duration?: number, action?: ToastAction) => void
+  info: (msg: string, duration?: number, action?: ToastAction) => void
+  warning: (msg: string, duration?: number, action?: ToastAction) => void
   dismiss: (id: string) => void
   dismissAll: () => void
 }
@@ -56,7 +62,7 @@ export function useToast(): UseToastReturn {
   const recentToastMapRef = useRef<Map<string, number>>(new Map())
 
   const showToast = useCallback(
-    (type: ToastType, message: string, duration?: number) => {
+    (type: ToastType, message: string, duration?: number, action?: ToastAction) => {
       const normalizedMessage = message.trim().toLowerCase()
       const key = `${type}:${normalizedMessage}`
       const now = Date.now()
@@ -75,7 +81,7 @@ export function useToast(): UseToastReturn {
 
       const id = generateId()
       setToasts((prev) => {
-        const next = [...prev, { id, type, message, duration }]
+        const next = [...prev, { id, type, message, duration, action }]
         if (next.length <= MAX_ACTIVE_TOASTS) return next
         return next.slice(next.length - MAX_ACTIVE_TOASTS)
       })
@@ -94,10 +100,10 @@ export function useToast(): UseToastReturn {
 
   return {
     toasts,
-    success: (msg: string, duration?: number) => showToast('success', msg, duration),
-    error: (msg: string, duration?: number) => showToast('error', msg, duration),
-    info: (msg: string, duration?: number) => showToast('info', msg, duration),
-    warning: (msg: string, duration?: number) => showToast('warning', msg, duration),
+    success: (msg: string, duration?: number, action?: ToastAction) => showToast('success', msg, duration, action),
+    error: (msg: string, duration?: number, action?: ToastAction) => showToast('error', msg, duration, action),
+    info: (msg: string, duration?: number, action?: ToastAction) => showToast('info', msg, duration, action),
+    warning: (msg: string, duration?: number, action?: ToastAction) => showToast('warning', msg, duration, action),
     dismiss,
     dismissAll,
   }
