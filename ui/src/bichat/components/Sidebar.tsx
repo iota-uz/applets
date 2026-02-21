@@ -12,7 +12,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { X, Plus, Archive, CaretLineLeft, CaretLineRight, Gear, Users, List } from '@phosphor-icons/react'
+import { X, Plus, Archive, CaretLineLeft, CaretLineRight, Gear, Users, List, ChatCircle, MagnifyingGlass } from '@phosphor-icons/react'
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import SessionSkeleton from './SessionSkeleton'
 import SessionItem from './SessionItem'
@@ -147,7 +147,7 @@ export default function Sidebar({
   const activeSessionMissRetriesRef = useRef<Record<string, number>>({})
 
   // Collapse state — disabled when used as a mobile drawer (onClose present)
-  const { isCollapsed, toggle, collapse } = useSidebarCollapse()
+  const { isCollapsed, toggle, expand, collapse } = useSidebarCollapse()
   const collapsible = !onClose // desktop only
 
   // Click-on-empty-space to toggle (same pattern as SDK sidebar)
@@ -418,6 +418,23 @@ export default function Sidebar({
       : []
   }, [unpinnedSessions, t])
 
+  // Collapsed sidebar indicators — pinned first, then most recent
+  const MAX_COLLAPSED_INDICATORS = 5
+  const collapsedIndicators = useMemo(() => {
+    const seen = new Set<string>()
+    const result: Session[] = []
+    for (const s of [...pinnedSessions, ...unpinnedSessions]) {
+      if (seen.has(s.id)) continue
+      seen.add(s.id)
+      result.push(s)
+      if (result.length >= MAX_COLLAPSED_INDICATORS) break
+    }
+    return result
+  }, [pinnedSessions, unpinnedSessions])
+
+  const totalSessionCount = sessions.length
+  const overflowCount = totalSessionCount - collapsedIndicators.length
+
   // Keyboard navigation for session list (WAI-ARIA listbox pattern)
   const handleSessionListKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLElement>) => {
@@ -511,6 +528,108 @@ export default function Sidebar({
                 {t('BiChat.Chat.NewChat')}
               </span>
             </div>
+
+            {/* Search button — expands sidebar and focuses search */}
+            <div className="group/search relative">
+              <motion.button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  expand()
+                  setTimeout(() => {
+                    const input = searchContainerRef.current?.querySelector('input')
+                    input?.focus()
+                  }, 350)
+                }}
+                className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 flex items-center justify-center cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none"
+                aria-label={t('BiChat.Sidebar.SearchChats')}
+                whileTap={{ scale: 0.95 }}
+              >
+                <MagnifyingGlass size={18} />
+              </motion.button>
+              <span className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 rounded-md bg-gray-900 dark:bg-gray-100 px-2 py-1 text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover/search:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
+                {t('BiChat.Sidebar.SearchChats')}
+              </span>
+            </div>
+
+            {/* Session indicators */}
+            {collapsedIndicators.length > 0 && (
+              <motion.div
+                className="flex flex-col items-center gap-1.5 mt-1"
+                variants={shouldReduceMotion ? undefined : staggerContainerVariants}
+                initial="hidden"
+                animate={showCollapsed ? 'visible' : 'hidden'}
+              >
+                {collapsedIndicators.map((session) => {
+                  const isActive = session.id === activeSessionId
+                  const initial = session.title?.trim()?.[0]?.toUpperCase()
+                  return (
+                    <motion.div
+                      key={session.id}
+                      className="group/indicator relative"
+                      variants={
+                        shouldReduceMotion
+                          ? undefined
+                          : {
+                              hidden: { opacity: 0, scale: 0.8 },
+                              visible: { opacity: 1, scale: 1 },
+                            }
+                      }
+                    >
+                      <motion.button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onSessionSelect(session.id)
+                        }}
+                        className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none ${
+                          isActive
+                            ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 ring-2 ring-primary-500 dark:ring-primary-400'
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                        }`}
+                        aria-label={session.title || t('BiChat.Chat.NewChat')}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        {initial ? (
+                          initial
+                        ) : (
+                          <ChatCircle size={16} weight="fill" />
+                        )}
+                      </motion.button>
+                      <div className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 w-52 rounded-lg bg-gray-900 dark:bg-gray-100 px-3 py-2 text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover/indicator:opacity-100 transition-opacity shadow-lg break-words">
+                        {session.title || t('BiChat.Chat.NewChat')}
+                      </div>
+                    </motion.div>
+                  )
+                })}
+                {overflowCount > 0 && (
+                  <motion.div
+                    className="group/overflow relative"
+                    variants={
+                      shouldReduceMotion
+                        ? undefined
+                        : {
+                            hidden: { opacity: 0, scale: 0.8 },
+                            visible: { opacity: 1, scale: 1 },
+                          }
+                    }
+                  >
+                    <motion.button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggle()
+                      }}
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-semibold bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none"
+                      aria-label={t('BiChat.Sidebar.ChatSessions')}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      +{overflowCount}
+                    </motion.button>
+                    <span className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 rounded-md bg-gray-900 dark:bg-gray-100 px-2 py-1 text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover/overflow:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
+                      {t('BiChat.Sidebar.ChatSessions')}
+                    </span>
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
           </div>
         )}
 
