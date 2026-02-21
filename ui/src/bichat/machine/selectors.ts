@@ -58,6 +58,8 @@ export function deriveMessagingSnapshot(
     isCompacting: state.messaging.isCompacting,
     compactionSummary: null,
     artifactsInvalidationTrigger: state.messaging.artifactsInvalidationTrigger,
+    thinkingContent: state.messaging.thinkingContent,
+    activeSteps: state.messaging.activeSteps,
     ...methods,
   }
 }

@@ -22,6 +22,7 @@ import type {
   QuestionAnswers,
   SendMessageOptions,
   SessionDebugUsage,
+  ActivityStep,
 } from '../types'
 import type { RateLimiter } from '../utils/RateLimiter'
 import { normalizeRPCError } from '../utils/errorDisplay'
@@ -144,6 +145,8 @@ export class ChatMachine {
         codeOutputs: [],
         isCompacting: false,
         artifactsInvalidationTrigger: 0,
+        thinkingContent: '',
+        activeSteps: [],
       },
       input: {
         message: '',
@@ -440,7 +443,12 @@ export class ChatMachine {
     if (this.abortController) {
       this.abortController.abort()
       this.abortController = null
-      this._updateMessaging({ isStreaming: false, loading: false })
+      this._updateMessaging({
+        isStreaming: false,
+        loading: false,
+        thinkingContent: '',
+        activeSteps: [],
+      })
     }
   }
 
@@ -702,6 +710,12 @@ export class ChatMachine {
         if ((chunk.type === 'chunk' || chunk.type === 'content') && chunk.content) {
           accumulatedContent += chunk.content
           this._updateMessaging({ streamingContent: accumulatedContent })
+        } else if (chunk.type === 'thinking' && chunk.content) {
+          this._handleThinkingChunk(chunk.content)
+        } else if (chunk.type === 'tool_start' && chunk.tool) {
+          this._handleToolStart(chunk.tool)
+        } else if (chunk.type === 'tool_end' && chunk.tool) {
+          this._handleToolEnd(chunk.tool)
         } else if (chunk.type === 'error') {
           throw new Error(chunk.error || 'Stream error')
         } else if (chunk.type === 'interrupt' || chunk.type === 'done') {
@@ -722,10 +736,6 @@ export class ChatMachine {
           }
         } else if (chunk.type === 'user_message' && chunk.sessionId) {
           createdSessionId = chunk.sessionId
-        } else if (chunk.type === 'tool_end' && chunk.tool?.name && ARTIFACT_TOOL_NAMES.has(chunk.tool.name)) {
-          this._updateMessaging({
-            artifactsInvalidationTrigger: this.state.messaging.artifactsInvalidationTrigger + 1,
-          })
         }
       }
 
@@ -788,6 +798,8 @@ export class ChatMachine {
         loading: false,
         streamingContent: '',
         isStreaming: false,
+        thinkingContent: '',
+        activeSteps: [],
       })
       this.abortController = null
       this.sendingSessionId = null
@@ -805,6 +817,81 @@ export class ChatMachine {
         }
       }
     }
+  }
+
+  // ── Ephemeral activity trace helpers ─────────────────────────────────
+
+  private _handleThinkingChunk(content: string): void {
+    const prev = this.state.messaging.thinkingContent
+    this._updateMessaging({ thinkingContent: prev + content })
+
+    // Upsert a "thinking" step if not already active
+    const steps = this.state.messaging.activeSteps
+    const existing = steps.find((s) => s.type === 'thinking' && s.status === 'active')
+    if (!existing) {
+      const step: ActivityStep = {
+        id: `thinking-${Date.now()}`,
+        type: 'thinking',
+        label: 'thinking',
+        status: 'active',
+        startedAt: Date.now(),
+      }
+      this._updateMessaging({ activeSteps: [...steps, step] })
+    }
+  }
+
+  private _handleToolStart(tool: { callId?: string; name: string; arguments?: string; agentName?: string }): void {
+    // Mark any active thinking step as completed (model moved to tool execution)
+    let steps = this.state.messaging.activeSteps.map((s) =>
+      s.type === 'thinking' && s.status === 'active'
+        ? { ...s, status: 'completed' as const, completedAt: Date.now() }
+        : s
+    )
+
+    const isAgentDelegation = tool.name === 'task'
+    const step: ActivityStep = {
+      id: tool.callId || `tool-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      type: isAgentDelegation ? 'agent_delegation' : 'tool',
+      label: tool.name,
+      arguments: tool.arguments,
+      agentName: tool.agentName,
+      status: 'active',
+      startedAt: Date.now(),
+    }
+
+    steps = [...steps, step]
+    this._updateMessaging({ activeSteps: steps })
+  }
+
+  private _handleToolEnd(tool: { callId?: string; name: string; durationMs?: number; agentName?: string }): void {
+    const steps = this.state.messaging.activeSteps.map((s) => {
+      if (s.status === 'active' && this._matchStep(s, tool)) {
+        return {
+          ...s,
+          status: 'completed' as const,
+          completedAt: Date.now(),
+          durationMs: tool.durationMs,
+        }
+      }
+      return s
+    })
+    this._updateMessaging({ activeSteps: steps })
+
+    // Artifact invalidation (moved from the streaming loop)
+    if (tool.name && ARTIFACT_TOOL_NAMES.has(tool.name)) {
+      this._updateMessaging({
+        artifactsInvalidationTrigger: this.state.messaging.artifactsInvalidationTrigger + 1,
+      })
+    }
+  }
+
+  /** Match a step to a tool_end event. Prefer callId match, fall back to name + active status. */
+  private _matchStep(
+    step: ActivityStep,
+    tool: { callId?: string; name: string; agentName?: string }
+  ): boolean {
+    if (step.id === tool.callId) return true
+    return step.label === tool.name && step.agentName === tool.agentName
   }
 
   // ── Retry ───────────────────────────────────────────────────────────────

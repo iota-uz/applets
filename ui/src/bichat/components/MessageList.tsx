@@ -12,6 +12,7 @@ import { useChatSession, useChatMessaging } from '../context/ChatContext'
 import { ConversationTurn } from '../types'
 import { TurnBubble } from './TurnBubble'
 import { TypingIndicator } from './TypingIndicator'
+import { ActivityTrace } from './ActivityTrace'
 import StreamingCursor from './StreamingCursor'
 import ScrollToBottomButton from './ScrollToBottomButton'
 import { normalizeStreamingMarkdown } from '../utils/markdownStream'
@@ -33,7 +34,15 @@ interface MessageListProps {
 
 export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs, readOnly }: MessageListProps) {
   const { currentSessionId, fetching } = useChatSession()
-  const { turns, streamingContent, isStreaming, loading, isCompacting } = useChatMessaging()
+  const {
+    turns,
+    streamingContent,
+    isStreaming,
+    loading,
+    isCompacting,
+    thinkingContent,
+    activeSteps,
+  } = useChatMessaging()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const initialScrollSessionRef = useRef<string | undefined>(undefined)
@@ -101,6 +110,15 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
     [streamingContent]
   )
 
+  // Show ActivityTrace when loading/streaming and either:
+  // - no content has arrived yet, or
+  // - there are still active (uncompleted) steps in progress
+  const hasActiveSteps = activeSteps.some((s) => s.status === 'active')
+  const showActivityTrace = !isCompacting && (
+    (loading && !streamingContent) ||
+    (isStreaming && hasActiveSteps && !streamingContent)
+  )
+
   return (
     <div className="relative flex-1 min-h-0">
       <div ref={containerRef} className="h-full overflow-y-auto px-4 py-6">
@@ -147,20 +165,28 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
               assistantTurnProps={readOnly ? { allowRegenerate: false } : undefined}
             />
           ))}
-          {/* Typing Indicator — shown while waiting for first token */}
-          <AnimatePresence>
-            {loading && !streamingContent && !isCompacting && (
+          {/* Activity Trace — shown during thinking / tool execution phase */}
+          <AnimatePresence mode="wait">
+            {showActivityTrace && (
               <motion.div
+                key="activity-trace"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
+                exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               >
-                <TypingIndicator verbs={thinkingVerbs} />
+                {(thinkingContent || activeSteps.length > 0) ? (
+                  <ActivityTrace
+                    thinkingContent={thinkingContent}
+                    activeSteps={activeSteps}
+                  />
+                ) : (
+                  <TypingIndicator verbs={thinkingVerbs} />
+                )}
               </motion.div>
             )}
           </AnimatePresence>
-          {/* Streaming content — shown once tokens arrive */}
+          {/* Streaming content — shown once final answer tokens arrive */}
           {isStreaming && streamingContent && (
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-medium text-xs">

@@ -70,6 +70,7 @@ export { UserAvatar, type UserAvatarProps } from './components/UserAvatar'
 export { PermissionGuard, type PermissionGuardProps } from './components/PermissionGuard'
 export { ErrorBoundary, DefaultErrorContent } from './components/ErrorBoundary'
 export { TypingIndicator, type TypingIndicatorProps } from './components/TypingIndicator'
+export { ActivityTrace, type ActivityTraceProps } from './components/ActivityTrace'
 
 // Session management components
 export { default as Sidebar } from './components/Sidebar'
@@ -248,6 +249,7 @@ export { parseBichatStream, parseBichatStreamEvents, parseSSEStream } from './ut
 // =============================================================================
 
 export { RateLimiter } from './utils/RateLimiter'
+export { getToolLabel } from './utils/toolLabels'
 export * from './utils/fileUtils'
 export { groupSessionsByDate } from './utils/sessionGrouping'
 export { toErrorDisplay, isPermissionDeniedError, type RPCErrorDisplay } from './utils/errorDisplay'
@@ -299,6 +301,8 @@ export type {
   ConversationTurn,
   UserTurn,
   AssistantTurn,
+  // Activity trace types
+  ActivityStep,
 } from './types'
 
 export type { Theme, ThemeColors, ThemeSpacing, ThemeBorderRadius } from './theme/types'

@@ -281,11 +281,33 @@ export interface QuestionAnswers {
 }
 
 // ---------------------------------------------------------------------------
+// Activity Trace — ephemeral state during streaming
+// ---------------------------------------------------------------------------
+
+/**
+ * A single step in the ephemeral activity trace shown during streaming.
+ * Steps represent thinking, tool calls, or sub-agent delegations.
+ */
+export interface ActivityStep {
+  id: string
+  type: 'thinking' | 'tool' | 'agent_delegation'
+  label: string
+  /** Raw tool arguments JSON string (used for label interpolation, e.g., delegation agent name). */
+  arguments?: string
+  agentName?: string
+  status: 'active' | 'completed'
+  startedAt: number
+  completedAt?: number
+  durationMs?: number
+}
+
+// ---------------------------------------------------------------------------
 // StreamEvent — discriminated union for type-safe stream handling
 // ---------------------------------------------------------------------------
 
 export type StreamEvent =
   | { type: 'content'; content: string }
+  | { type: 'thinking'; content: string }
   | { type: 'tool_start'; tool: StreamToolPayload }
   | { type: 'tool_end'; tool: StreamToolPayload }
   | { type: 'usage'; usage: DebugUsage }
@@ -299,7 +321,7 @@ export type StreamEvent =
  * compatibility but the flat all-optional shape is unsound.
  */
 export interface StreamChunk {
-  type: 'chunk' | 'content' | 'tool_start' | 'tool_end' | 'usage' | 'done' | 'error' | 'user_message' | 'interrupt'
+  type: 'chunk' | 'content' | 'thinking' | 'tool_start' | 'tool_end' | 'usage' | 'done' | 'error' | 'user_message' | 'interrupt'
   content?: string
   error?: string
   sessionId?: string
@@ -338,6 +360,7 @@ export interface StreamToolPayload {
   result?: string
   error?: string
   durationMs?: number
+  agentName?: string
 }
 
 export interface DebugTrace {
@@ -518,6 +541,10 @@ export interface ChatMessagingStateValue {
   compactionSummary: string | null
   /** Bumped when artifacts should be refetched (e.g. tool_end for artifact-producing tools). */
   artifactsInvalidationTrigger: number
+  /** Ephemeral reasoning/thinking content, cleared when final answer arrives. */
+  thinkingContent: string
+  /** Ephemeral activity steps (tools, thinking, delegations), cleared on done. */
+  activeSteps: ActivityStep[]
   sendMessage: (content: string, attachments?: Attachment[]) => Promise<void>
   handleRegenerate?: (turnId: string) => Promise<void>
   handleEdit?: (turnId: string, newContent: string) => Promise<void>

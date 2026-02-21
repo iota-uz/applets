@@ -140,6 +140,8 @@ function toStreamEvent(chunk: StreamChunk): StreamEvent | null {
     case 'chunk':
     case 'content':
       return { type: 'content', content: chunk.content ?? '' }
+    case 'thinking':
+      return { type: 'thinking', content: chunk.content ?? '' }
     case 'tool_start':
       return chunk.tool ? { type: 'tool_start', tool: chunk.tool } : null
     case 'tool_end':
