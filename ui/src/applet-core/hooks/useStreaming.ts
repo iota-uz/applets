@@ -35,10 +35,9 @@ export function useStreaming(): StreamingHook {
       abortControllerRef.current = controller
 
       // Listen to external signal if provided
-      if (signal) {
-        signal.addEventListener('abort', () => {
-          controller.abort()
-        })
+      const onExternalAbort = signal ? () => { controller.abort() } : undefined
+      if (signal && onExternalAbort) {
+        signal.addEventListener('abort', onExternalAbort)
       }
 
       try {
@@ -58,6 +57,9 @@ export function useStreaming(): StreamingHook {
         }
         throw error
       } finally {
+        if (signal && onExternalAbort) {
+          signal.removeEventListener('abort', onExternalAbort)
+        }
         setIsStreaming(false)
         abortControllerRef.current = null
       }
