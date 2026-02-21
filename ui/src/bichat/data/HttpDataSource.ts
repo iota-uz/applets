@@ -865,7 +865,7 @@ export class HttpDataSource implements ChatDataSource {
       console.warn('[bichat.attachments]', payload)
       return
     }
-    console.warn('[bichat.attachments]', payload)
+    console.debug('[bichat.attachments]', payload)
   }
 
   private async normalizeAttachmentFile(attachment: Attachment, file: File): Promise<File> {
@@ -969,6 +969,15 @@ export class HttpDataSource implements ChatDataSource {
     }
 
     if (attachment.url) {
+      try {
+        const parsed = new URL(attachment.url, window.location?.origin ?? 'https://localhost')
+        if (!['http:', 'https:'].includes(parsed.protocol)) {
+          throw new Error(`Attachment "${attachment.filename}" URL has disallowed protocol: ${parsed.protocol}`)
+        }
+      } catch (err) {
+        if (err instanceof Error && err.message.includes('Attachment')) throw err
+        throw new Error(`Attachment "${attachment.filename}" has invalid or malformed URL`)
+      }
       const response = await fetch(attachment.url)
       if (!response.ok) {
         throw new Error(`Attachment "${attachment.filename}" decode failed: source HTTP ${response.status}`)

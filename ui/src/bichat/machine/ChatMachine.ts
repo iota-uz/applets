@@ -977,6 +977,8 @@ export class ChatMachine {
 
     const convertedAttachments: Attachment[] = attachments.map((att) => ({
       clientKey: att.clientKey || crypto.randomUUID(),
+      id: att.id,
+      uploadId: att.uploadId,
       filename: att.filename,
       mimeType: att.mimeType,
       sizeBytes: att.sizeBytes,

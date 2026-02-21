@@ -13,6 +13,7 @@ import { InteractiveTableCard } from './InteractiveTableCard'
 import { SourcesPanel } from './SourcesPanel'
 import { DownloadCard } from './DownloadCard'
 import { InlineQuestionForm } from './InlineQuestionForm'
+import { RetryActionArea } from './RetryActionArea'
 import type {
   AssistantTurn,
   Citation,
@@ -274,6 +275,22 @@ export function AssistantMessage({
     !!pendingQuestion &&
     pendingQuestion.status === 'PENDING' &&
     pendingQuestion.turnId === turnId
+  const hasCodeOutputs = !!turn.codeOutputs?.length
+  const hasChart = !!turn.chartData
+  const hasTables = !!turn.renderTables?.length
+  const hasArtifacts = !!turn.artifacts?.length
+  const hasDebug = showDebug && !!turn.debug
+  const hasRenderablePayload =
+    hasContent ||
+    hasExplanation ||
+    hasPendingQuestion ||
+    hasCodeOutputs ||
+    hasChart ||
+    hasTables ||
+    hasArtifacts ||
+    hasDebug
+  const canRegenerate = !!onRegenerate && !!turnId && !isSystemMessage && isLastTurn
+  const showInlineRetry = !hasRenderablePayload && canRegenerate
 
   const handleCopyClick = useCallback(async () => {
     try {
@@ -329,10 +346,10 @@ export function AssistantMessage({
   }
   const actionsSlotProps: AssistantMessageActionsSlotProps = {
     onCopy: handleCopyClick,
-    onRegenerate: onRegenerate && turnId && !isSystemMessage && isLastTurn ? handleRegenerateClick : undefined,
+    onRegenerate: canRegenerate ? handleRegenerateClick : undefined,
     timestamp,
     canCopy: hasContent,
-    canRegenerate: !!onRegenerate && !!turnId && !isSystemMessage && isLastTurn,
+    canRegenerate,
   }
   const explanationSlotProps: AssistantMessageExplanationSlotProps = {
     explanation: turn.explanation || '',
@@ -354,13 +371,16 @@ export function AssistantMessage({
   return (
     <div className={classes.root}>
       {/* Avatar */}
-      {!hideAvatar && (
+      {!hideAvatar && !showInlineRetry && (
         <div className={avatarClassName}>
           {renderSlot(slots?.avatar, avatarSlotProps, isSystemMessage ? 'SYS' : 'AI')}
         </div>
       )}
 
       <div className={classes.wrapper}>
+        {/* Inline recovery for empty assistant responses */}
+        {showInlineRetry && <RetryActionArea onRetry={() => { void handleRegenerateClick() }} />}
+
         {/* Code outputs */}
         {turn.codeOutputs && turn.codeOutputs.length > 0 && (
           <div className={classes.codeOutputs}>
@@ -514,7 +534,7 @@ export function AssistantMessage({
                   {isCopied ? <Check size={14} weight="bold" /> : <Copy size={14} weight="regular" />}
                 </button>
 
-                {onRegenerate && turnId && !isSystemMessage && isLastTurn && (
+                {canRegenerate && (
                   <button
                     onClick={handleRegenerateClick}
                     className={`cursor-pointer ${classes.actionButton}`}

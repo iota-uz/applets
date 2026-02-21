@@ -79,7 +79,7 @@ export function SourcesPanel({ citations }: SourcesPanelProps) {
             </span>
           )}
           <span className="text-xs font-medium text-gray-600 dark:text-gray-300 tabular-nums">
-            {citations.length} {citations.length === 1 ? 'source' : 'sources'}
+            {citations.length} {t(citations.length === 1 ? 'BiChat.Sources.Source' : 'BiChat.Sources.Sources')}
           </span>
         </button>
       </div>
@@ -92,7 +92,7 @@ export function SourcesPanel({ citations }: SourcesPanelProps) {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-          Sources
+          {t('BiChat.Sources.Title')}
         </span>
         <button
           type="button"
@@ -102,7 +102,7 @@ export function SourcesPanel({ citations }: SourcesPanelProps) {
             hover:bg-gray-100 dark:hover:bg-gray-700
             transition-colors duration-150
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--bichat-primary)]/40"
-          aria-label={t('BiChat.Image.Close')}
+          aria-label={t('BiChat.Sources.Close')}
         >
           <X size={14} weight="bold" />
         </button>

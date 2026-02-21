@@ -379,8 +379,6 @@ export default function Sidebar({
     try {
       await dataSource.regenerateSessionTitle(sessionId)
       toast.success(t('BiChat.Sidebar.TitleRegenerated'))
-      setRefreshKey((k) => k + 1)
-      setReconcilePollToken((k) => k + 1)
       window.dispatchEvent(new CustomEvent('bichat:sessions-updated', {
         detail: { reason: 'title_regenerate_requested', sessionId },
       }))

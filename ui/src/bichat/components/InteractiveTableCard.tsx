@@ -32,9 +32,10 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
   const [pageSize, setPageSize] = useState(defaultPageSize)
 
   useEffect(() => {
+    const nextPageSize = Math.min(Math.max(table.pageSize || 25, 1), 200)
     setPage(1)
-    setPageSize(defaultPageSize)
-  }, [defaultPageSize, table.id])
+    setPageSize(nextPageSize)
+  }, [table.id, table.pageSize])
 
   const totalRows = table.rows.length
   const totalPages = Math.max(1, Math.ceil(totalRows / pageSize))
@@ -60,6 +61,16 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
 
   const handleExport = useCallback(() => {
     if (table.export?.url) {
+      try {
+        const parsed = new URL(table.export.url, window.location.origin)
+        if (!['http:', 'https:', 'blob:'].includes(parsed.protocol)) {
+          console.warn('[InteractiveTableCard] Blocked export URL with unsafe protocol:', parsed.protocol)
+          return
+        }
+      } catch {
+        console.warn('[InteractiveTableCard] Blocked malformed export URL')
+        return
+      }
       const link = document.createElement('a')
       link.href = table.export.url
       link.download = table.export.filename || 'table_export.xlsx'

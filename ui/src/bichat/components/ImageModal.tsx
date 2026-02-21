@@ -77,11 +77,8 @@ function ImageModal({
       } else if (e.key === '+' || e.key === '=') {
         setScale(s => Math.min(s + ZOOM_STEP, MAX_SCALE))
       } else if (e.key === '-') {
-        setScale(s => {
-          const ns = Math.max(s - ZOOM_STEP, MIN_SCALE)
-          if (ns <= 1) setPosition({ x: 0, y: 0 })
-          return ns
-        })
+        setScale(s => Math.max(s - ZOOM_STEP, MIN_SCALE))
+        if (scaleRef.current - ZOOM_STEP <= 1) setPosition({ x: 0, y: 0 })
       } else if (e.key === '0') {
         setScale(1)
         setPosition({ x: 0, y: 0 })
@@ -108,11 +105,10 @@ function ImageModal({
     const handler = (e: WheelEvent) => {
       e.preventDefault()
       const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP
-      setScale(s => {
-        const newScale = Math.min(Math.max(s + delta, MIN_SCALE), MAX_SCALE)
-        if (newScale <= 1) setPosition({ x: 0, y: 0 })
-        return newScale
-      })
+      const current = scaleRef.current
+      const newScale = Math.min(Math.max(current + delta, MIN_SCALE), MAX_SCALE)
+      setScale(newScale)
+      if (newScale <= 1) setPosition({ x: 0, y: 0 })
     }
 
     el.addEventListener('wheel', handler, { passive: false })
@@ -131,11 +127,8 @@ function ImageModal({
   }, [])
 
   const zoomOut = useCallback(() => {
-    setScale(s => {
-      const newScale = Math.max(s - ZOOM_STEP, MIN_SCALE)
-      if (newScale <= 1) setPosition({ x: 0, y: 0 })
-      return newScale
-    })
+    setScale(s => Math.max(s - ZOOM_STEP, MIN_SCALE))
+    if (scaleRef.current - ZOOM_STEP <= 1) setPosition({ x: 0, y: 0 })
   }, [])
 
   const resetZoom = useCallback(() => {
@@ -145,13 +138,13 @@ function ImageModal({
 
   // Double-click to toggle between fit and 2x zoom
   const handleDoubleClick = useCallback(() => {
-    setScale(s => {
-      if (s !== 1) {
-        setPosition({ x: 0, y: 0 })
-        return 1
-      }
-      return 2
-    })
+    const current = scaleRef.current
+    if (current !== 1) {
+      setScale(1)
+      setPosition({ x: 0, y: 0 })
+    } else {
+      setScale(2)
+    }
   }, [])
 
   // Drag to pan (when zoomed)
@@ -204,7 +197,7 @@ function ImageModal({
         onMouseLeave={handleMouseUp}
       >
         {/* ── Header ── */}
-        <div className="flex items-center justify-between px-5 py-3 shrink-0">
+        <div className="flex items-center px-5 py-3 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             {hasMultipleImages && (
               <span className="text-xs text-white/50 tabular-nums whitespace-nowrap font-medium">
@@ -216,15 +209,6 @@ function ImageModal({
               {formatFileSize(attachment.sizeBytes)}
             </span>
           </div>
-
-          <button
-            onClick={onClose}
-            className="cursor-pointer flex items-center justify-center w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-            aria-label={t('BiChat.Image.Close')}
-            type="button"
-          >
-            <X size={18} weight="bold" />
-          </button>
         </div>
 
         {/* ── Image area ── */}
@@ -346,7 +330,7 @@ function ImageModal({
                 onClick={zoomOut}
                 disabled={scale <= MIN_SCALE}
                 className="cursor-pointer flex items-center justify-center w-8 h-8 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors disabled:text-white/20 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                aria-label="Zoom out"
+                aria-label={t('BiChat.Image.ZoomOut')}
               >
                 <MagnifyingGlassMinus size={16} weight="bold" />
               </button>
@@ -360,7 +344,7 @@ function ImageModal({
                 onClick={zoomIn}
                 disabled={scale >= MAX_SCALE}
                 className="cursor-pointer flex items-center justify-center w-8 h-8 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors disabled:text-white/20 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                aria-label="Zoom in"
+                aria-label={t('BiChat.Image.ZoomIn')}
               >
                 <MagnifyingGlassPlus size={16} weight="bold" />
               </button>
@@ -372,7 +356,7 @@ function ImageModal({
                     type="button"
                     onClick={resetZoom}
                     className="cursor-pointer flex items-center justify-center w-8 h-8 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                    aria-label="Reset zoom"
+                    aria-label={t('BiChat.Image.ResetZoom')}
                   >
                     <ArrowsIn size={16} weight="bold" />
                   </button>
