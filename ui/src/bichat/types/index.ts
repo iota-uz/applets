@@ -377,14 +377,73 @@ export interface StreamToolPayload {
 }
 
 export interface DebugTrace {
+  schemaVersion?: string
+  startedAt?: string
+  completedAt?: string
   generationMs?: number
   usage?: DebugUsage
   tools: StreamToolPayload[]
+  attempts?: DebugGeneration[]
+  spans?: DebugSpan[]
+  events?: DebugEvent[]
   traceId?: string
   traceUrl?: string
   sessionId?: string
   thinking?: string
   observationReason?: string
+}
+
+export interface DebugGeneration {
+  id?: string
+  requestId?: string
+  model?: string
+  provider?: string
+  finishReason?: string
+  promptTokens?: number
+  completionTokens?: number
+  totalTokens?: number
+  cachedTokens?: number
+  cost?: number
+  latencyMs?: number
+  input?: string
+  output?: string
+  thinking?: string
+  observationReason?: string
+  startedAt?: string
+  completedAt?: string
+  toolCalls?: StreamToolPayload[]
+}
+
+export interface DebugSpan {
+  id?: string
+  parentId?: string
+  generationId?: string
+  name?: string
+  type?: string
+  status?: string
+  level?: string
+  callId?: string
+  toolName?: string
+  input?: string
+  output?: string
+  error?: string
+  durationMs?: number
+  startedAt?: string
+  completedAt?: string
+  attributes?: Record<string, unknown>
+}
+
+export interface DebugEvent {
+  id?: string
+  name?: string
+  type?: string
+  level?: string
+  message?: string
+  reason?: string
+  spanId?: string
+  generationId?: string
+  timestamp?: string
+  attributes?: Record<string, unknown>
 }
 
 export interface DebugLimits {

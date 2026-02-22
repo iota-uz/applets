@@ -305,6 +305,9 @@ function sanitizeAssistantTurn(
 
   const debugTrace = isRecord(rawAssistantTurn.debug)
     ? {
+      schemaVersion: readNonEmptyString(rawAssistantTurn.debug.schemaVersion) || undefined,
+      startedAt: readNonEmptyString(rawAssistantTurn.debug.startedAt) || undefined,
+      completedAt: readNonEmptyString(rawAssistantTurn.debug.completedAt) || undefined,
       generationMs: readOptionalFiniteNumber(rawAssistantTurn.debug.generationMs),
       traceId: readNonEmptyString(rawAssistantTurn.debug.traceId) || undefined,
       traceUrl: readNonEmptyString(rawAssistantTurn.debug.traceUrl) || undefined,
@@ -330,6 +333,79 @@ function sanitizeAssistantTurn(
             result: readNonEmptyString(tool.result) || undefined,
             error: readNonEmptyString(tool.error) || undefined,
             durationMs: readOptionalFiniteNumber(tool.durationMs),
+          }))
+        : [],
+      attempts: Array.isArray(rawAssistantTurn.debug.attempts)
+        ? rawAssistantTurn.debug.attempts
+          .filter((attempt) => isRecord(attempt))
+          .map((attempt) => ({
+            id: readNonEmptyString(attempt.id) || undefined,
+            requestId: readNonEmptyString(attempt.requestId) || undefined,
+            model: readNonEmptyString(attempt.model) || undefined,
+            provider: readNonEmptyString(attempt.provider) || undefined,
+            finishReason: readNonEmptyString(attempt.finishReason) || undefined,
+            promptTokens: readOptionalFiniteNumber(attempt.promptTokens),
+            completionTokens: readOptionalFiniteNumber(attempt.completionTokens),
+            totalTokens: readOptionalFiniteNumber(attempt.totalTokens),
+            cachedTokens: readOptionalFiniteNumber(attempt.cachedTokens),
+            cost: readOptionalFiniteNumber(attempt.cost),
+            latencyMs: readOptionalFiniteNumber(attempt.latencyMs),
+            input: readNonEmptyString(attempt.input) || undefined,
+            output: readNonEmptyString(attempt.output) || undefined,
+            thinking: readNonEmptyString(attempt.thinking) || undefined,
+            observationReason: readNonEmptyString(attempt.observationReason) || undefined,
+            startedAt: readNonEmptyString(attempt.startedAt) || undefined,
+            completedAt: readNonEmptyString(attempt.completedAt) || undefined,
+            toolCalls: Array.isArray(attempt.toolCalls)
+              ? attempt.toolCalls
+                .filter((tool) => isRecord(tool))
+                .map((tool) => ({
+                  callId: readNonEmptyString(tool.callId) || undefined,
+                  name: readString(tool.name),
+                  arguments: readNonEmptyString(tool.arguments) || undefined,
+                  result: readNonEmptyString(tool.result) || undefined,
+                  error: readNonEmptyString(tool.error) || undefined,
+                  durationMs: readOptionalFiniteNumber(tool.durationMs),
+                }))
+              : [],
+          }))
+        : [],
+      spans: Array.isArray(rawAssistantTurn.debug.spans)
+        ? rawAssistantTurn.debug.spans
+          .filter((span) => isRecord(span))
+          .map((span) => ({
+            id: readNonEmptyString(span.id) || undefined,
+            parentId: readNonEmptyString(span.parentId) || undefined,
+            generationId: readNonEmptyString(span.generationId) || undefined,
+            name: readNonEmptyString(span.name) || undefined,
+            type: readNonEmptyString(span.type) || undefined,
+            status: readNonEmptyString(span.status) || undefined,
+            level: readNonEmptyString(span.level) || undefined,
+            callId: readNonEmptyString(span.callId) || undefined,
+            toolName: readNonEmptyString(span.toolName) || undefined,
+            input: readNonEmptyString(span.input) || undefined,
+            output: readNonEmptyString(span.output) || undefined,
+            error: readNonEmptyString(span.error) || undefined,
+            durationMs: readOptionalFiniteNumber(span.durationMs),
+            startedAt: readNonEmptyString(span.startedAt) || undefined,
+            completedAt: readNonEmptyString(span.completedAt) || undefined,
+            attributes: isRecord(span.attributes) ? span.attributes : undefined,
+          }))
+        : [],
+      events: Array.isArray(rawAssistantTurn.debug.events)
+        ? rawAssistantTurn.debug.events
+          .filter((item) => isRecord(item))
+          .map((item) => ({
+            id: readNonEmptyString(item.id) || undefined,
+            name: readNonEmptyString(item.name) || undefined,
+            type: readNonEmptyString(item.type) || undefined,
+            level: readNonEmptyString(item.level) || undefined,
+            message: readNonEmptyString(item.message) || undefined,
+            reason: readNonEmptyString(item.reason) || undefined,
+            spanId: readNonEmptyString(item.spanId) || undefined,
+            generationId: readNonEmptyString(item.generationId) || undefined,
+            timestamp: readNonEmptyString(item.timestamp) || undefined,
+            attributes: isRecord(item.attributes) ? item.attributes : undefined,
           }))
         : [],
     }

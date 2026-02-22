@@ -14,10 +14,14 @@ export function hasMeaningfulUsage(trace?: DebugTrace['usage']): boolean {
 export function hasDebugTrace(trace: DebugTrace): boolean {
   return (
     trace.tools.length > 0 ||
+    (trace.attempts?.length ?? 0) > 0 ||
+    (trace.spans?.length ?? 0) > 0 ||
+    (trace.events?.length ?? 0) > 0 ||
     hasMeaningfulUsage(trace.usage) ||
     !!trace.generationMs ||
     !!trace.traceId ||
-    !!trace.traceUrl
+    !!trace.traceUrl ||
+    !!trace.thinking
   )
 }
 

@@ -393,6 +393,44 @@ export function DebugPanel({ trace, debugLimits = null }: DebugPanelProps) {
             </div>
           )}
 
+          {((trace.attempts && trace.attempts.length > 0) ||
+            (trace.spans && trace.spans.length > 0) ||
+            (trace.events && trace.events.length > 0)) && (
+            <div className="rounded-lg border border-gray-200/60 dark:border-gray-700/40 bg-gray-50/50 dark:bg-gray-800/40 p-3 space-y-2">
+              <div className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Trace Graph
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {!!trace.attempts?.length && (
+                  <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-900 text-[10px] text-gray-700 dark:text-gray-300">
+                    attempts: {trace.attempts.length}
+                  </span>
+                )}
+                {!!trace.spans?.length && (
+                  <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-900 text-[10px] text-gray-700 dark:text-gray-300">
+                    spans: {trace.spans.length}
+                  </span>
+                )}
+                {!!trace.events?.length && (
+                  <span className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-900 text-[10px] text-gray-700 dark:text-gray-300">
+                    events: {trace.events.length}
+                  </span>
+                )}
+              </div>
+              {trace.attempts?.[trace.attempts.length - 1] && (
+                <div className="text-[11px] text-gray-700 dark:text-gray-300">
+                  {[
+                    trace.attempts[trace.attempts.length - 1].model,
+                    trace.attempts[trace.attempts.length - 1].provider,
+                    trace.attempts[trace.attempts.length - 1].finishReason,
+                  ]
+                    .filter(Boolean)
+                    .join(' • ')}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Metric chips */}
           {metrics.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
