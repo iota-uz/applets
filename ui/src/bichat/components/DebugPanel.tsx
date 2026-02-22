@@ -271,12 +271,12 @@ export function DebugPanel({ trace, debugLimits = null }: DebugPanelProps) {
       ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
       : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
 
-  const contextUsageBarClass =
+  const contextUsageBarColor =
     contextPercentValue > 75
-      ? 'bg-gradient-to-r from-red-400 to-red-500'
+      ? '#ef4444'
       : contextPercentValue > 50
-      ? 'bg-gradient-to-r from-amber-400 to-amber-500'
-      : 'bg-gradient-to-r from-emerald-400 to-emerald-500'
+      ? '#f59e0b'
+      : '#10b981'
 
   // Build metric list from available data
   const metrics: MetricChipProps[] = []
@@ -414,9 +414,10 @@ export function DebugPanel({ trace, debugLimits = null }: DebugPanelProps) {
               </div>
               <div className="h-1.5 rounded-full bg-gray-200/80 dark:bg-gray-700/50 overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-700 ease-out ${contextUsageBarClass}`}
+                  className="h-full rounded-full transition-all duration-700 ease-out"
                   style={{
                     width: `${Math.min(contextPercentValue, 100)}%`,
+                    backgroundColor: contextUsageBarColor,
                   }}
                 />
               </div>

@@ -71,6 +71,13 @@ function DebugStatsPanel({ debugSessionUsage, debugLimits }: DebugStatsPanelProp
   const effectiveMaxTokens = debugLimits?.effectiveMaxTokens ?? 0
   const contextPercentValue = calculateContextUsagePercent(latestPromptTokens, effectiveMaxTokens)
   const contextPercent = contextPercentValue !== null ? contextPercentValue.toFixed(1) : null
+  const contextPercentNumber = parseFloat(contextPercent || '0')
+  const contextBarColor =
+    contextPercentNumber > 75
+      ? '#ef4444'
+      : contextPercentNumber > 50
+      ? '#f59e0b'
+      : '#10b981'
 
   return (
     <div className="mb-2 space-y-1.5 text-xs">
@@ -140,9 +147,9 @@ function DebugStatsPanel({ debugSessionUsage, debugLimits }: DebugStatsPanelProp
                 {contextPercent && (
                   <span className={[
                     'px-1.5 py-0.5 rounded-full text-[10px] font-semibold tabular-nums',
-                    parseFloat(contextPercent) > 75
+                    contextPercentNumber > 75
                       ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-                      : parseFloat(contextPercent) > 50
+                      : contextPercentNumber > 50
                       ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
                       : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400',
                   ].join(' ')}>
@@ -153,16 +160,10 @@ function DebugStatsPanel({ debugSessionUsage, debugLimits }: DebugStatsPanelProp
             </div>
             <div className="h-1.5 rounded-full bg-gray-200/80 dark:bg-gray-700/50 overflow-hidden">
               <div
-                className={[
-                  'h-full rounded-full transition-all duration-700 ease-out',
-                  parseFloat(contextPercent || '0') > 75
-                    ? 'bg-gradient-to-r from-red-400 to-red-500'
-                    : parseFloat(contextPercent || '0') > 50
-                    ? 'bg-gradient-to-r from-amber-400 to-amber-500'
-                    : 'bg-gradient-to-r from-emerald-400 to-emerald-500',
-                ].join(' ')}
+                className="h-full rounded-full transition-all duration-700 ease-out"
                 style={{
                   width: contextPercent ? `${Math.min(parseFloat(contextPercent), 100)}%` : '0%',
+                  backgroundColor: contextBarColor,
                 }}
               />
             </div>
