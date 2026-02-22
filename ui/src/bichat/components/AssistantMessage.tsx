@@ -183,6 +183,13 @@ export interface AssistantMessageProps {
   showDebug?: boolean
 }
 
+type AssistantRenderMode =
+  | 'content'
+  | 'hitl_form'
+  | 'hitl_waiting'
+  | 'retry'
+  | 'empty'
+
 const COPY_FEEDBACK_MS = 2000
 
 /* -------------------------------------------------------------------------------------------------
@@ -272,26 +279,40 @@ export function AssistantMessage({
 
   const hasContent = turn.content?.trim().length > 0
   const hasExplanation = !!turn.explanation?.trim()
-  const hasPendingQuestion =
+  const isAwaitingHumanInput = turn.lifecycle === 'waiting_for_human_input'
+  const pendingQuestionMatchesTurn =
     !!pendingQuestion &&
     pendingQuestion.status === 'PENDING' &&
-    pendingQuestion.turnId === turnId
+    (
+      pendingQuestion.turnId === turnId ||
+      pendingQuestion.turnId === turn.id ||
+      (!pendingQuestion.turnId && isLastTurn)
+    )
+  const hasPendingQuestion = pendingQuestionMatchesTurn && !!pendingQuestion
   const hasCodeOutputs = !!turn.codeOutputs?.length
   const hasChart = !!turn.chartData
   const hasTables = !!turn.renderTables?.length
   const hasArtifacts = !!turn.artifacts?.length
   const hasDebug = showDebug && !!turn.debug
-  const hasRenderablePayload =
+  const hasAnyRenderedContent =
     hasContent ||
     hasExplanation ||
-    hasPendingQuestion ||
     hasCodeOutputs ||
     hasChart ||
     hasTables ||
     hasArtifacts ||
     hasDebug
   const canRegenerate = !!onRegenerate && !!turnId && !isSystemMessage && isLastTurn
-  const showInlineRetry = !hasRenderablePayload && canRegenerate
+  const renderMode: AssistantRenderMode = hasPendingQuestion
+    ? 'hitl_form'
+    : isAwaitingHumanInput
+      ? 'hitl_waiting'
+      : hasAnyRenderedContent
+        ? 'content'
+        : canRegenerate
+          ? 'retry'
+          : 'empty'
+  const showInlineRetry = renderMode === 'retry'
 
   const handleCopyClick = useCallback(async () => {
     try {
@@ -506,8 +527,20 @@ export function AssistantMessage({
           </div>
         )}
 
-        {/* Inline Question Form */}
-        {hasPendingQuestion && pendingQuestion && (
+        {/* HITL waiting state */}
+        {renderMode === 'hitl_waiting' && (
+          <div className="animate-slide-up rounded-2xl border border-primary-200 dark:border-primary-700/40 bg-gradient-to-b from-primary-50/70 to-white dark:from-primary-900/20 dark:to-gray-900/80 shadow-sm p-4">
+            <p className="text-sm font-medium text-primary-700 dark:text-primary-300">
+              {t('BiChat.InlineQuestion.InputNeeded')}
+            </p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Waiting for the question details from the assistant...
+            </p>
+          </div>
+        )}
+
+        {/* HITL question form */}
+        {renderMode === 'hitl_form' && pendingQuestion && (
           <InlineQuestionForm pendingQuestion={pendingQuestion} />
         )}
 

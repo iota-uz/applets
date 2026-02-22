@@ -19,6 +19,7 @@ import type {
   ConversationTurn,
   CodeOutput,
   Attachment,
+  PendingQuestion,
   QuestionAnswers,
   SendMessageOptions,
   SessionDebugUsage,
@@ -50,6 +51,10 @@ import {
   deriveInputSnapshot,
   deriveDebugMode,
 } from './selectors'
+import {
+  applyTurnLifecycleForPendingQuestion,
+  pendingQuestionFromInterrupt,
+} from './hitlLifecycle'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -377,8 +382,7 @@ export class ChatMachine {
 
         if (result) {
           this._updateSession({ session: result.session, fetching: false })
-          this._setTurnsFromFetch(result.turns)
-          this._updateMessaging({ pendingQuestion: result.pendingQuestion || null })
+          this._setTurnsFromFetch(result.turns, result.pendingQuestion || null)
         } else {
           this._updateSession({ error: 'Session not found', fetching: false })
         }
@@ -396,18 +400,44 @@ export class ChatMachine {
       })
   }
 
-  /** Sets turns from fetch, preserving pending user-only turns if server hasn't caught up. */
-  private _setTurnsFromFetch(fetchedTurns: ConversationTurn[]): void {
+  /**
+   * Sets turns from fetch, preserving pending user-only turns if server hasn't caught up.
+   * Applies `turns` + optional `pendingQuestion` in a single messaging update to avoid
+   * transient intermediate UI states between separate notifications.
+   */
+  private _setTurnsFromFetch(
+    fetchedTurns: ConversationTurn[],
+    pendingQuestion?: PendingQuestion | null
+  ): void {
     if (!Array.isArray(fetchedTurns)) {
       console.warn('[ChatMachine] Ignoring malformed turns payload from fetchSession')
       return
     }
     const prev = this.state.messaging.turns
     const hasPendingUserOnly = prev.length > 0 && !prev[prev.length - 1].assistantTurn
+    const patch: Partial<typeof this.state.messaging> = {}
+    const effectivePendingQuestion =
+      pendingQuestion === undefined
+        ? this.state.messaging.pendingQuestion
+        : pendingQuestion
+
+    if (pendingQuestion !== undefined) {
+      patch.pendingQuestion = pendingQuestion
+    }
+
     if (hasPendingUserOnly && (!fetchedTurns || fetchedTurns.length === 0)) {
+      const lifecycleTurns = applyTurnLifecycleForPendingQuestion(prev, effectivePendingQuestion)
+      if (lifecycleTurns !== prev) {
+        patch.turns = lifecycleTurns
+      }
+      if (Object.keys(patch).length > 0) {
+        this._updateMessaging(patch)
+      }
       return // keep optimistic turn
     }
-    this._updateMessaging({ turns: fetchedTurns ?? prev })
+
+    patch.turns = applyTurnLifecycleForPendingQuestion(fetchedTurns ?? prev, effectivePendingQuestion)
+    this._updateMessaging(patch)
   }
 
   // =====================================================================
@@ -492,10 +522,7 @@ export class ChatMachine {
           const result = await this.dataSource.fetchSession(this.state.session.currentSessionId)
           if (result) {
             this._updateSession({ session: result.session })
-            this._updateMessaging({
-              turns: result.turns,
-              pendingQuestion: result.pendingQuestion || null,
-            })
+            this._setTurnsFromFetch(result.turns, result.pendingQuestion || null)
           }
         } catch (err) {
           console.error('Failed to refresh session for debug mode:', err)
@@ -521,12 +548,9 @@ export class ChatMachine {
         const result = await this.dataSource.fetchSession(curSessionId)
         if (result) {
           this._updateSession({ session: result.session })
-          this._updateMessaging({
-            turns: result.turns,
-            pendingQuestion: result.pendingQuestion || null,
-          })
+          this._setTurnsFromFetch(result.turns, result.pendingQuestion || null)
         } else {
-          this._updateMessaging({ turns: [] })
+          this._setTurnsFromFetch([], null)
         }
         this._updateMessaging({ codeOutputs: [] })
       } catch (err) {
@@ -550,18 +574,16 @@ export class ChatMachine {
         const compactResult = await this.dataSource.compactSessionHistory(curSessionId)
         const summary = compactResult.summary || ''
         this._updateMessaging({
-          turns: [createCompactedSystemTurn(curSessionId, summary)],
+          turns: applyTurnLifecycleForPendingQuestion([createCompactedSystemTurn(curSessionId, summary)], null),
+          pendingQuestion: null,
         })
 
         const result = await this.dataSource.fetchSession(curSessionId)
         if (result) {
           this._updateSession({ session: result.session })
-          this._updateMessaging({
-            turns: result.turns,
-            pendingQuestion: result.pendingQuestion || null,
-          })
+          this._setTurnsFromFetch(result.turns, result.pendingQuestion || null)
         } else {
-          this._updateMessaging({ turns: [] })
+          this._setTurnsFromFetch([], null)
         }
         this._updateMessaging({ codeOutputs: [] })
       } catch (err) {
@@ -575,6 +597,207 @@ export class ChatMachine {
 
     this._updateInput({ inputError: 'BiChat.Slash.ErrorUnknownCommand' })
     return true
+  }
+
+  private _insertOptimisticTurn(
+    prevTurns: ConversationTurn[],
+    tempTurn: ConversationTurn,
+    replaceFromMessageID?: string
+  ): void {
+    if (!replaceFromMessageID) {
+      this._updateMessaging({ turns: [...prevTurns, tempTurn] })
+      return
+    }
+
+    const idx = prevTurns.findIndex((turn) => turn.userTurn.id === replaceFromMessageID)
+    if (idx === -1) {
+      console.warn(`[ChatMachine] replaceFromMessageID "${replaceFromMessageID}" not found; appending as new turn`)
+      this._updateMessaging({ turns: [...prevTurns, tempTurn] })
+      return
+    }
+
+    this._updateMessaging({ turns: [...prevTurns.slice(0, idx), tempTurn] })
+  }
+
+  private async _resolveSendSession(
+    currentSessionId: string | undefined,
+    debugMode: boolean
+  ): Promise<{ activeSessionId: string | undefined; shouldNavigateAfter: boolean }> {
+    let activeSessionId = currentSessionId
+    let shouldNavigateAfter = false
+
+    if (!activeSessionId || activeSessionId === 'new') {
+      const result = await this.dataSource.createSession()
+      if (result) {
+        const createdSessionID = result.id
+        activeSessionId = createdSessionID
+        this._updateSession({ currentSessionId: createdSessionID })
+        if (debugMode) {
+          this._updateSession({
+            debugModeBySession: {
+              ...this.state.session.debugModeBySession,
+              [createdSessionID]: true,
+            },
+          })
+        }
+        shouldNavigateAfter = true
+      }
+    }
+
+    return { activeSessionId, shouldNavigateAfter }
+  }
+
+  private async _syncSessionFromServer(sessionId: string, allowEmptyTurns = false): Promise<void> {
+    const fetchResult = await this.dataSource.fetchSession(sessionId)
+    if (!fetchResult) return
+
+    this._updateSession({ session: fetchResult.session })
+    this._setTurnsFromFetch(
+      allowEmptyTurns ? fetchResult.turns ?? [] : fetchResult.turns,
+      fetchResult.pendingQuestion || null
+    )
+  }
+
+  private async _runSendStream(params: {
+    activeSessionId: string | undefined
+    content: string
+    attachments: Attachment[]
+    debugMode: boolean
+    replaceFromMessageID?: string
+    tempTurnId: string
+  }): Promise<{ createdSessionId?: string; sessionFetched: boolean }> {
+    const {
+      activeSessionId,
+      content,
+      attachments,
+      debugMode,
+      replaceFromMessageID,
+      tempTurnId,
+    } = params
+
+    let accumulatedContent = ''
+    let createdSessionId: string | undefined
+    let sessionFetched = false
+    this._updateMessaging({ isStreaming: true })
+
+    for await (const chunk of this.dataSource.sendMessage(
+      activeSessionId || 'new',
+      content,
+      attachments,
+      this.abortController?.signal,
+      {
+        debugMode,
+        replaceFromMessageID,
+      }
+    )) {
+      if (this.abortController?.signal.aborted) break
+
+      if ((chunk.type === 'chunk' || chunk.type === 'content') && chunk.content) {
+        accumulatedContent += chunk.content
+        this._updateMessaging({ streamingContent: accumulatedContent })
+      } else if (chunk.type === 'thinking' && chunk.content) {
+        this._handleThinkingChunk(chunk.content)
+      } else if (chunk.type === 'tool_start' && chunk.tool) {
+        this._handleToolStart(chunk.tool)
+      } else if (chunk.type === 'tool_end' && chunk.tool) {
+        this._handleToolEnd(chunk.tool)
+      } else if (chunk.type === 'error') {
+        throw new Error(chunk.error || 'Stream error')
+      } else if (chunk.type === 'interrupt') {
+        if (chunk.sessionId) {
+          createdSessionId = chunk.sessionId
+        }
+
+        const pendingFromInterrupt = pendingQuestionFromInterrupt(chunk.interrupt, tempTurnId)
+        if (pendingFromInterrupt) {
+          this._updateMessaging({
+            pendingQuestion: pendingFromInterrupt,
+            turns: applyTurnLifecycleForPendingQuestion(
+              this.state.messaging.turns,
+              pendingFromInterrupt
+            ),
+          })
+        }
+
+        if (!sessionFetched) {
+          sessionFetched = true
+          const finalSessionId = createdSessionId || activeSessionId
+          if (finalSessionId && finalSessionId !== 'new') {
+            await this._syncSessionFromServer(finalSessionId)
+          }
+        }
+      } else if (chunk.type === 'done') {
+        if (chunk.sessionId) {
+          createdSessionId = chunk.sessionId
+        }
+        if (!sessionFetched) {
+          sessionFetched = true
+          const finalSessionId = createdSessionId || activeSessionId
+          if (finalSessionId && finalSessionId !== 'new') {
+            await this._syncSessionFromServer(finalSessionId)
+          }
+        }
+      } else if (chunk.type === 'user_message' && chunk.sessionId) {
+        createdSessionId = chunk.sessionId
+      }
+    }
+
+    return { createdSessionId, sessionFetched }
+  }
+
+  private async _ensureSessionSyncAfterStream(
+    activeSessionId: string | undefined,
+    createdSessionId: string | undefined,
+    sessionFetched: boolean
+  ): Promise<void> {
+    if (sessionFetched) return
+
+    const finalSessionId = createdSessionId || activeSessionId
+    if (!finalSessionId || finalSessionId === 'new') return
+
+    try {
+      await this._syncSessionFromServer(finalSessionId, true)
+    } catch (fetchErr) {
+      console.error('Failed to fetch session after stream:', fetchErr)
+    }
+  }
+
+  private _finalizeSuccessfulSend(targetSessionId: string | undefined, shouldNavigateAfter: boolean): void {
+    if (targetSessionId && targetSessionId !== 'new') {
+      this._notifySessionsUpdated('message_sent', targetSessionId)
+    }
+    if (shouldNavigateAfter && targetSessionId && targetSessionId !== 'new') {
+      this._notifySessionsUpdated('session_created', targetSessionId)
+      // Prefer callback prop over deprecated data source method
+      if (this.onSessionCreated) {
+        this.onSessionCreated(targetSessionId)
+      } else {
+        this.dataSource.navigateToSession?.(targetSessionId)
+      }
+    }
+    this._clearStreamError()
+    this.lastSendAttempt = null
+  }
+
+  private _handleSendError(err: unknown, content: string, tempTurnId: string): boolean {
+    if (err instanceof Error && err.name === 'AbortError') {
+      this._updateInput({ message: content })
+      this._clearStreamError()
+      return false
+    }
+
+    this._updateMessaging({
+      turns: this.state.messaging.turns.filter((turn) => turn.id !== tempTurnId),
+    })
+
+    const normalized = normalizeRPCError(err, 'Failed to send message')
+    this._updateInput({ inputError: normalized.userMessage })
+    this._updateMessaging({
+      streamError: normalized.userMessage,
+      streamErrorRetryable: normalized.retryable,
+    })
+    console.error('Send message error:', err)
+    return false
   }
 
   // ── Send message ────────────────────────────────────────────────────────
@@ -649,150 +872,34 @@ export class ChatMachine {
     const tempTurn = createPendingTurn(curSessionId || 'new', content, attachments)
     this.lastSendAttempt = { content, attachments, options }
 
-    // Optimistic turn insertion
     const prevTurns = this.state.messaging.turns
-    if (!replaceFromMessageID) {
-      this._updateMessaging({ turns: [...prevTurns, tempTurn] })
-    } else {
-      const idx = prevTurns.findIndex((t) => t.userTurn.id === replaceFromMessageID)
-      if (idx === -1) {
-        console.warn(`[ChatMachine] replaceFromMessageID "${replaceFromMessageID}" not found; appending as new turn`)
-        this._updateMessaging({ turns: [...prevTurns, tempTurn] })
-      } else {
-        this._updateMessaging({ turns: [...prevTurns.slice(0, idx), tempTurn] })
-      }
-    }
+    this._insertOptimisticTurn(prevTurns, tempTurn, replaceFromMessageID)
 
     let shouldDrainQueue = true
 
     try {
-      let activeSessionId = curSessionId
-      let shouldNavigateAfter = false
-
-      if (!activeSessionId || activeSessionId === 'new') {
-        const result = await this.dataSource.createSession()
-        if (result) {
-          const createdSessionID = result.id
-          activeSessionId = createdSessionID
-          this._updateSession({ currentSessionId: createdSessionID })
-          if (curDebugMode) {
-            this._updateSession({
-              debugModeBySession: {
-                ...this.state.session.debugModeBySession,
-                [createdSessionID]: true,
-              },
-            })
-          }
-          shouldNavigateAfter = true
-        }
-      }
+      const { activeSessionId, shouldNavigateAfter } = await this._resolveSendSession(curSessionId, curDebugMode)
 
       // Lock: prevent fetch-session from clobbering state
       this.sendingSessionId = activeSessionId || null
 
-      let accumulatedContent = ''
-      let createdSessionId: string | undefined
-      let sessionFetched = false
-      this._updateMessaging({ isStreaming: true })
-
-      for await (const chunk of this.dataSource.sendMessage(
-        activeSessionId || 'new',
+      const {
+        createdSessionId,
+        sessionFetched,
+      } = await this._runSendStream({
+        activeSessionId,
         content,
         attachments,
-        this.abortController?.signal,
-        {
-          debugMode: curDebugMode,
-          replaceFromMessageID,
-        }
-      )) {
-        if (this.abortController?.signal.aborted) break
-
-        if ((chunk.type === 'chunk' || chunk.type === 'content') && chunk.content) {
-          accumulatedContent += chunk.content
-          this._updateMessaging({ streamingContent: accumulatedContent })
-        } else if (chunk.type === 'thinking' && chunk.content) {
-          this._handleThinkingChunk(chunk.content)
-        } else if (chunk.type === 'tool_start' && chunk.tool) {
-          this._handleToolStart(chunk.tool)
-        } else if (chunk.type === 'tool_end' && chunk.tool) {
-          this._handleToolEnd(chunk.tool)
-        } else if (chunk.type === 'error') {
-          throw new Error(chunk.error || 'Stream error')
-        } else if (chunk.type === 'interrupt' || chunk.type === 'done') {
-          if (chunk.sessionId) {
-            createdSessionId = chunk.sessionId
-          }
-          if (!sessionFetched) {
-            sessionFetched = true
-            const finalSessionId = createdSessionId || activeSessionId
-            if (finalSessionId && finalSessionId !== 'new') {
-              const fetchResult = await this.dataSource.fetchSession(finalSessionId)
-              if (fetchResult) {
-                this._updateSession({ session: fetchResult.session })
-                this._setTurnsFromFetch(fetchResult.turns)
-                this._updateMessaging({ pendingQuestion: fetchResult.pendingQuestion || null })
-              }
-            }
-          }
-        } else if (chunk.type === 'user_message' && chunk.sessionId) {
-          createdSessionId = chunk.sessionId
-        }
-      }
-
-      // Ensure we have final session state even if stream ended without 'done'
-      if (!sessionFetched) {
-        const finalSessionId = createdSessionId || activeSessionId
-        if (finalSessionId && finalSessionId !== 'new') {
-          try {
-            const fetchResult = await this.dataSource.fetchSession(finalSessionId)
-            if (fetchResult) {
-              this._updateSession({ session: fetchResult.session })
-              this._updateMessaging({
-                turns: fetchResult.turns ?? [],
-                pendingQuestion: fetchResult.pendingQuestion || null,
-              })
-            }
-          } catch (fetchErr) {
-            console.error('Failed to fetch session after stream:', fetchErr)
-          }
-        }
-      }
+        debugMode: curDebugMode,
+        replaceFromMessageID,
+        tempTurnId: tempTurn.id,
+      })
+      await this._ensureSessionSyncAfterStream(activeSessionId, createdSessionId, sessionFetched)
 
       const targetSessionId = createdSessionId || activeSessionId
-      if (targetSessionId && targetSessionId !== 'new') {
-        this._notifySessionsUpdated('message_sent', targetSessionId)
-      }
-      if (shouldNavigateAfter && targetSessionId && targetSessionId !== 'new') {
-        this._notifySessionsUpdated('session_created', targetSessionId)
-        // Prefer callback prop over deprecated data source method
-        if (this.onSessionCreated) {
-          this.onSessionCreated(targetSessionId)
-        } else {
-          this.dataSource.navigateToSession?.(targetSessionId)
-        }
-      }
-      this._clearStreamError()
-      this.lastSendAttempt = null
+      this._finalizeSuccessfulSend(targetSessionId, shouldNavigateAfter)
     } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') {
-        this._updateInput({ message: content })
-        this._clearStreamError()
-        shouldDrainQueue = false
-        return
-      }
-
-      this._updateMessaging({
-        turns: this.state.messaging.turns.filter((t) => t.id !== tempTurn.id),
-      })
-
-      const normalized = normalizeRPCError(err, 'Failed to send message')
-      this._updateInput({ inputError: normalized.userMessage })
-      this._updateMessaging({
-        streamError: normalized.userMessage,
-        streamErrorRetryable: normalized.retryable,
-      })
-      console.error('Send message error:', err)
-      shouldDrainQueue = false
+      shouldDrainQueue = this._handleSendError(err, content, tempTurn.id)
     } finally {
       this._updateMessaging({
         loading: false,
@@ -968,7 +1075,10 @@ export class ChatMachine {
     this._updateMessaging({ loading: true })
     this._updateSession({ error: null, errorRetryable: false })
     const previousPendingQuestion = curPendingQuestion
-    this._updateMessaging({ pendingQuestion: null })
+    this._updateMessaging({
+      pendingQuestion: null,
+      turns: applyTurnLifecycleForPendingQuestion(previousTurns, null),
+    })
 
     try {
       const result = await this.dataSource.submitQuestionAnswers(
@@ -985,8 +1095,6 @@ export class ChatMachine {
             if (this.disposed) return
             if (fetchResult) {
               this._updateSession({ session: fetchResult.session })
-              this._updateMessaging({ pendingQuestion: fetchResult.pendingQuestion || null })
-
               const hasMalformedRefresh =
                 previousTurns.length > 0 &&
                 Array.isArray(fetchResult.turns) &&
@@ -1001,8 +1109,15 @@ export class ChatMachine {
                   error: 'Failed to fully refresh session. Showing last known messages.',
                   errorRetryable: true,
                 })
+                this._updateMessaging({
+                  pendingQuestion: fetchResult.pendingQuestion || null,
+                  turns: applyTurnLifecycleForPendingQuestion(
+                    previousTurns,
+                    fetchResult.pendingQuestion || null
+                  ),
+                })
               } else {
-                this._setTurnsFromFetch(fetchResult.turns)
+                this._setTurnsFromFetch(fetchResult.turns, fetchResult.pendingQuestion || null)
               }
             } else {
               this._updateSession({ error: 'Failed to load updated session', errorRetryable: true })
@@ -1014,12 +1129,18 @@ export class ChatMachine {
           }
         }
       } else {
-        this._updateMessaging({ pendingQuestion: previousPendingQuestion })
+        this._updateMessaging({
+          pendingQuestion: previousPendingQuestion,
+          turns: applyTurnLifecycleForPendingQuestion(previousTurns, previousPendingQuestion),
+        })
         this._updateSession({ error: result.error || 'Failed to submit answers', errorRetryable: false })
       }
     } catch (err) {
       if (this.disposed) return
-      this._updateMessaging({ pendingQuestion: previousPendingQuestion })
+      this._updateMessaging({
+        pendingQuestion: previousPendingQuestion,
+        turns: applyTurnLifecycleForPendingQuestion(previousTurns, previousPendingQuestion),
+      })
       const normalized = normalizeRPCError(err, 'Failed to submit answers')
       this._updateSession({ error: normalized.userMessage, errorRetryable: normalized.retryable })
     } finally {
@@ -1038,14 +1159,16 @@ export class ChatMachine {
       const result = await this.dataSource.rejectPendingQuestion(curSessionId)
       if (this.disposed) return
       if (result.success) {
-        this._updateMessaging({ pendingQuestion: null })
+        this._updateMessaging({
+          pendingQuestion: null,
+          turns: applyTurnLifecycleForPendingQuestion(this.state.messaging.turns, null),
+        })
         if (curSessionId !== 'new') {
           const fetchResult = await this.dataSource.fetchSession(curSessionId)
           if (this.disposed) return
           if (fetchResult) {
             this._updateSession({ session: fetchResult.session })
-            this._setTurnsFromFetch(fetchResult.turns)
-            this._updateMessaging({ pendingQuestion: fetchResult.pendingQuestion || null })
+            this._setTurnsFromFetch(fetchResult.turns, fetchResult.pendingQuestion || null)
           }
         }
       } else {

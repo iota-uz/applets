@@ -149,6 +149,7 @@ export function makeAssistantTurn(partial?: Partial<AssistantTurn>): AssistantTu
     chartData: partial?.chartData,
     artifacts: partial?.artifacts ?? [],
     codeOutputs: partial?.codeOutputs ?? [],
+    lifecycle: partial?.lifecycle ?? 'complete',
     createdAt: partial?.createdAt ?? now,
   }
 }
@@ -374,4 +375,3 @@ export const turnsLong: ConversationTurn[] = Array.from({ length: 24 }).map((_, 
     }),
   })
 })
-

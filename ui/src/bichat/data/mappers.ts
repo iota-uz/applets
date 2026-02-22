@@ -338,6 +338,7 @@ function sanitizeAssistantTurn(
     renderTables: undefined,
     artifacts: sanitizeAssistantArtifacts(rawAssistantTurn.artifacts, turnId),
     codeOutputs,
+    lifecycle: 'complete',
     debug: debugTrace,
     createdAt: readString(rawAssistantTurn.createdAt, fallbackCreatedAt),
   }
@@ -484,6 +485,7 @@ export function sanitizePendingQuestion(
   return {
     id: checkpointID,
     turnId: readString(rawPendingQuestion.turnId),
+    agentName: readNonEmptyString(rawPendingQuestion.agentName) || undefined,
     questions,
     status: 'PENDING',
   }
@@ -658,6 +660,7 @@ function normalizeAssistantTurn(turn: Partial<AssistantTurn> & { id: string; con
     citations: turn.citations || [],
     artifacts: merged,
     codeOutputs: turn.codeOutputs || [],
+    lifecycle: turn.lifecycle || 'complete',
   }
 }
 

@@ -42,6 +42,12 @@ export interface UserTurn {
 }
 
 /**
+ * Assistant turn lifecycle used by renderers to distinguish completed output
+ * from HITL checkpoints that require user input.
+ */
+export type AssistantTurnLifecycle = 'complete' | 'waiting_for_human_input'
+
+/**
  * Content of an assistant's response in a conversation turn
  */
 export interface AssistantTurn {
@@ -55,6 +61,7 @@ export interface AssistantTurn {
   renderTables?: RenderTableData[]
   artifacts: Artifact[]
   codeOutputs: CodeOutput[]
+  lifecycle: AssistantTurnLifecycle
   debug?: DebugTrace
   createdAt: string
 }
@@ -244,6 +251,7 @@ export interface SessionArtifact {
 export interface PendingQuestion {
   id: string
   turnId: string
+  agentName?: string
   questions: Question[]
   status: 'PENDING' | 'ANSWERED' | 'CANCELLED'
 }
