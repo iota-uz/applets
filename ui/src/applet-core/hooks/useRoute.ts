@@ -1,5 +1,5 @@
-import { useAppletContext } from '../context/AppletContext'
-import type { RouteContext } from '../types'
+import { useAppletContext } from '../context/AppletContext';
+import type { RouteContext } from '../types';
 
 /**
  * useRoute provides access to the current route context.
@@ -14,6 +14,6 @@ import type { RouteContext } from '../types'
  * // query: { tab: "history" }
  */
 export function useRoute(): RouteContext {
-  const { route } = useAppletContext()
-  return route
+  const { route } = useAppletContext();
+  return route;
 }

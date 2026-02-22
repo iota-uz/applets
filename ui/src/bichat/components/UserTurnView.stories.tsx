@@ -1,11 +1,11 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { UserTurnView } from './UserTurnView'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
-import { makeConversationTurn, makeAttachment } from '@sb-helpers/bichatFixtures'
-import { largeText } from '@sb-helpers/textFixtures'
-import { ChatSessionProvider } from '../context/ChatContext'
-import { MockChatDataSource } from '@sb-helpers/mockChatDataSource'
+import { UserTurnView } from './UserTurnView';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
+import { makeConversationTurn, makeAttachment } from '@sb-helpers/bichatFixtures';
+import { largeText } from '@sb-helpers/textFixtures';
+import { ChatSessionProvider } from '../context/ChatContext';
+import { MockChatDataSource } from '@sb-helpers/mockChatDataSource';
 
 const meta: Meta<typeof UserTurnView> = {
   title: 'BiChat/Components/UserTurnView',
@@ -17,9 +17,9 @@ const meta: Meta<typeof UserTurnView> = {
       </ChatSessionProvider>
     ),
   ],
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof UserTurnView>
 
 export const Playground: Story = {
@@ -33,7 +33,7 @@ export const Playground: Story = {
       },
     }),
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -92,4 +92,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

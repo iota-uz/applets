@@ -1,8 +1,8 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import { ScrollToBottomButton } from './ScrollToBottomButton'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { ScrollToBottomButton } from './ScrollToBottomButton';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof ScrollToBottomButton> = {
   title: 'BiChat/Components/ScrollToBottomButton',
@@ -20,9 +20,9 @@ const meta: Meta<typeof ScrollToBottomButton> = {
       </div>
     ),
   ],
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof ScrollToBottomButton>
 
 // ---------------------------------------------------------------------------
@@ -36,7 +36,7 @@ export const Playground: Story = {
     unreadCount: 0,
     onClick: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 2. WithUnreadBadge — shows unread count badge
@@ -48,7 +48,7 @@ export const WithUnreadBadge: Story = {
     unreadCount: 5,
     onClick: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 3. PillVariant — pill-style button with label
@@ -60,7 +60,7 @@ export const PillVariant: Story = {
     label: 'New messages',
     onClick: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 4. Disabled — disabled state
@@ -72,7 +72,7 @@ export const Disabled: Story = {
     disabled: true,
     onClick: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 5. Stress — ScenarioGrid covering variants
@@ -144,4 +144,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

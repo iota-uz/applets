@@ -3,12 +3,12 @@
  * Displays when a chat session is archived and provides a restore button
  */
 
-import { memo, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Archive, Spinner } from '@phosphor-icons/react'
-import { errorMessageVariants } from '../animations/variants'
-import Alert from './Alert'
-import { useTranslation } from '../hooks/useTranslation'
+import { memo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Archive, Spinner } from '@phosphor-icons/react';
+import { errorMessageVariants } from '../animations/variants';
+import Alert from './Alert';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface ArchiveBannerProps {
   show?: boolean
@@ -23,23 +23,23 @@ function ArchiveBanner({
   restoring = false,
   onRestoreComplete,
 }: ArchiveBannerProps) {
-  const { t } = useTranslation()
-  const [error, setError] = useState<string | null>(null)
+  const { t } = useTranslation();
+  const [error, setError] = useState<string | null>(null);
 
   const handleRestore = async () => {
     try {
-      setError(null)
+      setError(null);
       if (onRestore) {
-        await onRestore()
+        await onRestore();
       }
       if (onRestoreComplete) {
-        onRestoreComplete()
+        onRestoreComplete();
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : t('BiChat.Archive.RestoreFailed')
-      setError(message)
+      const message = err instanceof Error ? err.message : t('BiChat.Archive.RestoreFailed');
+      setError(message);
     }
-  }
+  };
 
   return (
     <>
@@ -99,7 +99,7 @@ function ArchiveBanner({
         />
       )}
     </>
-  )
+  );
 }
 
-export default memo(ArchiveBanner)
+export default memo(ArchiveBanner);

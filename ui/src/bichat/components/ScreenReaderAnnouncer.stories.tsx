@@ -1,15 +1,15 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import ScreenReaderAnnouncer from './ScreenReaderAnnouncer'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import ScreenReaderAnnouncer from './ScreenReaderAnnouncer';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof ScreenReaderAnnouncer> = {
   title: 'BiChat/Components/ScreenReaderAnnouncer',
   component: ScreenReaderAnnouncer,
   parameters: { layout: 'centered' },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof ScreenReaderAnnouncer>
 
 const InfoBox = ({ label, children }: { label: string; children: React.ReactNode }) => (
@@ -24,7 +24,7 @@ const InfoBox = ({ label, children }: { label: string; children: React.ReactNode
       <p className="mt-2 text-xs text-blue-500 dark:text-blue-400">{label}</p>
     </div>
   </div>
-)
+);
 
 export const Polite: Story = {
   args: {
@@ -36,7 +36,7 @@ export const Polite: Story = {
       <ScreenReaderAnnouncer {...args} />
     </InfoBox>
   ),
-}
+};
 
 export const Assertive: Story = {
   args: {
@@ -48,7 +48,7 @@ export const Assertive: Story = {
       <ScreenReaderAnnouncer {...args} />
     </InfoBox>
   ),
-}
+};
 
 export const WithClearAfter: Story = {
   args: {
@@ -61,7 +61,7 @@ export const WithClearAfter: Story = {
       <ScreenReaderAnnouncer {...args} />
     </InfoBox>
   ),
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -103,4 +103,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

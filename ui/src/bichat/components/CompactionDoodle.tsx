@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+import { motion } from 'framer-motion';
 
 interface CompactionDoodleProps {
   title: string
@@ -23,7 +23,7 @@ export function CompactionDoodle({ title, subtitle }: CompactionDoodleProps) {
         <span className="text-[11px] text-gray-400 dark:text-gray-500">{subtitle}</span>
       </div>
     </motion.div>
-  )
+  );
 }
 
-export default CompactionDoodle
+export default CompactionDoodle;

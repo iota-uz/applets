@@ -1,8 +1,8 @@
-import { memo, useCallback, useState, useRef } from 'react'
-import { ArrowsIn, ArrowsOut, CaretUp, CaretDown, Columns, Copy, X, Check } from '@phosphor-icons/react'
-import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react'
-import type { ColumnMeta, SortState } from '../hooks/useDataTable'
-import { useTranslation } from '../hooks/useTranslation'
+import { memo, useCallback, useState, useRef } from 'react';
+import { ArrowsIn, ArrowsOut, CaretUp, CaretDown, Columns, Copy, X, Check } from '@phosphor-icons/react';
+import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react';
+import type { ColumnMeta, SortState } from '../hooks/useDataTable';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface DataTableToolbarProps {
   columns: ColumnMeta[]
@@ -31,23 +31,23 @@ export const DataTableToolbar = memo(function DataTableToolbar({
   isFullscreen,
   onToggleFullscreen,
 }: DataTableToolbarProps) {
-  const { t } = useTranslation()
-  const [searchFocused, setSearchFocused] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>()
+  const { t } = useTranslation();
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const handleSearchClear = useCallback(() => {
-    onSearchChange('')
-  }, [onSearchChange])
+    onSearchChange('');
+  }, [onSearchChange]);
 
   const handleCopy = useCallback(() => {
-    onCopyTable?.()
-    clearTimeout(copyTimerRef.current)
-    setCopied(true)
-    copyTimerRef.current = setTimeout(() => setCopied(false), 2000)
-  }, [onCopyTable])
+    onCopyTable?.();
+    clearTimeout(copyTimerRef.current);
+    setCopied(true);
+    copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
+  }, [onCopyTable]);
 
-  const hasSearch = searchQuery.length > 0
+  const hasSearch = searchQuery.length > 0;
 
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 px-3 py-2 dark:border-gray-700">
@@ -175,5 +175,5 @@ export const DataTableToolbar = memo(function DataTableToolbar({
         </span>
       )}
     </div>
-  )
-})
+  );
+});

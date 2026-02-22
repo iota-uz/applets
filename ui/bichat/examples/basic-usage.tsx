@@ -9,7 +9,7 @@
  * - Complete chat interface
  */
 
-import React from 'react'
+import React from 'react';
 import {
   ConfigProvider,
   ChatSessionProvider,
@@ -20,7 +20,7 @@ import {
   useChatSession,
   useChatMessaging,
   useChatInput,
-} from '@iota-uz/sdk/bichat'
+} from '@iota-uz/sdk/bichat';
 
 // 1. Define your configuration
 const biChatConfig: BiChatConfig = {
@@ -50,7 +50,7 @@ const biChatConfig: BiChatConfig = {
     stream: '/api/stream',
   },
   csrfToken: 'your-csrf-token-here',
-}
+};
 
 // 2. Create HTTP data source
 const dataSource = createHttpDataSource({
@@ -62,20 +62,20 @@ const dataSource = createHttpDataSource({
     'X-Custom-Header': 'custom-value',
   },
   timeout: 30000,
-})
+});
 
 // 3. Create rate limiter (20 requests per minute)
 const rateLimiter = new RateLimiter({
   maxRequests: 20,
   windowMs: 60000,
-})
+});
 
 // 4. Custom Chat Interface Component (example component for reference)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- example component
 function CustomChatInterface() {
-  const { error } = useChatSession()
-  const { turns, loading, isStreaming, streamingContent, cancel } = useChatMessaging()
-  const { message, setMessage, handleSubmit } = useChatInput()
+  const { error } = useChatSession();
+  const { turns, loading, isStreaming, streamingContent, cancel } = useChatMessaging();
+  const { message, setMessage, handleSubmit } = useChatInput();
 
   return (
     <div className="chat-interface">
@@ -152,7 +152,7 @@ function CustomChatInterface() {
         <div className="loading-indicator">Processing...</div>
       )}
     </div>
-  )
+  );
 }
 
 // 5. Main App Component
@@ -179,7 +179,7 @@ export default function App() {
         </div>
       </ChatSessionProvider>
     </ConfigProvider>
-  )
+  );
 }
 
 // Alternative: Using global configuration (server-side injection)
@@ -190,5 +190,5 @@ export function AppWithGlobalConfig() {
         <ChatSession />
       </ChatSessionProvider>
     </ConfigProvider>
-  )
+  );
 }

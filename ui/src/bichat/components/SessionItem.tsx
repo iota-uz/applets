@@ -4,17 +4,17 @@
  * Router-agnostic: uses onSelect callback instead of Link
  */
 
-import React, { useRef, memo, useState, useEffect, useMemo } from 'react'
-import { motion, useMotionValue, useTransform, type PanInfo } from 'framer-motion'
-import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
-import { DotsThree, Check, Bookmark, PencilSimple, Archive, ArrowsClockwise, ArrowUUpLeft, Trash } from '@phosphor-icons/react'
-import { EditableText, type EditableTextRef } from './EditableText'
-import { sessionItemVariants } from '../animations/variants'
-import type { Session } from '../types'
-import { useLongPress } from '../hooks/useLongPress'
-import { TouchContextMenu, type ContextMenuItem } from './TouchContextMenu'
-import { useTranslation } from '../hooks/useTranslation'
-import { formatRelativeTime } from '../utils/dateFormatting'
+import React, { useRef, memo, useState, useEffect, useMemo } from 'react';
+import { motion, useMotionValue, useTransform, type PanInfo } from 'framer-motion';
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
+import { DotsThree, Check, Bookmark, PencilSimple, Archive, ArrowsClockwise, ArrowUUpLeft, Trash } from '@phosphor-icons/react';
+import { EditableText, type EditableTextRef } from './EditableText';
+import { sessionItemVariants } from '../animations/variants';
+import type { Session } from '../types';
+import { useLongPress } from '../hooks/useLongPress';
+import { TouchContextMenu, type ContextMenuItem } from './TouchContextMenu';
+import { useTranslation } from '../hooks/useTranslation';
+import { formatRelativeTime } from '../utils/dateFormatting';
 
 interface SessionItemProps {
   session: Session
@@ -46,73 +46,73 @@ const SessionItem = memo<SessionItemProps>(
     testIdPrefix = 'sidebar',
     className = '',
   }) => {
-    const editableTitleRef = useRef<EditableTextRef>(null)
-    const itemRef = useRef<HTMLDivElement>(null)
-    const [menuOpen, setMenuOpen] = useState(false)
-    const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null)
-    const [isTouch, setIsTouch] = useState(false)
-    const { t } = useTranslation()
+    const editableTitleRef = useRef<EditableTextRef>(null);
+    const itemRef = useRef<HTMLDivElement>(null);
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null);
+    const [isTouch, setIsTouch] = useState(false);
+    const { t } = useTranslation();
 
     // Drag-to-archive gesture
-    const isDraggingRef = useRef(false)
-    const dragX = useMotionValue(0)
-    const archiveOpacity = useTransform(dragX, [-80, -40, 0], [1, 0.5, 0])
-    const archiveScale = useTransform(dragX, [-80, -40, 0], [1, 0.8, 0.6])
-    const canDragArchive = !!onArchive
+    const isDraggingRef = useRef(false);
+    const dragX = useMotionValue(0);
+    const archiveOpacity = useTransform(dragX, [-80, -40, 0], [1, 0.5, 0]);
+    const archiveScale = useTransform(dragX, [-80, -40, 0], [1, 0.8, 0.6]);
+    const canDragArchive = !!onArchive;
 
     const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
       if (info.offset.x < -80 && onArchive) {
-        onArchive()
+        onArchive();
       }
       // Defer reset so the click event (which fires synchronously after dragEnd)
       // still sees isDraggingRef=true and skips navigation.
       requestAnimationFrame(() => {
-        isDraggingRef.current = false
-      })
-    }
+        isDraggingRef.current = false;
+      });
+    };
 
     // Detect touch device
     useEffect(() => {
-      setIsTouch('ontouchend' in document)
-    }, [])
+      setIsTouch('ontouchend' in document);
+    }, []);
 
     // Only treat empty/whitespace title as generating.
     // Non-empty placeholders should be displayed as-is.
-    const isTitleGenerating = !session.title?.trim()
+    const isTitleGenerating = !session.title?.trim();
 
     // Generate title from session (use existing title or show generating state)
-    const displayTitle = isTitleGenerating ? t('BiChat.Common.Generating') : (session.title ?? t('BiChat.Common.Untitled'))
-    const lastActivity = formatRelativeTime(session.updatedAt, t)
+    const displayTitle = isTitleGenerating ? t('BiChat.Common.Generating') : (session.title ?? t('BiChat.Common.Untitled'));
+    const lastActivity = formatRelativeTime(session.updatedAt, t);
 
     // Long press handlers for touch devices
     const { handlers: longPressHandlers } = useLongPress({
       delay: 500,
       onLongPress: (e) => {
-        const target = e.currentTarget as HTMLElement
-        setMenuAnchor(target.getBoundingClientRect())
-        setMenuOpen(true)
+        const target = e.currentTarget as HTMLElement;
+        setMenuAnchor(target.getBoundingClientRect());
+        setMenuOpen(true);
       },
       hapticFeedback: true,
-    })
+    });
 
     // Add contextmenu event listener as fallback for iPadOS
     useEffect(() => {
-      const element = itemRef.current
-      if (!element) return
+      const element = itemRef.current;
+      if (!element) {return;}
 
-      const isIPad = /iPad|Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document
-      if (!isIPad) return
+      const isIPad = /iPad|Macintosh/i.test(navigator.userAgent) && 'ontouchend' in document;
+      if (!isIPad) {return;}
 
       const handleContextMenu = (e: Event) => {
-        e.preventDefault()
-        const target = e.currentTarget as HTMLElement
-        setMenuAnchor(target.getBoundingClientRect())
-        setMenuOpen(true)
-      }
+        e.preventDefault();
+        const target = e.currentTarget as HTMLElement;
+        setMenuAnchor(target.getBoundingClientRect());
+        setMenuOpen(true);
+      };
 
-      element.addEventListener('contextmenu', handleContextMenu)
-      return () => element.removeEventListener('contextmenu', handleContextMenu)
-    }, [itemRef])
+      element.addEventListener('contextmenu', handleContextMenu);
+      return () => element.removeEventListener('contextmenu', handleContextMenu);
+    }, [itemRef]);
 
     const contextMenuItems: ContextMenuItem[] = useMemo(
       () =>
@@ -166,9 +166,9 @@ const SessionItem = memo<SessionItemProps>(
             }] : []),
           ],
       [mode, session.pinned, onRestore, onPin, onRename, onRegenerateTitle, onArchive, onDelete, t],
-    )
+    );
 
-    const hasContextMenu = contextMenuItems.length > 0
+    const hasContextMenu = contextMenuItems.length > 0;
 
     return (
       <>
@@ -199,7 +199,7 @@ const SessionItem = memo<SessionItemProps>(
             dragElastic={{ left: 0.2, right: 0.5 }}
             dragSnapToOrigin
             style={{ x: canDragArchive ? dragX : undefined }}
-            onDragStart={() => { isDraggingRef.current = true }}
+            onDragStart={() => { isDraggingRef.current = true; }}
             onDragEnd={canDragArchive ? handleDragEnd : undefined}
             className="relative"
           >
@@ -208,17 +208,17 @@ const SessionItem = memo<SessionItemProps>(
             tabIndex={0}
             ref={itemRef}
             onClick={() => {
-              if (isDraggingRef.current) return
-              onSelect(session.id)
+              if (isDraggingRef.current) {return;}
+              onSelect(session.id);
             }}
             onKeyDown={(e) => {
-              const target = e.target as HTMLElement | null
-              const isFromEditable = !!target?.closest('input, textarea, [contenteditable="true"]')
-              if (isFromEditable) return
+              const target = e.target as HTMLElement | null;
+              const isFromEditable = !!target?.closest('input, textarea, [contenteditable="true"]');
+              if (isFromEditable) {return;}
 
               if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                onSelect(session.id)
+                e.preventDefault();
+                onSelect(session.id);
               }
             }}
             className={`block w-full text-left px-3 py-2 rounded-lg transition-smooth group relative touch-tap cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 ${
@@ -247,8 +247,8 @@ const SessionItem = memo<SessionItemProps>(
                 <Menu>
                   <MenuButton
                     onClick={(e: React.MouseEvent) => {
-                      e.preventDefault()
-                      e.stopPropagation()
+                      e.preventDefault();
+                      e.stopPropagation();
                     }}
                     className="opacity-0 group-hover:opacity-100 p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-smooth flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
                     aria-label={t('BiChat.Sidebar.ChatOptions')}
@@ -265,9 +265,9 @@ const SessionItem = memo<SessionItemProps>(
                         {({ focus }) => (
                           <button
                             onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              onPin()
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onPin();
                             }}
                             className={`cursor-pointer flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-smooth ${
                               focus
@@ -292,10 +292,10 @@ const SessionItem = memo<SessionItemProps>(
                         {({ focus, close }) => (
                           <button
                             onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              editableTitleRef.current?.startEditing()
-                              close()
+                              e.preventDefault();
+                              e.stopPropagation();
+                              editableTitleRef.current?.startEditing();
+                              close();
                             }}
                             className={`cursor-pointer flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-smooth ${
                               focus
@@ -316,10 +316,10 @@ const SessionItem = memo<SessionItemProps>(
                         {({ focus, close }) => (
                           <button
                             onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              onRegenerateTitle()
-                              close()
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onRegenerateTitle();
+                              close();
                             }}
                             className={`cursor-pointer flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-smooth ${
                               focus
@@ -340,9 +340,9 @@ const SessionItem = memo<SessionItemProps>(
                         {({ focus }) => (
                           <button
                             onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              onRestore()
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onRestore();
                             }}
                             className={`cursor-pointer flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-smooth ${
                               focus
@@ -363,9 +363,9 @@ const SessionItem = memo<SessionItemProps>(
                         {({ focus }) => (
                           <button
                             onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              onArchive()
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onArchive();
                             }}
                             className={`cursor-pointer flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-smooth ${
                               focus
@@ -386,9 +386,9 @@ const SessionItem = memo<SessionItemProps>(
                         {({ focus }) => (
                           <button
                             onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              onDelete()
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onDelete();
                             }}
                             className={`cursor-pointer flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-smooth ${
                               focus
@@ -418,10 +418,10 @@ const SessionItem = memo<SessionItemProps>(
           anchorRect={menuAnchor}
         />
       </>
-    )
+    );
   }
-)
+);
 
-SessionItem.displayName = 'SessionItem'
+SessionItem.displayName = 'SessionItem';
 
-export default SessionItem
+export default SessionItem;

@@ -10,34 +10,34 @@
  * - Keyboard shortcut: Cmd+B toggle
  */
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
-import { X, Plus, Archive, CaretLineLeft, CaretLineRight, Gear, Users, List, ChatCircle, MagnifyingGlass } from '@phosphor-icons/react'
-import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
-import SessionSkeleton from './SessionSkeleton'
-import SessionItem from './SessionItem'
-import ConfirmModal from './ConfirmModal'
-import SearchInput from './SearchInput'
-import DateGroupHeader from './DateGroupHeader'
-import { EmptyState } from './EmptyState'
-import LoadingSpinner from './LoadingSpinner'
-import AllChatsList from './AllChatsList'
-import { useTranslation } from '../hooks/useTranslation'
-import { useToast } from '../hooks/useToast'
-import { groupSessionsByDate } from '../utils/sessionGrouping'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { X, Plus, Archive, CaretLineLeft, CaretLineRight, Gear, Users, List, ChatCircle, MagnifyingGlass } from '@phosphor-icons/react';
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
+import SessionSkeleton from './SessionSkeleton';
+import SessionItem from './SessionItem';
+import ConfirmModal from './ConfirmModal';
+import SearchInput from './SearchInput';
+import DateGroupHeader from './DateGroupHeader';
+import { EmptyState } from './EmptyState';
+import LoadingSpinner from './LoadingSpinner';
+import AllChatsList from './AllChatsList';
+import { useTranslation } from '../hooks/useTranslation';
+import { useToast } from '../hooks/useToast';
+import { groupSessionsByDate } from '../utils/sessionGrouping';
 import {
   staggerContainerVariants,
   buttonVariants,
-} from '../animations/variants'
-import type { Session, ChatDataSource } from '../types'
-import { ToastContainer } from './ToastContainer'
-import { toErrorDisplay, type RPCErrorDisplay } from '../utils/errorDisplay'
+} from '../animations/variants';
+import type { Session, ChatDataSource } from '../types';
+import { ToastContainer } from './ToastContainer';
+import { toErrorDisplay, type RPCErrorDisplay } from '../utils/errorDisplay';
 
 /** Matches sidebar width transition (duration-300) + small buffer for focus-after-expand */
-const SIDEBAR_EXPAND_FOCUS_DELAY_MS = 350
+const SIDEBAR_EXPAND_FOCUS_DELAY_MS = 350;
 
 function ErrorAlert({ error }: { error: RPCErrorDisplay }) {
-  const amber = error.isPermissionDenied
+  const amber = error.isPermissionDenied;
   return (
     <div
       className={`mx-2 mt-4 p-3 border rounded-xl cursor-default ${
@@ -67,49 +67,49 @@ function ErrorAlert({ error }: { error: RPCErrorDisplay }) {
         </p>
       )}
     </div>
-  )
+  );
 }
 
-const COLLAPSE_STORAGE_KEY = 'bichat-sidebar-collapsed'
-const SESSION_RECONCILE_POLL_INTERVAL_MS = 2000
-const SESSION_RECONCILE_MAX_POLLS = 30
-const ACTIVE_SESSION_MISS_MAX_RETRIES = 8
-const ACTIVE_SESSION_MISS_RETRY_DELAY_MS = 1000
-const MAX_COLLAPSED_INDICATORS = 5
+const COLLAPSE_STORAGE_KEY = 'bichat-sidebar-collapsed';
+const SESSION_RECONCILE_POLL_INTERVAL_MS = 2000;
+const SESSION_RECONCILE_MAX_POLLS = 30;
+const ACTIVE_SESSION_MISS_MAX_RETRIES = 8;
+const ACTIVE_SESSION_MISS_RETRY_DELAY_MS = 1000;
+const MAX_COLLAPSED_INDICATORS = 5;
 
 function useSidebarCollapse() {
   const [isCollapsed, setIsCollapsed] = useState(() => {
     try {
-      return localStorage.getItem(COLLAPSE_STORAGE_KEY) === 'true'
+      return localStorage.getItem(COLLAPSE_STORAGE_KEY) === 'true';
     } catch {
-      return false
+      return false;
     }
-  })
+  });
 
-  const isCollapsedRef = useRef(isCollapsed)
+  const isCollapsedRef = useRef(isCollapsed);
   useEffect(() => {
-    isCollapsedRef.current = isCollapsed
-  }, [isCollapsed])
+    isCollapsedRef.current = isCollapsed;
+  }, [isCollapsed]);
 
   const toggle = useCallback(() => {
     setIsCollapsed((prev) => {
-      const next = !prev
-      try { localStorage.setItem(COLLAPSE_STORAGE_KEY, String(next)) } catch { /* noop */ }
-      return next
-    })
-  }, [])
+      const next = !prev;
+      try { localStorage.setItem(COLLAPSE_STORAGE_KEY, String(next)); } catch { /* noop */ }
+      return next;
+    });
+  }, []);
 
   const expand = useCallback(() => {
-    setIsCollapsed(false)
-    try { localStorage.setItem(COLLAPSE_STORAGE_KEY, 'false') } catch { /* noop */ }
-  }, [])
+    setIsCollapsed(false);
+    try { localStorage.setItem(COLLAPSE_STORAGE_KEY, 'false'); } catch { /* noop */ }
+  }, []);
 
   const collapse = useCallback(() => {
-    setIsCollapsed(true)
-    try { localStorage.setItem(COLLAPSE_STORAGE_KEY, 'true') } catch { /* noop */ }
-  }, [])
+    setIsCollapsed(true);
+    try { localStorage.setItem(COLLAPSE_STORAGE_KEY, 'true'); } catch { /* noop */ }
+  }, []);
 
-  return { isCollapsed, isCollapsedRef, toggle, expand, collapse }
+  return { isCollapsed, isCollapsedRef, toggle, expand, collapse };
 }
 
 type ActiveTab = 'my-chats' | 'all-chats'
@@ -143,239 +143,239 @@ export default function Sidebar({
   footerSlot,
   className = '',
 }: SidebarProps) {
-  const { t } = useTranslation()
-  const toast = useToast()
-  const shouldReduceMotion = useReducedMotion()
-  const sessionListRef = useRef<HTMLElement>(null)
-  const searchContainerRef = useRef<HTMLDivElement>(null)
-  const activeSessionMissRetriesRef = useRef<Record<string, number>>({})
+  const { t } = useTranslation();
+  const toast = useToast();
+  const shouldReduceMotion = useReducedMotion();
+  const sessionListRef = useRef<HTMLElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const activeSessionMissRetriesRef = useRef<Record<string, number>>({});
 
   // Collapse state — disabled when used as a mobile drawer (onClose present)
-  const { isCollapsed, toggle, expand, collapse } = useSidebarCollapse()
-  const collapsible = !onClose // desktop only
+  const { isCollapsed, toggle, expand, collapse } = useSidebarCollapse();
+  const collapsible = !onClose; // desktop only
 
   // Click-on-empty-space to toggle (same pattern as SDK sidebar)
   const handleSidebarClick = useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      if (!collapsible) return
-      const interactive = 'a, button, input, textarea, select, summary, label, [role="button"], [role="link"], [contenteditable="true"], [data-no-sidebar-toggle]'
-      if ((e.target as HTMLElement).closest(interactive)) return
-      toggle()
+      if (!collapsible) {return;}
+      const interactive = 'a, button, input, textarea, select, summary, label, [role="button"], [role="link"], [contenteditable="true"], [data-no-sidebar-toggle]';
+      if ((e.target as HTMLElement).closest(interactive)) {return;}
+      toggle();
     },
     [collapsible, toggle]
-  )
+  );
 
   // Keyboard shortcut: Cmd+B (toggle)
   useEffect(() => {
-    if (!collapsible) return
+    if (!collapsible) {return;}
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      const isMod = e.metaKey || e.ctrlKey
+      const isMod = e.metaKey || e.ctrlKey;
 
       if (isMod && e.key === 'b') {
-        e.preventDefault()
-        toggle()
+        e.preventDefault();
+        toggle();
       }
-    }
+    };
 
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [collapsible, toggle])
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [collapsible, toggle]);
 
   // Auto-collapse when artifacts panel expands
   useEffect(() => {
-    if (!collapsible) return
+    if (!collapsible) {return;}
 
     const handler = (e: Event) => {
-      const detail = (e as CustomEvent<{ expanded: boolean }>).detail
+      const detail = (e as CustomEvent<{ expanded: boolean }>).detail;
       if (detail?.expanded) {
-        collapse()
+        collapse();
       }
-    }
-    window.addEventListener('bichat:artifacts-panel-expanded', handler)
-    return () => window.removeEventListener('bichat:artifacts-panel-expanded', handler)
-  }, [collapsible, collapse])
+    };
+    window.addEventListener('bichat:artifacts-panel-expanded', handler);
+    return () => window.removeEventListener('bichat:artifacts-panel-expanded', handler);
+  }, [collapsible, collapse]);
 
-  const showCollapsed = collapsible && isCollapsed
+  const showCollapsed = collapsible && isCollapsed;
 
   // Allow tooltips to escape sidebar bounds once collapse transition settles
-  const [collapsedOverflowVisible, setCollapsedOverflowVisible] = useState(false)
+  const [collapsedOverflowVisible, setCollapsedOverflowVisible] = useState(false);
   useEffect(() => {
     if (!showCollapsed) {
-      setCollapsedOverflowVisible(false)
-      return
+      setCollapsedOverflowVisible(false);
+      return;
     }
-    const timer = setTimeout(() => setCollapsedOverflowVisible(true), 300)
-    return () => clearTimeout(timer)
-  }, [showCollapsed])
+    const timer = setTimeout(() => setCollapsedOverflowVisible(true), 300);
+    return () => clearTimeout(timer);
+  }, [showCollapsed]);
 
   // View state (my chats vs all chats)
-  const [activeTab, setActiveTab] = useState<ActiveTab>('my-chats')
+  const [activeTab, setActiveTab] = useState<ActiveTab>('my-chats');
 
   // Search state
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Session data
-  const [sessions, setSessions] = useState<Session[]>([])
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState<RPCErrorDisplay | null>(null)
-  const [actionError, setActionError] = useState<RPCErrorDisplay | null>(null)
-  const accessDenied = loadError?.isPermissionDenied === true
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<RPCErrorDisplay | null>(null);
+  const [actionError, setActionError] = useState<RPCErrorDisplay | null>(null);
+  const accessDenied = loadError?.isPermissionDenied === true;
 
   // Refresh key — bump to re-fetch sessions
-  const [refreshKey, setRefreshKey] = useState(0)
-  const [reconcilePollToken, setReconcilePollToken] = useState(0)
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [reconcilePollToken, setReconcilePollToken] = useState(0);
 
   // Confirm modal state
-  const [showConfirm, setShowConfirm] = useState(false)
-  const [sessionToArchive, setSessionToArchive] = useState<string | null>(null)
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [sessionToArchive, setSessionToArchive] = useState<string | null>(null);
 
   // Fetch sessions
   const fetchSessions = useCallback(async () => {
     try {
-      setLoading(true)
-      setLoadError(null)
-      setActionError(null)
-      const result = await dataSource.listSessions({ limit: 50 })
-      setSessions(result.sessions)
+      setLoading(true);
+      setLoadError(null);
+      setActionError(null);
+      const result = await dataSource.listSessions({ limit: 50 });
+      setSessions(result.sessions);
     } catch (err) {
-      console.error('Failed to load sessions:', err)
-      setLoadError(toErrorDisplay(err, t('BiChat.Sidebar.FailedToLoadSessions')))
+      console.error('Failed to load sessions:', err);
+      setLoadError(toErrorDisplay(err, t('BiChat.Sidebar.FailedToLoadSessions')));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [dataSource, t])
+  }, [dataSource, t]);
 
   useEffect(() => {
-    fetchSessions()
-  }, [fetchSessions, refreshKey])
+    fetchSessions();
+  }, [fetchSessions, refreshKey]);
 
   useEffect(() => {
     const handleSessionsUpdated = (event: Event) => {
-      setRefreshKey((k) => k + 1)
+      setRefreshKey((k) => k + 1);
 
-      const detail = (event as CustomEvent<{ reason?: string }>).detail
-      const reason = detail?.reason
+      const detail = (event as CustomEvent<{ reason?: string }>).detail;
+      const reason = detail?.reason;
       if (!reason || reason === 'session_created' || reason === 'message_sent' || reason === 'title_regenerate_requested') {
-        setReconcilePollToken((k) => k + 1)
+        setReconcilePollToken((k) => k + 1);
       }
-    }
+    };
 
-    window.addEventListener('bichat:sessions-updated', handleSessionsUpdated)
+    window.addEventListener('bichat:sessions-updated', handleSessionsUpdated);
     return () => {
-      window.removeEventListener('bichat:sessions-updated', handleSessionsUpdated)
-    }
-  }, [])
+      window.removeEventListener('bichat:sessions-updated', handleSessionsUpdated);
+    };
+  }, []);
 
   useEffect(() => {
-    activeSessionMissRetriesRef.current = {}
-  }, [activeSessionId])
+    activeSessionMissRetriesRef.current = {};
+  }, [activeSessionId]);
 
   useEffect(() => {
-    if (!activeSessionId) return
-    if (loading) return
+    if (!activeSessionId) {return;}
+    if (loading) {return;}
 
-    const hasActiveSession = sessions.some((session) => session.id === activeSessionId)
+    const hasActiveSession = sessions.some((session) => session.id === activeSessionId);
     if (hasActiveSession) {
-      delete activeSessionMissRetriesRef.current[activeSessionId]
-      return
+      delete activeSessionMissRetriesRef.current[activeSessionId];
+      return;
     }
 
-    const attempts = activeSessionMissRetriesRef.current[activeSessionId] ?? 0
+    const attempts = activeSessionMissRetriesRef.current[activeSessionId] ?? 0;
     if (attempts >= ACTIVE_SESSION_MISS_MAX_RETRIES) {
-      return
+      return;
     }
-    activeSessionMissRetriesRef.current[activeSessionId] = attempts + 1
+    activeSessionMissRetriesRef.current[activeSessionId] = attempts + 1;
 
     const timeoutId = window.setTimeout(() => {
-      setRefreshKey((k) => k + 1)
-      setReconcilePollToken((k) => k + 1)
-    }, ACTIVE_SESSION_MISS_RETRY_DELAY_MS)
+      setRefreshKey((k) => k + 1);
+      setReconcilePollToken((k) => k + 1);
+    }, ACTIVE_SESSION_MISS_RETRY_DELAY_MS);
 
-    return () => window.clearTimeout(timeoutId)
-  }, [activeSessionId, loading, sessions])
+    return () => window.clearTimeout(timeoutId);
+  }, [activeSessionId, loading, sessions]);
 
   // Poll for title updates on sessions with placeholder titles.
   // Use a stable boolean so that updating sessions inside the poll
   // does NOT re-trigger the effect (which would create overlapping intervals).
   const hasPlaceholderTitles = useMemo(() => {
-    const newChatLabel = t('BiChat.Chat.NewChat')
+    const newChatLabel = t('BiChat.Chat.NewChat');
     return (
       Array.isArray(sessions) &&
       sessions.some((s) => s && (!s.title || s.title === newChatLabel))
-    )
-  }, [sessions, t])
+    );
+  }, [sessions, t]);
 
   useEffect(() => {
-    if (!hasPlaceholderTitles && reconcilePollToken === 0) return
+    if (!hasPlaceholderTitles && reconcilePollToken === 0) {return;}
 
-    let pollCount = 0
+    let pollCount = 0;
 
     const intervalId = setInterval(async () => {
-      pollCount++
+      pollCount++;
       try {
-        const result = await dataSource.listSessions({ limit: 50 })
-        setSessions(result.sessions)
+        const result = await dataSource.listSessions({ limit: 50 });
+        setSessions(result.sessions);
       } catch {
         // ignore poll errors
       }
       if (pollCount >= SESSION_RECONCILE_MAX_POLLS) {
-        clearInterval(intervalId)
+        clearInterval(intervalId);
       }
-    }, SESSION_RECONCILE_POLL_INTERVAL_MS)
+    }, SESSION_RECONCILE_POLL_INTERVAL_MS);
 
-    return () => clearInterval(intervalId)
-  }, [hasPlaceholderTitles, dataSource, reconcilePollToken])
+    return () => clearInterval(intervalId);
+  }, [hasPlaceholderTitles, dataSource, reconcilePollToken]);
 
   const handleArchiveRequest = (sessionId: string) => {
-    setSessionToArchive(sessionId)
-    setShowConfirm(true)
-  }
+    setSessionToArchive(sessionId);
+    setShowConfirm(true);
+  };
 
   const handleUndoArchive = useCallback(async (sessionId: string) => {
     try {
-      await dataSource.unarchiveSession(sessionId)
-      setRefreshKey((k) => k + 1)
+      await dataSource.unarchiveSession(sessionId);
+      setRefreshKey((k) => k + 1);
       window.dispatchEvent(new CustomEvent('bichat:sessions-updated', {
         detail: { reason: 'unarchived', sessionId },
-      }))
+      }));
     } catch (undoErr) {
-      console.error('Failed to restore session:', undoErr)
-      toast.error(t('BiChat.Sidebar.FailedToRestoreChat'))
+      console.error('Failed to restore session:', undoErr);
+      toast.error(t('BiChat.Sidebar.FailedToRestoreChat'));
     }
-  }, [dataSource, t, toast])
+  }, [dataSource, t, toast]);
 
   const confirmArchive = async () => {
-    if (!sessionToArchive) return
+    if (!sessionToArchive) {return;}
 
-    const wasCurrentSession = activeSessionId === sessionToArchive
-    const archivedId = sessionToArchive
+    const wasCurrentSession = activeSessionId === sessionToArchive;
+    const archivedId = sessionToArchive;
 
     try {
-      await dataSource.archiveSession(archivedId)
-      setRefreshKey((k) => k + 1)
+      await dataSource.archiveSession(archivedId);
+      setRefreshKey((k) => k + 1);
       window.dispatchEvent(new CustomEvent('bichat:sessions-updated', {
         detail: { reason: 'archived', sessionId: archivedId },
-      }))
+      }));
 
       if (wasCurrentSession) {
-        onSessionSelect('')
+        onSessionSelect('');
       }
 
       toast.success(t('BiChat.Sidebar.ChatArchived'), 8000, {
         label: t('BiChat.Common.Undo'),
         onClick: () => handleUndoArchive(archivedId),
-      })
+      });
     } catch (err) {
-      console.error('Failed to archive session:', err)
-      const display = toErrorDisplay(err, t('BiChat.Sidebar.FailedToArchiveChat'))
-      setActionError(display)
-      toast.error(display.title)
+      console.error('Failed to archive session:', err);
+      const display = toErrorDisplay(err, t('BiChat.Sidebar.FailedToArchiveChat'));
+      setActionError(display);
+      toast.error(display.title);
     } finally {
-      setShowConfirm(false)
-      setSessionToArchive(null)
+      setShowConfirm(false);
+      setSessionToArchive(null);
     }
-  }
+  };
 
   const handleTogglePin = useCallback(async (
     sessionId: string,
@@ -383,159 +383,159 @@ export default function Sidebar({
   ) => {
     try {
       if (currentlyPinned) {
-        await dataSource.unpinSession(sessionId)
+        await dataSource.unpinSession(sessionId);
       } else {
-        await dataSource.pinSession(sessionId)
+        await dataSource.pinSession(sessionId);
       }
-      setRefreshKey((k) => k + 1)
+      setRefreshKey((k) => k + 1);
     } catch (err) {
-      console.error('Failed to toggle pin:', err)
-      const display = toErrorDisplay(err, t('BiChat.Sidebar.FailedToTogglePin'))
-      setActionError(display)
-      toast.error(display.title)
+      console.error('Failed to toggle pin:', err);
+      const display = toErrorDisplay(err, t('BiChat.Sidebar.FailedToTogglePin'));
+      setActionError(display);
+      toast.error(display.title);
     }
-  }, [dataSource, t, toast])
+  }, [dataSource, t, toast]);
 
   const handleRenameSession = useCallback(async (sessionId: string, newTitle: string) => {
     try {
-      await dataSource.renameSession(sessionId, newTitle)
-      toast.success(t('BiChat.Sidebar.ChatRenamedSuccessfully'))
-      setRefreshKey((k) => k + 1)
+      await dataSource.renameSession(sessionId, newTitle);
+      toast.success(t('BiChat.Sidebar.ChatRenamedSuccessfully'));
+      setRefreshKey((k) => k + 1);
     } catch (err) {
-      console.error('Failed to update session title:', err)
-      const display = toErrorDisplay(err, t('BiChat.Sidebar.FailedToRenameChat'))
-      setActionError(display)
-      toast.error(display.title)
+      console.error('Failed to update session title:', err);
+      const display = toErrorDisplay(err, t('BiChat.Sidebar.FailedToRenameChat'));
+      setActionError(display);
+      toast.error(display.title);
     }
-  }, [dataSource, t, toast])
+  }, [dataSource, t, toast]);
 
   const handleRegenerateTitle = useCallback(async (sessionId: string) => {
     try {
-      await dataSource.regenerateSessionTitle(sessionId)
-      toast.success(t('BiChat.Sidebar.TitleRegenerated'))
+      await dataSource.regenerateSessionTitle(sessionId);
+      toast.success(t('BiChat.Sidebar.TitleRegenerated'));
       window.dispatchEvent(new CustomEvent('bichat:sessions-updated', {
         detail: { reason: 'title_regenerate_requested', sessionId },
-      }))
+      }));
     } catch (err) {
-      console.error('Failed to regenerate title:', err)
-      const display = toErrorDisplay(err, t('BiChat.Sidebar.FailedToRegenerateTitle'))
-      setActionError(display)
-      toast.error(display.title)
+      console.error('Failed to regenerate title:', err);
+      const display = toErrorDisplay(err, t('BiChat.Sidebar.FailedToRegenerateTitle'));
+      setActionError(display);
+      toast.error(display.title);
     }
-  }, [dataSource, t, toast])
+  }, [dataSource, t, toast]);
 
   // Stable callbacks for SessionItem — accept session ID as parameter
   const handleSessionSelect = useCallback(
     (sessionId: string) => onSessionSelect(sessionId),
     [onSessionSelect],
-  )
+  );
   const handleSessionArchive = useCallback(
     (sessionId: string) => handleArchiveRequest(sessionId),
     [],
-  )
+  );
   const handleSessionPin = useCallback(
     (sessionId: string, pinned: boolean) => handleTogglePin(sessionId, pinned),
     [handleTogglePin],
-  )
+  );
   const handleSessionRename = useCallback(
     (sessionId: string, newTitle: string) => handleRenameSession(sessionId, newTitle),
     [handleRenameSession],
-  )
+  );
   const handleSessionRegenerateTitle = useCallback(
     (sessionId: string) => handleRegenerateTitle(sessionId),
     [handleRegenerateTitle],
-  )
+  );
 
   // Filter sessions by search
   const filteredSessions = useMemo(() => {
-    if (!searchQuery.trim()) return sessions
-    const q = searchQuery.toLowerCase()
-    return sessions.filter((s) => s.title?.toLowerCase().includes(q))
-  }, [sessions, searchQuery])
+    if (!searchQuery.trim()) {return sessions;}
+    const q = searchQuery.toLowerCase();
+    return sessions.filter((s) => s.title?.toLowerCase().includes(q));
+  }, [sessions, searchQuery]);
 
   // Separate pinned and unpinned
   const pinnedSessions = useMemo(
     () => filteredSessions.filter((s) => s.pinned),
     [filteredSessions]
-  )
+  );
   const unpinnedSessions = useMemo(
     () => filteredSessions.filter((s) => !s.pinned),
     [filteredSessions]
-  )
+  );
 
   // Group unpinned sessions by date
   const sessionGroups = useMemo(() => {
-    const groups = groupSessionsByDate(unpinnedSessions, t)
+    const groups = groupSessionsByDate(unpinnedSessions, t);
     return Array.isArray(groups)
       ? groups.map((group) => ({
           ...group,
           sessions: Array.isArray(group.sessions) ? group.sessions : [],
         }))
-      : []
-  }, [unpinnedSessions, t])
+      : [];
+  }, [unpinnedSessions, t]);
 
   // Collapsed sidebar indicators — pinned first, then most recent
   const collapsedIndicators = useMemo(() => {
-    const seen = new Set<string>()
-    const result: Session[] = []
+    const seen = new Set<string>();
+    const result: Session[] = [];
     for (const s of [...pinnedSessions, ...unpinnedSessions]) {
-      if (seen.has(s.id)) continue
-      seen.add(s.id)
-      result.push(s)
-      if (result.length >= MAX_COLLAPSED_INDICATORS) break
+      if (seen.has(s.id)) {continue;}
+      seen.add(s.id);
+      result.push(s);
+      if (result.length >= MAX_COLLAPSED_INDICATORS) {break;}
     }
-    return result
-  }, [pinnedSessions, unpinnedSessions])
+    return result;
+  }, [pinnedSessions, unpinnedSessions]);
 
-  const totalSessionCount = filteredSessions.length
-  const overflowCount = Math.max(0, totalSessionCount - collapsedIndicators.length)
+  const totalSessionCount = filteredSessions.length;
+  const overflowCount = Math.max(0, totalSessionCount - collapsedIndicators.length);
 
   // Keyboard navigation for session list (WAI-ARIA listbox pattern)
   const handleSessionListKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLElement>) => {
-      const nav = sessionListRef.current
-      if (!nav) return
+      const nav = sessionListRef.current;
+      if (!nav) {return;}
 
       const focusableItems = Array.from(
         nav.querySelectorAll<HTMLElement>('button[data-session-item]')
-      )
-      if (focusableItems.length === 0) return
+      );
+      if (focusableItems.length === 0) {return;}
 
       const currentIndex = focusableItems.indexOf(
         document.activeElement as HTMLElement
-      )
+      );
 
-      let nextIndex: number | null = null
+      let nextIndex: number | null = null;
 
       switch (e.key) {
         case 'ArrowDown':
-          e.preventDefault()
+          e.preventDefault();
           nextIndex =
-            currentIndex < 0 ? 0 : Math.min(currentIndex + 1, focusableItems.length - 1)
-          break
+            currentIndex < 0 ? 0 : Math.min(currentIndex + 1, focusableItems.length - 1);
+          break;
         case 'ArrowUp':
-          e.preventDefault()
+          e.preventDefault();
           nextIndex =
             currentIndex < 0
               ? focusableItems.length - 1
-              : Math.max(currentIndex - 1, 0)
-          break
+              : Math.max(currentIndex - 1, 0);
+          break;
         case 'Home':
-          e.preventDefault()
-          nextIndex = 0
-          break
+          e.preventDefault();
+          nextIndex = 0;
+          break;
         case 'End':
-          e.preventDefault()
-          nextIndex = focusableItems.length - 1
-          break
+          e.preventDefault();
+          nextIndex = focusableItems.length - 1;
+          break;
       }
 
       if (nextIndex !== null) {
-        focusableItems[nextIndex].focus()
+        focusableItems[nextIndex].focus();
       }
     },
     []
-  )
+  );
 
   return (
     <>
@@ -564,8 +564,8 @@ export default function Sidebar({
             <div className="group/tooltip relative">
               <motion.button
                 onClick={(e) => {
-                  e.stopPropagation()
-                  onNewChat()
+                  e.stopPropagation();
+                  onNewChat();
                 }}
                 disabled={creating || loading || accessDenied}
                 className="w-10 h-10 rounded-lg bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white shadow-sm flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-primary-400/50"
@@ -588,12 +588,12 @@ export default function Sidebar({
             <div className="group/search relative">
               <motion.button
                 onClick={(e) => {
-                  e.stopPropagation()
-                  expand()
+                  e.stopPropagation();
+                  expand();
                   setTimeout(() => {
-                    const input = searchContainerRef.current?.querySelector('input')
-                    input?.focus()
-                  }, SIDEBAR_EXPAND_FOCUS_DELAY_MS)
+                    const input = searchContainerRef.current?.querySelector('input');
+                    input?.focus();
+                  }, SIDEBAR_EXPAND_FOCUS_DELAY_MS);
                 }}
                 className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 flex items-center justify-center cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none"
                 aria-label={t('BiChat.Sidebar.SearchChats')}
@@ -615,8 +615,8 @@ export default function Sidebar({
                 animate={showCollapsed ? 'visible' : 'hidden'}
               >
                 {collapsedIndicators.map((session) => {
-                  const isActive = session.id === activeSessionId
-                  const initial = session.title?.trim()?.[0]?.toUpperCase()
+                  const isActive = session.id === activeSessionId;
+                  const initial = session.title?.trim()?.[0]?.toUpperCase();
                   return (
                     <motion.div
                       key={session.id}
@@ -632,8 +632,8 @@ export default function Sidebar({
                     >
                       <motion.button
                         onClick={(e) => {
-                          e.stopPropagation()
-                          onSessionSelect(session.id)
+                          e.stopPropagation();
+                          onSessionSelect(session.id);
                         }}
                         className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none ${
                           isActive
@@ -653,7 +653,7 @@ export default function Sidebar({
                         {session.title || t('BiChat.Chat.NewChat')}
                       </div>
                     </motion.div>
-                  )
+                  );
                 })}
                 {overflowCount > 0 && (
                   <motion.div
@@ -669,8 +669,8 @@ export default function Sidebar({
                   >
                     <motion.button
                       onClick={(e) => {
-                        e.stopPropagation()
-                        toggle()
+                        e.stopPropagation();
+                        toggle();
                       }}
                       className="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-semibold bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none"
                       aria-label={t('BiChat.Sidebar.MoreChats', { count: overflowCount })}
@@ -740,8 +740,8 @@ export default function Sidebar({
               <div className="p-4">
                 <motion.button
                   onClick={(e) => {
-                    e.stopPropagation()
-                    onNewChat()
+                    e.stopPropagation();
+                    onNewChat();
                   }}
                   disabled={creating || loading || accessDenied}
                   className="cursor-pointer w-full px-4 py-2.5 bg-primary-600 dark:bg-primary-700 text-white rounded-lg hover:bg-primary-700 hover:-translate-y-0.5 active:bg-primary-800 transition-all duration-150 font-medium shadow-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
@@ -883,7 +883,7 @@ export default function Sidebar({
                 <Menu>
                   <MenuButton
                     onClick={(e: React.MouseEvent) => {
-                      e.stopPropagation()
+                      e.stopPropagation();
                     }}
                     disabled={loading || accessDenied}
                     className="flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 p-2"
@@ -901,10 +901,10 @@ export default function Sidebar({
                         {({ focus, close }) => (
                           <button
                             onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              onArchivedView()
-                              close()
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onArchivedView();
+                              close();
                             }}
                             className={`cursor-pointer flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-gray-600 dark:text-gray-300 transition-colors ${
                               focus ? 'bg-gray-100 dark:bg-gray-800/70' : ''
@@ -922,10 +922,10 @@ export default function Sidebar({
                         {({ focus, close }) => (
                           <button
                             onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              setActiveTab('all-chats')
-                              close()
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setActiveTab('all-chats');
+                              close();
                             }}
                             className={`cursor-pointer flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-gray-600 dark:text-gray-300 transition-colors ${
                               focus ? 'bg-gray-100 dark:bg-gray-800/70' : ''
@@ -943,10 +943,10 @@ export default function Sidebar({
                         {({ focus, close }) => (
                           <button
                             onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              setActiveTab('my-chats')
-                              close()
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setActiveTab('my-chats');
+                              close();
                             }}
                             className={`cursor-pointer flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-gray-600 dark:text-gray-300 transition-colors ${
                               focus ? 'bg-gray-100 dark:bg-gray-800/70' : ''
@@ -968,8 +968,8 @@ export default function Sidebar({
               {/* Collapse toggle */}
               <button
                 onClick={(e) => {
-                  e.stopPropagation()
-                  toggle()
+                  e.stopPropagation();
+                  toggle();
                 }}
                 className="flex items-center gap-2 rounded-lg px-3 py-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
                 title={t('BiChat.Sidebar.CollapseSidebar')}
@@ -988,8 +988,8 @@ export default function Sidebar({
             <div className="group/tooltip relative">
               <button
                 onClick={(e) => {
-                  e.stopPropagation()
-                  toggle()
+                  e.stopPropagation();
+                  toggle();
                 }}
                 className="w-10 h-10 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
                 title={t('BiChat.Sidebar.ExpandSidebar')}
@@ -1015,13 +1015,13 @@ export default function Sidebar({
         isDanger={true}
         onConfirm={confirmArchive}
         onCancel={() => {
-          setShowConfirm(false)
-          setSessionToArchive(null)
+          setShowConfirm(false);
+          setSessionToArchive(null);
         }}
       />
 
       {/* Toast notifications */}
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
     </>
-  )
+  );
 }

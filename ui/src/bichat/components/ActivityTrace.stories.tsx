@@ -1,20 +1,20 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { ActivityTrace } from './ActivityTrace'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { ActivityTrace } from './ActivityTrace';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 import {
   makeActivityStep,
   makeActivitySteps,
   makeAgentActivitySteps,
-} from '@sb-helpers/bichatFixtures'
+} from '@sb-helpers/bichatFixtures';
 
 const meta: Meta<typeof ActivityTrace> = {
   title: 'BiChat/Components/ActivityTrace',
   component: ActivityTrace,
   parameters: { layout: 'centered' },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof ActivityTrace>
 
 // ---------------------------------------------------------------------------
@@ -27,7 +27,7 @@ export const Playground: Story = {
       'Let me analyze the revenue data for Q4...\nLooking at the regional breakdown now.',
     activeSteps: makeActivitySteps(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 2. ThinkingOnly — only thinking content, no steps
@@ -39,7 +39,7 @@ export const ThinkingOnly: Story = {
       'Reasoning through the problem step by step. First I need to understand the data schema and then decide on the appropriate aggregation strategy.',
     activeSteps: [],
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 3. StepsOnly — only activity steps, no thinking
@@ -50,7 +50,7 @@ export const StepsOnly: Story = {
     thinkingContent: '',
     activeSteps: makeActivitySteps(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 4. WithSubAgents — nested agent groups via makeAgentActivitySteps
@@ -61,13 +61,13 @@ export const WithSubAgents: Story = {
     thinkingContent: 'Delegating analysis to specialized agents...',
     activeSteps: makeAgentActivitySteps(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 5. AllCompleted — every step is completed with durations
 // ---------------------------------------------------------------------------
 
-const now = Date.now()
+const now = Date.now();
 
 export const AllCompleted: Story = {
   args: {
@@ -113,7 +113,7 @@ export const AllCompleted: Story = {
       }),
     ],
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 6. Stress — ScenarioGrid showing multiple variants at once
@@ -204,4 +204,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

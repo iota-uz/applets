@@ -17,5 +17,5 @@ export default function DateGroupHeader({ groupName, count }: DateGroupHeaderPro
         </span>
       </div>
     </div>
-  )
+  );
 }

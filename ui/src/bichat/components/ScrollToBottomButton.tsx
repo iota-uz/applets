@@ -3,9 +3,9 @@
  * Floating button to scroll chat to bottom, shown when user scrolls up
  */
 
-import { ArrowDown } from '@phosphor-icons/react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useTranslation } from '../hooks/useTranslation'
+import { ArrowDown } from '@phosphor-icons/react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface ScrollToBottomButtonProps {
   show: boolean
@@ -23,7 +23,7 @@ function ScrollToBottomButton({
   disabled = false,
   label,
 }: ScrollToBottomButtonProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   return (
     <AnimatePresence>
       {show && (
@@ -70,8 +70,8 @@ function ScrollToBottomButton({
         </div>
       )}
     </AnimatePresence>
-  )
+  );
 }
 
-export { ScrollToBottomButton }
-export default ScrollToBottomButton
+export { ScrollToBottomButton };
+export default ScrollToBottomButton;

@@ -6,19 +6,19 @@
  */
 
 // Context providers
-export { AppletProvider, useAppletContext } from './context/AppletContext'
-export { ConfigProvider, useConfigContext } from './context/ConfigProvider'
+export { AppletProvider, useAppletContext } from './context/AppletContext';
+export { ConfigProvider, useConfigContext } from './context/ConfigProvider';
 
 // Hooks
-export { useAppletContext as useAppletContextDirect } from './hooks/useAppletContext'
-export { useConfig } from './hooks/useConfig'
-export { useUser } from './hooks/useUser'
-export { usePermissions } from './hooks/usePermissions'
-export { useTranslation } from './hooks/useTranslation'
-export { useSession } from './hooks/useSession'
-export { useRoute } from './hooks/useRoute'
-export { useStreaming } from './hooks/useStreaming'
-export { useAppletRuntime } from './hooks/useAppletRuntime'
+export { useAppletContext as useAppletContextDirect } from './hooks/useAppletContext';
+export { useConfig } from './hooks/useConfig';
+export { useUser } from './hooks/useUser';
+export { usePermissions } from './hooks/usePermissions';
+export { useTranslation } from './hooks/useTranslation';
+export { useSession } from './hooks/useSession';
+export { useRoute } from './hooks/useRoute';
+export { useStreaming } from './hooks/useStreaming';
+export { useAppletRuntime } from './hooks/useAppletRuntime';
 
 // Types
 export type {
@@ -33,4 +33,4 @@ export type {
   PermissionsHook,
   SessionHook,
   StreamingHook
-} from './types'
+} from './types';

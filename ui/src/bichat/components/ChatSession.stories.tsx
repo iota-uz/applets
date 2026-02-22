@@ -1,8 +1,8 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { ChatSession } from './ChatSession'
-import { MockChatDataSource } from '@sb-helpers/mockChatDataSource'
-import { makeSession, turnsShort, turnsLong, makePendingQuestion } from '@sb-helpers/bichatFixtures'
+import { ChatSession } from './ChatSession';
+import { MockChatDataSource } from '@sb-helpers/mockChatDataSource';
+import { makeSession, turnsShort, turnsLong, makePendingQuestion } from '@sb-helpers/bichatFixtures';
 
 const meta: Meta<typeof ChatSession> = {
   title: 'BiChat/Components/ChatSession',
@@ -10,9 +10,9 @@ const meta: Meta<typeof ChatSession> = {
   parameters: {
     layout: 'fullscreen',
   },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof ChatSession>
 
 export const Playground: Story = {
@@ -28,7 +28,7 @@ export const Playground: Story = {
       <ChatSession {...args} />
     </div>
   ),
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -69,4 +69,4 @@ export const Stress: Story = {
       </section>
     </div>
   ),
-}
+};

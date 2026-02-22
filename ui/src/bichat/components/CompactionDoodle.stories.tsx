@@ -1,15 +1,15 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { CompactionDoodle } from './CompactionDoodle'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { CompactionDoodle } from './CompactionDoodle';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof CompactionDoodle> = {
   title: 'BiChat/Components/CompactionDoodle',
   component: CompactionDoodle,
   parameters: { layout: 'centered' },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof CompactionDoodle>
 
 export const Playground: Story = {
@@ -17,7 +17,7 @@ export const Playground: Story = {
     title: 'Compacting conversation',
     subtitle: 'summarising older messages...',
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -50,4 +50,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

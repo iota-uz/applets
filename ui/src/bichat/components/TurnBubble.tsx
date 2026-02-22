@@ -8,12 +8,12 @@
  * For primitive-level control, use Turn from '@iota-uz/sdk/bichat/primitives'
  */
 
-import { type ReactNode } from 'react'
-import type { ConversationTurn } from '../types'
-import { UserTurnView, type UserTurnViewProps } from './UserTurnView'
-import { AssistantTurnView, type AssistantTurnViewProps } from './AssistantTurnView'
-import type { UserMessageSlots, UserMessageClassNames } from './UserMessage'
-import type { AssistantMessageSlots, AssistantMessageClassNames } from './AssistantMessage'
+import { type ReactNode } from 'react';
+import type { ConversationTurn } from '../types';
+import { UserTurnView, type UserTurnViewProps } from './UserTurnView';
+import { AssistantTurnView, type AssistantTurnViewProps } from './AssistantTurnView';
+import type { UserMessageSlots, UserMessageClassNames } from './UserMessage';
+import type { AssistantMessageSlots, AssistantMessageClassNames } from './AssistantMessage';
 
 export interface TurnBubbleClassNames {
   /** Root container */
@@ -55,7 +55,7 @@ const defaultClassNames: Required<TurnBubbleClassNames> = {
   root: 'space-y-4',
   userTurn: '',
   assistantTurn: '',
-}
+};
 
 export function TurnBubble({
   turn,
@@ -75,10 +75,10 @@ export function TurnBubble({
     root: classNames?.root ?? defaultClassNames.root,
     userTurn: classNames?.userTurn ?? defaultClassNames.userTurn,
     assistantTurn: classNames?.assistantTurn ?? defaultClassNames.assistantTurn,
-  }
-  const userContent = typeof turn.userTurn?.content === 'string' ? turn.userTurn.content : ''
+  };
+  const userContent = typeof turn.userTurn?.content === 'string' ? turn.userTurn.content : '';
   const isSystemSummaryTurn =
-    userContent.trim() === '' && turn.assistantTurn?.role === 'system'
+    userContent.trim() === '' && turn.assistantTurn?.role === 'system';
 
   return (
     <div className={classes.root} data-turn-id={turn.id}>
@@ -116,7 +116,7 @@ export function TurnBubble({
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default TurnBubble
+export default TurnBubble;

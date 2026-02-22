@@ -4,11 +4,11 @@
  * Clean, professional design
  */
 
-import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react'
-import { Paperclip, PaperPlaneRight, X, Bug, ArrowUp, ArrowDown, Stack } from '@phosphor-icons/react'
-import AttachmentGrid from './AttachmentGrid'
-import { MessageQueueList } from './MessageQueueList'
-import ImageModal from './ImageModal'
+import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react';
+import { Paperclip, PaperPlaneRight, X, Bug, ArrowUp, ArrowDown, Stack } from '@phosphor-icons/react';
+import AttachmentGrid from './AttachmentGrid';
+import { MessageQueueList } from './MessageQueueList';
+import ImageModal from './ImageModal';
 import {
   ATTACHMENT_ACCEPT_ATTRIBUTE,
   convertToBase64,
@@ -16,10 +16,10 @@ import {
   isImageMimeType,
   validateAttachmentFile,
   validateFileCount,
-} from '../utils/fileUtils'
-import { calculateContextUsagePercent } from '../utils/debugMetrics'
-import type { Attachment, ImageAttachment, DebugLimits, QueuedMessage, SessionDebugUsage } from '../types'
-import { useTranslation } from '../hooks/useTranslation'
+} from '../utils/fileUtils';
+import { calculateContextUsagePercent } from '../utils/debugMetrics';
+import type { Attachment, ImageAttachment, DebugLimits, QueuedMessage, SessionDebugUsage } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
 
 export interface MessageInputRef {
   focus: () => void
@@ -60,24 +60,24 @@ interface DebugStatsPanelProps {
 
 /** Debug stats are English-only (developer-facing) — no i18n. */
 function DebugStatsPanel({ debugSessionUsage, debugLimits }: DebugStatsPanelProps) {
-  const formatTokens = (value: number): string => new Intl.NumberFormat().format(value)
-  const latestPromptTokens = debugSessionUsage?.latestPromptTokens ?? 0
-  const sessionTotalTokens = debugSessionUsage?.totalTokens ?? 0
-  const sessionPromptTokens = debugSessionUsage?.promptTokens ?? 0
-  const sessionCompletionTokens = debugSessionUsage?.completionTokens ?? 0
-  const hasUsage = (debugSessionUsage?.turnsWithUsage ?? 0) > 0
-  const policyMaxTokens = debugLimits?.policyMaxTokens ?? 0
-  const modelMaxTokens = debugLimits?.modelMaxTokens ?? 0
-  const effectiveMaxTokens = debugLimits?.effectiveMaxTokens ?? 0
-  const contextPercentValue = calculateContextUsagePercent(latestPromptTokens, effectiveMaxTokens)
-  const contextPercent = contextPercentValue !== null ? contextPercentValue.toFixed(1) : null
-  const contextPercentNumber = parseFloat(contextPercent || '0')
+  const formatTokens = (value: number): string => new Intl.NumberFormat().format(value);
+  const latestPromptTokens = debugSessionUsage?.latestPromptTokens ?? 0;
+  const sessionTotalTokens = debugSessionUsage?.totalTokens ?? 0;
+  const sessionPromptTokens = debugSessionUsage?.promptTokens ?? 0;
+  const sessionCompletionTokens = debugSessionUsage?.completionTokens ?? 0;
+  const hasUsage = (debugSessionUsage?.turnsWithUsage ?? 0) > 0;
+  const policyMaxTokens = debugLimits?.policyMaxTokens ?? 0;
+  const modelMaxTokens = debugLimits?.modelMaxTokens ?? 0;
+  const effectiveMaxTokens = debugLimits?.effectiveMaxTokens ?? 0;
+  const contextPercentValue = calculateContextUsagePercent(latestPromptTokens, effectiveMaxTokens);
+  const contextPercent = contextPercentValue !== null ? contextPercentValue.toFixed(1) : null;
+  const contextPercentNumber = parseFloat(contextPercent || '0');
   const contextBarColor =
     contextPercentNumber > 75
       ? '#ef4444'
       : contextPercentNumber > 50
       ? '#f59e0b'
-      : '#10b981'
+      : '#10b981';
 
   return (
     <div className="mb-2 space-y-1.5 text-xs">
@@ -171,12 +171,12 @@ function DebugStatsPanel({ debugSessionUsage, debugLimits }: DebugStatsPanelProp
         )}
       </div>
     </div>
-  )
+  );
 }
 
-const MAX_FILES_DEFAULT = 10
-const MAX_FILE_SIZE_DEFAULT = 20 * 1024 * 1024 // 20MB
-const MAX_HEIGHT = 192 // 12 lines approx
+const MAX_FILES_DEFAULT = 10;
+const MAX_FILE_SIZE_DEFAULT = 20 * 1024 * 1024; // 20MB
+const MAX_HEIGHT = 192; // 12 lines approx
 
 export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
   (
@@ -204,29 +204,29 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
     },
     ref
   ) => {
-    const { t } = useTranslation()
-    const [attachments, setAttachments] = useState<Attachment[]>([])
-    const [isDragging, setIsDragging] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-    const [isFocused, setIsFocused] = useState(false)
-    const [commandListDismissed, setCommandListDismissed] = useState(false)
-    const [activeCommandIndex, setActiveCommandIndex] = useState(0)
-    const [isComposing, setIsComposing] = useState(false)
-    const [dropSuccess, setDropSuccess] = useState(false)
-    const [pendingFileCount, setPendingFileCount] = useState(0)
-    const [viewingImageIndex, setViewingImageIndex] = useState<number | null>(null)
+    const { t } = useTranslation();
+    const [attachments, setAttachments] = useState<Attachment[]>([]);
+    const [isDragging, setIsDragging] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [isFocused, setIsFocused] = useState(false);
+    const [commandListDismissed, setCommandListDismissed] = useState(false);
+    const [activeCommandIndex, setActiveCommandIndex] = useState(0);
+    const [isComposing, setIsComposing] = useState(false);
+    const [dropSuccess, setDropSuccess] = useState(false);
+    const [pendingFileCount, setPendingFileCount] = useState(0);
+    const [viewingImageIndex, setViewingImageIndex] = useState<number | null>(null);
 
     // Use override or translation
-    const placeholder = placeholderOverride || t('BiChat.Input.Placeholder')
+    const placeholder = placeholderOverride || t('BiChat.Input.Placeholder');
 
-    const textareaRef = useRef<HTMLTextAreaElement>(null)
-    const fileInputRef = useRef<HTMLInputElement>(null)
-    const containerRef = useRef<HTMLDivElement>(null)
-    const formRef = useRef<HTMLFormElement>(null)
-    const commandItemRefs = useRef<Array<HTMLLIElement | null>>([])
-    const didAutoFocusRef = useRef(false)
-    const isSlashMode = message.trimStart().startsWith('/')
-    const commandQuery = message.trimStart().slice(1).split(/\s+/)[0]?.toLowerCase() || ''
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const formRef = useRef<HTMLFormElement>(null);
+    const commandItemRefs = useRef<Array<HTMLLIElement | null>>([]);
+    const didAutoFocusRef = useRef(false);
+    const isSlashMode = message.trimStart().startsWith('/');
+    const commandQuery = message.trimStart().slice(1).split(/\s+/)[0]?.toLowerCase() || '';
 
     const slashCommands = useMemo(
       () => [
@@ -235,108 +235,108 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
         { name: '/compact', description: t('BiChat.Slash.CompactDescription') },
       ],
       [t]
-    )
+    );
     const filteredCommands = useMemo(
       () =>
         slashCommands.filter((cmd) =>
           cmd.name.slice(1).startsWith(commandQuery)
         ),
       [commandQuery, slashCommands]
-    )
-    const isCommandListVisible = isSlashMode && !commandListDismissed && !loading && !disabled
+    );
+    const isCommandListVisible = isSlashMode && !commandListDismissed && !loading && !disabled;
 
     useEffect(() => {
-      const textarea = textareaRef.current
-      if (!textarea) return
+      const textarea = textareaRef.current;
+      if (!textarea) {return;}
 
-      textarea.style.height = 'auto'
-      const newHeight = Math.min(textarea.scrollHeight, MAX_HEIGHT)
-      textarea.style.height = `${newHeight}px`
-    }, [message])
+      textarea.style.height = 'auto';
+      const newHeight = Math.min(textarea.scrollHeight, MAX_HEIGHT);
+      textarea.style.height = `${newHeight}px`;
+    }, [message]);
 
     useEffect(() => {
-      if (didAutoFocusRef.current || loading || disabled || fetching) return
+      if (didAutoFocusRef.current || loading || disabled || fetching) {return;}
 
       const frame = requestAnimationFrame(() => {
-        textareaRef.current?.focus()
-        didAutoFocusRef.current = true
-      })
+        textareaRef.current?.focus();
+        didAutoFocusRef.current = true;
+      });
 
-      return () => cancelAnimationFrame(frame)
-    }, [loading, disabled, fetching])
+      return () => cancelAnimationFrame(frame);
+    }, [loading, disabled, fetching]);
 
     useEffect(() => {
-      if (!error) return
-      const timer = setTimeout(() => setError(null), 5000)
-      return () => clearTimeout(timer)
-    }, [error])
+      if (!error) {return;}
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }, [error]);
 
     useEffect(() => {
       if (isSlashMode) {
-        setCommandListDismissed(false)
+        setCommandListDismissed(false);
       }
-    }, [isSlashMode, message])
+    }, [isSlashMode, message]);
 
     useEffect(() => {
-      if (!isCommandListVisible) return
+      if (!isCommandListVisible) {return;}
 
       const handleOutsideClick = (event: MouseEvent) => {
-        if (!containerRef.current) return
+        if (!containerRef.current) {return;}
         if (event.target instanceof Node && !containerRef.current.contains(event.target)) {
-          setCommandListDismissed(true)
+          setCommandListDismissed(true);
         }
-      }
+      };
 
-      document.addEventListener('mousedown', handleOutsideClick)
-      return () => document.removeEventListener('mousedown', handleOutsideClick)
-    }, [isCommandListVisible])
+      document.addEventListener('mousedown', handleOutsideClick);
+      return () => document.removeEventListener('mousedown', handleOutsideClick);
+    }, [isCommandListVisible]);
 
     useEffect(() => {
-      setActiveCommandIndex(0)
-    }, [commandQuery])
+      setActiveCommandIndex(0);
+    }, [commandQuery]);
 
     useEffect(() => {
       if (filteredCommands.length === 0) {
-        setActiveCommandIndex(0)
-        return
+        setActiveCommandIndex(0);
+        return;
       }
 
       setActiveCommandIndex((prev) => {
-        if (prev < 0) return 0
-        if (prev >= filteredCommands.length) return filteredCommands.length - 1
-        return prev
-      })
-    }, [filteredCommands.length])
+        if (prev < 0) {return 0;}
+        if (prev >= filteredCommands.length) {return filteredCommands.length - 1;}
+        return prev;
+      });
+    }, [filteredCommands.length]);
 
     useEffect(() => {
-      if (!isCommandListVisible || filteredCommands.length === 0) return
+      if (!isCommandListVisible || filteredCommands.length === 0) {return;}
       commandItemRefs.current[activeCommandIndex]?.scrollIntoView({
         block: 'nearest',
-      })
-    }, [activeCommandIndex, filteredCommands.length, isCommandListVisible])
+      });
+    }, [activeCommandIndex, filteredCommands.length, isCommandListVisible]);
 
     const handleFileSelect = async (files: FileList | File[] | null): Promise<boolean> => {
-      if (!files) return false
-      const selectedFiles = Array.isArray(files) ? files : Array.from(files)
-      if (selectedFiles.length === 0) return false
+      if (!files) {return false;}
+      const selectedFiles = Array.isArray(files) ? files : Array.from(files);
+      if (selectedFiles.length === 0) {return false;}
 
       try {
-        validateFileCount(attachments.length, selectedFiles.length, maxFiles)
+        validateFileCount(attachments.length, selectedFiles.length, maxFiles);
 
         // Extract and validate all files synchronously before any async work.
         // This ensures File objects are captured while the DataTransfer is still valid.
-        const fileArray: File[] = []
+        const fileArray: File[] = [];
         for (let i = 0; i < selectedFiles.length; i++) {
-          const file = selectedFiles[i]
-          validateAttachmentFile(file, maxFileSize)
-          fileArray.push(file)
+          const file = selectedFiles[i];
+          validateAttachmentFile(file, maxFileSize);
+          fileArray.push(file);
         }
 
         // Show shimmer placeholders while processing
-        setPendingFileCount(fileArray.length)
+        setPendingFileCount(fileArray.length);
 
         // Read all files in parallel
-        const base64Results = await Promise.all(fileArray.map(convertToBase64))
+        const base64Results = await Promise.all(fileArray.map(convertToBase64));
 
         const newAttachments: Attachment[] = fileArray.map((file, i) => {
           const attachment: Attachment = {
@@ -345,42 +345,42 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
             mimeType: file.type,
             sizeBytes: file.size,
             base64Data: base64Results[i],
-          }
+          };
           if (isImageMimeType(file.type)) {
-            attachment.preview = createDataUrl(base64Results[i], file.type)
+            attachment.preview = createDataUrl(base64Results[i], file.type);
           }
-          return attachment
-        })
+          return attachment;
+        });
 
-        setAttachments((prev) => [...prev, ...newAttachments])
-        setPendingFileCount(0)
-        setError(null)
-        return true
+        setAttachments((prev) => [...prev, ...newAttachments]);
+        setPendingFileCount(0);
+        setError(null);
+        return true;
       } catch (err) {
-        setPendingFileCount(0)
-        setError(err instanceof Error ? err.message : 'Failed to process attachments')
-        return false
+        setPendingFileCount(0);
+        setError(err instanceof Error ? err.message : 'Failed to process attachments');
+        return false;
       }
-    }
+    };
 
     const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      handleFileSelect(e.target.files)
-      e.target.value = ''
-    }
+      handleFileSelect(e.target.files);
+      e.target.value = '';
+    };
 
     useImperativeHandle(ref, () => ({
       focus: () => textareaRef.current?.focus(),
       clear: () => {
-        onMessageChange('')
-        setAttachments([])
-        setError(null)
+        onMessageChange('');
+        setAttachments([]);
+        setError(null);
       },
-    }))
+    }));
 
     const handleRemoveAttachment = (index: number) => {
-      setAttachments((prev) => prev.filter((_, i) => i !== index))
-      setError(null)
-    }
+      setAttachments((prev) => prev.filter((_, i) => i !== index));
+      setError(null);
+    };
 
     // ── Image lightbox ──────────────────────────────────
     const imageAttachments = useMemo(
@@ -388,179 +388,179 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
         a.mimeType.startsWith('image/') && !!(a.base64Data && a.preview)
       ),
       [attachments]
-    )
+    );
 
     const handleViewAttachment = useCallback((index: number) => {
-      const attachment = attachments[index]
-      if (!attachment || !attachment.mimeType.startsWith('image/')) return
-      const imgIdx = imageAttachments.findIndex((a) => a.filename === attachment.filename && a.preview === attachment.preview)
-      if (imgIdx >= 0) setViewingImageIndex(imgIdx)
-    }, [attachments, imageAttachments])
+      const attachment = attachments[index];
+      if (!attachment || !attachment.mimeType.startsWith('image/')) {return;}
+      const imgIdx = imageAttachments.findIndex((a) => a.filename === attachment.filename && a.preview === attachment.preview);
+      if (imgIdx >= 0) {setViewingImageIndex(imgIdx);}
+    }, [attachments, imageAttachments]);
 
     const handleImageNavigate = useCallback((direction: 'prev' | 'next') => {
       setViewingImageIndex((prev) => {
-        if (prev === null) return null
-        const len = imageAttachments.length
-        if (len <= 0) return null
-        const newIndex = Math.max(0, Math.min(len - 1, prev + (direction === 'prev' ? -1 : 1)))
-        return newIndex
-      })
-    }, [imageAttachments.length])
+        if (prev === null) {return null;}
+        const len = imageAttachments.length;
+        if (len <= 0) {return null;}
+        const newIndex = Math.max(0, Math.min(len - 1, prev + (direction === 'prev' ? -1 : 1)));
+        return newIndex;
+      });
+    }, [imageAttachments.length]);
 
     useEffect(() => {
       setViewingImageIndex((prev) => {
-        if (imageAttachments.length === 0) return null
+        if (imageAttachments.length === 0) {return null;}
         if (prev != null && (prev < 0 || prev >= imageAttachments.length)) {
-          return Math.max(0, Math.min(prev, imageAttachments.length - 1))
+          return Math.max(0, Math.min(prev, imageAttachments.length - 1));
         }
-        return prev
-      })
-    }, [imageAttachments.length])
+        return prev;
+      });
+    }, [imageAttachments.length]);
 
     // ── Paste-to-attach ─────────────────────────────────
     const handlePaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-      const items = Array.from(e.clipboardData.items)
+      const items = Array.from(e.clipboardData.items);
       const imageFiles = items
         .filter((item) => item.kind === 'file' && item.type.startsWith('image/'))
         .map((item) => item.getAsFile())
-        .filter((file): file is File => file !== null)
+        .filter((file): file is File => file !== null);
 
       if (imageFiles.length > 0) {
-        e.preventDefault()
-        handleFileSelect(imageFiles)
+        e.preventDefault();
+        handleFileSelect(imageFiles);
       }
-    }, [attachments.length, maxFiles, maxFileSize]) // eslint-disable-line react-hooks/exhaustive-deps
+    }, [attachments.length, maxFiles, maxFileSize]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleDragOver = (e: React.DragEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      setIsDragging(true)
-    }
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(true);
+    };
 
     const handleDragLeave = (e: React.DragEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      setIsDragging(false)
-    }
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+    };
 
     const handleDrop = async (e: React.DragEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      setIsDragging(false)
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
       const itemFiles = Array.from(e.dataTransfer.items || [])
         .filter((item) => item.kind === 'file')
         .map((item) => item.getAsFile())
-        .filter((file): file is File => file !== null)
-      const droppedFiles = itemFiles.length > 0 ? itemFiles : Array.from(e.dataTransfer.files || [])
-      const ok = await handleFileSelect(droppedFiles)
+        .filter((file): file is File => file !== null);
+      const droppedFiles = itemFiles.length > 0 ? itemFiles : Array.from(e.dataTransfer.files || []);
+      const ok = await handleFileSelect(droppedFiles);
       if (ok) {
-        setDropSuccess(true)
-        setTimeout(() => setDropSuccess(false), 1500)
+        setDropSuccess(true);
+        setTimeout(() => setDropSuccess(false), 1500);
       }
-    }
+    };
 
     const submitCommandSelection = (command: string) => {
-      onMessageChange(command)
-      setCommandListDismissed(true)
-      setActiveCommandIndex(0)
+      onMessageChange(command);
+      setCommandListDismissed(true);
+      setActiveCommandIndex(0);
       requestAnimationFrame(() => {
-        formRef.current?.requestSubmit()
-      })
-    }
+        formRef.current?.requestSubmit();
+      });
+    };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (isComposing || e.nativeEvent.isComposing) {
-        return
+        return;
       }
 
       if (isCommandListVisible) {
         if (e.key === 'Tab') {
-          e.preventDefault()
+          e.preventDefault();
           if (filteredCommands.length > 0) {
-            onMessageChange(filteredCommands[activeCommandIndex].name)
-            setCommandListDismissed(true)
+            onMessageChange(filteredCommands[activeCommandIndex].name);
+            setCommandListDismissed(true);
           }
-          return
+          return;
         }
 
         if (e.key === 'ArrowDown') {
-          e.preventDefault()
+          e.preventDefault();
           if (filteredCommands.length > 0) {
-            setActiveCommandIndex((prev) => (prev + 1) % filteredCommands.length)
+            setActiveCommandIndex((prev) => (prev + 1) % filteredCommands.length);
           }
-          return
+          return;
         }
 
         if (e.key === 'ArrowUp') {
-          e.preventDefault()
+          e.preventDefault();
           if (filteredCommands.length > 0) {
             setActiveCommandIndex((prev) =>
               prev === 0 ? filteredCommands.length - 1 : prev - 1
-            )
+            );
           }
-          return
+          return;
         }
 
         if (e.key === 'Escape') {
-          e.preventDefault()
-          setCommandListDismissed(true)
-          return
+          e.preventDefault();
+          setCommandListDismissed(true);
+          return;
         }
 
         if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault()
+          e.preventDefault();
           if (filteredCommands.length > 0) {
-            submitCommandSelection(filteredCommands[activeCommandIndex].name)
-            return
+            submitCommandSelection(filteredCommands[activeCommandIndex].name);
+            return;
           }
-          handleFormSubmit(e as unknown as React.FormEvent)
-          return
+          handleFormSubmit(e as unknown as React.FormEvent);
+          return;
         }
       }
 
       if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault()
+        e.preventDefault();
         if (message.trim() || attachments.length > 0) {
-          handleFormSubmit(e as unknown as React.FormEvent)
+          handleFormSubmit(e as unknown as React.FormEvent);
         }
       }
 
       if (e.key === 'Escape') {
         if (isDragging) {
-          setIsDragging(false)
+          setIsDragging(false);
         } else if (isSlashMode) {
-          setCommandListDismissed(true)
+          setCommandListDismissed(true);
         } else {
-          textareaRef.current?.blur()
+          textareaRef.current?.blur();
         }
       }
 
       if (e.key === 'ArrowUp' && !message.trim() && onUnqueue) {
-        const unqueued = onUnqueue()
+        const unqueued = onUnqueue();
         if (unqueued) {
-          onMessageChange(unqueued.content)
-          setAttachments(unqueued.attachments)
+          onMessageChange(unqueued.content);
+          setAttachments(unqueued.attachments);
         }
       }
-    }
+    };
 
     const handleFormSubmit = (e: React.FormEvent) => {
-      e.preventDefault()
-      if (isComposing) return
+      e.preventDefault();
+      if (isComposing) {return;}
       if (disabled || (!message.trim() && attachments.length === 0)) {
-        return
+        return;
       }
 
-      setCommandListDismissed(true)
-      onSubmit(e, attachments)
-      setAttachments([])
-      setError(null)
-    }
+      setCommandListDismissed(true);
+      onSubmit(e, attachments);
+      setAttachments([]);
+      setError(null);
+    };
 
-    const canSubmit = !disabled && (message.trim() || attachments.length > 0)
-    const visibleError = error || commandError
-    const visibleErrorText = visibleError ? t(visibleError) : ''
-    const defaultContainerClassName = "shrink-0 px-4 pt-4 pb-6"
+    const canSubmit = !disabled && (message.trim() || attachments.length > 0);
+    const visibleError = error || commandError;
+    const visibleErrorText = visibleError ? t(visibleError) : '';
+    const defaultContainerClassName = "shrink-0 px-4 pt-4 pb-6";
 
     return (
       <div
@@ -578,8 +578,8 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
               <button
                 type="button"
                 onClick={() => {
-                  setError(null)
-                  onClearCommandError?.()
+                  setError(null);
+                  onClearCommandError?.();
                 }}
                 className="cursor-pointer flex-shrink-0 p-0.5 text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-md transition-colors"
                 aria-label={t('BiChat.Input.DismissError')}
@@ -684,8 +684,8 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                   ref={textareaRef}
                   value={message}
                   onChange={(e) => {
-                    onMessageChange(e.target.value)
-                    onClearCommandError?.()
+                    onMessageChange(e.target.value);
+                    onClearCommandError?.();
                   }}
                   onKeyDown={handleKeyDown}
                   onPaste={handlePaste}
@@ -693,10 +693,10 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                   onCompositionEnd={() => setIsComposing(false)}
                   onFocus={() => setIsFocused(true)}
                   onBlur={(e) => {
-                    setIsFocused(false)
-                    if (!containerRef.current) return
+                    setIsFocused(false);
+                    if (!containerRef.current) {return;}
                     if (!e.relatedTarget || !containerRef.current.contains(e.relatedTarget)) {
-                      setCommandListDismissed(true)
+                      setCommandListDismissed(true);
                     }
                   }}
                   placeholder={placeholder}
@@ -736,19 +736,19 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                 {filteredCommands.length > 0 ? (
                   <ul role="listbox" aria-label={t('BiChat.Slash.CommandsList')} className="py-1 px-1">
                     {filteredCommands.map((command, index) => {
-                      const isActive = index === activeCommandIndex
+                      const isActive = index === activeCommandIndex;
                       return (
                         <li
                           key={command.name}
                           role="option"
                           aria-selected={isActive}
                           ref={(node) => {
-                            commandItemRefs.current[index] = node
+                            commandItemRefs.current[index] = node;
                           }}
                           onMouseEnter={() => setActiveCommandIndex(index)}
                           onMouseDown={(e) => {
-                            e.preventDefault()
-                            submitCommandSelection(command.name)
+                            e.preventDefault();
+                            submitCommandSelection(command.name);
                           }}
                           className={`cursor-pointer flex items-baseline gap-2 rounded-md px-2 py-1.5 transition-colors duration-75 ${
                             isActive
@@ -763,7 +763,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                             {command.description}
                           </span>
                         </li>
-                      )
+                      );
                     })}
                   </ul>
                 ) : (
@@ -792,8 +792,8 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
           )}
         </form>
       </div>
-    )
+    );
   }
-)
+);
 
-MessageInput.displayName = 'MessageInput'
+MessageInput.displayName = 'MessageInput';

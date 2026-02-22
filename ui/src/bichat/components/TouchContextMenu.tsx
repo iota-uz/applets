@@ -32,7 +32,7 @@ export const TouchContextMenu: FC<TouchContextMenuProps> = ({
 
   const enabledIndices = useMemo(
     () => items.reduce<number[]>((acc, item, i) => {
-      if (!item.disabled) acc.push(i);
+      if (!item.disabled) {acc.push(i);}
       return acc;
     }, []),
     [items]
@@ -61,7 +61,7 @@ export const TouchContextMenu: FC<TouchContextMenuProps> = ({
 
   // Keyboard navigation
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {return;}
 
     const handleKeyDown = (e: KeyboardEvent) => {
       const currentEnabledPos = enabledIndices.indexOf(focusedIndex);
@@ -89,11 +89,11 @@ export const TouchContextMenu: FC<TouchContextMenuProps> = ({
         }
         case 'Home':
           e.preventDefault();
-          if (enabledIndices.length > 0) focusItem(enabledIndices[0]);
+          if (enabledIndices.length > 0) {focusItem(enabledIndices[0]);}
           break;
         case 'End':
           e.preventDefault();
-          if (enabledIndices.length > 0) focusItem(enabledIndices[enabledIndices.length - 1]);
+          if (enabledIndices.length > 0) {focusItem(enabledIndices[enabledIndices.length - 1]);}
           break;
       }
     };
@@ -102,7 +102,7 @@ export const TouchContextMenu: FC<TouchContextMenuProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose, focusedIndex, enabledIndices, focusItem]);
 
-  if (!isOpen || !anchorRect) return null;
+  if (!isOpen || !anchorRect) {return null;}
 
   const viewportHeight = window.innerHeight;
   const menuEstimatedHeight = items.length * 44 + 16;

@@ -3,10 +3,10 @@
  * Consumes server-side context from window.__APPLET_CONTEXT__ or accepts it as a prop.
  */
 
-import { createContext, useContext, ReactNode } from 'react'
-import type { IotaContext as IotaContextType } from '../types/iota'
+import { createContext, useContext, ReactNode } from 'react';
+import type { IotaContext as IotaContextType } from '../types/iota';
 
-const IotaContext = createContext<IotaContextType | null>(null)
+const IotaContext = createContext<IotaContextType | null>(null);
 
 interface IotaContextProviderProps {
   /**
@@ -19,34 +19,34 @@ interface IotaContextProviderProps {
 
 export function IotaContextProvider({ context, children }: IotaContextProviderProps) {
   // Prefer explicit prop; fall back to window global
-  const resolved = context ?? (typeof window !== 'undefined' ? window.__APPLET_CONTEXT__ : undefined)
+  const resolved = context ?? (typeof window !== 'undefined' ? window.__APPLET_CONTEXT__ : undefined);
 
   if (!resolved) {
-    throw new Error('APPLET_CONTEXT not found. Pass a `context` prop or ensure the server injected context into window.__APPLET_CONTEXT__.')
+    throw new Error('APPLET_CONTEXT not found. Pass a `context` prop or ensure the server injected context into window.__APPLET_CONTEXT__.');
   }
 
   return (
     <IotaContext.Provider value={resolved}>
       {children}
     </IotaContext.Provider>
-  )
+  );
 }
 
 export function useIotaContext(): IotaContextType {
-  const context = useContext(IotaContext)
+  const context = useContext(IotaContext);
   if (!context) {
-    throw new Error('useIotaContext must be used within IotaContextProvider')
+    throw new Error('useIotaContext must be used within IotaContextProvider');
   }
-  return context
+  return context;
 }
 
 /**
  * Check if user has a specific permission
  */
 export function hasPermission(permission: string): boolean {
-  const context = typeof window !== 'undefined' ? window.__APPLET_CONTEXT__ : undefined
+  const context = typeof window !== 'undefined' ? window.__APPLET_CONTEXT__ : undefined;
   if (!context) {
-    return false
+    return false;
   }
-  return context.user.permissions.includes(permission)
+  return context.user.permissions.includes(permission);
 }

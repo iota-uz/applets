@@ -6,7 +6,7 @@
  * compatibility but will be removed in a future major version.
  */
 
-import { createContext, useContext, ReactNode } from 'react'
+import { createContext, useContext, ReactNode } from 'react';
 
 /** @deprecated Use `IotaContextProvider` with its `context` prop instead. */
 export interface BiChatConfig {
@@ -32,7 +32,7 @@ export interface BiChatConfig {
   csrfToken?: string
 }
 
-const ConfigContext = createContext<BiChatConfig | null>(null)
+const ConfigContext = createContext<BiChatConfig | null>(null);
 
 interface ConfigProviderProps {
   config?: BiChatConfig
@@ -50,10 +50,10 @@ interface ConfigProviderProps {
  * @param children - React children
  */
 export function ConfigProvider({ config, useGlobalConfig = false, children }: ConfigProviderProps) {
-  let resolvedConfig: BiChatConfig | null = null
+  let resolvedConfig: BiChatConfig | null = null;
 
   if (config) {
-    resolvedConfig = config
+    resolvedConfig = config;
   } else if (useGlobalConfig && typeof window !== 'undefined') {
     interface GlobalAppletContext {
       user?: { id?: string; email?: string; firstName?: string; lastName?: string; permissions?: string[] }
@@ -61,9 +61,9 @@ export function ConfigProvider({ config, useGlobalConfig = false, children }: Co
       locale?: { language?: string; translations?: Record<string, string> }
       config?: { rpcUIEndpoint?: string; streamEndpoint?: string }
     }
-    const w = window as unknown as Record<string, unknown>
-    const globalContext = w.__APPLET_CONTEXT__ as GlobalAppletContext | undefined
-    const globalCSRF = w.__CSRF_TOKEN__ as string | undefined
+    const w = window as unknown as Record<string, unknown>;
+    const globalContext = w.__APPLET_CONTEXT__ as GlobalAppletContext | undefined;
+    const globalCSRF = w.__CSRF_TOKEN__ as string | undefined;
 
     if (globalContext) {
       resolvedConfig = {
@@ -87,7 +87,7 @@ export function ConfigProvider({ config, useGlobalConfig = false, children }: Co
           stream: globalContext.config?.streamEndpoint || '/stream',
         },
         csrfToken: globalCSRF,
-      }
+      };
     }
   }
 
@@ -95,7 +95,7 @@ export function ConfigProvider({ config, useGlobalConfig = false, children }: Co
     <ConfigContext.Provider value={resolvedConfig}>
       {children}
     </ConfigContext.Provider>
-  )
+  );
 }
 
 /**
@@ -103,7 +103,7 @@ export function ConfigProvider({ config, useGlobalConfig = false, children }: Co
  * Returns null if no configuration is available
  */
 export function useConfig(): BiChatConfig | null {
-  return useContext(ConfigContext)
+  return useContext(ConfigContext);
 }
 
 /**
@@ -111,14 +111,14 @@ export function useConfig(): BiChatConfig | null {
  * Throws an error if configuration is not available
  */
 export function useRequiredConfig(): BiChatConfig {
-  const config = useContext(ConfigContext)
+  const config = useContext(ConfigContext);
   if (!config) {
     throw new Error(
       'BiChat configuration not found. ' +
       'Wrap your app with <ConfigProvider config={...}> or use useGlobalConfig={true}.'
-    )
+    );
   }
-  return config
+  return config;
 }
 
 /**
@@ -126,7 +126,7 @@ export function useRequiredConfig(): BiChatConfig {
  */
 export function hasPermission(config: BiChatConfig | null, permission: string): boolean {
   if (!config) {
-    return false
+    return false;
   }
-  return config.user.permissions.includes(permission)
+  return config.user.permissions.includes(permission);
 }

@@ -19,8 +19,8 @@ import type {
   DebugLimits,
   SendMessageOptions,
   QuestionAnswers,
-} from '../types'
-import type { RateLimiter } from '../utils/RateLimiter'
+} from '../types';
+import type { RateLimiter } from '../utils/RateLimiter';
 
 // ---------------------------------------------------------------------------
 // Machine configuration

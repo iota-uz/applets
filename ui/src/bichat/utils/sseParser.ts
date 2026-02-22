@@ -2,7 +2,7 @@
  * SSE stream parser for consuming Server-Sent Events.
  */
 
-import type { StreamChunk, StreamEvent } from '../types'
+import type { StreamChunk, StreamEvent } from '../types';
 
 export interface SSEEvent {
   type: string
@@ -21,22 +21,22 @@ export interface SSEEvent {
  */
 function* processDataLines(lines: string[]): Generator<SSEEvent, void, unknown> {
   for (const line of lines) {
-    if (line.startsWith(':')) continue
+    if (line.startsWith(':')) {continue;}
 
     if (line.startsWith('data: ')) {
-      const jsonStr = line.slice(6)
-      if (jsonStr === '[DONE]') continue
+      const jsonStr = line.slice(6);
+      if (jsonStr === '[DONE]') {continue;}
 
       try {
-        const parsed = JSON.parse(jsonStr) as SSEEvent
-        yield parsed
+        const parsed = JSON.parse(jsonStr) as SSEEvent;
+        yield parsed;
       } catch (err) {
-        console.error('SSE parse error:', err, 'Data:', jsonStr)
+        console.error('SSE parse error:', err, 'Data:', jsonStr);
         // Yield error event so consumer can react appropriately
         yield {
           type: 'error',
           error: 'Failed to parse SSE event',
-        }
+        };
       }
     }
   }
@@ -48,37 +48,37 @@ function* processDataLines(lines: string[]): Generator<SSEEvent, void, unknown> 
 export async function* parseSSEStream(
   reader: ReadableStreamDefaultReader<Uint8Array>
 ): AsyncGenerator<SSEEvent, void, unknown> {
-  const decoder = new TextDecoder()
-  let buffer = ''
+  const decoder = new TextDecoder();
+  let buffer = '';
 
   try {
     while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
+      const { done, value } = await reader.read();
+      if (done) {break;}
 
-      buffer += decoder.decode(value, { stream: true })
-      const events = buffer.split('\n\n')
-      buffer = events.pop() || ''
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split('\n\n');
+      buffer = events.pop() || '';
 
       for (const event of events) {
-        if (!event.trim()) continue
-        yield* processDataLines(event.split('\n'))
+        if (!event.trim()) {continue;}
+        yield* processDataLines(event.split('\n'));
       }
     }
 
     // Process any remaining data in buffer
     if (buffer.trim()) {
-      yield* processDataLines(buffer.split('\n'))
+      yield* processDataLines(buffer.split('\n'));
     }
   } finally {
-    reader.releaseLock()
+    reader.releaseLock();
   }
 }
 
 /**
  * Terminal event types that signal end of stream.
  */
-const TERMINAL_TYPES = new Set(['done', 'error'])
+const TERMINAL_TYPES = new Set(['done', 'error']);
 
 /**
  * Parses BiChat SSE stream with normalization and terminal event guarantee.
@@ -90,29 +90,29 @@ const TERMINAL_TYPES = new Set(['done', 'error'])
 export async function* parseBichatStream(
   reader: ReadableStreamDefaultReader<Uint8Array>
 ): AsyncGenerator<StreamChunk, void, unknown> {
-  let yieldedTerminal = false
+  let yieldedTerminal = false;
 
   for await (const event of parseSSEStream(reader)) {
-    const parsed = event as StreamChunk
+    const parsed = event as StreamChunk;
 
     // Infer type if missing
-    const inferredType = parsed.type || (parsed.content ? 'content' : 'error')
+    const inferredType = parsed.type || (parsed.content ? 'content' : 'error');
 
     const normalized: StreamChunk = {
       ...parsed,
       type: inferredType,
-    }
+    };
 
     if (TERMINAL_TYPES.has(inferredType)) {
-      yieldedTerminal = true
+      yieldedTerminal = true;
     }
 
-    yield normalized
+    yield normalized;
   }
 
   // Guarantee: always emit a terminal event
   if (!yieldedTerminal) {
-    yield { type: 'done' }
+    yield { type: 'done' };
   }
 }
 
@@ -126,8 +126,8 @@ export async function* parseBichatStreamEvents(
   reader: ReadableStreamDefaultReader<Uint8Array>
 ): AsyncGenerator<StreamEvent, void, unknown> {
   for await (const chunk of parseBichatStream(reader)) {
-    const event = toStreamEvent(chunk)
-    if (event) yield event
+    const event = toStreamEvent(chunk);
+    if (event) {yield event;}
   }
 }
 
@@ -139,26 +139,26 @@ function toStreamEvent(chunk: StreamChunk): StreamEvent | null {
   switch (chunk.type) {
     case 'chunk':
     case 'content':
-      return { type: 'content', content: chunk.content ?? '' }
+      return { type: 'content', content: chunk.content ?? '' };
     case 'thinking':
-      return { type: 'thinking', content: chunk.content ?? '' }
+      return { type: 'thinking', content: chunk.content ?? '' };
     case 'tool_start':
-      return chunk.tool ? { type: 'tool_start', tool: chunk.tool } : null
+      return chunk.tool ? { type: 'tool_start', tool: chunk.tool } : null;
     case 'tool_end':
-      return chunk.tool ? { type: 'tool_end', tool: chunk.tool } : null
+      return chunk.tool ? { type: 'tool_end', tool: chunk.tool } : null;
     case 'usage':
-      return chunk.usage ? { type: 'usage', usage: chunk.usage } : null
+      return chunk.usage ? { type: 'usage', usage: chunk.usage } : null;
     case 'user_message':
-      return chunk.sessionId ? { type: 'user_message', sessionId: chunk.sessionId } : null
+      return chunk.sessionId ? { type: 'user_message', sessionId: chunk.sessionId } : null;
     case 'interrupt':
       return chunk.interrupt
         ? { type: 'interrupt', interrupt: chunk.interrupt, sessionId: chunk.sessionId }
-        : null
+        : null;
     case 'done':
-      return { type: 'done', sessionId: chunk.sessionId, generationMs: chunk.generationMs }
+      return { type: 'done', sessionId: chunk.sessionId, generationMs: chunk.generationMs };
     case 'error':
-      return { type: 'error', error: chunk.error ?? 'Unknown error' }
+      return { type: 'error', error: chunk.error ?? 'Unknown error' };
     default:
-      return null
+      return null;
   }
 }

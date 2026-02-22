@@ -12,8 +12,8 @@
  *   - mappers.ts          — RPC-to-domain type mapping and sanitization
  */
 
-import { createAppletRPCClient } from '../../applet-host'
-import type { BichatRPC } from './rpc.generated'
+import { createAppletRPCClient } from '../../applet-host';
+import type { BichatRPC } from './rpc.generated';
 import type {
   ChatDataSource,
   Session,
@@ -24,13 +24,13 @@ import type {
   StreamStatus,
   QuestionAnswers,
   SendMessageOptions,
-} from '../types'
+} from '../types';
 
-import * as Sessions from './SessionManager'
-import type { SessionState } from './SessionManager'
-import * as Messages from './MessageTransport'
-import * as Artifacts from './ArtifactManager'
-import { uploadFile } from './AttachmentUploader'
+import * as Sessions from './SessionManager';
+import type { SessionState } from './SessionManager';
+import * as Messages from './MessageTransport';
+import * as Artifacts from './ArtifactManager';
+import { uploadFile } from './AttachmentUploader';
 
 export interface HttpDataSourceConfig {
   baseUrl: string
@@ -49,9 +49,9 @@ export interface HttpDataSourceConfig {
 }
 
 export class HttpDataSource implements ChatDataSource {
-  private config: HttpDataSourceConfig
-  private abortController: AbortController | null = null
-  private rpc: ReturnType<typeof createAppletRPCClient>
+  private config: HttpDataSourceConfig;
+  private abortController: AbortController | null = null;
+  private rpc: ReturnType<typeof createAppletRPCClient>;
 
   constructor(config: HttpDataSourceConfig) {
     this.config = {
@@ -59,14 +59,14 @@ export class HttpDataSource implements ChatDataSource {
       uploadEndpoint: '/api/uploads',
       timeout: 120000,
       ...config,
-    }
+    };
     if (config.navigateToSession) {
-      this.navigateToSession = config.navigateToSession
+      this.navigateToSession = config.navigateToSession;
     }
     this.rpc = createAppletRPCClient({
       endpoint: `${this.config.baseUrl}${this.config.rpcEndpoint}`,
       timeoutMs: this.config.timeout,
-    })
+    });
   }
 
   // -------------------------------------------------------------------------
@@ -74,10 +74,10 @@ export class HttpDataSource implements ChatDataSource {
   // -------------------------------------------------------------------------
 
   private getCSRFToken(): string {
-    if (!this.config.csrfToken) return ''
+    if (!this.config.csrfToken) {return '';}
     return typeof this.config.csrfToken === 'function'
       ? this.config.csrfToken()
-      : this.config.csrfToken
+      : this.config.csrfToken;
   }
 
   private createHeaders(additionalHeaders?: Record<string, string>): Headers {
@@ -85,36 +85,36 @@ export class HttpDataSource implements ChatDataSource {
       'Content-Type': 'application/json',
       ...this.config.headers,
       ...additionalHeaders,
-    })
-    const csrfToken = this.getCSRFToken()
-    if (csrfToken) headers.set('X-CSRF-Token', csrfToken)
-    return headers
+    });
+    const csrfToken = this.getCSRFToken();
+    if (csrfToken) {headers.set('X-CSRF-Token', csrfToken);}
+    return headers;
   }
 
   private createUploadHeaders(additionalHeaders?: Record<string, string>): Headers {
     const headers = new Headers({
       ...this.config.headers,
       ...additionalHeaders,
-    })
-    const csrfToken = this.getCSRFToken()
-    if (csrfToken) headers.set('X-CSRF-Token', csrfToken)
-    headers.delete('Content-Type')
-    return headers
+    });
+    const csrfToken = this.getCSRFToken();
+    if (csrfToken) {headers.set('X-CSRF-Token', csrfToken);}
+    headers.delete('Content-Type');
+    return headers;
   }
 
   private callRPC<TMethod extends keyof BichatRPC & string>(
     method: TMethod,
     params: BichatRPC[TMethod]['params']
   ): Promise<BichatRPC[TMethod]['result']> {
-    return this.rpc.callTyped<BichatRPC, TMethod>(method, params)
+    return this.rpc.callTyped<BichatRPC, TMethod>(method, params);
   }
 
   private boundCallRPC = <TMethod extends keyof BichatRPC & string>(
     method: TMethod,
     params: BichatRPC[TMethod]['params']
   ): Promise<BichatRPC[TMethod]['result']> => {
-    return this.callRPC(method, params)
-  }
+    return this.callRPC(method, params);
+  };
 
   private boundUploadFile = (file: File) => {
     return uploadFile(
@@ -122,15 +122,15 @@ export class HttpDataSource implements ChatDataSource {
       this.config.baseUrl,
       this.config.uploadEndpoint!,
       () => this.createUploadHeaders(),
-    )
-  }
+    );
+  };
 
   // -------------------------------------------------------------------------
   // Session management (delegates to SessionManager)
   // -------------------------------------------------------------------------
 
   async createSession(): Promise<Session> {
-    return Sessions.createSession(this.boundCallRPC)
+    return Sessions.createSession(this.boundCallRPC);
   }
 
   async fetchSession(id: string): Promise<SessionState | null> {
@@ -138,7 +138,7 @@ export class HttpDataSource implements ChatDataSource {
       id,
       this.boundCallRPC,
       (sessionId, options) => this.fetchSessionArtifacts(sessionId, options),
-    )
+    );
   }
 
   async listSessions(options?: {
@@ -146,35 +146,35 @@ export class HttpDataSource implements ChatDataSource {
     offset?: number
     includeArchived?: boolean
   }): Promise<SessionListResult> {
-    return Sessions.listSessions(this.boundCallRPC, options)
+    return Sessions.listSessions(this.boundCallRPC, options);
   }
 
   async archiveSession(sessionId: string): Promise<Session> {
-    return Sessions.archiveSession(this.boundCallRPC, sessionId)
+    return Sessions.archiveSession(this.boundCallRPC, sessionId);
   }
 
   async unarchiveSession(sessionId: string): Promise<Session> {
-    return Sessions.unarchiveSession(this.boundCallRPC, sessionId)
+    return Sessions.unarchiveSession(this.boundCallRPC, sessionId);
   }
 
   async pinSession(sessionId: string): Promise<Session> {
-    return Sessions.pinSession(this.boundCallRPC, sessionId)
+    return Sessions.pinSession(this.boundCallRPC, sessionId);
   }
 
   async unpinSession(sessionId: string): Promise<Session> {
-    return Sessions.unpinSession(this.boundCallRPC, sessionId)
+    return Sessions.unpinSession(this.boundCallRPC, sessionId);
   }
 
   async deleteSession(sessionId: string): Promise<void> {
-    return Sessions.deleteSession(this.boundCallRPC, sessionId)
+    return Sessions.deleteSession(this.boundCallRPC, sessionId);
   }
 
   async renameSession(sessionId: string, title: string): Promise<Session> {
-    return Sessions.renameSession(this.boundCallRPC, sessionId, title)
+    return Sessions.renameSession(this.boundCallRPC, sessionId, title);
   }
 
   async regenerateSessionTitle(sessionId: string): Promise<Session> {
-    return Sessions.regenerateSessionTitle(this.boundCallRPC, sessionId)
+    return Sessions.regenerateSessionTitle(this.boundCallRPC, sessionId);
   }
 
   async clearSessionHistory(sessionId: string): Promise<{
@@ -182,7 +182,7 @@ export class HttpDataSource implements ChatDataSource {
     deletedMessages: number
     deletedArtifacts: number
   }> {
-    return Sessions.clearSessionHistory(this.boundCallRPC, sessionId)
+    return Sessions.clearSessionHistory(this.boundCallRPC, sessionId);
   }
 
   async compactSessionHistory(sessionId: string): Promise<{
@@ -191,7 +191,7 @@ export class HttpDataSource implements ChatDataSource {
     deletedMessages: number
     deletedArtifacts: number
   }> {
-    return Sessions.compactSessionHistory(this.boundCallRPC, sessionId)
+    return Sessions.compactSessionHistory(this.boundCallRPC, sessionId);
   }
 
   // -------------------------------------------------------------------------
@@ -199,7 +199,7 @@ export class HttpDataSource implements ChatDataSource {
   // -------------------------------------------------------------------------
 
   async stopGeneration(sessionId: string): Promise<void> {
-    this.cancelStream()
+    this.cancelStream();
     await Messages.stopStream(
       {
         baseUrl: this.config.baseUrl,
@@ -207,7 +207,7 @@ export class HttpDataSource implements ChatDataSource {
         createHeaders: (h) => this.createHeaders(h),
       },
       sessionId
-    )
+    );
   }
 
   async getStreamStatus(sessionId: string): Promise<StreamStatus | null> {
@@ -218,7 +218,7 @@ export class HttpDataSource implements ChatDataSource {
         createHeaders: (h) => this.createHeaders(h),
       },
       sessionId
-    )
+    );
   }
 
   async resumeStream(
@@ -238,7 +238,7 @@ export class HttpDataSource implements ChatDataSource {
       runId,
       onChunk,
       signal
-    )
+    );
   }
 
   async *sendMessage(
@@ -248,17 +248,17 @@ export class HttpDataSource implements ChatDataSource {
     signal?: AbortSignal,
     options?: SendMessageOptions
   ): AsyncGenerator<StreamChunk> {
-    this.abortController = new AbortController()
+    this.abortController = new AbortController();
 
     // Link external signal to our internal controller
-    let onExternalAbort: (() => void) | undefined
+    let onExternalAbort: (() => void) | undefined;
     if (signal) {
-      onExternalAbort = () => { this.abortController?.abort() }
-      signal.addEventListener('abort', onExternalAbort)
+      onExternalAbort = () => { this.abortController?.abort(); };
+      signal.addEventListener('abort', onExternalAbort);
     }
 
     try {
-      const innerSignal = this.abortController.signal
+      const innerSignal = this.abortController.signal;
       yield* Messages.sendMessage(
         {
           callRPC: this.boundCallRPC,
@@ -276,19 +276,19 @@ export class HttpDataSource implements ChatDataSource {
         attachments,
         innerSignal,
         options
-      )
+      );
     } finally {
       if (signal && onExternalAbort) {
-        signal.removeEventListener('abort', onExternalAbort)
+        signal.removeEventListener('abort', onExternalAbort);
       }
-      this.abortController = null
+      this.abortController = null;
     }
   }
 
   cancelStream(): void {
     if (this.abortController) {
-      this.abortController.abort()
-      this.abortController = null
+      this.abortController.abort();
+      this.abortController = null;
     }
   }
 
@@ -297,11 +297,11 @@ export class HttpDataSource implements ChatDataSource {
     questionId: string,
     answers: QuestionAnswers
   ): Promise<{ success: boolean; error?: string }> {
-    return Messages.submitQuestionAnswers(this.boundCallRPC, sessionId, questionId, answers)
+    return Messages.submitQuestionAnswers(this.boundCallRPC, sessionId, questionId, answers);
   }
 
   async rejectPendingQuestion(sessionId: string): Promise<{ success: boolean; error?: string }> {
-    return Messages.rejectPendingQuestion(this.boundCallRPC, sessionId)
+    return Messages.rejectPendingQuestion(this.boundCallRPC, sessionId);
   }
 
   // -------------------------------------------------------------------------
@@ -312,7 +312,7 @@ export class HttpDataSource implements ChatDataSource {
     sessionId: string,
     options?: { limit?: number; offset?: number }
   ): Promise<{ artifacts: SessionArtifact[]; hasMore?: boolean; nextOffset?: number }> {
-    return Artifacts.fetchSessionArtifacts(this.boundCallRPC, sessionId, options)
+    return Artifacts.fetchSessionArtifacts(this.boundCallRPC, sessionId, options);
   }
 
   async uploadSessionArtifacts(
@@ -324,7 +324,7 @@ export class HttpDataSource implements ChatDataSource {
       sessionId,
       files,
       this.boundUploadFile,
-    )
+    );
   }
 
   async renameSessionArtifact(
@@ -332,11 +332,11 @@ export class HttpDataSource implements ChatDataSource {
     name: string,
     description: string = ''
   ): Promise<SessionArtifact> {
-    return Artifacts.renameSessionArtifact(this.boundCallRPC, artifactId, name, description)
+    return Artifacts.renameSessionArtifact(this.boundCallRPC, artifactId, name, description);
   }
 
   async deleteSessionArtifact(artifactId: string): Promise<void> {
-    return Artifacts.deleteSessionArtifact(this.boundCallRPC, artifactId)
+    return Artifacts.deleteSessionArtifact(this.boundCallRPC, artifactId);
   }
 
   // -------------------------------------------------------------------------
@@ -348,7 +348,7 @@ export class HttpDataSource implements ChatDataSource {
    */
   navigateToSession?(sessionId: string): void {
     if (typeof window !== 'undefined') {
-      window.location.href = `/chat/${sessionId}`
+      window.location.href = `/chat/${sessionId}`;
     }
   }
 }
@@ -357,5 +357,5 @@ export class HttpDataSource implements ChatDataSource {
  * Factory function to create HttpDataSource
  */
 export function createHttpDataSource(config: HttpDataSourceConfig): ChatDataSource {
-  return new HttpDataSource(config)
+  return new HttpDataSource(config);
 }

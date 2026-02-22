@@ -1,15 +1,15 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import SessionSkeleton from './SessionSkeleton'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import SessionSkeleton from './SessionSkeleton';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof SessionSkeleton> = {
   title: 'BiChat/Components/SessionSkeleton',
   component: SessionSkeleton,
   parameters: { layout: 'centered' },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof SessionSkeleton>
 
 export const Default: Story = {
@@ -18,7 +18,7 @@ export const Default: Story = {
       <SessionSkeleton />
     </div>
   ),
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -52,4 +52,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

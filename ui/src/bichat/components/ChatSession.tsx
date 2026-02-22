@@ -12,22 +12,22 @@
  * - actionsSlot: Custom action buttons in the header
  */
 
-import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
-import { Sidebar } from '@phosphor-icons/react'
-import { ChatSessionProvider, useChatSession, useChatMessaging, useChatInput } from '../context/ChatContext'
-import { ChatDataSource, ConversationTurn } from '../types'
-import { RateLimiter } from '../utils/RateLimiter'
-import { ChatHeader } from './ChatHeader'
-import { MessageList } from './MessageList'
-import { MessageInput } from './MessageInput'
-import CompactionDoodle from './CompactionDoodle'
-import WelcomeContent from './WelcomeContent'
-import ArchiveBanner from './ArchiveBanner'
-import { useTranslation } from '../hooks/useTranslation'
-import { SessionArtifactsPanel } from './SessionArtifactsPanel'
-import Alert from './Alert'
-import { StreamError } from './StreamError'
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Sidebar } from '@phosphor-icons/react';
+import { ChatSessionProvider, useChatSession, useChatMessaging, useChatInput } from '../context/ChatContext';
+import { ChatDataSource, ConversationTurn } from '../types';
+import { RateLimiter } from '../utils/RateLimiter';
+import { ChatHeader } from './ChatHeader';
+import { MessageList } from './MessageList';
+import { MessageInput } from './MessageInput';
+import CompactionDoodle from './CompactionDoodle';
+import WelcomeContent from './WelcomeContent';
+import ArchiveBanner from './ArchiveBanner';
+import { useTranslation } from '../hooks/useTranslation';
+import { SessionArtifactsPanel } from './SessionArtifactsPanel';
+import Alert from './Alert';
+import { StreamError } from './StreamError';
 
 interface ChatSessionProps {
   dataSource: ChatDataSource
@@ -71,9 +71,9 @@ interface ChatSessionProps {
   artifactsPanelStorageKey?: string
 }
 
-const ARTIFACTS_PANEL_WIDTH_DEFAULT = 352
-const ARTIFACTS_PANEL_WIDTH_MIN = 280
-const ARTIFACTS_PANEL_WIDTH_MAX = 560
+const ARTIFACTS_PANEL_WIDTH_DEFAULT = 352;
+const ARTIFACTS_PANEL_WIDTH_MIN = 280;
+const ARTIFACTS_PANEL_WIDTH_MAX = 560;
 
 function ChatSessionCore({
   dataSource,
@@ -93,7 +93,7 @@ function ChatSessionCore({
   artifactsPanelDefaultExpanded = false,
   artifactsPanelStorageKey = 'bichat.artifacts-panel.expanded',
 }: Omit<ChatSessionProps, 'sessionId'>) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   const {
     session,
     fetching,
@@ -106,7 +106,7 @@ function ChatSessionCore({
     setError,
     retryFetchSession,
   } =
-    useChatSession()
+    useChatSession();
   const {
     turns,
     loading,
@@ -116,7 +116,7 @@ function ChatSessionCore({
     isCompacting,
     retryLastMessage,
     clearStreamError,
-  } = useChatMessaging()
+  } = useChatMessaging();
   const {
     inputError,
     message,
@@ -127,176 +127,176 @@ function ChatSessionCore({
     handleUnqueue,
     removeQueueItem,
     updateQueueItem,
-  } = useChatInput()
+  } = useChatInput();
 
-  const isArchived = session?.status === 'archived'
-  const effectiveReadOnly = Boolean(readOnly ?? isReadOnly) || isArchived
-  const [restoring, setRestoring] = useState(false)
+  const isArchived = session?.status === 'archived';
+  const effectiveReadOnly = Boolean(readOnly ?? isReadOnly) || isArchived;
+  const [restoring, setRestoring] = useState(false);
 
   const handleRestore = useCallback(async () => {
-    if (!session?.id) return
-    setRestoring(true)
+    if (!session?.id) {return;}
+    setRestoring(true);
     try {
-      await dataSource.unarchiveSession(session.id)
-      retryFetchSession()
+      await dataSource.unarchiveSession(session.id);
+      retryFetchSession();
       window.dispatchEvent(new CustomEvent('bichat:sessions-updated', {
         detail: { reason: 'restored', sessionId: session.id },
-      }))
-      onSessionRestored?.(session.id)
+      }));
+      onSessionRestored?.(session.id);
     } finally {
-      setRestoring(false)
+      setRestoring(false);
     }
-  }, [dataSource, onSessionRestored, retryFetchSession, session?.id])
+  }, [dataSource, onSessionRestored, retryFetchSession, session?.id]);
 
   const [artifactsPanelExpanded, setArtifactsPanelExpanded] = useState(
     artifactsPanelDefaultExpanded
-  )
-  const [artifactsPanelWidth, setArtifactsPanelWidth] = useState(ARTIFACTS_PANEL_WIDTH_DEFAULT)
-  const [isResizingArtifactsPanel, setIsResizingArtifactsPanel] = useState(false)
-  const layoutContainerRef = useRef<HTMLDivElement>(null)
+  );
+  const [artifactsPanelWidth, setArtifactsPanelWidth] = useState(ARTIFACTS_PANEL_WIDTH_DEFAULT);
+  const [isResizingArtifactsPanel, setIsResizingArtifactsPanel] = useState(false);
+  const layoutContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!showArtifactsPanel) {
-      return
+      return;
     }
 
-    let nextValue = artifactsPanelDefaultExpanded
+    let nextValue = artifactsPanelDefaultExpanded;
     if (typeof window !== 'undefined') {
-      const stored = window.localStorage.getItem(artifactsPanelStorageKey)
+      const stored = window.localStorage.getItem(artifactsPanelStorageKey);
       if (stored !== null) {
-        nextValue = stored === 'true'
+        nextValue = stored === 'true';
       }
     }
 
-    setArtifactsPanelExpanded(nextValue)
-  }, [artifactsPanelDefaultExpanded, artifactsPanelStorageKey, showArtifactsPanel])
+    setArtifactsPanelExpanded(nextValue);
+  }, [artifactsPanelDefaultExpanded, artifactsPanelStorageKey, showArtifactsPanel]);
 
   useEffect(() => {
-    if (!showArtifactsPanel) return
-    if (typeof window === 'undefined') return
+    if (!showArtifactsPanel) {return;}
+    if (typeof window === 'undefined') {return;}
     try {
-      const raw = window.localStorage.getItem(`${artifactsPanelStorageKey}.width`)
+      const raw = window.localStorage.getItem(`${artifactsPanelStorageKey}.width`);
       if (raw !== null) {
-        const n = Number.parseInt(raw, 10)
+        const n = Number.parseInt(raw, 10);
         if (Number.isFinite(n) && n >= ARTIFACTS_PANEL_WIDTH_MIN && n <= ARTIFACTS_PANEL_WIDTH_MAX) {
-          setArtifactsPanelWidth(n)
+          setArtifactsPanelWidth(n);
         }
       }
     } catch {
       // ignore
     }
-  }, [artifactsPanelStorageKey, showArtifactsPanel])
+  }, [artifactsPanelStorageKey, showArtifactsPanel]);
 
   const handleArtifactsResizeStart = useCallback(() => {
-    setIsResizingArtifactsPanel(true)
-  }, [])
+    setIsResizingArtifactsPanel(true);
+  }, []);
 
   const handleArtifactsResizeKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      const step = e.shiftKey ? 40 : 20
-      let nextWidth: number | null = null
+      const step = e.shiftKey ? 40 : 20;
+      let nextWidth: number | null = null;
 
       if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        nextWidth = Math.min(ARTIFACTS_PANEL_WIDTH_MAX, artifactsPanelWidth + step)
+        nextWidth = Math.min(ARTIFACTS_PANEL_WIDTH_MAX, artifactsPanelWidth + step);
       } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-        nextWidth = Math.max(ARTIFACTS_PANEL_WIDTH_MIN, artifactsPanelWidth - step)
+        nextWidth = Math.max(ARTIFACTS_PANEL_WIDTH_MIN, artifactsPanelWidth - step);
       } else if (e.key === 'Home') {
-        nextWidth = ARTIFACTS_PANEL_WIDTH_MIN
+        nextWidth = ARTIFACTS_PANEL_WIDTH_MIN;
       } else if (e.key === 'End') {
-        nextWidth = ARTIFACTS_PANEL_WIDTH_MAX
+        nextWidth = ARTIFACTS_PANEL_WIDTH_MAX;
       }
 
       if (nextWidth !== null) {
-        e.preventDefault()
-        setArtifactsPanelWidth(nextWidth)
+        e.preventDefault();
+        setArtifactsPanelWidth(nextWidth);
         try {
-          window.localStorage.setItem(`${artifactsPanelStorageKey}.width`, String(nextWidth))
+          window.localStorage.setItem(`${artifactsPanelStorageKey}.width`, String(nextWidth));
         } catch {
           // ignore
         }
       }
     },
     [artifactsPanelWidth, artifactsPanelStorageKey],
-  )
+  );
 
-  const lastPanelWidthRef = useRef(artifactsPanelWidth)
-  lastPanelWidthRef.current = artifactsPanelWidth
+  const lastPanelWidthRef = useRef(artifactsPanelWidth);
+  lastPanelWidthRef.current = artifactsPanelWidth;
 
   useEffect(() => {
-    if (!isResizingArtifactsPanel) return
+    if (!isResizingArtifactsPanel) {return;}
 
     const move = (e: MouseEvent) => {
-      const el = layoutContainerRef.current
-      if (!el) return
-      const rect = el.getBoundingClientRect()
-      const w = rect.right - e.clientX
-      const clamped = Math.min(ARTIFACTS_PANEL_WIDTH_MAX, Math.max(ARTIFACTS_PANEL_WIDTH_MIN, w))
-      setArtifactsPanelWidth(clamped)
-    }
+      const el = layoutContainerRef.current;
+      if (!el) {return;}
+      const rect = el.getBoundingClientRect();
+      const w = rect.right - e.clientX;
+      const clamped = Math.min(ARTIFACTS_PANEL_WIDTH_MAX, Math.max(ARTIFACTS_PANEL_WIDTH_MIN, w));
+      setArtifactsPanelWidth(clamped);
+    };
 
     const up = () => {
-      setIsResizingArtifactsPanel(false)
+      setIsResizingArtifactsPanel(false);
       try {
         if (typeof window !== 'undefined') {
           window.localStorage.setItem(
             `${artifactsPanelStorageKey}.width`,
             String(lastPanelWidthRef.current)
-          )
+          );
         }
       } catch {
         // ignore
       }
-    }
+    };
 
-    document.addEventListener('mousemove', move, { passive: true })
-    document.addEventListener('mouseup', up)
-    document.body.style.cursor = 'col-resize'
-    document.body.style.userSelect = 'none'
+    document.addEventListener('mousemove', move, { passive: true });
+    document.addEventListener('mouseup', up);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
     return () => {
-      document.removeEventListener('mousemove', move)
-      document.removeEventListener('mouseup', up)
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-    }
-  }, [isResizingArtifactsPanel, artifactsPanelStorageKey])
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizingArtifactsPanel, artifactsPanelStorageKey]);
 
   if (fetching && turns.length === 0 && !session) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-gray-500 dark:text-gray-400">{t('BiChat.Input.Processing')}</div>
       </div>
-    )
+    );
   }
 
   // Show welcome screen for new sessions with no turns
-  const showWelcome = !session && turns.length === 0
+  const showWelcome = !session && turns.length === 0;
   const activeSessionId =
     session?.id ||
     (currentSessionId && currentSessionId !== 'new'
       ? currentSessionId
-      : undefined)
+      : undefined);
 
-  const supportsArtifactsPanel = typeof dataSource.fetchSessionArtifacts === 'function'
-  const showArtifactsControls = Boolean(showArtifactsPanel && supportsArtifactsPanel && activeSessionId)
+  const supportsArtifactsPanel = typeof dataSource.fetchSessionArtifacts === 'function';
+  const showArtifactsControls = Boolean(showArtifactsPanel && supportsArtifactsPanel && activeSessionId);
   const shouldRenderArtifactsPanel = Boolean(
     showArtifactsControls && artifactsPanelExpanded && !showWelcome && activeSessionId
-  )
+  );
 
   const handlePromptSelect = (prompt: string) => {
-    setMessage(prompt)
-  }
+    setMessage(prompt);
+  };
 
   const handleToggleArtifactsPanel = () => {
-    const nextValue = !artifactsPanelExpanded
-    setArtifactsPanelExpanded(nextValue)
+    const nextValue = !artifactsPanelExpanded;
+    setArtifactsPanelExpanded(nextValue);
 
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(artifactsPanelStorageKey, nextValue ? 'true' : 'false')
+      window.localStorage.setItem(artifactsPanelStorageKey, nextValue ? 'true' : 'false');
       if (nextValue) {
-        window.dispatchEvent(new CustomEvent('bichat:artifacts-panel-expanded', { detail: { expanded: true } }))
+        window.dispatchEvent(new CustomEvent('bichat:artifacts-panel-expanded', { detail: { expanded: true } }));
       }
     }
-  }
+  };
 
   const headerActions = showArtifactsControls ? (
     <>
@@ -321,7 +321,7 @@ function ChatSessionCore({
     </>
   ) : (
     actionsSlot
-  )
+  );
 
   return (
     <main
@@ -529,11 +529,11 @@ function ChatSessionCore({
         </AnimatePresence>
       </div>
     </main>
-  )
+  );
 }
 
 export function ChatSession(props: ChatSessionProps) {
-  const { dataSource, sessionId, rateLimiter, onSessionCreated, ...coreProps } = props
+  const { dataSource, sessionId, rateLimiter, onSessionCreated, ...coreProps } = props;
 
   return (
     <ChatSessionProvider
@@ -544,7 +544,7 @@ export function ChatSession(props: ChatSessionProps) {
     >
       <ChatSessionCore dataSource={dataSource} {...coreProps} />
     </ChatSessionProvider>
-  )
+  );
 }
 
-export type { ChatSessionProps }
+export type { ChatSessionProps };

@@ -3,9 +3,9 @@
  * React error boundary for catching and displaying errors gracefully
  */
 
-import { Component, ErrorInfo, ReactNode } from 'react'
-import { WarningCircle, ArrowClockwise } from '@phosphor-icons/react'
-import { useTranslation } from '../hooks/useTranslation'
+import { Component, ErrorInfo, ReactNode } from 'react';
+import { WarningCircle, ArrowClockwise } from '@phosphor-icons/react';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface ErrorBoundaryProps {
   children: ReactNode
@@ -48,9 +48,9 @@ function DefaultErrorContent({
   resetLabel?: string
   errorTitle?: string
 }) {
-  const { t } = useTranslation()
-  const resolvedResetLabel = resetLabel ?? t('BiChat.Common.TryAgain')
-  const resolvedErrorTitle = errorTitle ?? t('BiChat.Error.SomethingWentWrong')
+  const { t } = useTranslation();
+  const resolvedResetLabel = resetLabel ?? t('BiChat.Common.TryAgain');
+  const resolvedErrorTitle = errorTitle ?? t('BiChat.Error.SomethingWentWrong');
   return (
     <div className="flex flex-col items-center justify-center p-8 text-center min-h-[200px]">
       {/* Decorative background pattern */}
@@ -88,7 +88,7 @@ function DefaultErrorContent({
         )}
       </div>
     </div>
-  )
+  );
 }
 
 /**
@@ -134,21 +134,21 @@ function StaticEmergencyErrorContent({
         )}
       </div>
     </div>
-  )
+  );
 }
 
 class FallbackGuard extends Component<FallbackGuardProps, FallbackGuardState> {
   constructor(props: FallbackGuardProps) {
-    super(props)
-    this.state = { fallbackFailed: false }
+    super(props);
+    this.state = { fallbackFailed: false };
   }
 
   static getDerivedStateFromError(): FallbackGuardState {
-    return { fallbackFailed: true }
+    return { fallbackFailed: true };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    this.props.onFallbackError?.(error, errorInfo)
+    this.props.onFallbackError?.(error, errorInfo);
   }
 
   render() {
@@ -161,39 +161,39 @@ class FallbackGuard extends Component<FallbackGuardProps, FallbackGuardState> {
           fallbackText={this.props.cachedStrings?.fallback}
           retryText={this.props.cachedStrings?.retry}
         />
-      )
+      );
     }
-    return this.props.renderFallback()
+    return this.props.renderFallback();
   }
 }
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
-    super(props)
-    this.state = { hasError: false, error: null }
+    super(props);
+    this.state = { hasError: false, error: null };
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error }
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('React Error Boundary caught an error:', error, errorInfo)
-    this.props.onError?.(error, errorInfo)
+    console.error('React Error Boundary caught an error:', error, errorInfo);
+    this.props.onError?.(error, errorInfo);
   }
 
   handleReset = () => {
-    this.setState({ hasError: false, error: null })
-  }
+    this.setState({ hasError: false, error: null });
+  };
 
   handleFallbackError = (error: Error, errorInfo: ErrorInfo) => {
     console.error('React Error Boundary fallback crashed:', {
       primaryError: this.state.error,
       fallbackError: error,
       errorInfo,
-    })
-    this.props.onError?.(error, errorInfo)
-  }
+    });
+    this.props.onError?.(error, errorInfo);
+  };
 
   render() {
     if (this.state.hasError) {
@@ -208,21 +208,21 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
             // Custom fallback
             if (this.props.fallback) {
               if (typeof this.props.fallback === 'function') {
-                return this.props.fallback(this.state.error, this.handleReset)
+                return this.props.fallback(this.state.error, this.handleReset);
               }
-              return this.props.fallback
+              return this.props.fallback;
             }
 
             // Default error UI
-            return <DefaultErrorContent error={this.state.error} onReset={this.handleReset} />
+            return <DefaultErrorContent error={this.state.error} onReset={this.handleReset} />;
           }}
         />
-      )
+      );
     }
 
-    return this.props.children
+    return this.props.children;
   }
 }
 
-export default ErrorBoundary
-export { ErrorBoundary, DefaultErrorContent }
+export default ErrorBoundary;
+export { ErrorBoundary, DefaultErrorContent };

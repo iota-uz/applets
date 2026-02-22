@@ -1,8 +1,8 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import { EditableText } from './EditableText'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { EditableText } from './EditableText';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof EditableText> = {
   title: 'BiChat/Components/EditableText',
@@ -23,9 +23,9 @@ const meta: Meta<typeof EditableText> = {
       </div>
     ),
   ],
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof EditableText>
 
 // ---------------------------------------------------------------------------
@@ -40,7 +40,7 @@ export const Playground: Story = {
     maxLength: 100,
     onSave: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 2. Loading — isLoading=true showing spinner
@@ -52,7 +52,7 @@ export const Loading: Story = {
     isLoading: true,
     onSave: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 3. Empty — empty value with placeholder
@@ -64,16 +64,16 @@ export const Empty: Story = {
     placeholder: 'Untitled',
     onSave: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 4. Stress — ScenarioGrid covering edge cases
 // ---------------------------------------------------------------------------
 
 const longText =
-  'This is a very long editable title that exceeds typical length to test how the component handles truncation and overflow in a narrow container'
+  'This is a very long editable title that exceeds typical length to test how the component handles truncation and overflow in a narrow container';
 
-const stressOnSave = fn()
+const stressOnSave = fn();
 export const Stress: Story = {
   parameters: { layout: 'fullscreen' },
   decorators: [
@@ -140,4 +140,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

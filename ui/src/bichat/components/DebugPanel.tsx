@@ -6,7 +6,7 @@
  * Debug UI is English-only (developer-facing) — no i18n.
  */
 
-import { useState, useRef, useEffect, type ReactNode } from 'react'
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import {
   Bug,
   Timer,
@@ -23,15 +23,15 @@ import {
   Stack,
   Database,
   ArrowSquareOut,
-} from '@phosphor-icons/react'
-import type { DebugTrace, StreamToolPayload } from '../types'
-import { hasMeaningfulUsage, hasDebugTrace } from '../utils/debugTrace'
+} from '@phosphor-icons/react';
+import type { DebugTrace, StreamToolPayload } from '../types';
+import { hasMeaningfulUsage, hasDebugTrace } from '../utils/debugTrace';
 import {
   calculateCompletionTokensPerSecond,
   calculateContextUsagePercent,
   formatDuration,
   formatGenerationDuration,
-} from '../utils/debugMetrics'
+} from '../utils/debugMetrics';
 
 export interface DebugPanelProps {
   trace?: DebugTrace
@@ -41,27 +41,27 @@ export interface DebugPanelProps {
 // ─── CopyPill ───────────────────────────────────────────────
 
 function CopyPill({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false)
-  const timerRef = useRef<number | null>(null)
+  const [copied, setCopied] = useState(false);
+  const timerRef = useRef<number | null>(null);
 
   useEffect(() => () => {
-    if (timerRef.current !== null) clearTimeout(timerRef.current)
-  }, [])
+    if (timerRef.current !== null) {clearTimeout(timerRef.current);}
+  }, []);
 
   const handleCopy = async (e: React.MouseEvent) => {
-    e.stopPropagation()
+    e.stopPropagation();
     try {
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-      if (timerRef.current !== null) clearTimeout(timerRef.current)
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      if (timerRef.current !== null) {clearTimeout(timerRef.current);}
       timerRef.current = window.setTimeout(() => {
-        setCopied(false)
-        timerRef.current = null
-      }, 2000)
+        setCopied(false);
+        timerRef.current = null;
+      }, 2000);
     } catch (err) {
-      console.error('Copy failed:', err)
+      console.error('Copy failed:', err);
     }
-  }
+  };
 
   return (
     <button
@@ -77,7 +77,7 @@ function CopyPill({ text }: { text: string }) {
       {copied ? <Check size={10} weight="bold" /> : <Copy size={10} />}
       <span>{copied ? 'Copied!' : 'Copy'}</span>
     </button>
-  )
+  );
 }
 
 // ─── MetricChip ─────────────────────────────────────────────
@@ -95,16 +95,16 @@ function MetricChip({ icon, value, label }: MetricChipProps) {
       <span className="font-mono font-medium text-gray-700 dark:text-gray-300">{value}</span>
       <span className="text-gray-400 dark:text-gray-500">{label}</span>
     </span>
-  )
+  );
 }
 
 // ─── ToolCard ───────────────────────────────────────────────
 
 function ToolCard({ tool }: { tool: StreamToolPayload }) {
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(false);
 
-  const hasResult = !!tool.result && !tool.error
-  const hasError = !!tool.error
+  const hasResult = !!tool.result && !tool.error;
+  const hasError = !!tool.error;
 
   const status = hasError
     ? {
@@ -125,7 +125,7 @@ function ToolCard({ tool }: { tool: StreamToolPayload }) {
         pillBg: 'bg-gray-100 dark:bg-gray-800',
         pillText: 'text-gray-400 dark:text-gray-500',
         borderColor: 'border-l-gray-300 dark:border-l-gray-600',
-      }
+      };
 
   return (
     <div
@@ -229,57 +229,57 @@ function ToolCard({ tool }: { tool: StreamToolPayload }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // ─── DebugPanel ─────────────────────────────────────────────
 
 export function DebugPanel({ trace, debugLimits = null }: DebugPanelProps) {
-  const hasData = !!trace && hasDebugTrace(trace)
-  const traceID = trace?.traceId?.trim() || ''
-  const traceURL = trace?.traceUrl?.trim() || ''
+  const hasData = !!trace && hasDebugTrace(trace);
+  const traceID = trace?.traceId?.trim() || '';
+  const traceURL = trace?.traceUrl?.trim() || '';
   const safeTraceURL = (() => {
-    if (!traceURL) return ''
+    if (!traceURL) {return '';}
     try {
-      const parsed = new URL(traceURL)
-      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return ''
-      return parsed.toString()
+      const parsed = new URL(traceURL);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {return '';}
+      return parsed.toString();
     } catch {
-      return ''
+      return '';
     }
-  })()
+  })();
 
-  const tokensPerSecond = calculateCompletionTokensPerSecond(trace?.usage, trace?.generationMs)
-  const effectiveMaxTokens = debugLimits?.effectiveMaxTokens ?? 0
-  const promptTokens = trace?.usage?.promptTokens ?? 0
-  const contextUsagePercent = calculateContextUsagePercent(promptTokens, effectiveMaxTokens)
-  const contextUsagePercentLabel = contextUsagePercent !== null ? contextUsagePercent.toFixed(1) : null
+  const tokensPerSecond = calculateCompletionTokensPerSecond(trace?.usage, trace?.generationMs);
+  const effectiveMaxTokens = debugLimits?.effectiveMaxTokens ?? 0;
+  const promptTokens = trace?.usage?.promptTokens ?? 0;
+  const contextUsagePercent = calculateContextUsagePercent(promptTokens, effectiveMaxTokens);
+  const contextUsagePercentLabel = contextUsagePercent !== null ? contextUsagePercent.toFixed(1) : null;
 
   const formatCompactTokens = (value: number): string => {
-    if (!Number.isFinite(value) || value <= 0) return '0 tokens'
+    if (!Number.isFinite(value) || value <= 0) {return '0 tokens';}
     return `${new Intl.NumberFormat('en-US', {
       notation: 'compact',
       maximumFractionDigits: value >= 100_000 ? 0 : 1,
-    }).format(value)} tokens`
-  }
+    }).format(value)} tokens`;
+  };
 
-  const contextPercentValue = contextUsagePercent ?? 0
+  const contextPercentValue = contextUsagePercent ?? 0;
   const contextUsageToneClass =
     contextPercentValue > 75
       ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
       : contextPercentValue > 50
       ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
-      : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+      : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400';
 
   const contextUsageBarColor =
     contextPercentValue > 75
       ? '#ef4444'
       : contextPercentValue > 50
       ? '#f59e0b'
-      : '#10b981'
+      : '#10b981';
 
   // Build metric list from available data
-  const metrics: MetricChipProps[] = []
+  const metrics: MetricChipProps[] = [];
 
   if (hasData && trace) {
     if (trace.generationMs !== undefined) {
@@ -287,14 +287,14 @@ export function DebugPanel({ trace, debugLimits = null }: DebugPanelProps) {
         icon: <Timer size={12} weight="duotone" className="text-amber-500 dark:text-amber-400" />,
         value: formatGenerationDuration(trace.generationMs),
         label: 'generation',
-      })
+      });
     }
     if (tokensPerSecond !== null) {
       metrics.push({
         icon: <Lightning size={12} weight="fill" className="text-orange-500 dark:text-orange-400" />,
         value: `${tokensPerSecond.toFixed(1)}/s`,
         label: 'tok/s',
-      })
+      });
     }
     if (hasMeaningfulUsage(trace.usage) && trace.usage) {
       metrics.push(
@@ -313,13 +313,13 @@ export function DebugPanel({ trace, debugLimits = null }: DebugPanelProps) {
           value: trace.usage.completionTokens.toLocaleString(),
           label: 'completion',
         },
-      )
+      );
       if (trace.usage.cachedTokens !== undefined && trace.usage.cachedTokens > 0) {
         metrics.push({
           icon: <Database size={12} weight="duotone" className="text-pink-500 dark:text-pink-400" />,
           value: trace.usage.cachedTokens.toLocaleString(),
           label: 'cached',
-        })
+        });
       }
     }
   }
@@ -492,7 +492,7 @@ export function DebugPanel({ trace, debugLimits = null }: DebugPanelProps) {
         </p>
       )}
     </div>
-  )
+  );
 }
 
-export default DebugPanel
+export default DebugPanel;

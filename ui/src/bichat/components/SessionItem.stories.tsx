@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import SessionItem from './SessionItem'
-import { makeSession } from '@sb-helpers/bichatFixtures'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import SessionItem from './SessionItem';
+import { makeSession } from '@sb-helpers/bichatFixtures';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof SessionItem> = {
   title: 'BiChat/Components/SessionItem',
@@ -25,9 +25,9 @@ const meta: Meta<typeof SessionItem> = {
       </div>
     ),
   ],
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof SessionItem>
 
 // ---------------------------------------------------------------------------
@@ -47,7 +47,7 @@ export const Playground: Story = {
     onRegenerateTitle: fn(),
     onDelete: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 2. ActiveHighlighted — shows the active highlight style
@@ -65,7 +65,7 @@ export const ActiveHighlighted: Story = {
     onRegenerateTitle: fn(),
     onDelete: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 3. Pinned — pinned session showing pin icon
@@ -83,7 +83,7 @@ export const Pinned: Story = {
     onRegenerateTitle: fn(),
     onDelete: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 4. Archived — archived mode with restore button
@@ -99,7 +99,7 @@ export const Archived: Story = {
     onRename: fn(),
     onDelete: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 5. TitleGenerating — empty/whitespace title shows generating state
@@ -117,14 +117,14 @@ export const TitleGenerating: Story = {
     onRegenerateTitle: fn(),
     onDelete: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 6. Stress — ScenarioGrid covering edge cases
 // ---------------------------------------------------------------------------
 
 const longTitle =
-  'This is an extremely long session title that exceeds one hundred characters in order to verify how the component handles text overflow and truncation in a narrow sidebar layout'
+  'This is an extremely long session title that exceeds one hundred characters in order to verify how the component handles text overflow and truncation in a narrow sidebar layout';
 
 export const Stress: Story = {
   decorators: [
@@ -248,4 +248,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

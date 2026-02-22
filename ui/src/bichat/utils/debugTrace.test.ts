@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { hasDebugTrace } from './debugTrace'
+import { describe, expect, it } from 'vitest';
+import { hasDebugTrace } from './debugTrace';
 
 describe('hasDebugTrace', () => {
   it('returns true when trace metadata exists without usage/tools/timing', () => {
@@ -8,6 +8,6 @@ describe('hasDebugTrace', () => {
         tools: [],
         traceId: 'session-trace-1',
       })
-    ).toBe(true)
-  })
-})
+    ).toBe(true);
+  });
+});

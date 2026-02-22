@@ -5,9 +5,9 @@
  * Includes automatic "Other" option for custom text input
  */
 
-import { useState, useEffect } from 'react'
-import { type Question, type QuestionAnswers, type QuestionAnswerData } from '../types'
-import { useTranslation } from '../hooks/useTranslation'
+import { useState, useEffect } from 'react';
+import { type Question, type QuestionAnswers, type QuestionAnswerData } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface QuestionStepProps {
   question: Question
@@ -20,41 +20,41 @@ export default function QuestionStep({
   selectedAnswers,
   onAnswer,
 }: QuestionStepProps) {
-  const { t } = useTranslation()
-  const answerData = selectedAnswers[question.id] || { options: [] }
-  const selectedOptions = answerData.options || []
-  const isMultiSelect = question.type === 'MULTIPLE_CHOICE'
+  const { t } = useTranslation();
+  const answerData = selectedAnswers[question.id] || { options: [] };
+  const selectedOptions = answerData.options || [];
+  const isMultiSelect = question.type === 'MULTIPLE_CHOICE';
 
   // Local state for "Other" text input
-  const [otherText, setOtherText] = useState(answerData.customText || '')
+  const [otherText, setOtherText] = useState(answerData.customText || '');
 
   // Sync local state with props when switching questions
   useEffect(() => {
-    const data = selectedAnswers[question.id] || { options: [] }
-    setOtherText(data.customText || '')
+    const data = selectedAnswers[question.id] || { options: [] };
+    setOtherText(data.customText || '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [question.id])
+  }, [question.id]);
 
   const handleOptionClick = (optionLabel: string) => {
     if (isMultiSelect) {
       // Multi-select: toggle the option
       const newOptions = selectedOptions.includes(optionLabel)
         ? selectedOptions.filter((a) => a !== optionLabel)
-        : [...selectedOptions, optionLabel]
-      onAnswer({ options: newOptions, customText: otherText || undefined })
+        : [...selectedOptions, optionLabel];
+      onAnswer({ options: newOptions, customText: otherText || undefined });
     } else {
       // Single-select: replace with new selection, preserve custom text
-      onAnswer({ options: [optionLabel], customText: otherText || undefined })
+      onAnswer({ options: [optionLabel], customText: otherText || undefined });
     }
-  }
+  };
 
   const handleOtherTextChange = (text: string) => {
-    setOtherText(text)
+    setOtherText(text);
     onAnswer({
       options: selectedOptions,
       customText: text || undefined
-    })
-  }
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -75,7 +75,7 @@ export default function QuestionStep({
       {/* Options Grid */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {(question.options || []).map((option) => {
-          const isSelected = selectedOptions.includes(option.label)
+          const isSelected = selectedOptions.includes(option.label);
 
           return (
             <button
@@ -121,7 +121,7 @@ export default function QuestionStep({
                 </div>
               </div>
             </button>
-          )
+          );
         })}
       </div>
 
@@ -144,5 +144,5 @@ export default function QuestionStep({
         />
       </div>
     </div>
-  )
+  );
 }

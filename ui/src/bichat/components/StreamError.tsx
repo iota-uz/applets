@@ -3,9 +3,9 @@
  * Error recovery UI for streaming failures
  */
 
-import { motion } from 'framer-motion'
-import { Warning, ArrowClockwise, ArrowsCounterClockwise, X } from '@phosphor-icons/react'
-import { useTranslation } from '../hooks/useTranslation'
+import { motion } from 'framer-motion';
+import { Warning, ArrowClockwise, ArrowsCounterClockwise, X } from '@phosphor-icons/react';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface StreamErrorProps {
   /** Error message to display */
@@ -27,7 +27,7 @@ export function StreamError({
   onDismiss,
   compact = false,
 }: StreamErrorProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   return (
     <motion.div
@@ -84,5 +84,5 @@ export function StreamError({
         </button>
       )}
     </motion.div>
-  )
+  );
 }

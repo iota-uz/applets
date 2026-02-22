@@ -1,6 +1,6 @@
-import { memo } from 'react'
-import type { ColumnMeta, ColumnStats } from '../hooks/useDataTable'
-import { useTranslation } from '../hooks/useTranslation'
+import { memo } from 'react';
+import type { ColumnMeta, ColumnStats } from '../hooks/useDataTable';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface DataTableFooterProps {
   visibleColumns: ColumnMeta[]
@@ -9,7 +9,7 @@ interface DataTableFooterProps {
 }
 
 function formatStat(value: number): string {
-  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value)
+  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value);
 }
 
 interface StatRowProps {
@@ -29,7 +29,7 @@ const StatRow = memo(function StatRow({
   showRowNumbers,
   odd,
 }: StatRowProps) {
-  const zebra = odd ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-850'
+  const zebra = odd ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-850';
   return (
     <tr className={zebra}>
       {showRowNumbers && (
@@ -38,8 +38,8 @@ const StatRow = memo(function StatRow({
         </td>
       )}
       {visibleColumns.map((col, colIdx) => {
-        if (colIdx === 0 && showRowNumbers) return null
-        const s = stats.get(col.index)
+        if (colIdx === 0 && showRowNumbers) {return null;}
+        const s = stats.get(col.index);
         return (
           <td
             key={col.index}
@@ -53,20 +53,20 @@ const StatRow = memo(function StatRow({
               </span>
             ) : null}
           </td>
-        )
+        );
       })}
     </tr>
-  )
-})
+  );
+});
 
 export const DataTableFooter = memo(function DataTableFooter({
   visibleColumns,
   stats,
   showRowNumbers,
 }: DataTableFooterProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
-  if (stats.size === 0) return null
+  if (stats.size === 0) {return null;}
 
   return (
     <tfoot className="sticky bottom-0 z-10 border-t-2 border-gray-300 dark:border-gray-600">
@@ -101,5 +101,5 @@ export const DataTableFooter = memo(function DataTableFooter({
         odd
       />
     </tfoot>
-  )
-})
+  );
+});

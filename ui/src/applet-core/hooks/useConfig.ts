@@ -1,5 +1,5 @@
-import { useAppletContext } from '../context/AppletContext'
-import type { AppConfig } from '../types'
+import { useAppletContext } from '../context/AppletContext';
+import type { AppConfig } from '../types';
 
 /**
  * useConfig provides access to applet configuration (endpoints, etc.)
@@ -8,6 +8,6 @@ import type { AppConfig } from '../types'
  * const { graphQLEndpoint, streamEndpoint } = useConfig()
  */
 export function useConfig(): AppConfig {
-  const { config } = useAppletContext()
-  return config
+  const { config } = useAppletContext();
+  return config;
 }

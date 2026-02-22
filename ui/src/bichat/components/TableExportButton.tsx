@@ -3,9 +3,9 @@
  * Small inline button for exporting markdown tables to Excel
  */
 
-import { memo } from 'react'
-import { FileXls } from '@phosphor-icons/react'
-import { useTranslation } from '../hooks/useTranslation'
+import { memo } from 'react';
+import { FileXls } from '@phosphor-icons/react';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface TableExportButtonProps {
   /** Click handler for export action */
@@ -24,9 +24,9 @@ export const TableExportButton = memo(function TableExportButton({
   label,
   disabledTooltip,
 }: TableExportButtonProps) {
-  const { t } = useTranslation()
-  const resolvedLabel = label ?? t('BiChat.Export')
-  const resolvedDisabledTooltip = disabledTooltip ?? t('BiChat.Common.PleaseWait')
+  const { t } = useTranslation();
+  const resolvedLabel = label ?? t('BiChat.Export');
+  const resolvedDisabledTooltip = disabledTooltip ?? t('BiChat.Common.PleaseWait');
   return (
     <button
       type="button"
@@ -39,5 +39,5 @@ export const TableExportButton = memo(function TableExportButton({
       <FileXls size={16} weight="fill" />
       <span>{resolvedLabel}</span>
     </button>
-  )
-})
+  );
+});

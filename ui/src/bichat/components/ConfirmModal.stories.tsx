@@ -1,19 +1,19 @@
 import { useState } from 'react';
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { ConfirmModal, type ConfirmModalProps } from './ConfirmModal'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { ConfirmModal, type ConfirmModalProps } from './ConfirmModal';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof ConfirmModal> = {
   title: 'BiChat/Components/ConfirmModal',
   component: ConfirmModal,
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof ConfirmModal>
 
 const ModalTrigger = (props: Omit<ConfirmModalProps, 'isOpen' | 'onConfirm' | 'onCancel'>) => {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false);
   return (
     <div>
       <button onClick={() => setIsOpen(true)} className="px-4 py-2 border rounded">
@@ -21,8 +21,8 @@ const ModalTrigger = (props: Omit<ConfirmModalProps, 'isOpen' | 'onConfirm' | 'o
       </button>
       <ConfirmModal {...props} isOpen={isOpen} onCancel={() => setIsOpen(false)} onConfirm={() => setIsOpen(false)} />
     </div>
-  )
-}
+  );
+};
 
 export const Playground: Story = {
   render: () => (
@@ -33,7 +33,7 @@ export const Playground: Story = {
       isDanger
     />
   ),
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -62,4 +62,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

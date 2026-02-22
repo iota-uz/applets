@@ -1,24 +1,24 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { CodeOutputsPanel } from './CodeOutputsPanel'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
-import { makeCodeOutputs } from '@sb-helpers/bichatFixtures'
-import { largeImageDataUrl } from '@sb-helpers/imageFixtures'
-import { veryLargeText } from '@sb-helpers/textFixtures'
+import { CodeOutputsPanel } from './CodeOutputsPanel';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
+import { makeCodeOutputs } from '@sb-helpers/bichatFixtures';
+import { largeImageDataUrl } from '@sb-helpers/imageFixtures';
+import { veryLargeText } from '@sb-helpers/textFixtures';
 
 const meta: Meta<typeof CodeOutputsPanel> = {
   title: 'BiChat/Components/CodeOutputsPanel',
   component: CodeOutputsPanel,
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof CodeOutputsPanel>
 
 export const Playground: Story = {
   args: {
     outputs: makeCodeOutputs(),
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -67,4 +67,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

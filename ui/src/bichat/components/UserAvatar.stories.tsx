@@ -1,7 +1,7 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { UserAvatar } from './UserAvatar'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { UserAvatar } from './UserAvatar';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof UserAvatar> = {
   title: 'BiChat/Components/UserAvatar',
@@ -13,9 +13,9 @@ const meta: Meta<typeof UserAvatar> = {
       options: ['sm', 'md', 'lg'],
     },
   },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof UserAvatar>
 
 export const Playground: Story = {
@@ -23,7 +23,7 @@ export const Playground: Story = {
     firstName: 'Alice',
     lastName: 'Smith',
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -101,4 +101,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

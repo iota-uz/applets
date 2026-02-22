@@ -1,21 +1,21 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { AttachmentGrid } from './AttachmentGrid'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
-import { makeImageAttachment } from '@sb-helpers/bichatFixtures'
+import type { Meta, StoryObj } from '@storybook/react';
+import { AttachmentGrid } from './AttachmentGrid';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
+import { makeImageAttachment } from '@sb-helpers/bichatFixtures';
 
 const meta: Meta<typeof AttachmentGrid> = {
   title: 'BiChat/Components/AttachmentGrid',
   component: AttachmentGrid,
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof AttachmentGrid>
 
 export const Playground: Story = {
   args: {
     attachments: Array.from({ length: 4 }).map((_, i) => makeImageAttachment({ filename: `image-${i}.png` })),
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -44,4 +44,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

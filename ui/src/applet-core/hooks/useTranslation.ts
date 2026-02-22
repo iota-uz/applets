@@ -1,5 +1,5 @@
-import { useAppletContext } from '../context/AppletContext'
-import type { TranslationHook } from '../types'
+import { useAppletContext } from '../context/AppletContext';
+import type { TranslationHook } from '../types';
 
 /**
  * useTranslation provides i18n translation utilities.
@@ -20,23 +20,23 @@ import type { TranslationHook } from '../types'
  * React: t("BiChat.Title")
  */
 export function useTranslation(): TranslationHook {
-  const { locale } = useAppletContext()
+  const { locale } = useAppletContext();
 
   const t = (key: string, params?: Record<string, unknown>): string => {
-    let text = locale.translations[key] || key
+    let text = locale.translations[key] || key;
 
     // Simple interpolation: "Hello {name}" with {name: "World"}
     if (params) {
       Object.entries(params).forEach(([k, v]) => {
-        text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v))
-      })
+        text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
+      });
     }
 
-    return text
-  }
+    return text;
+  };
 
   return {
     t,
     language: locale.language
-  }
+  };
 }

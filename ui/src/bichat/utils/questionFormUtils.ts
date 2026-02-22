@@ -2,15 +2,15 @@
  * Shared validation utilities for QuestionForm components
  */
 
-import type { Question, QuestionAnswerData, QuestionAnswers } from '../types'
+import type { Question, QuestionAnswerData, QuestionAnswers } from '../types';
 
 /**
  * Checks if a question has been answered.
  * A question is answered if it has at least one selected option OR custom text.
  */
 export function isQuestionAnswered(data: QuestionAnswerData | undefined): boolean {
-  if (!data) return false
-  return (data.options?.length ?? 0) > 0 || !!data.customText
+  if (!data) {return false;}
+  return (data.options?.length ?? 0) > 0 || !!data.customText;
 }
 
 /**
@@ -26,19 +26,19 @@ export function validateAnswers(
   answers: QuestionAnswers,
   t?: (key: string, params?: Record<string, string | number | boolean>) => string
 ): string | null {
-  const allAnswered = questions.every((q) => isQuestionAnswered(answers[q.id]))
+  const allAnswered = questions.every((q) => isQuestionAnswered(answers[q.id]));
   if (!allAnswered) {
-    return t ? t('BiChat.Error.AllQuestionsRequired') : 'Please answer all questions before submitting'
+    return t ? t('BiChat.Error.AllQuestionsRequired') : 'Please answer all questions before submitting';
   }
 
   for (const q of questions) {
-    const data = answers[q.id]
+    const data = answers[q.id];
     if (data && (data.options?.length ?? 0) === 0 && data.customText === '') {
       return t
         ? t('BiChat.Error.CustomTextRequired', { question: q.text })
-        : `Please enter custom text for question: ${q.text}`
+        : `Please enter custom text for question: ${q.text}`;
     }
   }
 
-  return null
+  return null;
 }

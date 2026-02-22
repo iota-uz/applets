@@ -1,6 +1,6 @@
-import { useMemo } from 'react'
-import { useAppletContext } from '../context/AppletContext'
-import type { SessionHook } from '../types'
+import { useMemo } from 'react';
+import { useAppletContext } from '../context/AppletContext';
+import type { SessionHook } from '../types';
 
 export interface UseSessionOptions {
   loginPath?: string
@@ -23,14 +23,14 @@ export interface UseSessionOptions {
  * })
  */
 export function useSession(options?: UseSessionOptions): SessionHook {
-  const { session } = useAppletContext()
-  const loginPath = options?.loginPath ?? '/login'
+  const { session } = useAppletContext();
+  const loginPath = options?.loginPath ?? '/login';
 
   // Check if session is expiring soon (5 minute buffer)
   const isExpiringSoon = useMemo(() => {
-    const bufferMs = 5 * 60 * 1000 // 5 minutes
-    return session.expiresAt - Date.now() < bufferMs
-  }, [session.expiresAt])
+    const bufferMs = 5 * 60 * 1000; // 5 minutes
+    return session.expiresAt - Date.now() < bufferMs;
+  }, [session.expiresAt]);
 
   const refreshSession = async (): Promise<void> => {
     const response = await fetch(session.refreshURL, {
@@ -38,30 +38,30 @@ export function useSession(options?: UseSessionOptions): SessionHook {
       headers: {
         'X-CSRF-Token': session.csrfToken
       }
-    })
+    });
 
     if (!response.ok) {
       // Session refresh failed - redirect to login with return URL
-      const returnUrl = encodeURIComponent(window.location.pathname)
-      window.location.href = `${loginPath}?redirect=${returnUrl}`
-      return
+      const returnUrl = encodeURIComponent(window.location.pathname);
+      window.location.href = `${loginPath}?redirect=${returnUrl}`;
+      return;
     }
 
     // Dispatch event for CSRF token update
-    const newToken = response.headers.get('X-CSRF-Token')
+    const newToken = response.headers.get('X-CSRF-Token');
     if (newToken) {
       window.dispatchEvent(
         new CustomEvent('iota:csrf-refresh', {
           detail: { token: newToken }
         })
-      )
+      );
     }
-  }
+  };
 
   return {
     isExpiringSoon,
     refreshSession,
     csrfToken: session.csrfToken,
     expiresAt: session.expiresAt
-  }
+  };
 }

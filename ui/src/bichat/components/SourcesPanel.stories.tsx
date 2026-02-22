@@ -1,15 +1,15 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { SourcesPanel } from './SourcesPanel'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
-import { makeCitation } from '@sb-helpers/bichatFixtures'
+import { SourcesPanel } from './SourcesPanel';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
+import { makeCitation } from '@sb-helpers/bichatFixtures';
 
 const meta: Meta<typeof SourcesPanel> = {
   title: 'BiChat/Components/SourcesPanel',
   component: SourcesPanel,
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof SourcesPanel>
 
 export const Playground: Story = {
@@ -47,7 +47,7 @@ export const Playground: Story = {
       }),
     ],
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -124,4 +124,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

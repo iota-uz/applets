@@ -1,23 +1,23 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import { ErrorBoundary } from './ErrorBoundary'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { ErrorBoundary } from './ErrorBoundary';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof ErrorBoundary> = {
   title: 'BiChat/Components/ErrorBoundary',
   component: ErrorBoundary,
   parameters: { layout: 'centered' },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof ErrorBoundary>
 
 /**
  * A component that unconditionally throws on render.
  */
 function ThrowingComponent({ message = 'Something broke!' }: { message?: string }): JSX.Element {
-  throw new Error(message)
+  throw new Error(message);
 }
 
 export const CaughtError: Story = {
@@ -31,7 +31,7 @@ export const CaughtError: Story = {
       </ErrorBoundary>
     </div>
   ),
-}
+};
 
 export const CustomFallbackNode: Story = {
   render: () => (
@@ -48,7 +48,7 @@ export const CustomFallbackNode: Story = {
       </ErrorBoundary>
     </div>
   ),
-}
+};
 
 export const CustomFallbackFunction: Story = {
   render: () => (
@@ -71,7 +71,7 @@ export const CustomFallbackFunction: Story = {
       </ErrorBoundary>
     </div>
   ),
-}
+};
 
 export const Normal: Story = {
   render: () => (
@@ -83,7 +83,7 @@ export const Normal: Story = {
       </ErrorBoundary>
     </div>
   ),
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -148,4 +148,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

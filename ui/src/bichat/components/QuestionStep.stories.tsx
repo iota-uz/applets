@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import QuestionStep from './QuestionStep'
-import { makePendingQuestion } from '@sb-helpers/bichatFixtures'
-import type { Question } from '../types'
+import QuestionStep from './QuestionStep';
+import { makePendingQuestion } from '@sb-helpers/bichatFixtures';
+import type { Question } from '../types';
 
 const meta: Meta<typeof QuestionStep> = {
   title: 'BiChat/Components/QuestionStep',
@@ -16,9 +16,9 @@ const meta: Meta<typeof QuestionStep> = {
       </div>
     ),
   ],
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof QuestionStep>
 
 const singleChoiceQuestion: Question = {
@@ -32,9 +32,9 @@ const singleChoiceQuestion: Question = {
     { id: 'o-orders', label: 'Order Count', value: 'orders' },
     { id: 'o-aov', label: 'Average Order Value', value: 'aov' },
   ],
-}
+};
 
-const multipleChoiceQuestion: Question = makePendingQuestion().questions[0]
+const multipleChoiceQuestion: Question = makePendingQuestion().questions[0];
 
 const withOtherQuestion: Question = {
   id: 'q-feedback',
@@ -46,7 +46,7 @@ const withOtherQuestion: Question = {
     { id: 'o-good', label: 'Good', value: 'good' },
     { id: 'o-fair', label: 'Fair', value: 'fair' },
   ],
-}
+};
 
 export const SingleChoice: Story = {
   args: {
@@ -54,7 +54,7 @@ export const SingleChoice: Story = {
     selectedAnswers: {},
     onAnswer: fn(),
   },
-}
+};
 
 export const MultipleChoice: Story = {
   args: {
@@ -62,7 +62,7 @@ export const MultipleChoice: Story = {
     selectedAnswers: {},
     onAnswer: fn(),
   },
-}
+};
 
 export const WithOther: Story = {
   args: {
@@ -75,4 +75,4 @@ export const WithOther: Story = {
     },
     onAnswer: fn(),
   },
-}
+};

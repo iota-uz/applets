@@ -1,7 +1,7 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { TableExportButton } from './TableExportButton'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { TableExportButton } from './TableExportButton';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof TableExportButton> = {
   title: 'BiChat/Components/TableExportButton',
@@ -9,9 +9,9 @@ const meta: Meta<typeof TableExportButton> = {
   parameters: {
     layout: 'centered',
   },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof TableExportButton>
 
 export const Playground: Story = {
@@ -19,7 +19,7 @@ export const Playground: Story = {
     onClick: () => alert('Export clicked'),
     label: 'Export to Excel',
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -41,4 +41,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

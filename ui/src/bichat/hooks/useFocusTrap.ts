@@ -1,4 +1,4 @@
-import { useEffect, RefObject } from 'react'
+import { useEffect, RefObject } from 'react';
 
 /**
  * Hook to trap focus within a container (for modals, sidebars)
@@ -18,10 +18,10 @@ export function useFocusTrap(
   restoreFocusOnDeactivate?: HTMLElement | null
 ) {
   useEffect(() => {
-    if (!isActive || !containerRef.current) return
+    if (!isActive || !containerRef.current) {return;}
 
-    const container = containerRef.current
-    const previouslyFocused = document.activeElement as HTMLElement
+    const container = containerRef.current;
+    const previouslyFocused = document.activeElement as HTMLElement;
 
     // Get all focusable elements
     const getFocusableElements = (): HTMLElement[] => {
@@ -32,54 +32,54 @@ export function useFocusTrap(
         'select:not([disabled])',
         'textarea:not([disabled])',
         '[tabindex]:not([tabindex="-1"])',
-      ].join(', ')
+      ].join(', ');
 
-      return Array.from(container.querySelectorAll(selector)) as HTMLElement[]
-    }
+      return Array.from(container.querySelectorAll(selector)) as HTMLElement[];
+    };
 
     // Focus first element on activation
-    const focusableElements = getFocusableElements()
+    const focusableElements = getFocusableElements();
     if (focusableElements.length > 0) {
-      focusableElements[0].focus()
+      focusableElements[0].focus();
     }
 
     // Handle Tab key to cycle focus
     const handleTabKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return
+      if (e.key !== 'Tab') {return;}
 
-      const focusableElements = getFocusableElements()
-      if (focusableElements.length === 0) return
+      const focusableElements = getFocusableElements();
+      if (focusableElements.length === 0) {return;}
 
-      const firstElement = focusableElements[0]
-      const lastElement = focusableElements[focusableElements.length - 1]
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
 
       if (e.shiftKey) {
         // Shift+Tab: cycle backwards
         if (document.activeElement === firstElement) {
-          e.preventDefault()
-          lastElement.focus()
+          e.preventDefault();
+          lastElement.focus();
         }
       } else {
         // Tab: cycle forwards
         if (document.activeElement === lastElement) {
-          e.preventDefault()
-          firstElement.focus()
+          e.preventDefault();
+          firstElement.focus();
         }
       }
-    }
+    };
 
-    container.addEventListener('keydown', handleTabKey)
+    container.addEventListener('keydown', handleTabKey);
 
     // Cleanup and restore focus
     return () => {
-      container.removeEventListener('keydown', handleTabKey)
+      container.removeEventListener('keydown', handleTabKey);
 
       // Restore focus to previously focused element or custom element
       if (restoreFocusOnDeactivate) {
-        restoreFocusOnDeactivate.focus()
+        restoreFocusOnDeactivate.focus();
       } else if (previouslyFocused instanceof HTMLElement) {
-        previouslyFocused.focus()
+        previouslyFocused.focus();
       }
-    }
-  }, [containerRef, isActive, restoreFocusOnDeactivate])
+    };
+  }, [containerRef, isActive, restoreFocusOnDeactivate]);
 }

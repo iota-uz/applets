@@ -9,13 +9,13 @@
  * preserved across all transitions.
  */
 
-import { useState, useMemo, useCallback, useEffect, useRef, memo } from 'react'
-import { X } from '@phosphor-icons/react'
-import type { RenderTableData } from '../types'
-import type { TableCardHost } from './InteractiveTableCard'
-import { useTranslation } from '../hooks/useTranslation'
-import { TabBar } from './TabBar'
-import { InteractiveTableCard } from './InteractiveTableCard'
+import { useState, useMemo, useCallback, useEffect, useRef, memo } from 'react';
+import { X } from '@phosphor-icons/react';
+import type { RenderTableData } from '../types';
+import type { TableCardHost } from './InteractiveTableCard';
+import { useTranslation } from '../hooks/useTranslation';
+import { TabBar } from './TabBar';
+import { InteractiveTableCard } from './InteractiveTableCard';
 
 export interface TabbedTableGroupProps {
   tables: RenderTableData[]
@@ -23,34 +23,34 @@ export interface TabbedTableGroupProps {
   sendDisabled?: boolean
 }
 
-const INLINE_CLASS = 'w-full min-w-0 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/40 overflow-hidden'
-const FULLSCREEN_CLASS = 'fixed inset-4 flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900'
+const INLINE_CLASS = 'w-full min-w-0 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/40 overflow-hidden';
+const FULLSCREEN_CLASS = 'fixed inset-4 flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900';
 
 export const TabbedTableGroup = memo(function TabbedTableGroup({
   tables,
   onSendMessage,
   sendDisabled = false,
 }: TabbedTableGroupProps) {
-  const { t } = useTranslation()
-  const [activeTabId, setActiveTabId] = useState(tables[0]?.id ?? '')
-  const [isFullscreen, setIsFullscreen] = useState(false)
-  const containerRef = useRef<HTMLElement>(null)
+  const { t } = useTranslation();
+  const [activeTabId, setActiveTabId] = useState(tables[0]?.id ?? '');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef<HTMLElement>(null);
 
-  const toggleFullscreen = useCallback(() => setIsFullscreen((v) => !v), [])
+  const toggleFullscreen = useCallback(() => setIsFullscreen((v) => !v), []);
 
   // Escape key + focus management for fullscreen
   useEffect(() => {
-    if (!isFullscreen) return
-    containerRef.current?.focus()
+    if (!isFullscreen) {return;}
+    containerRef.current?.focus();
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        e.stopPropagation()
-        setIsFullscreen(false)
+        e.stopPropagation();
+        setIsFullscreen(false);
       }
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [isFullscreen])
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isFullscreen]);
 
   const tabs = useMemo(
     () =>
@@ -59,19 +59,19 @@ export const TabbedTableGroup = memo(function TabbedTableGroup({
         label: `${table.title || `${t('BiChat.Table.QueryResults')} ${i + 1}`} (${table.rows.length})`,
       })),
     [tables, t],
-  )
+  );
 
   const host = useMemo<TableCardHost>(
     () => ({ onToggleFullscreen: toggleFullscreen, isFullscreen }),
     [toggleFullscreen, isFullscreen],
-  )
+  );
 
   // Guard against empty or stale activeTabId
   const resolvedActiveId = tabs.some((tab) => tab.id === activeTabId)
     ? activeTabId
-    : tabs[0]?.id ?? ''
+    : tabs[0]?.id ?? '';
 
-  if (tables.length === 0) return null
+  if (tables.length === 0) {return null;}
 
   return (
     <>
@@ -111,7 +111,7 @@ export const TabbedTableGroup = memo(function TabbedTableGroup({
         />
 
         {tables.map((table) => {
-          const isActive = table.id === resolvedActiveId
+          const isActive = table.id === resolvedActiveId;
           return (
           <div
             key={table.id}
@@ -128,9 +128,9 @@ export const TabbedTableGroup = memo(function TabbedTableGroup({
               host={host}
             />
           </div>
-          )
+          );
         })}
       </section>
     </>
-  )
-})
+  );
+});

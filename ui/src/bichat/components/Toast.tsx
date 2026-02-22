@@ -4,11 +4,11 @@
  * Uses @headlessui/react Transition for CSS-driven enter/leave animations.
  */
 
-import { useEffect, useState, useCallback, useRef, useSyncExternalStore } from 'react'
-import { Transition } from '@headlessui/react'
-import { CheckCircle, XCircle, Info, Warning, X } from '@phosphor-icons/react'
-import type { ToastType, ToastAction } from '../hooks/useToast'
-import { useTranslation } from '../hooks/useTranslation'
+import { useEffect, useState, useCallback, useRef, useSyncExternalStore } from 'react';
+import { Transition } from '@headlessui/react';
+import { CheckCircle, XCircle, Info, Warning, X } from '@phosphor-icons/react';
+import type { ToastType, ToastAction } from '../hooks/useToast';
+import { useTranslation } from '../hooks/useTranslation';
 
 export interface ToastProps {
   id: string
@@ -54,29 +54,29 @@ const typeConfig: Record<
     progress: 'bg-amber-500 dark:bg-amber-400',
     iconEl: Warning,
   },
-}
+};
 
-const reducedMotionQuery = '(prefers-reduced-motion: reduce)'
-let reducedMotionMql: MediaQueryList | null = null
+const reducedMotionQuery = '(prefers-reduced-motion: reduce)';
+let reducedMotionMql: MediaQueryList | null = null;
 function getReducedMotionMql(): MediaQueryList | null {
-  if (typeof window === 'undefined') return null
+  if (typeof window === 'undefined') {return null;}
   if (!reducedMotionMql) {
-    reducedMotionMql = window.matchMedia(reducedMotionQuery)
+    reducedMotionMql = window.matchMedia(reducedMotionQuery);
   }
-  return reducedMotionMql
+  return reducedMotionMql;
 }
 function subscribeReducedMotion(callback: () => void): () => void {
-  const mql = getReducedMotionMql()
-  if (!mql) return () => {}
-  mql.addEventListener('change', callback)
-  return () => mql.removeEventListener('change', callback)
+  const mql = getReducedMotionMql();
+  if (!mql) {return () => {};}
+  mql.addEventListener('change', callback);
+  return () => mql.removeEventListener('change', callback);
 }
 function getReducedMotionSnapshot(): boolean {
-  const mql = getReducedMotionMql()
-  return mql ? mql.matches : false
+  const mql = getReducedMotionMql();
+  return mql ? mql.matches : false;
 }
 function getReducedMotionServerSnapshot(): boolean {
-  return false
+  return false;
 }
 
 export function Toast({
@@ -88,53 +88,53 @@ export function Toast({
   dismissLabel,
   action,
 }: ToastProps) {
-  const { t } = useTranslation()
-  const resolvedDismissLabel = dismissLabel ?? t('BiChat.Chat.DismissNotification')
-  const config = typeConfig[type]
-  const Icon = config.iconEl
-  const [show, setShow] = useState(false)
-  const [paused, setPaused] = useState(false)
-  const remainingRef = useRef(duration)
-  const startRef = useRef(Date.now())
+  const { t } = useTranslation();
+  const resolvedDismissLabel = dismissLabel ?? t('BiChat.Chat.DismissNotification');
+  const config = typeConfig[type];
+  const Icon = config.iconEl;
+  const [show, setShow] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const remainingRef = useRef(duration);
+  const startRef = useRef(Date.now());
 
   const prefersReducedMotion = useSyncExternalStore(
     subscribeReducedMotion,
     getReducedMotionSnapshot,
     getReducedMotionServerSnapshot
-  )
+  );
 
   // Trigger enter transition on mount
   useEffect(() => {
-    const frame = requestAnimationFrame(() => setShow(true))
-    return () => cancelAnimationFrame(frame)
-  }, [])
+    const frame = requestAnimationFrame(() => setShow(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   // Auto-dismiss with pause/resume on hover
   useEffect(() => {
-    if (paused) return
+    if (paused) {return;}
 
-    startRef.current = Date.now()
+    startRef.current = Date.now();
     const timer = setTimeout(() => {
-      setShow(false)
+      setShow(false);
       // Wait for leave transition before removing from DOM
-      setTimeout(() => onDismiss(id), 200)
-    }, remainingRef.current)
+      setTimeout(() => onDismiss(id), 200);
+    }, remainingRef.current);
 
     return () => {
       // Capture how much time remains when pausing
-      const elapsed = Date.now() - startRef.current
-      remainingRef.current = Math.max(0, remainingRef.current - elapsed)
-      clearTimeout(timer)
-    }
-  }, [id, paused, onDismiss])
+      const elapsed = Date.now() - startRef.current;
+      remainingRef.current = Math.max(0, remainingRef.current - elapsed);
+      clearTimeout(timer);
+    };
+  }, [id, paused, onDismiss]);
 
   const handleDismiss = useCallback(() => {
-    setShow(false)
-    setTimeout(() => onDismiss(id), 200)
-  }, [id, onDismiss])
+    setShow(false);
+    setTimeout(() => onDismiss(id), 200);
+  }, [id, onDismiss]);
 
-  const ariaLive = type === 'error' ? 'assertive' : 'polite'
-  const role = type === 'error' || type === 'warning' ? 'alert' : 'status'
+  const ariaLive = type === 'error' ? 'assertive' : 'polite';
+  const role = type === 'error' || type === 'warning' ? 'alert' : 'status';
 
   return (
     <Transition
@@ -169,8 +169,8 @@ export function Toast({
           <button
             type="button"
             onClick={() => {
-              action.onClick()
-              handleDismiss()
+              action.onClick();
+              handleDismiss();
             }}
             className={`shrink-0 text-sm font-semibold underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500/50 cursor-pointer ${config.accent}`}
           >
@@ -203,7 +203,7 @@ export function Toast({
         </div>
       </div>
     </Transition>
-  )
+  );
 }
 
-export default Toast
+export default Toast;

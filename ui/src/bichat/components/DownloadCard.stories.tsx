@@ -1,23 +1,23 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { DownloadCard } from './DownloadCard'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
-import { makeArtifacts } from '@sb-helpers/bichatFixtures'
-import { largeText } from '@sb-helpers/textFixtures'
+import { DownloadCard } from './DownloadCard';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
+import { makeArtifacts } from '@sb-helpers/bichatFixtures';
+import { largeText } from '@sb-helpers/textFixtures';
 
 const meta: Meta<typeof DownloadCard> = {
   title: 'BiChat/Components/DownloadCard',
   component: DownloadCard,
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof DownloadCard>
 
 export const Playground: Story = {
   args: {
     artifact: makeArtifacts()[0],
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -57,4 +57,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

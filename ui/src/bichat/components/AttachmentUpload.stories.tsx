@@ -1,27 +1,27 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import AttachmentUpload from './AttachmentUpload'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import AttachmentUpload from './AttachmentUpload';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof AttachmentUpload> = {
   title: 'BiChat/Components/AttachmentUpload',
   component: AttachmentUpload,
   parameters: { layout: 'centered' },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof AttachmentUpload>
 
 export const Playground: Story = {
   args: {
     onAttachmentsSelected: fn(),
   },
-}
+};
 
 export const Stress: Story = {
   render: () => {
-    const noop = fn()
+    const noop = fn();
     return (
       <ScenarioGrid
         columns={3}
@@ -46,6 +46,6 @@ export const Stress: Story = {
           },
         ]}
       />
-    )
+    );
   },
-}
+};

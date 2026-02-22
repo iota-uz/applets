@@ -5,26 +5,26 @@
  * a user message with its assistant response.
  */
 
-import { useMemo, ReactNode, lazy, Suspense, Fragment } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useChatSession, useChatMessaging } from '../context/ChatContext'
-import { ConversationTurn } from '../types'
-import { TurnBubble } from './TurnBubble'
-import { TypingIndicator } from './TypingIndicator'
-import { ActivityTrace } from './ActivityTrace'
-import StreamingCursor from './StreamingCursor'
-import ScrollToBottomButton from './ScrollToBottomButton'
-import { DateSeparator } from './DateSeparator'
-import { normalizeStreamingMarkdown } from '../utils/markdownStream'
-import { useMessageListScroll } from '../hooks/useMessageListScroll'
-import { useTranslation } from '../hooks/useTranslation'
-import { isSameDay } from 'date-fns'
+import { useMemo, ReactNode, lazy, Suspense, Fragment } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useChatSession, useChatMessaging } from '../context/ChatContext';
+import { ConversationTurn } from '../types';
+import { TurnBubble } from './TurnBubble';
+import { TypingIndicator } from './TypingIndicator';
+import { ActivityTrace } from './ActivityTrace';
+import StreamingCursor from './StreamingCursor';
+import ScrollToBottomButton from './ScrollToBottomButton';
+import { DateSeparator } from './DateSeparator';
+import { normalizeStreamingMarkdown } from '../utils/markdownStream';
+import { useMessageListScroll } from '../hooks/useMessageListScroll';
+import { useTranslation } from '../hooks/useTranslation';
+import { isSameDay } from 'date-fns';
 
 // Eagerly start loading the chunk so it's ready before streaming begins
-const markdownImport = import('./MarkdownRenderer')
+const markdownImport = import('./MarkdownRenderer');
 const MarkdownRenderer = lazy(() =>
   markdownImport.then((m) => ({ default: m.MarkdownRenderer }))
-)
+);
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -53,7 +53,7 @@ function MessageListSkeleton() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function StreamingBubble({ content, normalizedContent }: { content: string; normalizedContent: string }) {
@@ -75,7 +75,7 @@ function StreamingBubble({ content, normalizedContent }: { content: string; norm
         <StreamingCursor />
       </div>
     </div>
-  )
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -90,23 +90,23 @@ interface MessageListProps {
 }
 
 export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs, readOnly }: MessageListProps) {
-  const { t } = useTranslation()
-  const { currentSessionId, fetching } = useChatSession()
+  const { t } = useTranslation();
+  const { currentSessionId, fetching } = useChatSession();
   const {
     turns, streamingContent, isStreaming,
     thinkingContent, activeSteps,
     showActivityTrace, showTypingIndicator,
-  } = useChatMessaging()
+  } = useChatMessaging();
 
   const { containerRef, messagesEndRef, showScrollButton, unreadCount, handleScrollToBottom } =
-    useMessageListScroll({ currentSessionId, fetching, turnsLength: turns.length, streamingContent })
+    useMessageListScroll({ currentSessionId, fetching, turnsLength: turns.length, streamingContent });
 
   const normalizedStreaming = useMemo(
     () => (streamingContent ? normalizeStreamingMarkdown(streamingContent) : ''),
     [streamingContent],
-  )
+  );
 
-  const showEphemeral = showActivityTrace || showTypingIndicator
+  const showEphemeral = showActivityTrace || showTypingIndicator;
 
   return (
     <div className="relative flex-1 min-h-0">
@@ -115,10 +115,10 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
           {fetching && turns.length === 0 && <MessageListSkeleton />}
 
           {turns.map((turn, index) => {
-            const turnDate = new Date(turn.createdAt)
-            const prevDate = index > 0 ? new Date(turns[index - 1].createdAt) : null
-            const showDateSeparator = !!prevDate && !isSameDay(turnDate, prevDate)
-            const isLast = index === turns.length - 1
+            const turnDate = new Date(turn.createdAt);
+            const prevDate = index > 0 ? new Date(turns[index - 1].createdAt) : null;
+            const showDateSeparator = !!prevDate && !isSameDay(turnDate, prevDate);
+            const isLast = index === turns.length - 1;
 
             return (
               <Fragment key={turn.id}>
@@ -132,7 +132,7 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
                   assistantTurnProps={readOnly ? { allowRegenerate: false } : undefined}
                 />
               </Fragment>
-            )
+            );
           })}
 
           {isStreaming && streamingContent && (
@@ -167,5 +167,5 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
         label={isStreaming && showScrollButton ? t('BiChat.ScrollToBottom.NewMessages') : undefined}
       />
     </div>
-  )
+  );
 }

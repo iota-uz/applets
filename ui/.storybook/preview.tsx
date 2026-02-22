@@ -1,20 +1,20 @@
-import type { Preview } from '@storybook/react'
+import type { Preview } from '@storybook/react';
 
 
-import './preview.generated.css'
+import './preview.generated.css';
 
-import { ThemeProvider } from '../src/bichat/theme/ThemeProvider'
-import { IotaContextProvider } from '../src/bichat/context/IotaContext'
+import { ThemeProvider } from '../src/bichat/theme/ThemeProvider';
+import { IotaContextProvider } from '../src/bichat/context/IotaContext';
 
-import type { IotaContext } from '../src/bichat/types/iota'
-import type { InitialContext } from '../src/applet-core/types'
+import type { IotaContext } from '../src/bichat/types/iota';
+import type { InitialContext } from '../src/applet-core/types';
 
 type ThemeMode = 'light' | 'dark'
 
 function applyThemeMode(mode: ThemeMode) {
-  const root = document.documentElement
-  if (mode === 'dark') root.classList.add('dark')
-  else root.classList.remove('dark')
+  const root = document.documentElement;
+  if (mode === 'dark') {root.classList.add('dark');}
+  else {root.classList.remove('dark');}
 }
 
 function seedGlobals() {
@@ -60,10 +60,10 @@ function seedGlobals() {
         multiAgent: true,
       },
     },
-  }
+  };
 
-  window.__APPLET_CONTEXT__ = bichatContext
-  window.__CSRF_TOKEN__ = 'storybook-csrf-token'
+  window.__APPLET_CONTEXT__ = bichatContext;
+  window.__CSRF_TOKEN__ = 'storybook-csrf-token';
 
   // Used by applet-core `AppletProvider` (windowKey-driven).
   const appletContext: InitialContext = {
@@ -92,14 +92,14 @@ function seedGlobals() {
     extensions: {},
   }
 
-  ;(window as unknown as Record<string, unknown>).__APPLET_CONTEXT__ = appletContext
+  ;(window as unknown as Record<string, unknown>).__APPLET_CONTEXT__ = appletContext;
 }
 
 const VIEWPORTS = {
   mobile: { name: 'Mobile', styles: { width: '375px', height: '812px' } },
   tablet: { name: 'Tablet', styles: { width: '768px', height: '1024px' } },
   desktop: { name: 'Desktop', styles: { width: '1280px', height: '800px' } },
-}
+};
 
 const preview: Preview = {
   parameters: {
@@ -126,8 +126,8 @@ const preview: Preview = {
   },
   decorators: [
     (Story, ctx) => {
-      seedGlobals()
-      applyThemeMode((ctx.globals.theme as ThemeMode) || 'light')
+      seedGlobals();
+      applyThemeMode((ctx.globals.theme as ThemeMode) || 'light');
 
       return (
         <ThemeProvider theme={ctx.globals.theme as ThemeMode}>
@@ -137,9 +137,9 @@ const preview: Preview = {
             </div>
           </IotaContextProvider>
         </ThemeProvider>
-      )
+      );
     },
   ],
-}
+};
 
-export default preview
+export default preview;

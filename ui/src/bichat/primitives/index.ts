@@ -4,7 +4,7 @@
  */
 
 // Slot utility
-export { Slot, type SlotProps, type AsChildProps, getValidChildren } from './Slot'
+export { Slot, type SlotProps, type AsChildProps, getValidChildren } from './Slot';
 
 // Turn primitive
 export {
@@ -15,7 +15,7 @@ export {
   type TurnAssistantProps,
   type TurnTimestampProps,
   type TurnActionsProps,
-} from './Turn'
+} from './Turn';
 
 // Avatar primitive
 export {
@@ -25,7 +25,7 @@ export {
   type AvatarImageProps,
   type AvatarFallbackProps,
   type ImageLoadingStatus,
-} from './Avatar'
+} from './Avatar';
 
 // Bubble primitive
 export {
@@ -37,7 +37,7 @@ export {
   type BubbleFooterProps,
   type BubbleMetadataProps,
   type BubbleVariant,
-} from './Bubble'
+} from './Bubble';
 
 // ActionButton primitive
 export {
@@ -47,4 +47,4 @@ export {
   type ActionButtonIconProps,
   type ActionButtonLabelProps,
   type ActionButtonTooltipProps,
-} from './ActionButton'
+} from './ActionButton';

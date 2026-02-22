@@ -3,9 +3,9 @@
  * Reusable empty state display with icon, title, description, and action
  */
 
-import { memo, type ReactNode } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
-import { fadeInVariants } from '../animations/variants'
+import { memo, type ReactNode } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { fadeInVariants } from '../animations/variants';
 
 export interface EmptyStateProps {
   /** Optional icon to display */
@@ -38,7 +38,7 @@ const sizeClasses = {
     title: 'text-lg',
     description: 'text-base',
   },
-}
+};
 
 function EmptyState({
   icon,
@@ -48,9 +48,9 @@ function EmptyState({
   className = '',
   size = 'md',
 }: EmptyStateProps) {
-  const sizes = sizeClasses[size]
-  const prefersReducedMotion = useReducedMotion()
-  const duration = prefersReducedMotion ? 0 : 0.4
+  const sizes = sizeClasses[size];
+  const prefersReducedMotion = useReducedMotion();
+  const duration = prefersReducedMotion ? 0 : 0.4;
 
   return (
     <motion.div
@@ -107,11 +107,11 @@ function EmptyState({
         )}
       </div>
     </motion.div>
-  )
+  );
 }
 
-const MemoizedEmptyState = memo(EmptyState)
-MemoizedEmptyState.displayName = 'EmptyState'
+const MemoizedEmptyState = memo(EmptyState);
+MemoizedEmptyState.displayName = 'EmptyState';
 
-export { MemoizedEmptyState as EmptyState }
-export default MemoizedEmptyState
+export { MemoizedEmptyState as EmptyState };
+export default MemoizedEmptyState;

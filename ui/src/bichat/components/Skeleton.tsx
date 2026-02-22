@@ -3,7 +3,7 @@
  * Reusable loading skeleton with multiple variants
  */
 
-import { memo } from 'react'
+import { memo } from 'react';
 
 export interface SkeletonProps {
   /** Skeleton variant */
@@ -34,13 +34,13 @@ const variantClasses = {
   circular: 'rounded-full',
   rectangular: 'rounded-none',
   rounded: 'rounded-lg',
-}
+};
 
 const gapClasses = {
   sm: 'space-y-1',
   md: 'space-y-2',
   lg: 'space-y-3',
-}
+};
 
 function Skeleton({
   variant = 'text',
@@ -49,12 +49,12 @@ function Skeleton({
   className = '',
   animate = true,
 }: SkeletonProps) {
-  const variantClass = variantClasses[variant]
+  const variantClass = variantClasses[variant];
 
   const style: React.CSSProperties = {
     width: typeof width === 'number' ? `${width}px` : width,
     height: typeof height === 'number' ? `${height}px` : height,
-  }
+  };
 
   return (
     <div
@@ -62,7 +62,7 @@ function Skeleton({
       style={style}
       aria-hidden="true"
     />
-  )
+  );
 }
 
 /**
@@ -74,7 +74,7 @@ export function SkeletonGroup({
   className = '',
   children,
 }: SkeletonGroupProps) {
-  const gapClass = gapClasses[gap]
+  const gapClass = gapClasses[gap];
 
   return (
     <div className={`${gapClass} ${className}`} aria-hidden="true">
@@ -86,7 +86,7 @@ export function SkeletonGroup({
         )
       )}
     </div>
-  )
+  );
 }
 
 /**
@@ -99,7 +99,7 @@ export function SkeletonText({
   lines?: number
   className?: string
 }) {
-  const widths = ['100%', '90%', '80%', '95%', '85%']
+  const widths = ['100%', '90%', '80%', '95%', '85%'];
 
   return (
     <div className={`space-y-2 ${className}`} aria-hidden="true">
@@ -112,7 +112,7 @@ export function SkeletonText({
         />
       ))}
     </div>
-  )
+  );
 }
 
 /**
@@ -132,7 +132,7 @@ export function SkeletonAvatar({
       height={size}
       className={className}
     />
-  )
+  );
 }
 
 /**
@@ -154,7 +154,7 @@ export function SkeletonCard({
       height={height}
       className={className}
     />
-  )
+  );
 }
 
 /**
@@ -166,11 +166,11 @@ export function ListItemSkeleton({ className = '' }: { className?: string }) {
       <Skeleton variant="rounded" width={20} height={20} />
       <Skeleton variant="text" height={16} className="flex-1" />
     </div>
-  )
+  );
 }
 
-const MemoizedSkeleton = memo(Skeleton)
-MemoizedSkeleton.displayName = 'Skeleton'
+const MemoizedSkeleton = memo(Skeleton);
+MemoizedSkeleton.displayName = 'Skeleton';
 
-export { MemoizedSkeleton as Skeleton }
-export default MemoizedSkeleton
+export { MemoizedSkeleton as Skeleton };
+export default MemoizedSkeleton;

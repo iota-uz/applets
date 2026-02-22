@@ -4,9 +4,9 @@
  * Provides loading states, validation, and error handling
  */
 
-import { memo, useRef, useCallback, useState } from 'react'
-import { Paperclip, CircleNotch } from '@phosphor-icons/react'
-import { Attachment } from '../types'
+import { memo, useRef, useCallback, useState } from 'react';
+import { Paperclip, CircleNotch } from '@phosphor-icons/react';
+import { Attachment } from '../types';
 import {
   ATTACHMENT_ACCEPT_ATTRIBUTE,
   convertToBase64,
@@ -14,9 +14,9 @@ import {
   formatFileSize,
   isImageMimeType,
   validateAttachmentFile,
-} from '../utils/fileUtils'
-import { useToast } from '../hooks/useToast'
-import { useTranslation } from '../hooks/useTranslation'
+} from '../utils/fileUtils';
+import { useToast } from '../hooks/useToast';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface AttachmentError {
   filename: string
@@ -36,10 +36,10 @@ interface AttachmentUploadProps {
 
 const AttachmentUpload = memo<AttachmentUploadProps>(
   ({ onAttachmentsSelected, maxAttachments = 10, maxSizeBytes = 20 * 1024 * 1024, disabled = false }) => {
-    const fileInputRef = useRef<HTMLInputElement>(null)
-    const [isLoading, setIsLoading] = useState(false)
-    const toast = useToast()
-    const { t } = useTranslation()
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const toast = useToast();
+    const { t } = useTranslation();
 
     /**
      * Handles file selection from the input element
@@ -47,96 +47,96 @@ const AttachmentUpload = memo<AttachmentUploadProps>(
      */
     const handleFileSelect = useCallback(
       async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || [])
+        const files = Array.from(e.target.files || []);
 
         // Reset input so same file selection can be processed again
         if (fileInputRef.current) {
-          fileInputRef.current.value = ''
+          fileInputRef.current.value = '';
         }
 
         if (files.length === 0) {
-          return
+          return;
         }
 
-        setIsLoading(true)
+        setIsLoading(true);
 
         try {
           // Validate file count
           if (files.length > maxAttachments) {
-            toast.error(t('BiChat.Error.MaxFiles', { max: maxAttachments, selected: files.length }))
-            setIsLoading(false)
-            return
+            toast.error(t('BiChat.Error.MaxFiles', { max: maxAttachments, selected: files.length }));
+            setIsLoading(false);
+            return;
           }
 
-          const attachments: Attachment[] = []
-          const errors: AttachmentError[] = []
+          const attachments: Attachment[] = [];
+          const errors: AttachmentError[] = [];
 
           // Process each file
           for (const file of files) {
             // Validate file
             try {
-              validateAttachmentFile(file, maxSizeBytes)
+              validateAttachmentFile(file, maxSizeBytes);
             } catch (validationErr) {
-              errors.push({ filename: file.name, error: validationErr instanceof Error ? validationErr.message : String(validationErr) })
-              continue
+              errors.push({ filename: file.name, error: validationErr instanceof Error ? validationErr.message : String(validationErr) });
+              continue;
             }
 
             try {
               // Convert to base64
-              const base64Data = await convertToBase64(file)
+              const base64Data = await convertToBase64(file);
               const attachment: Attachment = {
                 clientKey: crypto.randomUUID(),
                 filename: file.name,
                 mimeType: file.type,
                 sizeBytes: file.size,
                 base64Data,
-              }
+              };
               if (isImageMimeType(file.type)) {
-                attachment.preview = createDataUrl(base64Data, file.type)
+                attachment.preview = createDataUrl(base64Data, file.type);
               }
 
-              attachments.push(attachment)
+              attachments.push(attachment);
             } catch (err) {
               errors.push({
                 filename: file.name,
                 error: err instanceof Error ? err.message : String(err),
-              })
+              });
             }
           }
 
           // Show error toasts for failed files
           if (errors.length > 0) {
             errors.forEach((err) => {
-              toast.error(`${err.filename}: ${err.error}`)
-            })
+              toast.error(`${err.filename}: ${err.error}`);
+            });
           }
 
           // Call parent callback with successful attachments
           if (attachments.length > 0) {
-            onAttachmentsSelected(attachments)
+            onAttachmentsSelected(attachments);
             const message =
               attachments.length === 1
                 ? t('BiChat.Attachment.FileAdded', { size: formatFileSize(attachments[0].sizeBytes) })
-                : t('BiChat.Attachment.FileAdded', { size: `${attachments.length} files` })
-            toast.success(message)
+                : t('BiChat.Attachment.FileAdded', { size: `${attachments.length} files` });
+            toast.success(message);
           } else if (errors.length > 0) {
-            toast.error(t('BiChat.Attachment.InvalidFile'))
+            toast.error(t('BiChat.Attachment.InvalidFile'));
           }
         } finally {
-          setIsLoading(false)
+          setIsLoading(false);
         }
       },
       [maxAttachments, maxSizeBytes, onAttachmentsSelected, toast, t]
-    )
+    );
 
     /**
      * Triggers the hidden file input
      */
     const handleClick = useCallback(() => {
-      fileInputRef.current?.click()
-    }, [])
+      fileInputRef.current?.click();
+    }, []);
 
-    const isDisabled = disabled || isLoading
+    const isDisabled = disabled || isLoading;
 
     return (
       <div className="relative">
@@ -181,10 +181,10 @@ const AttachmentUpload = memo<AttachmentUploadProps>(
           )}
         </button>
       </div>
-    )
+    );
   }
-)
+);
 
-AttachmentUpload.displayName = 'AttachmentUpload'
+AttachmentUpload.displayName = 'AttachmentUpload';
 
-export default AttachmentUpload
+export default AttachmentUpload;

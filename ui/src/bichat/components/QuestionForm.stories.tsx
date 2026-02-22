@@ -1,18 +1,18 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import QuestionForm from './QuestionForm'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
-import { makePendingQuestion } from '@sb-helpers/bichatFixtures'
-import type { Question } from '../types'
+import QuestionForm from './QuestionForm';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
+import { makePendingQuestion } from '@sb-helpers/bichatFixtures';
+import type { Question } from '../types';
 
 const meta: Meta<typeof QuestionForm> = {
   title: 'BiChat/Components/QuestionForm',
   component: QuestionForm,
   parameters: { layout: 'fullscreen' },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof QuestionForm>
 
 // ---------------------------------------------------------------------------
@@ -29,7 +29,7 @@ const regionQuestion: Question = {
     { id: 'o-apac', label: 'APAC', value: 'APAC' },
     { id: 'o-amer', label: 'Americas', value: 'AMER' },
   ],
-}
+};
 
 const dateRangeQuestion: Question = {
   id: 'q-date',
@@ -42,7 +42,7 @@ const dateRangeQuestion: Question = {
     { id: 'o-90d', label: 'Last 90 days', value: '90d' },
     { id: 'o-ytd', label: 'Year to date', value: 'ytd' },
   ],
-}
+};
 
 const formatQuestion: Question = {
   id: 'q-format',
@@ -54,7 +54,7 @@ const formatQuestion: Question = {
     { id: 'o-chart', label: 'Chart', value: 'chart' },
     { id: 'o-both', label: 'Table + Chart', value: 'both' },
   ],
-}
+};
 
 const singleChoiceQuestion: Question = {
   id: 'q-metric',
@@ -67,7 +67,7 @@ const singleChoiceQuestion: Question = {
     { id: 'o-orders', label: 'Order Count', value: 'orders' },
     { id: 'o-aov', label: 'Average Order Value', value: 'aov' },
   ],
-}
+};
 
 const optionalQuestion1: Question = {
   id: 'q-opt-notes',
@@ -79,7 +79,7 @@ const optionalQuestion1: Question = {
     { id: 'o-detail', label: 'Include detailed breakdown', value: 'detail' },
     { id: 'o-none', label: 'No extras', value: 'none' },
   ],
-}
+};
 
 const optionalQuestion2: Question = {
   id: 'q-opt-recipients',
@@ -91,7 +91,7 @@ const optionalQuestion2: Question = {
     { id: 'o-sales', label: 'Sales team', value: 'sales' },
     { id: 'o-finance', label: 'Finance', value: 'finance' },
   ],
-}
+};
 
 const longOptionsQuestion: Question = {
   id: 'q-department',
@@ -110,7 +110,7 @@ const longOptionsQuestion: Question = {
     { id: 'o-legal', label: 'Legal & Compliance', value: 'legal' },
     { id: 'o-ops', label: 'Operations', value: 'operations' },
   ],
-}
+};
 
 // ---------------------------------------------------------------------------
 // Stories
@@ -127,7 +127,7 @@ export const Playground: Story = {
     onSubmit: fn().mockImplementation(() => Promise.resolve()),
     onCancel: fn(),
   },
-}
+};
 
 /**
  * Multi-step wizard with 3 questions: region selection (MULTIPLE_CHOICE),
@@ -144,7 +144,7 @@ export const MultiStep: Story = {
     onSubmit: fn().mockImplementation(() => Promise.resolve()),
     onCancel: fn(),
   },
-}
+};
 
 /**
  * A single SINGLE_CHOICE question. Only one option can be selected at a
@@ -159,7 +159,7 @@ export const SingleChoice: Story = {
     onSubmit: fn().mockImplementation(() => Promise.resolve()),
     onCancel: fn(),
   },
-}
+};
 
 /**
  * Two questions with `required: false`. The "Next" button should be
@@ -174,7 +174,7 @@ export const OptionalQuestions: Story = {
     onSubmit: fn().mockImplementation(() => Promise.resolve()),
     onCancel: fn(),
   },
-}
+};
 
 /**
  * A question with 10 options to verify the list scrolls / wraps properly
@@ -189,7 +189,7 @@ export const LongOptions: Story = {
     onSubmit: fn().mockImplementation(() => Promise.resolve()),
     onCancel: fn(),
   },
-}
+};
 
 /**
  * ScenarioGrid showing all major variants side-by-side for quick visual
@@ -198,8 +198,8 @@ export const LongOptions: Story = {
  */
 export const Stress: Story = {
   render: () => {
-    const noop = () => {}
-    const noopAsync = () => Promise.resolve()
+    const noop = () => {};
+    const noopAsync = () => Promise.resolve();
 
     return (
       <ScenarioGrid
@@ -285,6 +285,6 @@ export const Stress: Story = {
           },
         ]}
       />
-    )
+    );
   },
-}
+};

@@ -1,11 +1,11 @@
-import { describe, expect, it } from 'vitest'
-import type { ConversationTurn, SessionArtifact } from '../types'
-import { MessageRole } from '../types'
-import { attachArtifactsToTurns } from './mappers'
+import { describe, expect, it } from 'vitest';
+import type { ConversationTurn, SessionArtifact } from '../types';
+import { MessageRole } from '../types';
+import { attachArtifactsToTurns } from './mappers';
 
 describe('attachArtifactsToTurns table artifacts', () => {
   it('attaches table artifact metadata to assistant turn renderTables', () => {
-    const assistantId = 'msg-assistant-1'
+    const assistantId = 'msg-assistant-1';
     const turns: ConversationTurn[] = [
       {
         id: 'turn-1',
@@ -28,7 +28,7 @@ describe('attachArtifactsToTurns table artifacts', () => {
           createdAt: '2026-02-22T00:00:01.000Z',
         },
       },
-    ]
+    ];
 
     const tableArtifact: SessionArtifact = {
       id: 'art-table-1',
@@ -47,21 +47,21 @@ describe('attachArtifactsToTurns table artifacts', () => {
         page_size: 25,
         truncated: false,
       },
-    }
+    };
 
-    const result = attachArtifactsToTurns(turns, [tableArtifact])
-    expect(result).toHaveLength(1)
-    const assistant = result[0]?.assistantTurn
-    expect(assistant?.renderTables).toBeDefined()
-    expect(assistant?.renderTables).toHaveLength(1)
-    expect(assistant?.renderTables?.[0].query).toBe('SELECT * FROM revenue LIMIT 10')
-    expect(assistant?.renderTables?.[0].columns).toEqual(['region', 'amount'])
-    expect(assistant?.renderTables?.[0].headers).toEqual(['Region', 'Amount'])
-    expect(assistant?.renderTables?.[0].totalRows).toBe(2)
-  })
+    const result = attachArtifactsToTurns(turns, [tableArtifact]);
+    expect(result).toHaveLength(1);
+    const assistant = result[0]?.assistantTurn;
+    expect(assistant?.renderTables).toBeDefined();
+    expect(assistant?.renderTables).toHaveLength(1);
+    expect(assistant?.renderTables?.[0].query).toBe('SELECT * FROM revenue LIMIT 10');
+    expect(assistant?.renderTables?.[0].columns).toEqual(['region', 'amount']);
+    expect(assistant?.renderTables?.[0].headers).toEqual(['Region', 'Amount']);
+    expect(assistant?.renderTables?.[0].totalRows).toBe(2);
+  });
 
   it('dedupes table artifact against tool-call-derived renderTables', () => {
-    const assistantId = 'msg-assistant-2'
+    const assistantId = 'msg-assistant-2';
     const turns: ConversationTurn[] = [
       {
         id: 'turn-2',
@@ -100,7 +100,7 @@ describe('attachArtifactsToTurns table artifacts', () => {
           ],
         },
       },
-    ]
+    ];
 
     const tableArtifact: SessionArtifact = {
       id: 'art-table-2',
@@ -119,11 +119,11 @@ describe('attachArtifactsToTurns table artifacts', () => {
         page_size: 25,
         truncated: false,
       },
-    }
+    };
 
-    const result = attachArtifactsToTurns(turns, [tableArtifact])
-    expect(result).toHaveLength(1)
-    const assistant = result[0]?.assistantTurn
-    expect(assistant?.renderTables).toHaveLength(1)
-  })
-})
+    const result = attachArtifactsToTurns(turns, [tableArtifact]);
+    expect(result).toHaveLength(1);
+    const assistant = result[0]?.assistantTurn;
+    expect(assistant?.renderTables).toHaveLength(1);
+  });
+});

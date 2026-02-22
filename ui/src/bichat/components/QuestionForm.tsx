@@ -5,14 +5,14 @@
  * Supports custom "Other" text input for all questions
  */
 
-import { useState } from 'react'
-import { X } from '@phosphor-icons/react'
-import { type PendingQuestion, type QuestionAnswers, type QuestionAnswerData } from '../types'
-import { useTranslation } from '../hooks/useTranslation'
-import QuestionStep from './QuestionStep'
-import ConfirmationStep from './ConfirmationStep'
-import { LoadingSpinner } from './LoadingSpinner'
-import { isQuestionAnswered, validateAnswers } from '../utils/questionFormUtils'
+import { useState } from 'react';
+import { X } from '@phosphor-icons/react';
+import { type PendingQuestion, type QuestionAnswers, type QuestionAnswerData } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
+import QuestionStep from './QuestionStep';
+import ConfirmationStep from './ConfirmationStep';
+import { LoadingSpinner } from './LoadingSpinner';
+import { isQuestionAnswered, validateAnswers } from '../utils/questionFormUtils';
 
 interface QuestionFormProps {
   pendingQuestion: PendingQuestion
@@ -26,73 +26,73 @@ export default function QuestionForm({
   onSubmit,
   onCancel,
 }: QuestionFormProps) {
-  const { t } = useTranslation()
-  const [currentStep, setCurrentStep] = useState(0)
-  const [answers, setAnswers] = useState<QuestionAnswers>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { t } = useTranslation();
+  const [currentStep, setCurrentStep] = useState(0);
+  const [answers, setAnswers] = useState<QuestionAnswers>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const questions = pendingQuestion.questions
-  const isConfirmationStep = currentStep === questions.length
-  const isFirstStep = currentStep === 0
-  const isLastStep = currentStep === questions.length - 1
+  const questions = pendingQuestion.questions;
+  const isConfirmationStep = currentStep === questions.length;
+  const isFirstStep = currentStep === 0;
+  const isLastStep = currentStep === questions.length - 1;
 
   // Check if current question is answered
   const currentQuestionAnswered =
     isConfirmationStep ||
     (questions[currentStep]?.id &&
-      isQuestionAnswered(answers[questions[currentStep].id]))
+      isQuestionAnswered(answers[questions[currentStep].id]));
 
   const handleAnswer = (answerData: QuestionAnswerData) => {
-    const currentQuestion = questions[currentStep]
+    const currentQuestion = questions[currentStep];
     if (currentQuestion) {
       setAnswers((prev) => ({
         ...prev,
         [currentQuestion.id]: answerData,
-      }))
+      }));
     }
-  }
+  };
 
   const handleNext = () => {
-    if (!currentQuestionAnswered) return
+    if (!currentQuestionAnswered) {return;}
     if (isLastStep) {
-      setCurrentStep(isConfirmationStep ? currentStep : currentStep + 1)
+      setCurrentStep(isConfirmationStep ? currentStep : currentStep + 1);
     } else {
-      setCurrentStep(currentStep + 1)
+      setCurrentStep(currentStep + 1);
     }
-  }
+  };
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep(currentStep - 1)
+      setCurrentStep(currentStep - 1);
     }
-  }
+  };
 
   const handleSubmitAnswers = async () => {
-    const validationError = validateAnswers(questions, answers, t)
+    const validationError = validateAnswers(questions, answers, t);
     if (validationError) {
-      setError(validationError)
-      return
+      setError(validationError);
+      return;
     }
 
-    setIsSubmitting(true)
-    setError(null)
+    setIsSubmitting(true);
+    setError(null);
 
     try {
-      await onSubmit(answers)
+      await onSubmit(answers);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : t('BiChat.Error.Generic')
-      setError(errorMessage)
-      setIsSubmitting(false)
+        err instanceof Error ? err.message : t('BiChat.Error.Generic');
+      setError(errorMessage);
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // Calculate progress text
-  const totalSteps = questions.length + 1
+  const totalSteps = questions.length + 1;
   const progressText = isConfirmationStep
     ? t('BiChat.QuestionForm.Step', { current: totalSteps, total: totalSteps })
-    : t('BiChat.QuestionForm.Step', { current: currentStep + 1, total: totalSteps })
+    : t('BiChat.QuestionForm.Step', { current: currentStep + 1, total: totalSteps });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
@@ -198,5 +198,5 @@ export default function QuestionForm({
         </div>
       </div>
     </div>
-  )
+  );
 }

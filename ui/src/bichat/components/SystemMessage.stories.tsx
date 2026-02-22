@@ -1,8 +1,8 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import { SystemMessage } from './SystemMessage'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { SystemMessage } from './SystemMessage';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof SystemMessage> = {
   title: 'BiChat/Components/SystemMessage',
@@ -12,9 +12,9 @@ const meta: Meta<typeof SystemMessage> = {
     hideActions: { control: { type: 'boolean' } },
     hideTimestamp: { control: { type: 'boolean' } },
   },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof SystemMessage>
 
 export const Playground: Story = {
@@ -24,7 +24,7 @@ export const Playground: Story = {
     createdAt: new Date(Date.now() - 3600_000).toISOString(),
     onCopy: fn(),
   },
-}
+};
 
 export const LongContent: Story = {
   args: {
@@ -44,13 +44,13 @@ export const LongContent: Story = {
     createdAt: new Date(Date.now() - 86400_000).toISOString(),
     onCopy: fn(),
   },
-}
+};
 
-const noop = fn()
+const noop = fn();
 
 export const Stress: Story = {
   render: () => {
-    const now = new Date().toISOString()
+    const now = new Date().toISOString();
     return (
       <ScenarioGrid
         scenarios={[
@@ -96,6 +96,6 @@ export const Stress: Story = {
           },
         ]}
       />
-    )
+    );
   },
-}
+};

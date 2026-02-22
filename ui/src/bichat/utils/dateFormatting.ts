@@ -2,7 +2,7 @@
  * Date formatting utilities using date-fns
  */
 
-import { differenceInMinutes, differenceInHours, differenceInDays, format } from 'date-fns'
+import { differenceInMinutes, differenceInHours, differenceInDays, format } from 'date-fns';
 
 /**
  * Format a date as relative time (e.g., "5m ago", "2h ago")
@@ -20,25 +20,25 @@ export function formatRelativeTime(
   date: string | Date,
   t?: (key: string, params?: Record<string, string | number>) => string
 ): string {
-  const messageDate = new Date(date)
-  const now = new Date()
+  const messageDate = new Date(date);
+  const now = new Date();
 
-  const diffMins = differenceInMinutes(now, messageDate)
-  const diffHours = differenceInHours(now, messageDate)
-  const diffDays = differenceInDays(now, messageDate)
+  const diffMins = differenceInMinutes(now, messageDate);
+  const diffHours = differenceInHours(now, messageDate);
+  const diffDays = differenceInDays(now, messageDate);
 
   if (diffMins < 1) {
-    return t ? t('BiChat.RelativeTime.JustNow') : 'Just now'
+    return t ? t('BiChat.RelativeTime.JustNow') : 'Just now';
   }
   if (diffMins < 60) {
-    return t ? t('BiChat.RelativeTime.MinutesAgo', { count: diffMins }) : `${diffMins}m ago`
+    return t ? t('BiChat.RelativeTime.MinutesAgo', { count: diffMins }) : `${diffMins}m ago`;
   }
   if (diffHours < 24) {
-    return t ? t('BiChat.RelativeTime.HoursAgo', { count: diffHours }) : `${diffHours}h ago`
+    return t ? t('BiChat.RelativeTime.HoursAgo', { count: diffHours }) : `${diffHours}h ago`;
   }
   if (diffDays <= 7) {
-    return t ? t('BiChat.RelativeTime.DaysAgo', { count: diffDays }) : `${diffDays}d ago`
+    return t ? t('BiChat.RelativeTime.DaysAgo', { count: diffDays }) : `${diffDays}d ago`;
   }
 
-  return format(messageDate, 'HH:mm')
+  return format(messageDate, 'HH:mm');
 }

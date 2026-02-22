@@ -1,15 +1,15 @@
-import { describe, expect, it } from 'vitest'
-import { MessageRole } from '../types'
-import type { ConversationTurn, PendingQuestion, StreamInterruptPayload } from '../types'
+import { describe, expect, it } from 'vitest';
+import { MessageRole } from '../types';
+import type { ConversationTurn, PendingQuestion, StreamInterruptPayload } from '../types';
 import {
   applyTurnLifecycleForPendingQuestion,
   normalizeQuestionType,
   pendingQuestionFromInterrupt,
   resolvePendingQuestionTurnIndex,
-} from './hitlLifecycle'
+} from './hitlLifecycle';
 
 function makeTurn(overrides: Partial<ConversationTurn> = {}): ConversationTurn {
-  const createdAt = overrides.createdAt ?? '2026-01-01T00:00:00.000Z'
+  const createdAt = overrides.createdAt ?? '2026-01-01T00:00:00.000Z';
   return {
     id: overrides.id ?? 'turn-1',
     sessionId: overrides.sessionId ?? 'session-1',
@@ -21,7 +21,7 @@ function makeTurn(overrides: Partial<ConversationTurn> = {}): ConversationTurn {
     },
     assistantTurn: overrides.assistantTurn,
     createdAt,
-  }
+  };
 }
 
 function makeAssistantTurn(overrides: Partial<NonNullable<ConversationTurn['assistantTurn']>> = {}) {
@@ -39,7 +39,7 @@ function makeAssistantTurn(overrides: Partial<NonNullable<ConversationTurn['assi
     charts: overrides.charts,
     renderTables: overrides.renderTables,
     debug: overrides.debug,
-  }
+  };
 }
 
 function makePendingQuestion(overrides: Partial<PendingQuestion> = {}): PendingQuestion {
@@ -49,19 +49,19 @@ function makePendingQuestion(overrides: Partial<PendingQuestion> = {}): PendingQ
     questions: overrides.questions ?? [],
     status: overrides.status ?? 'PENDING',
     agentName: overrides.agentName,
-  }
+  };
 }
 
 describe('normalizeQuestionType', () => {
   it('normalizes supported variations', () => {
-    expect(normalizeQuestionType('MULTIPLE CHOICE')).toBe('MULTIPLE_CHOICE')
-    expect(normalizeQuestionType('multiple-choice')).toBe('MULTIPLE_CHOICE')
-  })
+    expect(normalizeQuestionType('MULTIPLE CHOICE')).toBe('MULTIPLE_CHOICE');
+    expect(normalizeQuestionType('multiple-choice')).toBe('MULTIPLE_CHOICE');
+  });
 
   it('falls back to SINGLE_CHOICE', () => {
-    expect(normalizeQuestionType('anything-else')).toBe('SINGLE_CHOICE')
-  })
-})
+    expect(normalizeQuestionType('anything-else')).toBe('SINGLE_CHOICE');
+  });
+});
 
 describe('pendingQuestionFromInterrupt', () => {
   it('maps interrupt payload to pending question', () => {
@@ -76,71 +76,71 @@ describe('pendingQuestionFromInterrupt', () => {
           options: [{ id: 'o-1', label: 'A' }],
         },
       ],
-    }
+    };
 
-    const pending = pendingQuestionFromInterrupt(interrupt, 'turn-fallback')
-    expect(pending).not.toBeNull()
-    expect(pending?.id).toBe('cp-1')
-    expect(pending?.turnId).toBe('turn-fallback')
-    expect(pending?.agentName).toBe('Analyst')
-    expect(pending?.questions[0]?.type).toBe('SINGLE_CHOICE')
-    expect(pending?.questions[0]?.options?.[0]?.value).toBe('A')
-  })
+    const pending = pendingQuestionFromInterrupt(interrupt, 'turn-fallback');
+    expect(pending).not.toBeNull();
+    expect(pending?.id).toBe('cp-1');
+    expect(pending?.turnId).toBe('turn-fallback');
+    expect(pending?.agentName).toBe('Analyst');
+    expect(pending?.questions[0]?.type).toBe('SINGLE_CHOICE');
+    expect(pending?.questions[0]?.options?.[0]?.value).toBe('A');
+  });
 
   it('returns null for malformed checkpointId', () => {
     const pending = pendingQuestionFromInterrupt(
       { checkpointId: '', questions: [] },
       'turn-fallback'
-    )
-    expect(pending).toBeNull()
-  })
-})
+    );
+    expect(pending).toBeNull();
+  });
+});
 
 describe('resolvePendingQuestionTurnIndex', () => {
   it('finds explicit turnId match', () => {
-    const turns = [makeTurn({ id: 'turn-1' }), makeTurn({ id: 'turn-2' })]
-    const idx = resolvePendingQuestionTurnIndex(turns, makePendingQuestion({ turnId: 'turn-2' }))
-    expect(idx).toBe(1)
-  })
+    const turns = [makeTurn({ id: 'turn-1' }), makeTurn({ id: 'turn-2' })];
+    const idx = resolvePendingQuestionTurnIndex(turns, makePendingQuestion({ turnId: 'turn-2' }));
+    expect(idx).toBe(1);
+  });
 
   it('falls back to last turn with assistant', () => {
     const turns = [
       makeTurn({ id: 'turn-1' }),
       makeTurn({ id: 'turn-2', assistantTurn: makeAssistantTurn({ id: 'assistant-2' }) }),
       makeTurn({ id: 'turn-3', assistantTurn: makeAssistantTurn({ id: 'assistant-3' }) }),
-    ]
-    const idx = resolvePendingQuestionTurnIndex(turns, makePendingQuestion({ turnId: 'not-found' }))
-    expect(idx).toBe(2)
-  })
-})
+    ];
+    const idx = resolvePendingQuestionTurnIndex(turns, makePendingQuestion({ turnId: 'not-found' }));
+    expect(idx).toBe(2);
+  });
+});
 
 describe('applyTurnLifecycleForPendingQuestion', () => {
   it('marks matched assistant turn as waiting_for_human_input', () => {
     const turns = [
       makeTurn({ id: 'turn-1', assistantTurn: makeAssistantTurn({ id: 'assistant-1' }) }),
       makeTurn({ id: 'turn-2', assistantTurn: makeAssistantTurn({ id: 'assistant-2' }) }),
-    ]
+    ];
 
     const updated = applyTurnLifecycleForPendingQuestion(
       turns,
       makePendingQuestion({ turnId: 'turn-2' })
-    )
+    );
 
-    expect(updated[0].assistantTurn?.lifecycle).toBe('complete')
-    expect(updated[1].assistantTurn?.lifecycle).toBe('waiting_for_human_input')
-  })
+    expect(updated[0].assistantTurn?.lifecycle).toBe('complete');
+    expect(updated[1].assistantTurn?.lifecycle).toBe('waiting_for_human_input');
+  });
 
   it('creates placeholder assistant turn when pending turn has none', () => {
-    const turns = [makeTurn({ id: 'turn-1' })]
+    const turns = [makeTurn({ id: 'turn-1' })];
     const updated = applyTurnLifecycleForPendingQuestion(
       turns,
       makePendingQuestion({ turnId: 'turn-1', id: 'checkpoint-9' })
-    )
+    );
 
-    expect(updated[0].assistantTurn).toBeDefined()
-    expect(updated[0].assistantTurn?.id).toBe('checkpoint-9-assistant')
-    expect(updated[0].assistantTurn?.lifecycle).toBe('waiting_for_human_input')
-  })
+    expect(updated[0].assistantTurn).toBeDefined();
+    expect(updated[0].assistantTurn?.id).toBe('checkpoint-9-assistant');
+    expect(updated[0].assistantTurn?.lifecycle).toBe('waiting_for_human_input');
+  });
 
   it('clears waiting lifecycle when pending question is removed', () => {
     const turns = [
@@ -148,11 +148,11 @@ describe('applyTurnLifecycleForPendingQuestion', () => {
         id: 'turn-1',
         assistantTurn: makeAssistantTurn({ lifecycle: 'waiting_for_human_input' }),
       }),
-    ]
+    ];
 
-    const updated = applyTurnLifecycleForPendingQuestion(turns, null)
-    expect(updated[0].assistantTurn?.lifecycle).toBe('complete')
-  })
+    const updated = applyTurnLifecycleForPendingQuestion(turns, null);
+    expect(updated[0].assistantTurn?.lifecycle).toBe('complete');
+  });
 
   it('returns original array when no lifecycle changes are needed', () => {
     const turns = [
@@ -160,13 +160,13 @@ describe('applyTurnLifecycleForPendingQuestion', () => {
         id: 'turn-1',
         assistantTurn: makeAssistantTurn({ lifecycle: 'waiting_for_human_input' }),
       }),
-    ]
+    ];
 
     const updated = applyTurnLifecycleForPendingQuestion(
       turns,
       makePendingQuestion({ turnId: 'turn-1' })
-    )
+    );
 
-    expect(updated).toBe(turns)
-  })
-})
+    expect(updated).toBe(turns);
+  });
+});

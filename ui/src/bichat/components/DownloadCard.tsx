@@ -4,9 +4,9 @@
  * with type-specific icon, metadata, and download action.
  */
 
-import { DownloadSimple } from '@phosphor-icons/react'
-import type { Artifact } from '../types'
-import { getFileVisual } from '../utils/fileUtils'
+import { DownloadSimple } from '@phosphor-icons/react';
+import type { Artifact } from '../types';
+import { getFileVisual } from '../utils/fileUtils';
 
 interface DownloadCardProps {
   artifact: Artifact
@@ -15,12 +15,12 @@ interface DownloadCardProps {
 const MIME_BY_TYPE: Record<string, string> = {
   excel: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   pdf: 'application/pdf',
-}
+};
 
 export function DownloadCard({ artifact }: DownloadCardProps) {
-  const { type, filename, url, sizeReadable, rowCount, description } = artifact
-  const visual = getFileVisual(MIME_BY_TYPE[type], filename)
-  const Icon = visual.icon
+  const { type, filename, url, sizeReadable, rowCount, description } = artifact;
+  const visual = getFileVisual(MIME_BY_TYPE[type], filename);
+  const Icon = visual.icon;
 
   return (
     <a
@@ -79,5 +79,5 @@ export function DownloadCard({ artifact }: DownloadCardProps) {
         />
       </div>
     </a>
-  )
+  );
 }

@@ -1,12 +1,12 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import ArchivedChatList from './ArchivedChatList'
-import { MockChatDataSource } from '@sb-helpers/mockChatDataSource'
-import { makeSessions } from '@sb-helpers/bichatFixtures'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import ArchivedChatList from './ArchivedChatList';
+import { MockChatDataSource } from '@sb-helpers/mockChatDataSource';
+import { makeSessions } from '@sb-helpers/bichatFixtures';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
-const archivedSessions = makeSessions(5).map(s => ({ ...s, status: 'archived' as const }))
+const archivedSessions = makeSessions(5).map(s => ({ ...s, status: 'archived' as const }));
 
 const meta: Meta<typeof ArchivedChatList> = {
   title: 'BiChat/Components/ArchivedChatList',
@@ -14,9 +14,9 @@ const meta: Meta<typeof ArchivedChatList> = {
   parameters: {
     layout: 'fullscreen',
   },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof ArchivedChatList>
 
 // ---------------------------------------------------------------------------
@@ -35,7 +35,7 @@ export const Playground: Story = {
       <ArchivedChatList {...args} />
     </div>
   ),
-}
+};
 
 // ---------------------------------------------------------------------------
 // 2. Empty — no archived sessions
@@ -52,7 +52,7 @@ export const Empty: Story = {
       <ArchivedChatList {...args} />
     </div>
   ),
-}
+};
 
 // ---------------------------------------------------------------------------
 // 3. Stress — ScenarioGrid with multiple variants
@@ -60,8 +60,8 @@ export const Empty: Story = {
 
 export const Stress: Story = {
   render: () => {
-    const noop = () => {}
-    const manyArchived = makeSessions(15).map(s => ({ ...s, status: 'archived' as const }))
+    const noop = () => {};
+    const manyArchived = makeSessions(15).map(s => ({ ...s, status: 'archived' as const }));
     return (
       <ScenarioGrid
         columns={2}
@@ -109,6 +109,6 @@ export const Stress: Story = {
           },
         ]}
       />
-    )
+    );
   },
-}
+};

@@ -21,5 +21,5 @@ export default function SessionSkeleton({ count = 5 }: SessionSkeletonProps) {
         </div>
       ))}
     </div>
-  )
+  );
 }

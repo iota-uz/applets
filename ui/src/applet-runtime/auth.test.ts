@@ -1,8 +1,8 @@
 // @ts-nocheck
-import { describe, expect, it } from 'bun:test'
+import { describe, expect, it } from 'bun:test';
 
-import { auth } from './auth'
-import { withRequestContext } from './context'
+import { auth } from './auth';
+import { withRequestContext } from './context';
 
 describe('auth.currentUser', () => {
   it('reads user context from request headers', async () => {
@@ -13,14 +13,14 @@ describe('auth.currentUser', () => {
         'x-iota-permissions': 'BiChat.Access,BiChat.Write',
         'x-iota-request-id': 'req-1',
       },
-    })
+    });
 
-    const user = await withRequestContext(request, () => auth.currentUser())
+    const user = await withRequestContext(request, () => auth.currentUser());
     expect(user).toEqual({
       id: 'user-1',
       tenantId: 'tenant-1',
       permissions: ['BiChat.Access', 'BiChat.Write'],
       requestId: 'req-1',
-    })
-  })
-})
+    });
+  });
+});

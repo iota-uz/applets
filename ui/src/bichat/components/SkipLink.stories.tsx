@@ -1,14 +1,14 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import SkipLink from './SkipLink'
+import SkipLink from './SkipLink';
 
 const meta: Meta<typeof SkipLink> = {
   title: 'BiChat/Components/SkipLink',
   component: SkipLink,
   parameters: { layout: 'centered' },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof SkipLink>
 
 export const Default: Story = {
@@ -27,7 +27,7 @@ export const Default: Story = {
       </div>
     </div>
   ),
-}
+};
 
 export const Focused: Story = {
   render: () => (
@@ -46,4 +46,4 @@ export const Focused: Story = {
       </div>
     </div>
   ),
-}
+};

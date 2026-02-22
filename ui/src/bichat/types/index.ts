@@ -508,7 +508,7 @@ export interface SessionGroup {
 }
 
 // Re-export split interfaces for consumers that only need a subset
-export type { SessionStore, MessageTransport, ArtifactStore, AdminStore } from './data-source'
+export type { SessionStore, MessageTransport, ArtifactStore, AdminStore } from './data-source';
 
 /**
  * Full data source interface for BiChat.

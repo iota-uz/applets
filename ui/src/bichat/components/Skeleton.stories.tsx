@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
 import Skeleton, {
   SkeletonGroup,
@@ -6,15 +6,15 @@ import Skeleton, {
   SkeletonAvatar,
   SkeletonCard,
   ListItemSkeleton,
-} from './Skeleton'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+} from './Skeleton';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta = {
   title: 'BiChat/Components/Skeleton',
   parameters: { layout: 'centered' },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj
 
 export const Variants: Story = {
@@ -41,7 +41,7 @@ export const Variants: Story = {
       ]}
     />
   ),
-}
+};
 
 export const TextLines: Story = {
   render: () => (
@@ -75,7 +75,7 @@ export const TextLines: Story = {
       ]}
     />
   ),
-}
+};
 
 export const Group: Story = {
   render: () => (
@@ -108,7 +108,7 @@ export const Group: Story = {
       ]}
     />
   ),
-}
+};
 
 export const Cards: Story = {
   render: () => (
@@ -130,7 +130,7 @@ export const Cards: Story = {
       ]}
     />
   ),
-}
+};
 
 export const ListItems: Story = {
   render: () => (
@@ -140,7 +140,7 @@ export const ListItems: Story = {
       <ListItemSkeleton />
     </div>
   ),
-}
+};
 
 export const FullPage: Story = {
   name: 'Full Page (realistic)',
@@ -169,4 +169,4 @@ export const FullPage: Story = {
       </div>
     </div>
   ),
-}
+};

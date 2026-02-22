@@ -1,5 +1,5 @@
-import { useAppletContext } from '../context/AppletContext'
-import type { UserContext } from '../types'
+import { useAppletContext } from '../context/AppletContext';
+import type { UserContext } from '../types';
 
 /**
  * useUser provides access to current user information.
@@ -8,6 +8,6 @@ import type { UserContext } from '../types'
  * const { id, email, firstName, lastName, permissions } = useUser()
  */
 export function useUser(): UserContext {
-  const { user } = useAppletContext()
-  return user
+  const { user } = useAppletContext();
+  return user;
 }

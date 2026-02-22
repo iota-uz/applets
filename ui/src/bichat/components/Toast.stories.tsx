@@ -1,8 +1,8 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import { Toast } from './Toast'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { Toast } from './Toast';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof Toast> = {
   title: 'BiChat/Components/Toast',
@@ -14,9 +14,9 @@ const meta: Meta<typeof Toast> = {
       options: ['success', 'error', 'info', 'warning'],
     },
   },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof Toast>
 
 export const Playground: Story = {
@@ -27,11 +27,11 @@ export const Playground: Story = {
     duration: 60_000,
     onDismiss: fn(),
   },
-}
+};
 
 export const Stress: Story = {
   render: () => {
-    const noop = () => {}
+    const noop = () => {};
     return (
       <ScenarioGrid
         scenarios={[
@@ -85,6 +85,6 @@ export const Stress: Story = {
           },
         ]}
       />
-    )
+    );
   },
-}
+};

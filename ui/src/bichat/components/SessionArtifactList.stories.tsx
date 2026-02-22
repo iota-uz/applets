@@ -1,8 +1,8 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import { SessionArtifactList } from './SessionArtifactList'
-import type { SessionArtifact } from '../types'
+import { SessionArtifactList } from './SessionArtifactList';
+import type { SessionArtifact } from '../types';
 
 const meta: Meta<typeof SessionArtifactList> = {
   title: 'BiChat/Components/SessionArtifactList',
@@ -15,12 +15,12 @@ const meta: Meta<typeof SessionArtifactList> = {
       </div>
     ),
   ],
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof SessionArtifactList>
 
-const now = new Date().toISOString()
+const now = new Date().toISOString();
 
 const mockArtifacts: SessionArtifact[] = [
   {
@@ -62,18 +62,18 @@ const mockArtifacts: SessionArtifact[] = [
     sizeBytes: 52000,
     createdAt: now,
   },
-]
+];
 
 export const Playground: Story = {
   args: {
     artifacts: mockArtifacts,
     onSelect: fn(),
   },
-}
+};
 
 export const Empty: Story = {
   args: {
     artifacts: [],
     onSelect: fn(),
   },
-}
+};

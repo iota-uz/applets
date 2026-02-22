@@ -19,7 +19,7 @@ import type {
   QuestionAnswers,
   SendMessageOptions,
   SessionArtifact,
-} from './index'
+} from './index';
 
 // ---------------------------------------------------------------------------
 // SessionStore — session lifecycle CRUD

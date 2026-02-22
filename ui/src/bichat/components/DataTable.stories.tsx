@@ -5,20 +5,20 @@
  * These are internal building blocks of InteractiveTableCard. They are
  * showcased here for visual reference and isolated testing.
  */
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
-import { DataTableCell } from './DataTableCell'
-import { DataTableToolbar } from './DataTableToolbar'
-import { DataTableStatsBar } from './DataTableStatsBar'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
-import type { ColumnMeta, ColumnStats } from '../hooks/useDataTable'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
+import { DataTableCell } from './DataTableCell';
+import { DataTableToolbar } from './DataTableToolbar';
+import { DataTableStatsBar } from './DataTableStatsBar';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
+import type { ColumnMeta, ColumnStats } from '../hooks/useDataTable';
 
 const meta: Meta = {
   title: 'BiChat/Components/DataTable Internals',
   parameters: { layout: 'centered' },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj
 
 // Shared mock data
@@ -27,12 +27,12 @@ const columns: ColumnMeta[] = [
   { index: 1, name: 'revenue', header: 'Revenue ($)', type: 'number', visible: true, width: 120 },
   { index: 2, name: 'growth', header: 'Growth (%)', type: 'number', visible: true, width: 100 },
   { index: 3, name: 'hidden', header: 'Hidden Col', type: 'string', visible: false, width: 100 },
-]
+];
 
 const stats = new Map<number, ColumnStats>([
   [1, { sum: 4_800_000, avg: 960_000, min: 310_000, max: 1_850_000, count: 5, nullCount: 0 }],
   [2, { sum: 94.2, avg: 18.84, min: 8.4, max: 31.0, count: 5, nullCount: 0 }],
-])
+]);
 
 export const Cell: Story = {
   render: () => (
@@ -66,7 +66,7 @@ export const Cell: Story = {
       ]}
     />
   ),
-}
+};
 
 export const Toolbar: Story = {
   render: () => (
@@ -81,7 +81,7 @@ export const Toolbar: Story = {
       />
     </div>
   ),
-}
+};
 
 export const ToolbarWithSearch: Story = {
   render: () => (
@@ -96,7 +96,7 @@ export const ToolbarWithSearch: Story = {
       />
     </div>
   ),
-}
+};
 
 export const StatsBar: Story = {
   render: () => (
@@ -104,7 +104,7 @@ export const StatsBar: Story = {
       <DataTableStatsBar columns={columns.filter((c) => c.visible)} stats={stats} />
     </div>
   ),
-}
+};
 
 export const StatsBarEmpty: Story = {
   render: () => (
@@ -112,4 +112,4 @@ export const StatsBarEmpty: Story = {
       <DataTableStatsBar columns={columns.filter((c) => c.visible)} stats={new Map()} />
     </div>
   ),
-}
+};

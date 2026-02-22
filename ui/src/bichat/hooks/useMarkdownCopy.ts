@@ -3,7 +3,7 @@
  * Manages copy-to-clipboard state for code blocks in markdown
  */
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 export interface UseMarkdownCopyOptions {
   /** Duration to show "copied" state in ms (default: 2000) */
@@ -49,87 +49,87 @@ export interface UseMarkdownCopyReturn {
  * ```
  */
 export function useMarkdownCopy(options: UseMarkdownCopyOptions = {}): UseMarkdownCopyReturn {
-  const { copiedDuration = 2000, onCopy, onError } = options
+  const { copiedDuration = 2000, onCopy, onError } = options;
 
-  const [copiedStates, setCopiedStates] = useState<Map<string, boolean>>(new Map())
-  const timeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+  const [copiedStates, setCopiedStates] = useState<Map<string, boolean>>(new Map());
+  const timeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   useEffect(() => {
-    const timeouts = timeoutsRef.current
+    const timeouts = timeoutsRef.current;
     return () => {
-      timeouts.forEach((timeout) => clearTimeout(timeout))
-      timeouts.clear()
-    }
-  }, [])
+      timeouts.forEach((timeout) => clearTimeout(timeout));
+      timeouts.clear();
+    };
+  }, []);
 
   const isCopied = useCallback(
     (blockId: string): boolean => {
-      return copiedStates.get(blockId) ?? false
+      return copiedStates.get(blockId) ?? false;
     },
     [copiedStates]
-  )
+  );
 
   const copy = useCallback(
     async (blockId: string, content: string, language?: string) => {
       try {
-        await navigator.clipboard.writeText(content)
+        await navigator.clipboard.writeText(content);
 
         // Set copied state
         setCopiedStates((prev) => {
-          const next = new Map(prev)
-          next.set(blockId, true)
-          return next
-        })
+          const next = new Map(prev);
+          next.set(blockId, true);
+          return next;
+        });
 
-        onCopy?.(content, language)
+        onCopy?.(content, language);
 
         // Clear existing timeout for this block
-        const existingTimeout = timeoutsRef.current.get(blockId)
+        const existingTimeout = timeoutsRef.current.get(blockId);
         if (existingTimeout) {
-          clearTimeout(existingTimeout)
+          clearTimeout(existingTimeout);
         }
 
         // Set timeout to reset copied state
         const timeout = setTimeout(() => {
           setCopiedStates((prev) => {
-            const next = new Map(prev)
-            next.set(blockId, false)
-            return next
-          })
-          timeoutsRef.current.delete(blockId)
-        }, copiedDuration)
+            const next = new Map(prev);
+            next.set(blockId, false);
+            return next;
+          });
+          timeoutsRef.current.delete(blockId);
+        }, copiedDuration);
 
-        timeoutsRef.current.set(blockId, timeout)
+        timeoutsRef.current.set(blockId, timeout);
       } catch (error) {
-        const err = error instanceof Error ? error : new Error('Failed to copy')
-        onError?.(err)
-        throw err
+        const err = error instanceof Error ? error : new Error('Failed to copy');
+        onError?.(err);
+        throw err;
       }
     },
     [copiedDuration, onCopy, onError]
-  )
+  );
 
   const reset = useCallback((blockId: string) => {
     setCopiedStates((prev) => {
-      const next = new Map(prev)
-      next.set(blockId, false)
-      return next
-    })
+      const next = new Map(prev);
+      next.set(blockId, false);
+      return next;
+    });
 
-    const timeout = timeoutsRef.current.get(blockId)
+    const timeout = timeoutsRef.current.get(blockId);
     if (timeout) {
-      clearTimeout(timeout)
-      timeoutsRef.current.delete(blockId)
+      clearTimeout(timeout);
+      timeoutsRef.current.delete(blockId);
     }
-  }, [])
+  }, []);
 
   const resetAll = useCallback(() => {
-    setCopiedStates(new Map())
+    setCopiedStates(new Map());
 
     // Clear all timeouts
-    timeoutsRef.current.forEach((timeout) => clearTimeout(timeout))
-    timeoutsRef.current.clear()
-  }, [])
+    timeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
+    timeoutsRef.current.clear();
+  }, []);
 
   return {
     copiedStates,
@@ -137,5 +137,5 @@ export function useMarkdownCopy(options: UseMarkdownCopyOptions = {}): UseMarkdo
     copy,
     reset,
     resetAll,
-  }
+  };
 }

@@ -4,8 +4,8 @@
  * Uses @headlessui/react Dialog for accessible modal behavior.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react'
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
 import {
   X,
   CaretLeft,
@@ -16,10 +16,10 @@ import {
   MagnifyingGlassPlus,
   MagnifyingGlassMinus,
   ArrowsIn,
-} from '@phosphor-icons/react'
-import type { ImageAttachment } from '../types'
-import { createDataUrl, formatFileSize } from '../utils/fileUtils'
-import { useTranslation } from '../hooks/useTranslation'
+} from '@phosphor-icons/react';
+import type { ImageAttachment } from '../types';
+import { createDataUrl, formatFileSize } from '../utils/fileUtils';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface ImageModalProps {
   isOpen: boolean
@@ -51,7 +51,7 @@ function ToolbarButton({
     >
       {children}
     </button>
-  )
+  );
 }
 
 interface ViewerToolbarProps {
@@ -110,12 +110,12 @@ function ViewerToolbar({
         </>
       )}
     </div>
-  )
+  );
 }
 
-const MIN_SCALE = 0.25
-const MAX_SCALE = 5
-const ZOOM_STEP = 0.25
+const MIN_SCALE = 0.25;
+const MAX_SCALE = 5;
+const ZOOM_STEP = 0.25;
 
 function ImageModal({
   isOpen,
@@ -125,164 +125,164 @@ function ImageModal({
   currentIndex = 0,
   onNavigate,
 }: ImageModalProps) {
-  const { t } = useTranslation()
-  const [isImageLoaded, setIsImageLoaded] = useState(false)
-  const [imageError, setImageError] = useState(false)
-  const [retryKey, setRetryKey] = useState(0)
+  const { t } = useTranslation();
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   // Zoom, pan & rotation state
-  const [scale, setScale] = useState(1)
-  const [position, setPosition] = useState({ x: 0, y: 0 })
-  const [rotation, setRotation] = useState(0)
-  const [isDragging, setIsDragging] = useState(false)
-  const dragStartRef = useRef({ x: 0, y: 0 })
-  const positionRef = useRef({ x: 0, y: 0 })
-  const scaleRef = useRef(1)
-  const imageAreaRef = useRef<HTMLDivElement>(null)
+  const [scale, setScale] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [rotation, setRotation] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const positionRef = useRef({ x: 0, y: 0 });
+  const scaleRef = useRef(1);
+  const imageAreaRef = useRef<HTMLDivElement>(null);
 
-  const hasMultipleImages = allAttachments && allAttachments.length > 1
-  const canNavigatePrev = hasMultipleImages && currentIndex > 0
+  const hasMultipleImages = allAttachments && allAttachments.length > 1;
+  const canNavigatePrev = hasMultipleImages && currentIndex > 0;
   const canNavigateNext =
-    hasMultipleImages && currentIndex < (allAttachments?.length || 1) - 1
-  const isZoomed = scale > 1
-  const isTransformed = isZoomed || rotation !== 0
+    hasMultipleImages && currentIndex < (allAttachments?.length || 1) - 1;
+  const isZoomed = scale > 1;
+  const isTransformed = isZoomed || rotation !== 0;
 
   // Keep refs in sync for event handlers
-  useEffect(() => { scaleRef.current = scale }, [scale])
-  useEffect(() => { positionRef.current = position }, [position])
+  useEffect(() => { scaleRef.current = scale; }, [scale]);
+  useEffect(() => { positionRef.current = position; }, [position]);
 
   const rotateLeft = useCallback(() => {
-    setRotation((r) => ((r - 90) % 360 + 360) % 360)
-  }, [])
+    setRotation((r) => ((r - 90) % 360 + 360) % 360);
+  }, []);
   const rotateRight = useCallback(() => {
-    setRotation((r) => (r + 90) % 360)
-  }, [])
+    setRotation((r) => (r + 90) % 360);
+  }, []);
 
   // Keyboard navigation + zoom shortcuts
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen) {return;}
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft' && onNavigate && canNavigatePrev) {
-        onNavigate('prev')
+        onNavigate('prev');
       } else if (e.key === 'ArrowRight' && onNavigate && canNavigateNext) {
-        onNavigate('next')
+        onNavigate('next');
       } else if (e.key === '+' || e.key === '=') {
-        setScale(s => Math.min(s + ZOOM_STEP, MAX_SCALE))
+        setScale(s => Math.min(s + ZOOM_STEP, MAX_SCALE));
       } else if (e.key === '-') {
-        setScale(s => Math.max(s - ZOOM_STEP, MIN_SCALE))
-        if (scaleRef.current - ZOOM_STEP <= 1) setPosition({ x: 0, y: 0 })
+        setScale(s => Math.max(s - ZOOM_STEP, MIN_SCALE));
+        if (scaleRef.current - ZOOM_STEP <= 1) {setPosition({ x: 0, y: 0 });}
       } else if (e.key === '0') {
-        setScale(1)
-        setPosition({ x: 0, y: 0 })
-        setRotation(0)
+        setScale(1);
+        setPosition({ x: 0, y: 0 });
+        setRotation(0);
       } else if (e.key === 'r' && !e.shiftKey) {
-        rotateRight()
+        rotateRight();
       } else if (e.key === 'R' || (e.key === 'r' && e.shiftKey)) {
-        rotateLeft()
+        rotateLeft();
       }
-    }
+    };
 
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onNavigate, canNavigatePrev, canNavigateNext, rotateLeft, rotateRight])
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onNavigate, canNavigatePrev, canNavigateNext, rotateLeft, rotateRight]);
 
   // Reset state on attachment change
   useEffect(() => {
-    setIsImageLoaded(false)
-    setImageError(false)
-    setScale(1)
-    setPosition({ x: 0, y: 0 })
-    setRotation(0)
-  }, [attachment])
+    setIsImageLoaded(false);
+    setImageError(false);
+    setScale(1);
+    setPosition({ x: 0, y: 0 });
+    setRotation(0);
+  }, [attachment]);
 
   // Mouse wheel zoom (needs native listener for preventDefault on passive)
   useEffect(() => {
-    const el = imageAreaRef.current
-    if (!el || !isOpen) return
+    const el = imageAreaRef.current;
+    if (!el || !isOpen) {return;}
 
     const handler = (e: WheelEvent) => {
-      const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP
-      const current = scaleRef.current
-      const newScale = Math.min(Math.max(current + delta, MIN_SCALE), MAX_SCALE)
-      if (newScale === current) return
-      e.preventDefault()
-      setScale(newScale)
-      if (newScale <= 1) setPosition({ x: 0, y: 0 })
-    }
+      const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+      const current = scaleRef.current;
+      const newScale = Math.min(Math.max(current + delta, MIN_SCALE), MAX_SCALE);
+      if (newScale === current) {return;}
+      e.preventDefault();
+      setScale(newScale);
+      if (newScale <= 1) {setPosition({ x: 0, y: 0 });}
+    };
 
-    el.addEventListener('wheel', handler, { passive: false })
-    return () => el.removeEventListener('wheel', handler)
-  }, [isOpen])
+    el.addEventListener('wheel', handler, { passive: false });
+    return () => el.removeEventListener('wheel', handler);
+  }, [isOpen]);
 
   const handleRetry = useCallback(() => {
-    setImageError(false)
-    setIsImageLoaded(false)
-    setRetryKey((k) => k + 1)
-  }, [])
+    setImageError(false);
+    setIsImageLoaded(false);
+    setRetryKey((k) => k + 1);
+  }, []);
 
   // Zoom controls
   const zoomIn = useCallback(() => {
-    setScale(s => Math.min(s + ZOOM_STEP, MAX_SCALE))
-  }, [])
+    setScale(s => Math.min(s + ZOOM_STEP, MAX_SCALE));
+  }, []);
 
   const zoomOut = useCallback(() => {
-    setScale(s => Math.max(s - ZOOM_STEP, MIN_SCALE))
-    if (scaleRef.current - ZOOM_STEP <= 1) setPosition({ x: 0, y: 0 })
-  }, [])
+    setScale(s => Math.max(s - ZOOM_STEP, MIN_SCALE));
+    if (scaleRef.current - ZOOM_STEP <= 1) {setPosition({ x: 0, y: 0 });}
+  }, []);
 
   const resetZoom = useCallback(() => {
-    setScale(1)
-    setPosition({ x: 0, y: 0 })
-    setRotation(0)
-  }, [])
+    setScale(1);
+    setPosition({ x: 0, y: 0 });
+    setRotation(0);
+  }, []);
 
   // Double-click to toggle between fit and 2x zoom (reset rotation when returning to 1x for consistency with resetZoom and '0' key)
   const handleDoubleClick = useCallback(() => {
-    const current = scaleRef.current
+    const current = scaleRef.current;
     if (current !== 1) {
-      setScale(1)
-      setPosition({ x: 0, y: 0 })
-      setRotation(0)
+      setScale(1);
+      setPosition({ x: 0, y: 0 });
+      setRotation(0);
     } else {
-      setScale(2)
+      setScale(2);
     }
-  }, [])
+  }, []);
 
   // Drag to pan (when zoomed)
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (scaleRef.current <= 1) return
-    e.preventDefault()
-    setIsDragging(true)
+    if (scaleRef.current <= 1) {return;}
+    e.preventDefault();
+    setIsDragging(true);
     dragStartRef.current = {
       x: e.clientX - positionRef.current.x,
       y: e.clientY - positionRef.current.y,
-    }
-  }, [])
+    };
+  }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging) return
+    if (!isDragging) {return;}
     setPosition({
       x: e.clientX - dragStartRef.current.x,
       y: e.clientY - dragStartRef.current.y,
-    })
-  }, [isDragging])
+    });
+  }, [isDragging]);
 
   const handleMouseUp = useCallback(() => {
-    setIsDragging(false)
-  }, [])
+    setIsDragging(false);
+  }, []);
 
   // Click background to close (only when not zoomed; rotation alone does not block close)
   const handleBackdropClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget && !isZoomed) {
-      onClose()
+      onClose();
     }
-  }, [isZoomed, onClose])
+  }, [isZoomed, onClose]);
 
   const previewUrl =
-    attachment.preview || createDataUrl(attachment.base64Data, attachment.mimeType)
+    attachment.preview || createDataUrl(attachment.base64Data, attachment.mimeType);
 
-  const zoomPercent = Math.round(scale * 100)
+  const zoomPercent = Math.round(scale * 100);
 
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative" style={{ zIndex: 99999 }}>
@@ -441,8 +441,8 @@ function ImageModal({
         </div>
       </DialogPanel>
     </Dialog>
-  )
+  );
 }
 
-export { ImageModal }
-export default ImageModal
+export { ImageModal };
+export default ImageModal;

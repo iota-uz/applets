@@ -1,14 +1,14 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import { ToastContainer } from './ToastContainer'
+import { ToastContainer } from './ToastContainer';
 const meta: Meta<typeof ToastContainer> = {
   title: 'BiChat/Components/ToastContainer',
   component: ToastContainer,
   parameters: { layout: 'fullscreen' },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof ToastContainer>
 
 export const Playground: Story = {
@@ -19,7 +19,7 @@ export const Playground: Story = {
     ],
     onDismiss: fn(),
   },
-}
+};
 
 export const AllVariants: Story = {
   args: {
@@ -31,7 +31,7 @@ export const AllVariants: Story = {
     ],
     onDismiss: fn(),
   },
-}
+};
 
 export const ManyToasts: Story = {
   args: {
@@ -45,7 +45,7 @@ export const ManyToasts: Story = {
     ],
     onDismiss: fn(),
   },
-}
+};
 
 export const LongMessages: Story = {
   args: {
@@ -63,7 +63,7 @@ export const LongMessages: Story = {
     ],
     onDismiss: fn(),
   },
-}
+};
 
 export const CustomDismissLabel: Story = {
   args: {
@@ -73,11 +73,11 @@ export const CustomDismissLabel: Story = {
     onDismiss: fn(),
     dismissLabel: 'Close notification',
   },
-}
+};
 
 export const Empty: Story = {
   args: {
     toasts: [],
     onDismiss: fn(),
   },
-}
+};

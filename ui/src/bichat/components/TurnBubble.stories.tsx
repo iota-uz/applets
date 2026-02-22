@@ -1,10 +1,10 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { TurnBubble } from './TurnBubble'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
-import { makeConversationTurn, makeAssistantTurn, makeUserTurn } from '@sb-helpers/bichatFixtures'
-import { ChatSessionProvider } from '../context/ChatContext'
-import { MockChatDataSource } from '@sb-helpers/mockChatDataSource'
+import { TurnBubble } from './TurnBubble';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
+import { makeConversationTurn, makeAssistantTurn, makeUserTurn } from '@sb-helpers/bichatFixtures';
+import { ChatSessionProvider } from '../context/ChatContext';
+import { MockChatDataSource } from '@sb-helpers/mockChatDataSource';
 
 const meta: Meta<typeof TurnBubble> = {
   title: 'BiChat/Components/TurnBubble',
@@ -16,9 +16,9 @@ const meta: Meta<typeof TurnBubble> = {
       </ChatSessionProvider>
     ),
   ],
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof TurnBubble>
 
 export const Playground: Story = {
@@ -28,7 +28,7 @@ export const Playground: Story = {
       assistantTurn: makeAssistantTurn({ content: 'Everything is looking good.' }),
     }),
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -72,4 +72,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

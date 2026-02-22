@@ -1,22 +1,22 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { MagnifyingGlass } from '@phosphor-icons/react'
+import type { Meta, StoryObj } from '@storybook/react';
+import { MagnifyingGlass } from '@phosphor-icons/react';
 
-import { LoadingSpinner } from './LoadingSpinner'
-import { Skeleton, SkeletonText, SkeletonAvatar, SkeletonCard } from './Skeleton'
-import { TypingIndicator } from './TypingIndicator'
-import { StreamingCursor } from './StreamingCursor'
-import { Toast } from './Toast'
-import { ToastContainer } from './ToastContainer'
-import { ScrollToBottomButton } from './ScrollToBottomButton'
-import { EmptyState } from './EmptyState'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { LoadingSpinner } from './LoadingSpinner';
+import { Skeleton, SkeletonText, SkeletonAvatar, SkeletonCard } from './Skeleton';
+import { TypingIndicator } from './TypingIndicator';
+import { StreamingCursor } from './StreamingCursor';
+import { Toast } from './Toast';
+import { ToastContainer } from './ToastContainer';
+import { ScrollToBottomButton } from './ScrollToBottomButton';
+import { EmptyState } from './EmptyState';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta = {
   title: 'BiChat/Utilities',
   parameters: { layout: 'centered' },
-}
+};
 
-export default meta
+export default meta;
 
 type Story = StoryObj
 
@@ -81,7 +81,7 @@ export const Loaders: Story = {
       ]}
     />
   ),
-}
+};
 
 export const Toasts: Story = {
   render: () => (
@@ -116,7 +116,7 @@ export const Toasts: Story = {
       ]}
     />
   ),
-}
+};
 
 export const ScrollAndEmpty: Story = {
   render: () => (
@@ -150,4 +150,4 @@ export const ScrollAndEmpty: Story = {
       ]}
     />
   ),
-}
+};

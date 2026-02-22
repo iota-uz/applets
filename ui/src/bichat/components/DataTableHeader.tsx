@@ -1,10 +1,10 @@
-import { memo, useCallback, useEffect, useRef } from 'react'
-import { CaretUp, CaretDown, DotsThreeVertical } from '@phosphor-icons/react'
-import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
-import type { ColumnMeta, SortState } from '../hooks/useDataTable'
-import { useTranslation } from '../hooks/useTranslation'
+import { memo, useCallback, useEffect, useRef } from 'react';
+import { CaretUp, CaretDown, DotsThreeVertical } from '@phosphor-icons/react';
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
+import type { ColumnMeta, SortState } from '../hooks/useDataTable';
+import { useTranslation } from '../hooks/useTranslation';
 
-const MIN_COLUMN_WIDTH = 40
+const MIN_COLUMN_WIDTH = 40;
 
 interface DataTableHeaderProps {
   tableId: string
@@ -52,8 +52,8 @@ export const DataTableHeader = memo(function DataTableHeader({
         ))}
       </tr>
     </thead>
-  )
-})
+  );
+});
 
 interface HeaderCellProps {
   column: ColumnMeta
@@ -76,63 +76,63 @@ const HeaderCell = memo(function HeaderCell({
   sendDisabled,
   isFirstColumn,
 }: HeaderCellProps) {
-  const { t } = useTranslation()
-  const thRef = useRef<HTMLTableCellElement>(null)
-  const resizeTeardownRef = useRef<(() => void) | null>(null)
-  const isActive = sort?.columnIndex === column.index
-  const direction = isActive ? sort.direction : null
+  const { t } = useTranslation();
+  const thRef = useRef<HTMLTableCellElement>(null);
+  const resizeTeardownRef = useRef<(() => void) | null>(null);
+  const isActive = sort?.columnIndex === column.index;
+  const direction = isActive ? sort.direction : null;
 
   useEffect(() => {
     return () => {
-      resizeTeardownRef.current?.()
-      resizeTeardownRef.current = null
-    }
-  }, [])
+      resizeTeardownRef.current?.();
+      resizeTeardownRef.current = null;
+    };
+  }, []);
 
   const handleResizeStart = useCallback(
     (e: React.PointerEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      const th = thRef.current
-      if (!th) return
+      e.preventDefault();
+      e.stopPropagation();
+      const th = thRef.current;
+      if (!th) {return;}
 
-      const startX = e.clientX
-      const startWidth = th.offsetWidth
-      const pointerId = e.pointerId
-      const target = e.currentTarget as Element
+      const startX = e.clientX;
+      const startWidth = th.offsetWidth;
+      const pointerId = e.pointerId;
+      const target = e.currentTarget as Element;
 
       const onMove = (moveEvent: PointerEvent) => {
-        const delta = moveEvent.clientX - startX
-        const newWidth = Math.max(MIN_COLUMN_WIDTH, startWidth + delta)
-        onColumnResize(column.index, newWidth)
-      }
+        const delta = moveEvent.clientX - startX;
+        const newWidth = Math.max(MIN_COLUMN_WIDTH, startWidth + delta);
+        onColumnResize(column.index, newWidth);
+      };
 
       const teardown = () => {
-        document.removeEventListener('pointermove', onMove)
-        document.removeEventListener('pointerup', onUp)
-        document.removeEventListener('pointercancel', onUp)
-        resizeTeardownRef.current = null
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        document.removeEventListener('pointercancel', onUp);
+        resizeTeardownRef.current = null;
         try {
-          target.releasePointerCapture(pointerId)
+          target.releasePointerCapture(pointerId);
         } catch {
           // ignore
         }
-      }
+      };
 
-      const onUp = () => teardown()
+      const onUp = () => teardown();
 
-      resizeTeardownRef.current = teardown
-      document.addEventListener('pointermove', onMove)
-      document.addEventListener('pointerup', onUp)
-      document.addEventListener('pointercancel', onUp)
+      resizeTeardownRef.current = teardown;
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+      document.addEventListener('pointercancel', onUp);
       try {
-        target.setPointerCapture(pointerId)
+        target.setPointerCapture(pointerId);
       } catch {
         // ignore
       }
     },
     [column.index, onColumnResize],
-  )
+  );
 
   return (
     <th
@@ -225,5 +225,5 @@ const HeaderCell = memo(function HeaderCell({
         onPointerDown={handleResizeStart}
       />
     </th>
-  )
-})
+  );
+});

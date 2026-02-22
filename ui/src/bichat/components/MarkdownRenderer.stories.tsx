@@ -1,16 +1,16 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { MarkdownRenderer } from './MarkdownRenderer'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
-import { flowingMarkdown, veryLargeText } from '@sb-helpers/textFixtures'
-import { makeCitation } from '@sb-helpers/bichatFixtures'
+import { MarkdownRenderer } from './MarkdownRenderer';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
+import { flowingMarkdown, veryLargeText } from '@sb-helpers/textFixtures';
+import { makeCitation } from '@sb-helpers/bichatFixtures';
 
 const meta: Meta<typeof MarkdownRenderer> = {
   title: 'BiChat/Components/MarkdownRenderer',
   component: MarkdownRenderer,
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof MarkdownRenderer>
 
 export const Playground: Story = {
@@ -20,7 +20,7 @@ export const Playground: Story = {
       makeCitation({ id: '1', title: 'Reference Source' }),
     ],
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -64,4 +64,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

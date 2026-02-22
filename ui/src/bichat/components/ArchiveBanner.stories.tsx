@@ -1,16 +1,16 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import ArchiveBanner from './ArchiveBanner'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import ArchiveBanner from './ArchiveBanner';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof ArchiveBanner> = {
   title: 'BiChat/Components/ArchiveBanner',
   component: ArchiveBanner,
   parameters: { layout: 'centered' },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof ArchiveBanner>
 
 export const Default: Story = {
@@ -19,11 +19,11 @@ export const Default: Story = {
     onRestore: fn(),
     restoring: false,
   },
-}
+};
 
 export const Stress: Story = {
   render: () => {
-    const noop = async () => {}
+    const noop = async () => {};
     return (
       <ScenarioGrid
         scenarios={[
@@ -57,6 +57,6 @@ export const Stress: Story = {
           },
         ]}
       />
-    )
+    );
   },
-}
+};

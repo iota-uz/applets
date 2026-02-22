@@ -20,7 +20,7 @@ export const fadeInVariants = {
     opacity: 0,
     transition: { duration: 0.15 },
   },
-}
+};
 
 /**
  * Fade in with subtle slide up
@@ -40,7 +40,7 @@ export const fadeInUpVariants = {
     y: 8,
     transition: { duration: 0.15 },
   },
-}
+};
 
 /**
  * Scale fade for modals and popups
@@ -57,7 +57,7 @@ export const scaleFadeVariants = {
     scale: 0.98,
     transition: { duration: 0.1 },
   },
-}
+};
 
 /**
  * Modal backdrop
@@ -72,7 +72,7 @@ export const backdropVariants = {
     opacity: 0,
     transition: { duration: 0.15 },
   },
-}
+};
 
 /**
  * Button press feedback
@@ -81,7 +81,7 @@ export const buttonVariants = {
   tap: {
     scale: 0.98,
   },
-}
+};
 
 /**
  * Stagger container for lists
@@ -95,7 +95,7 @@ export const staggerContainerVariants = {
       delayChildren: 0.05,
     },
   },
-}
+};
 
 /**
  * List item animation
@@ -112,7 +112,7 @@ export const listItemVariants = {
     x: -8,
     transition: { duration: 0.15 },
   },
-}
+};
 
 /**
  * Message entrance animation
@@ -134,7 +134,7 @@ export const messageVariants = {
     opacity: 0,
     transition: { duration: 0.15 },
   },
-}
+};
 
 /**
  * Container for staggered messages
@@ -148,7 +148,7 @@ export const messageContainerVariants = {
       delayChildren: 0.05,
     },
   },
-}
+};
 
 /**
  * Typing indicator dots
@@ -163,7 +163,7 @@ export const typingDotVariants = {
       ease: 'easeInOut',
     },
   },
-}
+};
 
 /**
  * Verb transition for typing indicator
@@ -187,7 +187,7 @@ export const verbTransitionVariants = {
     opacity: 0,
     transition: { duration: 0.15 },
   },
-}
+};
 
 /**
  * Floating button (scroll to bottom, etc.)
@@ -207,7 +207,7 @@ export const floatingButtonVariants = {
     scale: 0.9,
     transition: { duration: 0.15 },
   },
-}
+};
 
 /**
  * Dropdown menu
@@ -224,7 +224,7 @@ export const dropdownVariants = {
     y: -4,
     transition: { duration: 0.1 },
   },
-}
+};
 
 /**
  * Session item with subtle slide-right on hover
@@ -245,7 +245,7 @@ export const sessionItemVariants = {
     x: -20,
     transition: { duration: 0.2 },
   },
-}
+};
 
 /**
  * Error/alert message slide-in
@@ -267,4 +267,4 @@ export const errorMessageVariants = {
     height: 0,
     transition: { duration: 0.2 },
   },
-}
+};

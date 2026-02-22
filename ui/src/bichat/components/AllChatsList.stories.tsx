@@ -1,12 +1,12 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import AllChatsList from './AllChatsList'
-import { MockChatDataSource } from '@sb-helpers/mockChatDataSource'
-import { makeSessions } from '@sb-helpers/bichatFixtures'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import AllChatsList from './AllChatsList';
+import { MockChatDataSource } from '@sb-helpers/mockChatDataSource';
+import { makeSessions } from '@sb-helpers/bichatFixtures';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
-const sessions = makeSessions(8)
+const sessions = makeSessions(8);
 
 const meta: Meta<typeof AllChatsList> = {
   title: 'BiChat/Components/AllChatsList',
@@ -14,9 +14,9 @@ const meta: Meta<typeof AllChatsList> = {
   parameters: {
     layout: 'centered',
   },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof AllChatsList>
 
 // ---------------------------------------------------------------------------
@@ -34,7 +34,7 @@ export const Playground: Story = {
       <AllChatsList {...args} />
     </div>
   ),
-}
+};
 
 // ---------------------------------------------------------------------------
 // 2. Empty — no sessions available
@@ -50,7 +50,7 @@ export const Empty: Story = {
       <AllChatsList {...args} />
     </div>
   ),
-}
+};
 
 // ---------------------------------------------------------------------------
 // 3. Stress — ScenarioGrid with multiple variants
@@ -58,7 +58,7 @@ export const Empty: Story = {
 
 export const Stress: Story = {
   render: () => {
-    const noop = () => {}
+    const noop = () => {};
     return (
       <ScenarioGrid
         columns={2}
@@ -103,6 +103,6 @@ export const Stress: Story = {
           },
         ]}
       />
-    )
+    );
   },
-}
+};

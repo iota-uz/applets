@@ -1,8 +1,8 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import Alert from './Alert'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import Alert from './Alert';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof Alert> = {
   title: 'BiChat/Components/Alert',
@@ -14,9 +14,9 @@ const meta: Meta<typeof Alert> = {
       options: ['error', 'success', 'warning', 'info'],
     },
   },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof Alert>
 
 export const Playground: Story = {
@@ -27,7 +27,7 @@ export const Playground: Story = {
     dismissible: true,
     onDismiss: fn(),
   },
-}
+};
 
 export const WithTitle: Story = {
   args: {
@@ -37,7 +37,7 @@ export const WithTitle: Story = {
     show: true,
     onDismiss: fn(),
   },
-}
+};
 
 export const WithRetry: Story = {
   args: {
@@ -47,12 +47,12 @@ export const WithRetry: Story = {
     onRetry: fn(),
     onDismiss: fn(),
   },
-}
+};
 
 export const Stress: Story = {
   render: () => {
-    const noop = () => {}
-    const variants = ['error', 'success', 'warning', 'info'] as const
+    const noop = () => {};
+    const variants = ['error', 'success', 'warning', 'info'] as const;
 
     return (
       <ScenarioGrid
@@ -130,6 +130,6 @@ export const Stress: Story = {
           },
         ]}
       />
-    )
+    );
   },
-}
+};

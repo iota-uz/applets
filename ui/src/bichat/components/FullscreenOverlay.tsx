@@ -6,8 +6,8 @@
  * the shadow tree.
  */
 
-import { useEffect, useRef } from 'react'
-import { X } from '@phosphor-icons/react'
+import { useEffect, useRef } from 'react';
+import { X } from '@phosphor-icons/react';
 
 interface FullscreenOverlayProps {
   title: string
@@ -17,21 +17,21 @@ interface FullscreenOverlayProps {
 }
 
 export function FullscreenOverlay({ title, onClose, closeLabel, children }: FullscreenOverlayProps) {
-  const panelRef = useRef<HTMLDivElement>(null)
-  const onCloseRef = useRef(onClose)
-  onCloseRef.current = onClose
+  const panelRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        e.stopPropagation()
-        onCloseRef.current()
+        e.stopPropagation();
+        onCloseRef.current();
       }
-    }
-    document.addEventListener('keydown', onKeyDown)
-    panelRef.current?.focus()
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [])
+    };
+    document.addEventListener('keydown', onKeyDown);
+    panelRef.current?.focus();
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   return (
     <div className="fixed inset-0" style={{ zIndex: 99999 }}>
@@ -61,5 +61,5 @@ export function FullscreenOverlay({ title, onClose, closeLabel, children }: Full
         {children}
       </div>
     </div>
-  )
+  );
 }

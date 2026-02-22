@@ -4,8 +4,8 @@
  * Generic: accepts any set of tabs via props
  */
 
-import { memo, useId, useRef, useCallback } from 'react'
-import { motion } from 'framer-motion'
+import { memo, useId, useRef, useCallback } from 'react';
+import { motion } from 'framer-motion';
 
 interface TabBarProps {
   tabs: Array<{ id: string; label: string }>
@@ -16,50 +16,50 @@ interface TabBarProps {
 }
 
 function TabBar({ tabs, activeTab, onTabChange, compact = false }: TabBarProps) {
-  const instanceId = useId()
-  const tablistRef = useRef<HTMLDivElement>(null)
+  const instanceId = useId();
+  const tablistRef = useRef<HTMLDivElement>(null);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
-      const currentIndex = tabs.findIndex((tab) => tab.id === activeTab)
-      if (currentIndex < 0) return
+      const currentIndex = tabs.findIndex((tab) => tab.id === activeTab);
+      if (currentIndex < 0) {return;}
 
-      let nextIndex: number | null = null
+      let nextIndex: number | null = null;
 
       switch (e.key) {
         case 'ArrowRight':
-          e.preventDefault()
-          nextIndex = (currentIndex + 1) % tabs.length
-          break
+          e.preventDefault();
+          nextIndex = (currentIndex + 1) % tabs.length;
+          break;
         case 'ArrowLeft':
-          e.preventDefault()
-          nextIndex = (currentIndex - 1 + tabs.length) % tabs.length
-          break
+          e.preventDefault();
+          nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+          break;
         case 'Home':
-          e.preventDefault()
-          nextIndex = 0
-          break
+          e.preventDefault();
+          nextIndex = 0;
+          break;
         case 'End':
-          e.preventDefault()
-          nextIndex = tabs.length - 1
-          break
+          e.preventDefault();
+          nextIndex = tabs.length - 1;
+          break;
       }
 
       if (nextIndex !== null) {
-        onTabChange(tabs[nextIndex].id)
+        onTabChange(tabs[nextIndex].id);
         // Focus the newly activated tab button
-        const tablist = tablistRef.current
+        const tablist = tablistRef.current;
         if (tablist) {
-          const buttons = tablist.querySelectorAll<HTMLElement>('[role="tab"]')
-          buttons[nextIndex]?.focus()
+          const buttons = tablist.querySelectorAll<HTMLElement>('[role="tab"]');
+          buttons[nextIndex]?.focus();
         }
       }
     },
     [tabs, activeTab, onTabChange]
-  )
+  );
 
   if (tabs.length === 0) {
-    return null
+    return null;
   }
 
   return (
@@ -81,7 +81,7 @@ function TabBar({ tabs, activeTab, onTabChange, compact = false }: TabBarProps) 
         />
       ))}
     </div>
-  )
+  );
 }
 
 interface TabButtonProps {
@@ -123,11 +123,11 @@ function TabButton({ id, label, isActive, onClick, layoutId, compact }: TabButto
         />
       )}
     </button>
-  )
+  );
 }
 
-const MemoizedTabBar = memo(TabBar)
-MemoizedTabBar.displayName = 'TabBar'
+const MemoizedTabBar = memo(TabBar);
+MemoizedTabBar.displayName = 'TabBar';
 
-export { MemoizedTabBar as TabBar }
-export default MemoizedTabBar
+export { MemoizedTabBar as TabBar };
+export default MemoizedTabBar;

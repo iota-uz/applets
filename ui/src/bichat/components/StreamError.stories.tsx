@@ -1,8 +1,8 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import { StreamError } from './StreamError'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { StreamError } from './StreamError';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof StreamError> = {
   title: 'BiChat/Components/StreamError',
@@ -13,9 +13,9 @@ const meta: Meta<typeof StreamError> = {
       control: { type: 'boolean' },
     },
   },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof StreamError>
 
 export const Playground: Story = {
@@ -25,17 +25,17 @@ export const Playground: Story = {
     onRegenerate: fn(),
     onDismiss: fn(),
   },
-}
+};
 
 export const NonRetryable: Story = {
   args: {
     error: 'This model is currently unavailable. Please select a different model.',
   },
-}
+};
 
 export const Stress: Story = {
   render: () => {
-    const noop = () => {}
+    const noop = () => {};
     return (
       <ScenarioGrid
         scenarios={[
@@ -98,6 +98,6 @@ export const Stress: Story = {
           },
         ]}
       />
-    )
+    );
   },
-}
+};

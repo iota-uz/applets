@@ -1,16 +1,16 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { MessageList } from './MessageList'
-import { ChatSessionProvider } from '../context/ChatContext'
-import { MockChatDataSource } from '@sb-helpers/mockChatDataSource'
-import { turnsShort, turnsLong } from '@sb-helpers/bichatFixtures'
+import { MessageList } from './MessageList';
+import { ChatSessionProvider } from '../context/ChatContext';
+import { MockChatDataSource } from '@sb-helpers/mockChatDataSource';
+import { turnsShort, turnsLong } from '@sb-helpers/bichatFixtures';
 
 const meta: Meta<typeof MessageList> = {
   title: 'BiChat/Components/MessageList',
   component: MessageList,
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof MessageList>
 
 export const Playground: Story = {
@@ -21,7 +21,7 @@ export const Playground: Story = {
       </div>
     </ChatSessionProvider>
   ),
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -45,4 +45,4 @@ export const Stress: Story = {
       </section>
     </div>
   ),
-}
+};

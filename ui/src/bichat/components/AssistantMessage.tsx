@@ -3,20 +3,20 @@
  * Styled component with slot-based customization for assistant messages
  */
 
-import { useState, useCallback, lazy, Suspense, useRef, useEffect, type ReactNode } from 'react'
-import { AnimatePresence } from 'framer-motion'
-import { Check, Copy, ArrowsClockwise, CaretRight } from '@phosphor-icons/react'
-import { formatRelativeTime } from '../utils/dateFormatting'
-import CodeOutputsPanel from './CodeOutputsPanel'
-import StreamingCursor from './StreamingCursor'
-import { ChartCard } from './ChartCard'
-import { InteractiveTableCard } from './InteractiveTableCard'
-import { TabbedTableGroup } from './TabbedTableGroup'
-import { TabbedChartGroup } from './TabbedChartGroup'
-import { SourcesPanel } from './SourcesPanel'
-import { DownloadCard } from './DownloadCard'
-import { InlineQuestionForm } from './InlineQuestionForm'
-import { RetryActionArea } from './RetryActionArea'
+import { useState, useCallback, lazy, Suspense, useRef, useEffect, type ReactNode } from 'react';
+import { AnimatePresence } from 'framer-motion';
+import { Check, Copy, ArrowsClockwise, CaretRight } from '@phosphor-icons/react';
+import { formatRelativeTime } from '../utils/dateFormatting';
+import CodeOutputsPanel from './CodeOutputsPanel';
+import StreamingCursor from './StreamingCursor';
+import { ChartCard } from './ChartCard';
+import { InteractiveTableCard } from './InteractiveTableCard';
+import { TabbedTableGroup } from './TabbedTableGroup';
+import { TabbedChartGroup } from './TabbedChartGroup';
+import { SourcesPanel } from './SourcesPanel';
+import { DownloadCard } from './DownloadCard';
+import { InlineQuestionForm } from './InlineQuestionForm';
+import { RetryActionArea } from './RetryActionArea';
 import type {
   AssistantTurn,
   Citation,
@@ -26,13 +26,13 @@ import type {
   PendingQuestion,
   RenderTableData,
   DebugLimits,
-} from '../types'
-import { DebugPanel } from './DebugPanel'
-import { useTranslation } from '../hooks/useTranslation'
+} from '../types';
+import { DebugPanel } from './DebugPanel';
+import { useTranslation } from '../hooks/useTranslation';
 
 const MarkdownRenderer = lazy(() =>
   import('./MarkdownRenderer').then((module) => ({ default: module.MarkdownRenderer }))
-)
+);
 
 /* -------------------------------------------------------------------------------------------------
  * Slot Props Types
@@ -195,7 +195,7 @@ type AssistantRenderMode =
   | 'retry'
   | 'empty'
 
-const COPY_FEEDBACK_MS = 2000
+const COPY_FEEDBACK_MS = 2000;
 
 /* -------------------------------------------------------------------------------------------------
  * Default Styles
@@ -215,13 +215,13 @@ const defaultClassNames: Required<AssistantMessageClassNames> = {
   actions: 'flex items-center gap-1 transition-opacity duration-150 group-focus-within:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100',
   actionButton: 'cursor-pointer p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 rounded-md transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50',
   timestamp: 'text-xs text-gray-400 dark:text-gray-500 mr-1',
-}
+};
 
 function mergeClassNames(
   defaults: Required<AssistantMessageClassNames>,
   overrides?: AssistantMessageClassNames
 ): Required<AssistantMessageClassNames> {
-  if (!overrides) return defaults
+  if (!overrides) {return defaults;}
   return {
     root: overrides.root ?? defaults.root,
     wrapper: overrides.wrapper ?? defaults.wrapper,
@@ -236,7 +236,7 @@ function mergeClassNames(
     actions: overrides.actions ?? defaults.actions,
     actionButton: overrides.actionButton ?? defaults.actionButton,
     timestamp: overrides.timestamp ?? defaults.timestamp,
-  }
+  };
 }
 
 /* -------------------------------------------------------------------------------------------------
@@ -261,31 +261,31 @@ export function AssistantMessage({
   showDebug = false,
   debugLimits = null,
 }: AssistantMessageProps) {
-  const { t } = useTranslation()
-  const [explanationExpanded, setExplanationExpanded] = useState(false)
-  const [isCopied, setIsCopied] = useState(false)
-  const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const classes = mergeClassNames(defaultClassNames, classNameOverrides)
-  const isSystemMessage = turn.role === 'system'
+  const { t } = useTranslation();
+  const [explanationExpanded, setExplanationExpanded] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const classes = mergeClassNames(defaultClassNames, classNameOverrides);
+  const isSystemMessage = turn.role === 'system';
   const avatarClassName = isSystemMessage
     ? 'flex-shrink-0 w-8 h-8 rounded-full bg-gray-500 dark:bg-gray-600 flex items-center justify-center text-white font-medium text-xs'
-    : classes.avatar
+    : classes.avatar;
   const bubbleClassName = isSystemMessage
     ? 'bg-gray-50 dark:bg-gray-900/40 rounded-2xl px-4 py-3 shadow-sm'
-    : classes.bubble
+    : classes.bubble;
 
   useEffect(() => {
     return () => {
       if (copyFeedbackTimeoutRef.current) {
-        clearTimeout(copyFeedbackTimeoutRef.current)
-        copyFeedbackTimeoutRef.current = null
+        clearTimeout(copyFeedbackTimeoutRef.current);
+        copyFeedbackTimeoutRef.current = null;
       }
-    }
-  }, [])
+    };
+  }, []);
 
-  const hasContent = turn.content?.trim().length > 0
-  const hasExplanation = !!turn.explanation?.trim()
-  const isAwaitingHumanInput = turn.lifecycle === 'waiting_for_human_input'
+  const hasContent = turn.content?.trim().length > 0;
+  const hasExplanation = !!turn.explanation?.trim();
+  const isAwaitingHumanInput = turn.lifecycle === 'waiting_for_human_input';
   const pendingQuestionMatchesTurn =
     !!pendingQuestion &&
     pendingQuestion.status === 'PENDING' &&
@@ -293,13 +293,13 @@ export function AssistantMessage({
       pendingQuestion.turnId === turnId ||
       pendingQuestion.turnId === turn.id ||
       (!pendingQuestion.turnId && isLastTurn)
-    )
-  const hasPendingQuestion = pendingQuestionMatchesTurn && !!pendingQuestion
-  const hasCodeOutputs = !!turn.codeOutputs?.length
-  const hasChart = !!turn.charts?.length
-  const hasTables = !!turn.renderTables?.length
-  const hasArtifacts = !!turn.artifacts?.length
-  const hasDebug = showDebug && !!turn.debug
+    );
+  const hasPendingQuestion = pendingQuestionMatchesTurn && !!pendingQuestion;
+  const hasCodeOutputs = !!turn.codeOutputs?.length;
+  const hasChart = !!turn.charts?.length;
+  const hasTables = !!turn.renderTables?.length;
+  const hasArtifacts = !!turn.artifacts?.length;
+  const hasDebug = showDebug && !!turn.debug;
   const hasAnyRenderedContent =
     hasContent ||
     hasExplanation ||
@@ -307,8 +307,8 @@ export function AssistantMessage({
     hasChart ||
     hasTables ||
     hasArtifacts ||
-    hasDebug
-  const canRegenerate = !!onRegenerate && !!turnId && !isSystemMessage && isLastTurn
+    hasDebug;
+  const canRegenerate = !!onRegenerate && !!turnId && !isSystemMessage && isLastTurn;
   const renderMode: AssistantRenderMode = hasPendingQuestion
     ? 'hitl_form'
     : isAwaitingHumanInput
@@ -317,73 +317,73 @@ export function AssistantMessage({
         ? 'content'
         : canRegenerate
           ? 'retry'
-          : 'empty'
-  const showInlineRetry = renderMode === 'retry'
+          : 'empty';
+  const showInlineRetry = renderMode === 'retry';
 
   const handleCopyClick = useCallback(async () => {
     try {
       if (onCopy) {
-        await onCopy(turn.content)
+        await onCopy(turn.content);
       } else {
-        await navigator.clipboard.writeText(turn.content)
+        await navigator.clipboard.writeText(turn.content);
       }
 
-      setIsCopied(true)
+      setIsCopied(true);
       if (copyFeedbackTimeoutRef.current) {
-        clearTimeout(copyFeedbackTimeoutRef.current)
+        clearTimeout(copyFeedbackTimeoutRef.current);
       }
       copyFeedbackTimeoutRef.current = setTimeout(() => {
-        setIsCopied(false)
-        copyFeedbackTimeoutRef.current = null
-      }, COPY_FEEDBACK_MS)
+        setIsCopied(false);
+        copyFeedbackTimeoutRef.current = null;
+      }, COPY_FEEDBACK_MS);
     } catch (err) {
-      setIsCopied(false)
-      console.error('Failed to copy:', err)
+      setIsCopied(false);
+      console.error('Failed to copy:', err);
     }
-  }, [onCopy, turn.content])
+  }, [onCopy, turn.content]);
 
   const handleRegenerateClick = useCallback(async () => {
     if (onRegenerate && turnId) {
-      await onRegenerate(turnId)
+      await onRegenerate(turnId);
     }
-  }, [onRegenerate, turnId])
+  }, [onRegenerate, turnId]);
 
-  const timestamp = formatRelativeTime(turn.createdAt, t)
+  const timestamp = formatRelativeTime(turn.createdAt, t);
 
   // Slot props
-  const avatarSlotProps: AssistantMessageAvatarSlotProps = { text: isSystemMessage ? 'SYS' : 'AI' }
+  const avatarSlotProps: AssistantMessageAvatarSlotProps = { text: isSystemMessage ? 'SYS' : 'AI' };
   const contentSlotProps: AssistantMessageContentSlotProps = {
     content: turn.content,
     citations: turn.citations,
     isStreaming,
-  }
+  };
   const sourcesSlotProps: AssistantMessageSourcesSlotProps = {
     citations: turn.citations || [],
-  }
+  };
   const chartsSlotProps: AssistantMessageChartsSlotProps = {
     charts: turn.charts || [],
-  }
+  };
   const codeOutputsSlotProps: AssistantMessageCodeOutputsSlotProps = {
     outputs: turn.codeOutputs || [],
-  }
+  };
   const tablesSlotProps: AssistantMessageTablesSlotProps = {
     tables: turn.renderTables || [],
-  }
+  };
   const artifactsSlotProps: AssistantMessageArtifactsSlotProps = {
     artifacts: turn.artifacts || [],
-  }
+  };
   const actionsSlotProps: AssistantMessageActionsSlotProps = {
     onCopy: handleCopyClick,
     onRegenerate: canRegenerate ? handleRegenerateClick : undefined,
     timestamp,
     canCopy: hasContent,
     canRegenerate,
-  }
+  };
   const explanationSlotProps: AssistantMessageExplanationSlotProps = {
     explanation: turn.explanation || '',
     isExpanded: explanationExpanded,
     onToggle: () => setExplanationExpanded(!explanationExpanded),
-  }
+  };
 
   // Render helpers
   const renderSlot = <T,>(
@@ -391,10 +391,10 @@ export function AssistantMessage({
     props: T,
     defaultContent: ReactNode
   ): ReactNode => {
-    if (slot === undefined) return defaultContent
-    if (typeof slot === 'function') return slot(props)
-    return slot
-  }
+    if (slot === undefined) {return defaultContent;}
+    if (typeof slot === 'function') {return slot(props);}
+    return slot;
+  };
 
   return (
     <div className={classes.root}>
@@ -408,7 +408,7 @@ export function AssistantMessage({
       <div className={classes.wrapper}>
         {/* Inline recovery for empty assistant responses */}
         <AnimatePresence>
-          {showInlineRetry && <RetryActionArea key="inline-retry" onRetry={() => { void handleRegenerateClick() }} />}
+          {showInlineRetry && <RetryActionArea key="inline-retry" onRetry={() => { void handleRegenerateClick(); }} />}
         </AnimatePresence>
 
         {/* Code outputs */}
@@ -597,7 +597,7 @@ export function AssistantMessage({
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export default AssistantMessage
+export default AssistantMessage;

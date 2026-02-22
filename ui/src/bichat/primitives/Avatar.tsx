@@ -10,8 +10,8 @@ import {
   forwardRef,
   type HTMLAttributes,
   type ImgHTMLAttributes,
-} from 'react'
-import { Slot, type AsChildProps } from './Slot'
+} from 'react';
+import { Slot, type AsChildProps } from './Slot';
 
 /* -------------------------------------------------------------------------------------------------
  * AvatarContext
@@ -24,14 +24,14 @@ interface AvatarContextValue {
   setImageLoadingStatus: (status: ImageLoadingStatus) => void
 }
 
-const AvatarContext = createContext<AvatarContextValue | undefined>(undefined)
+const AvatarContext = createContext<AvatarContextValue | undefined>(undefined);
 
 function useAvatarContext() {
-  const context = useContext(AvatarContext)
+  const context = useContext(AvatarContext);
   if (!context) {
-    throw new Error('Avatar components must be used within Avatar.Root')
+    throw new Error('Avatar components must be used within Avatar.Root');
   }
-  return context
+  return context;
 }
 
 /* -------------------------------------------------------------------------------------------------
@@ -41,9 +41,9 @@ function useAvatarContext() {
 type AvatarRootProps = AsChildProps<HTMLAttributes<HTMLSpanElement>>
 
 const AvatarRoot = forwardRef<HTMLSpanElement, AvatarRootProps>((props, ref) => {
-  const { asChild, children, ...domProps } = props
-  const Comp = asChild ? Slot : 'span'
-  const [imageLoadingStatus, setImageLoadingStatus] = useState<ImageLoadingStatus>('idle')
+  const { asChild, children, ...domProps } = props;
+  const Comp = asChild ? Slot : 'span';
+  const [imageLoadingStatus, setImageLoadingStatus] = useState<ImageLoadingStatus>('idle');
 
   return (
     <AvatarContext.Provider value={{ imageLoadingStatus, setImageLoadingStatus }}>
@@ -51,10 +51,10 @@ const AvatarRoot = forwardRef<HTMLSpanElement, AvatarRootProps>((props, ref) => 
         {children}
       </Comp>
     </AvatarContext.Provider>
-  )
-})
+  );
+});
 
-AvatarRoot.displayName = 'Avatar.Root'
+AvatarRoot.displayName = 'Avatar.Root';
 
 /* -------------------------------------------------------------------------------------------------
  * Avatar.Image
@@ -66,21 +66,21 @@ type AvatarImageProps = AsChildProps<ImgHTMLAttributes<HTMLImageElement>> & {
 }
 
 const AvatarImage = forwardRef<HTMLImageElement, AvatarImageProps>((props, ref) => {
-  const { asChild, src, alt, onLoadingStatusChange, onLoad, onError, ...domProps } = props
-  const { setImageLoadingStatus } = useAvatarContext()
-  const Comp = asChild ? Slot : 'img'
+  const { asChild, src, alt, onLoadingStatusChange, onLoad, onError, ...domProps } = props;
+  const { setImageLoadingStatus } = useAvatarContext();
+  const Comp = asChild ? Slot : 'img';
 
   const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    setImageLoadingStatus('loaded')
-    onLoadingStatusChange?.('loaded')
-    onLoad?.(e)
-  }
+    setImageLoadingStatus('loaded');
+    onLoadingStatusChange?.('loaded');
+    onLoad?.(e);
+  };
 
   const handleError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    setImageLoadingStatus('error')
-    onLoadingStatusChange?.('error')
-    onError?.(e)
-  }
+    setImageLoadingStatus('error');
+    onLoadingStatusChange?.('error');
+    onError?.(e);
+  };
 
   // Start loading when src is provided
   if (src) {
@@ -93,13 +93,13 @@ const AvatarImage = forwardRef<HTMLImageElement, AvatarImageProps>((props, ref) 
         onError={handleError}
         {...domProps}
       />
-    )
+    );
   }
 
-  return null
-})
+  return null;
+});
 
-AvatarImage.displayName = 'Avatar.Image'
+AvatarImage.displayName = 'Avatar.Image';
 
 /* -------------------------------------------------------------------------------------------------
  * Avatar.Fallback
@@ -111,33 +111,33 @@ type AvatarFallbackProps = AsChildProps<HTMLAttributes<HTMLSpanElement>> & {
 }
 
 const AvatarFallback = forwardRef<HTMLSpanElement, AvatarFallbackProps>((props, ref) => {
-  const { asChild, delayMs = 0, children, ...domProps } = props
-  const { imageLoadingStatus } = useAvatarContext()
-  const Comp = asChild ? Slot : 'span'
-  const [canRender, setCanRender] = useState(delayMs === 0)
+  const { asChild, delayMs = 0, children, ...domProps } = props;
+  const { imageLoadingStatus } = useAvatarContext();
+  const Comp = asChild ? Slot : 'span';
+  const [canRender, setCanRender] = useState(delayMs === 0);
 
   // Handle delay
   if (delayMs > 0 && !canRender) {
-    setTimeout(() => setCanRender(true), delayMs)
+    setTimeout(() => setCanRender(true), delayMs);
   }
 
   // Only show fallback if image hasn't loaded
   if (imageLoadingStatus === 'loaded') {
-    return null
+    return null;
   }
 
   if (!canRender) {
-    return null
+    return null;
   }
 
   return (
     <Comp ref={ref} {...domProps}>
       {children}
     </Comp>
-  )
-})
+  );
+});
 
-AvatarFallback.displayName = 'Avatar.Fallback'
+AvatarFallback.displayName = 'Avatar.Fallback';
 
 /* -------------------------------------------------------------------------------------------------
  * Exports
@@ -147,7 +147,7 @@ export const Avatar = {
   Root: AvatarRoot,
   Image: AvatarImage,
   Fallback: AvatarFallback,
-}
+};
 
-export { useAvatarContext }
-export type { AvatarRootProps, AvatarImageProps, AvatarFallbackProps, ImageLoadingStatus }
+export { useAvatarContext };
+export type { AvatarRootProps, AvatarImageProps, AvatarFallbackProps, ImageLoadingStatus };

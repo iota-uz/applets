@@ -3,11 +3,11 @@
  * Shows stacked queued messages above the input with remove/edit capabilities
  */
 
-import { useState, useCallback } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
-import { X, PencilSimple, Check, ArrowCounterClockwise } from '@phosphor-icons/react'
-import type { QueuedMessage } from '../types'
-import { useTranslation } from '../hooks/useTranslation'
+import { useState, useCallback } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { X, PencilSimple, Check, ArrowCounterClockwise } from '@phosphor-icons/react';
+import type { QueuedMessage } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface MessageQueueListProps {
   queue: QueuedMessage[]
@@ -16,31 +16,31 @@ interface MessageQueueListProps {
 }
 
 export function MessageQueueList({ queue, onRemove, onUpdate }: MessageQueueListProps) {
-  const { t } = useTranslation()
-  const [editingIndex, setEditingIndex] = useState<number | null>(null)
-  const [editValue, setEditValue] = useState('')
+  const { t } = useTranslation();
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState('');
 
   const startEdit = useCallback((index: number) => {
-    setEditingIndex(index)
-    setEditValue(queue[index].content)
-  }, [queue])
+    setEditingIndex(index);
+    setEditValue(queue[index].content);
+  }, [queue]);
 
   const saveEdit = useCallback(() => {
-    if (editingIndex === null) return
-    const trimmed = editValue.trim()
+    if (editingIndex === null) {return;}
+    const trimmed = editValue.trim();
     if (trimmed) {
-      onUpdate(editingIndex, trimmed)
+      onUpdate(editingIndex, trimmed);
     }
-    setEditingIndex(null)
-    setEditValue('')
-  }, [editingIndex, editValue, onUpdate])
+    setEditingIndex(null);
+    setEditValue('');
+  }, [editingIndex, editValue, onUpdate]);
 
   const cancelEdit = useCallback(() => {
-    setEditingIndex(null)
-    setEditValue('')
-  }, [])
+    setEditingIndex(null);
+    setEditValue('');
+  }, []);
 
-  if (queue.length === 0) return null
+  if (queue.length === 0) {return null;}
 
   return (
     <div className="mb-3 space-y-1.5">
@@ -67,8 +67,8 @@ export function MessageQueueList({ queue, onRemove, onUpdate }: MessageQueueList
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit() }
-                      if (e.key === 'Escape') cancelEdit()
+                      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit(); }
+                      if (e.key === 'Escape') {cancelEdit();}
                     }}
                     className="w-full resize-none rounded border border-primary-300 dark:border-primary-600 bg-transparent px-2 py-1 text-sm text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-primary-500"
                     rows={1}
@@ -130,5 +130,5 @@ export function MessageQueueList({ queue, onRemove, onUpdate }: MessageQueueList
         ))}
       </AnimatePresence>
     </div>
-  )
+  );
 }

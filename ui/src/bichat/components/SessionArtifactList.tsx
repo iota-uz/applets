@@ -1,4 +1,4 @@
-import { type ReactNode, useState, useMemo } from 'react'
+import { type ReactNode, useState, useMemo } from 'react';
 import {
   ChartBar,
   Code,
@@ -6,11 +6,11 @@ import {
   Image as ImageIcon,
   Package,
   Table as TableIcon,
-} from '@phosphor-icons/react'
-import type { SessionArtifact } from '../types'
-import { useTranslation } from '../hooks/useTranslation'
-import { formatFileSize, getFileVisual, CHART_VISUAL, type FileVisual } from '../utils/fileUtils'
-import { getArtifactName, isImageArtifact } from '../utils/artifactHelpers'
+} from '@phosphor-icons/react';
+import type { SessionArtifact } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
+import { formatFileSize, getFileVisual, CHART_VISUAL, type FileVisual } from '../utils/fileUtils';
+import { getArtifactName, isImageArtifact } from '../utils/artifactHelpers';
 
 interface SessionArtifactListProps {
   artifacts: SessionArtifact[]
@@ -25,34 +25,34 @@ const TYPE_LABEL_KEYS: Record<string, string> = {
   export: 'BiChat.Artifacts.GroupExports',
   attachment: 'BiChat.Artifacts.GroupAttachments',
   other: 'BiChat.Artifacts.GroupOther',
-}
+};
 
 function getGroupIcon(type: string): ReactNode {
-  const cls = 'h-3.5 w-3.5'
+  const cls = 'h-3.5 w-3.5';
   switch (type) {
     case 'chart':
-      return <ChartBar className={cls} weight="bold" />
+      return <ChartBar className={cls} weight="bold" />;
     case 'table':
-      return <TableIcon className={cls} weight="bold" />
+      return <TableIcon className={cls} weight="bold" />;
     case 'code_output':
-      return <Code className={cls} weight="bold" />
+      return <Code className={cls} weight="bold" />;
     case 'export':
-      return <FileCsv className={cls} weight="bold" />
+      return <FileCsv className={cls} weight="bold" />;
     case 'attachment':
-      return <ImageIcon className={cls} weight="bold" />
+      return <ImageIcon className={cls} weight="bold" />;
     default:
-      return <Package className={cls} weight="bold" />
+      return <Package className={cls} weight="bold" />;
   }
 }
 
 function ImageThumbnail({ src, alt }: { src: string; alt: string }) {
-  const [failed, setFailed] = useState(false)
+  const [failed, setFailed] = useState(false);
   if (failed) {
     return (
       <div className="w-full aspect-video rounded-lg bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center">
         <ImageIcon className="h-6 w-6 text-violet-400 dark:text-violet-500" weight="duotone" />
       </div>
-    )
+    );
   }
   return (
     <img
@@ -61,33 +61,33 @@ function ImageThumbnail({ src, alt }: { src: string; alt: string }) {
       onError={() => setFailed(true)}
       className="w-full rounded-lg object-cover max-h-32 bg-gray-100 dark:bg-gray-800"
     />
-  )
+  );
 }
 
 function getArtifactFileVisual(artifact: SessionArtifact): FileVisual {
-  if (artifact.type === 'chart') return CHART_VISUAL
+  if (artifact.type === 'chart') {return CHART_VISUAL;}
   if (artifact.type === 'code_output') {
-    const v = getFileVisual(artifact.mimeType, getArtifactName(artifact))
+    const v = getFileVisual(artifact.mimeType, getArtifactName(artifact));
     // Code outputs get a sky accent unless they resolve to something specific (image, etc.)
     if (v.label === 'TEXT' || v.label === 'FILE') {
-      return { ...v, iconColor: 'text-sky-600 dark:text-sky-400', bgColor: 'bg-sky-100 dark:bg-sky-900/40' }
+      return { ...v, iconColor: 'text-sky-600 dark:text-sky-400', bgColor: 'bg-sky-100 dark:bg-sky-900/40' };
     }
-    return v
+    return v;
   }
-  return getFileVisual(artifact.mimeType, getArtifactName(artifact))
+  return getFileVisual(artifact.mimeType, getArtifactName(artifact));
 }
 
 function groupArtifactsByType(artifacts: SessionArtifact[]): Array<{ type: string; items: SessionArtifact[] }> {
-  const grouped = new Map<string, SessionArtifact[]>()
+  const grouped = new Map<string, SessionArtifact[]>();
 
   for (const artifact of artifacts) {
-    const type = artifact.type || 'other'
-    const existing = grouped.get(type)
+    const type = artifact.type || 'other';
+    const existing = grouped.get(type);
     if (existing) {
-      existing.push(artifact)
-      continue
+      existing.push(artifact);
+      continue;
     }
-    grouped.set(type, [artifact])
+    grouped.set(type, [artifact]);
   }
 
   return Array.from(grouped.entries())
@@ -95,7 +95,7 @@ function groupArtifactsByType(artifacts: SessionArtifact[]): Array<{ type: strin
       type,
       items: items.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)),
     }))
-    .sort((a, b) => a.type.localeCompare(b.type))
+    .sort((a, b) => a.type.localeCompare(b.type));
 }
 
 export function SessionArtifactList({
@@ -103,8 +103,8 @@ export function SessionArtifactList({
   selectedArtifactId,
   onSelect,
 }: SessionArtifactListProps) {
-  const { t } = useTranslation()
-  const grouped = useMemo(() => groupArtifactsByType(artifacts), [artifacts])
+  const { t } = useTranslation();
+  const grouped = useMemo(() => groupArtifactsByType(artifacts), [artifacts]);
 
   if (artifacts.length === 0) {
     return (
@@ -124,7 +124,7 @@ export function SessionArtifactList({
           </p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -142,10 +142,10 @@ export function SessionArtifactList({
           </div>
           <div className="space-y-1">
             {group.items.map((artifact) => {
-              const isSelected = artifact.id === selectedArtifactId
-              const visual = getArtifactFileVisual(artifact)
-              const Icon = visual.icon
-              const artifactName = getArtifactName(artifact)
+              const isSelected = artifact.id === selectedArtifactId;
+              const visual = getArtifactFileVisual(artifact);
+              const Icon = visual.icon;
+              const artifactName = getArtifactName(artifact);
               return (
                 <button
                   key={artifact.id}
@@ -197,11 +197,11 @@ export function SessionArtifactList({
                     </div>
                   )}
                 </button>
-              )
+              );
             })}
           </div>
         </section>
       ))}
     </div>
-  )
+  );
 }

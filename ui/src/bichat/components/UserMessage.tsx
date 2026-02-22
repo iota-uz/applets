@@ -3,13 +3,13 @@
  * Styled component with slot-based customization for user messages
  */
 
-import { useState, useCallback, useRef, useEffect, useMemo, type ReactNode } from 'react'
-import { Check, Copy, PencilSimple } from '@phosphor-icons/react'
-import { formatRelativeTime } from '../utils/dateFormatting'
-import AttachmentGrid from './AttachmentGrid'
-import ImageModal from './ImageModal'
-import type { Attachment, ImageAttachment, UserTurn } from '../types'
-import { useTranslation } from '../hooks/useTranslation'
+import { useState, useCallback, useRef, useEffect, useMemo, type ReactNode } from 'react';
+import { Check, Copy, PencilSimple } from '@phosphor-icons/react';
+import { formatRelativeTime } from '../utils/dateFormatting';
+import AttachmentGrid from './AttachmentGrid';
+import ImageModal from './ImageModal';
+import type { Attachment, ImageAttachment, UserTurn } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
 
 /* -------------------------------------------------------------------------------------------------
  * Slot Props Types
@@ -106,7 +106,7 @@ export interface UserMessageProps {
   allowEdit?: boolean
 }
 
-const COPY_FEEDBACK_MS = 2000
+const COPY_FEEDBACK_MS = 2000;
 
 /* -------------------------------------------------------------------------------------------------
  * Default Styles
@@ -122,13 +122,13 @@ const defaultClassNames: Required<UserMessageClassNames> = {
   actions: 'flex items-center gap-1 mt-2 transition-opacity duration-150 group-focus-within:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100',
   actionButton: 'cursor-pointer p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 rounded-md transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50',
   timestamp: 'text-xs text-gray-400 dark:text-gray-500 mr-1',
-}
+};
 
 function mergeClassNames(
   defaults: Required<UserMessageClassNames>,
   overrides?: UserMessageClassNames
 ): Required<UserMessageClassNames> {
-  if (!overrides) return defaults
+  if (!overrides) {return defaults;}
   return {
     root: overrides.root ?? defaults.root,
     wrapper: overrides.wrapper ?? defaults.wrapper,
@@ -139,7 +139,7 @@ function mergeClassNames(
     actions: overrides.actions ?? defaults.actions,
     actionButton: overrides.actionButton ?? defaults.actionButton,
     timestamp: overrides.timestamp ?? defaults.timestamp,
-  }
+  };
 }
 
 /* -------------------------------------------------------------------------------------------------
@@ -197,7 +197,7 @@ function EditForm({ draftContent, onDraftChange, onSave, onCancel, onKeyDown, te
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 /* -------------------------------------------------------------------------------------------------
@@ -217,212 +217,212 @@ export function UserMessage({
   hideTimestamp = false,
   allowEdit = true,
 }: UserMessageProps) {
-  const { t } = useTranslation()
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
-  const [isEditing, setIsEditing] = useState(false)
-  const [draftContent, setDraftContent] = useState('')
-  const [isCopied, setIsCopied] = useState(false)
-  const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const editTextareaRef = useRef<HTMLTextAreaElement>(null)
-  const bubbleRef = useRef<HTMLDivElement>(null)
-  const classes = mergeClassNames(defaultClassNames, classNameOverrides)
+  const { t } = useTranslation();
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftContent, setDraftContent] = useState('');
+  const [isCopied, setIsCopied] = useState(false);
+  const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const bubbleRef = useRef<HTMLDivElement>(null);
+  const classes = mergeClassNames(defaultClassNames, classNameOverrides);
 
   useEffect(() => {
     return () => {
       if (copyFeedbackTimeoutRef.current) {
-        clearTimeout(copyFeedbackTimeoutRef.current)
-        copyFeedbackTimeoutRef.current = null
+        clearTimeout(copyFeedbackTimeoutRef.current);
+        copyFeedbackTimeoutRef.current = null;
       }
-    }
-  }, [])
+    };
+  }, []);
 
   // Reset edit state when the turn changes
   useEffect(() => {
-    setIsEditing(false)
-    setDraftContent('')
-  }, [turnId])
+    setIsEditing(false);
+    setDraftContent('');
+  }, [turnId]);
 
   // Auto-focus textarea when entering edit mode
   useEffect(() => {
     if (isEditing && editTextareaRef.current) {
-      const textarea = editTextareaRef.current
-      textarea.focus()
-      textarea.selectionStart = textarea.value.length
-      textarea.selectionEnd = textarea.value.length
-      textarea.style.height = 'auto'
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 300)}px`
+      const textarea = editTextareaRef.current;
+      textarea.focus();
+      textarea.selectionStart = textarea.value.length;
+      textarea.selectionEnd = textarea.value.length;
+      textarea.style.height = 'auto';
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 300)}px`;
     }
-  }, [isEditing])
+  }, [isEditing]);
 
   // Click-outside to cancel edit
   useEffect(() => {
-    if (!isEditing) return
+    if (!isEditing) {return;}
 
     const handleMouseDown = (e: MouseEvent) => {
       if (bubbleRef.current && !bubbleRef.current.contains(e.target as Node)) {
-        setIsEditing(false)
-        setDraftContent('')
+        setIsEditing(false);
+        setDraftContent('');
       }
-    }
+    };
 
-    document.addEventListener('mousedown', handleMouseDown)
-    return () => document.removeEventListener('mousedown', handleMouseDown)
-  }, [isEditing])
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, [isEditing]);
 
   const normalizedAttachments: Attachment[] = useMemo(
     () =>
       turn.attachments.map((attachment) => {
         if (!attachment.mimeType.startsWith('image/')) {
-          return attachment
+          return attachment;
         }
 
         if (attachment.preview) {
-          return attachment
+          return attachment;
         }
         if (attachment.base64Data) {
           if (attachment.base64Data.startsWith('data:')) {
             return {
               ...attachment,
               preview: attachment.base64Data,
-            }
+            };
           }
           return {
             ...attachment,
             preview: `data:${attachment.mimeType};base64,${attachment.base64Data}`,
-          }
+          };
         }
         if (attachment.url) {
           return {
             ...attachment,
             preview: attachment.url,
-          }
+          };
         }
-        return attachment
+        return attachment;
       }),
     [turn.attachments],
-  )
+  );
 
   const { imageAttachments, imageIndexByAttachmentIndex } = useMemo(() => {
-    const images: ImageAttachment[] = []
-    const indexMap = new Map<number, number>()
+    const images: ImageAttachment[] = [];
+    const indexMap = new Map<number, number>();
     normalizedAttachments.forEach((attachment, index) => {
       if (!attachment.mimeType.startsWith('image/')) {
-        return
+        return;
       }
       if (!attachment.preview && !attachment.url) {
-        return
+        return;
       }
-      indexMap.set(index, images.length)
+      indexMap.set(index, images.length);
       images.push({
         ...attachment,
         base64Data: attachment.base64Data || '',
         preview: attachment.preview || attachment.url || '',
-      })
-    })
-    return { imageAttachments: images, imageIndexByAttachmentIndex: indexMap }
-  }, [normalizedAttachments])
+      });
+    });
+    return { imageAttachments: images, imageIndexByAttachmentIndex: indexMap };
+  }, [normalizedAttachments]);
 
   const handleCopyClick = useCallback(async () => {
     try {
       if (onCopy) {
-        await onCopy(turn.content)
+        await onCopy(turn.content);
       } else {
-        await navigator.clipboard.writeText(turn.content)
+        await navigator.clipboard.writeText(turn.content);
       }
 
-      setIsCopied(true)
+      setIsCopied(true);
       if (copyFeedbackTimeoutRef.current) {
-        clearTimeout(copyFeedbackTimeoutRef.current)
+        clearTimeout(copyFeedbackTimeoutRef.current);
       }
       copyFeedbackTimeoutRef.current = setTimeout(() => {
-        setIsCopied(false)
-        copyFeedbackTimeoutRef.current = null
-      }, COPY_FEEDBACK_MS)
+        setIsCopied(false);
+        copyFeedbackTimeoutRef.current = null;
+      }, COPY_FEEDBACK_MS);
     } catch (err) {
-      setIsCopied(false)
-      console.error('Failed to copy:', err)
+      setIsCopied(false);
+      console.error('Failed to copy:', err);
     }
-  }, [onCopy, turn.content])
+  }, [onCopy, turn.content]);
 
   const handleEditClick = useCallback(() => {
     if (onEdit && turnId) {
-      setDraftContent(turn.content)
-      setIsEditing(true)
+      setDraftContent(turn.content);
+      setIsEditing(true);
     }
-  }, [onEdit, turnId, turn.content])
+  }, [onEdit, turnId, turn.content]);
 
   const handleEditCancel = useCallback(() => {
-    setIsEditing(false)
-    setDraftContent('')
-  }, [])
+    setIsEditing(false);
+    setDraftContent('');
+  }, []);
 
   const handleEditSave = useCallback(() => {
-    if (!onEdit || !turnId) return
-    const newContent = draftContent
-    if (!newContent.trim()) return
+    if (!onEdit || !turnId) {return;}
+    const newContent = draftContent;
+    if (!newContent.trim()) {return;}
     if (newContent === turn.content) {
-      setIsEditing(false)
-      return
+      setIsEditing(false);
+      return;
     }
-    onEdit(turnId, newContent)
-    setIsEditing(false)
-  }, [onEdit, turnId, draftContent, turn.content])
+    onEdit(turnId, newContent);
+    setIsEditing(false);
+  }, [onEdit, turnId, draftContent, turn.content]);
 
   const handleEditKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Escape') {
-      e.preventDefault()
-      handleEditCancel()
+      e.preventDefault();
+      handleEditCancel();
     } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault()
-      handleEditSave()
+      e.preventDefault();
+      handleEditSave();
     }
-  }, [handleEditCancel, handleEditSave])
+  }, [handleEditCancel, handleEditSave]);
 
   const handleDraftChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setDraftContent(e.target.value)
-    const el = e.target
-    el.style.height = 'auto'
-    el.style.height = `${Math.min(el.scrollHeight, 300)}px`
-  }, [])
+    setDraftContent(e.target.value);
+    const el = e.target;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 300)}px`;
+  }, []);
 
   const handleNavigate = useCallback(
     (direction: 'prev' | 'next') => {
-      if (selectedImageIndex === null) return
+      if (selectedImageIndex === null) {return;}
 
       if (direction === 'prev' && selectedImageIndex > 0) {
-        setSelectedImageIndex(selectedImageIndex - 1)
+        setSelectedImageIndex(selectedImageIndex - 1);
       } else if (direction === 'next' && selectedImageIndex < imageAttachments.length - 1) {
-        setSelectedImageIndex(selectedImageIndex + 1)
+        setSelectedImageIndex(selectedImageIndex + 1);
       }
     },
     [selectedImageIndex, imageAttachments.length]
-  )
+  );
 
   const currentAttachment =
-    selectedImageIndex !== null ? imageAttachments[selectedImageIndex] : null
+    selectedImageIndex !== null ? imageAttachments[selectedImageIndex] : null;
 
-  const timestamp = formatRelativeTime(turn.createdAt, t)
+  const timestamp = formatRelativeTime(turn.createdAt, t);
 
   // Slot props
-  const avatarSlotProps: UserMessageAvatarSlotProps = { initials }
-  const contentSlotProps: UserMessageContentSlotProps = { content: turn.content }
+  const avatarSlotProps: UserMessageAvatarSlotProps = { initials };
+  const contentSlotProps: UserMessageContentSlotProps = { content: turn.content };
   const attachmentsSlotProps: UserMessageAttachmentsSlotProps = {
     attachments: normalizedAttachments,
     onView: (index) => {
-      const imageIndex = imageIndexByAttachmentIndex.get(index)
+      const imageIndex = imageIndexByAttachmentIndex.get(index);
       if (imageIndex === undefined) {
-        return
+        return;
       }
-      setSelectedImageIndex(imageIndex)
+      setSelectedImageIndex(imageIndex);
     },
-  }
+  };
   const actionsSlotProps: UserMessageActionsSlotProps = {
     onCopy: handleCopyClick,
     onEdit: onEdit && turnId && allowEdit ? handleEditClick : undefined,
     timestamp,
     canCopy: true,
     canEdit: !!onEdit && !!turnId && allowEdit,
-  }
+  };
 
   // Render helpers
   const renderSlot = <T,>(
@@ -430,10 +430,10 @@ export function UserMessage({
     props: T,
     defaultContent: ReactNode
   ): ReactNode => {
-    if (slot === undefined) return defaultContent
-    if (typeof slot === 'function') return slot(props)
-    return slot
-  }
+    if (slot === undefined) {return defaultContent;}
+    if (typeof slot === 'function') {return slot(props);}
+    return slot;
+  };
 
   return (
     <div className={classes.root}>
@@ -530,7 +530,7 @@ export function UserMessage({
         />
       )}
     </div>
-  )
+  );
 }
 
-export default UserMessage
+export default UserMessage;

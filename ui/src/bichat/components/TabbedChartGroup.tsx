@@ -9,61 +9,61 @@
  * transitions.
  */
 
-import { useState, useMemo, useCallback, useEffect, useRef, memo } from 'react'
-import { X } from '@phosphor-icons/react'
-import type { ChartData } from '../types'
-import type { ChartCardHost } from './ChartCard'
-import { useTranslation } from '../hooks/useTranslation'
-import { TabBar } from './TabBar'
-import { ChartCard } from './ChartCard'
+import { useState, useMemo, useCallback, useEffect, useRef, memo } from 'react';
+import { X } from '@phosphor-icons/react';
+import type { ChartData } from '../types';
+import type { ChartCardHost } from './ChartCard';
+import { useTranslation } from '../hooks/useTranslation';
+import { TabBar } from './TabBar';
+import { ChartCard } from './ChartCard';
 
 export interface TabbedChartGroupProps {
   charts: ChartData[]
 }
 
-const INLINE_CLASS = 'w-full min-w-0 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/40 overflow-hidden'
-const FULLSCREEN_CLASS = 'fixed inset-4 flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900'
+const INLINE_CLASS = 'w-full min-w-0 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/40 overflow-hidden';
+const FULLSCREEN_CLASS = 'fixed inset-4 flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900';
 
 export const TabbedChartGroup = memo(function TabbedChartGroup({
   charts,
 }: TabbedChartGroupProps) {
-  const { t } = useTranslation()
-  const [activeTabId, setActiveTabId] = useState('chart-0')
-  const [isFullscreen, setIsFullscreen] = useState(false)
-  const containerRef = useRef<HTMLElement>(null)
-  const fullscreenTriggerRef = useRef<HTMLElement | null>(null)
+  const { t } = useTranslation();
+  const [activeTabId, setActiveTabId] = useState('chart-0');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef<HTMLElement>(null);
+  const fullscreenTriggerRef = useRef<HTMLElement | null>(null);
 
   const toggleFullscreen = useCallback(() => {
     setIsFullscreen((v) => {
       if (!v) {
-        fullscreenTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+        fullscreenTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       }
-      return !v
-    })
-  }, [])
+      return !v;
+    });
+  }, []);
 
   // Escape key + focus management for fullscreen
   useEffect(() => {
-    if (!isFullscreen) return
-    containerRef.current?.focus()
+    if (!isFullscreen) {return;}
+    containerRef.current?.focus();
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        e.stopPropagation()
-        setIsFullscreen(false)
+        e.stopPropagation();
+        setIsFullscreen(false);
       }
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [isFullscreen])
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isFullscreen]);
 
   // Restore focus to trigger when exiting fullscreen
   useEffect(() => {
     if (!isFullscreen && fullscreenTriggerRef.current) {
-      const el = fullscreenTriggerRef.current
-      fullscreenTriggerRef.current = null
-      if (typeof el.focus === 'function') el.focus()
+      const el = fullscreenTriggerRef.current;
+      fullscreenTriggerRef.current = null;
+      if (typeof el.focus === 'function') {el.focus();}
     }
-  }, [isFullscreen])
+  }, [isFullscreen]);
 
   const tabs = useMemo(
     () =>
@@ -72,19 +72,19 @@ export const TabbedChartGroup = memo(function TabbedChartGroup({
         label: chart.title || `${t('BiChat.Chart.Title')} ${i + 1}`,
       })),
     [charts, t],
-  )
+  );
 
   const host = useMemo<ChartCardHost>(
     () => ({ isFullscreen }),
     [isFullscreen],
-  )
+  );
 
   // Guard against stale activeTabId
   const resolvedActiveId = tabs.some((tab) => tab.id === activeTabId)
     ? activeTabId
-    : tabs[0]?.id ?? ''
+    : tabs[0]?.id ?? '';
 
-  if (charts.length === 0) return null
+  if (charts.length === 0) {return null;}
 
   return (
     <>
@@ -124,8 +124,8 @@ export const TabbedChartGroup = memo(function TabbedChartGroup({
         />
 
         {charts.map((chart, i) => {
-          const tabId = `chart-${i}`
-          const isActive = tabId === resolvedActiveId
+          const tabId = `chart-${i}`;
+          const isActive = tabId === resolvedActiveId;
           return (
           <div
             key={tabId}
@@ -140,9 +140,9 @@ export const TabbedChartGroup = memo(function TabbedChartGroup({
               host={host}
             />
           </div>
-          )
+          );
         })}
       </section>
     </>
-  )
-})
+  );
+});

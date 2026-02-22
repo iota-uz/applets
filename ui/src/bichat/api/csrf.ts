@@ -7,12 +7,12 @@
  * @returns CSRF token string
  */
 export function getCSRFToken(): string {
-  const token = window.__CSRF_TOKEN__
+  const token = window.__CSRF_TOKEN__;
   if (!token) {
-    console.warn('CSRF token not found in window object')
-    return ''
+    console.warn('CSRF token not found in window object');
+    return '';
   }
-  return token
+  return token;
 }
 
 /**
@@ -21,11 +21,11 @@ export function getCSRFToken(): string {
  * @returns Modified headers object
  */
 export function addCSRFHeader(headers: Headers): Headers {
-  const token = getCSRFToken()
+  const token = getCSRFToken();
   if (token) {
-    headers.set('X-CSRF-Token', token)
+    headers.set('X-CSRF-Token', token);
   }
-  return headers
+  return headers;
 }
 
 /**
@@ -34,6 +34,6 @@ export function addCSRFHeader(headers: Headers): Headers {
  * @returns Headers object with CSRF token
  */
 export function createHeadersWithCSRF(init?: HeadersInit): Headers {
-  const headers = new Headers(init)
-  return addCSRFHeader(headers)
+  const headers = new Headers(init);
+  return addCSRFHeader(headers);
 }

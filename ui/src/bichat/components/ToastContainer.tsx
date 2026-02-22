@@ -4,9 +4,9 @@
  * Positioned at bottom-right to stay out of the way of primary content.
  */
 
-import { Toast } from './Toast'
-import type { ToastItem } from '../hooks/useToast'
-import { useTranslation } from '../hooks/useTranslation'
+import { Toast } from './Toast';
+import type { ToastItem } from '../hooks/useToast';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface ToastContainerProps {
   toasts: ToastItem[]
@@ -16,8 +16,8 @@ interface ToastContainerProps {
 }
 
 export function ToastContainer({ toasts, onDismiss, dismissLabel }: ToastContainerProps) {
-  const { t } = useTranslation()
-  if (toasts.length === 0) return null
+  const { t } = useTranslation();
+  if (toasts.length === 0) {return null;}
 
   return (
     <div
@@ -30,7 +30,7 @@ export function ToastContainer({ toasts, onDismiss, dismissLabel }: ToastContain
         </div>
       ))}
     </div>
-  )
+  );
 }
 
-export default ToastContainer
+export default ToastContainer;

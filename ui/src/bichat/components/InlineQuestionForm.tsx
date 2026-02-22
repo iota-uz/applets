@@ -7,7 +7,7 @@
  * - MULTIPLE_CHOICE: Clickable option cards (checkbox) + always-present "Other" text input
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -16,39 +16,39 @@ import {
   PencilSimpleLine,
   PaperPlaneTilt,
   X,
-} from '@phosphor-icons/react'
-import { PendingQuestion, QuestionAnswers } from '../types'
-import { useChatMessaging } from '../context/ChatContext'
-import { useTranslation } from '../hooks/useTranslation'
+} from '@phosphor-icons/react';
+import { PendingQuestion, QuestionAnswers } from '../types';
+import { useChatMessaging } from '../context/ChatContext';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface InlineQuestionFormProps {
   pendingQuestion: PendingQuestion
 }
 
 export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps) {
-  const { handleSubmitQuestionAnswers, handleRejectPendingQuestion, loading } = useChatMessaging()
-  const { t } = useTranslation()
-  const [currentStep, setCurrentStep] = useState(0)
-  const [answers, setAnswers] = useState<QuestionAnswers>({})
-  const [otherTexts, setOtherTexts] = useState<Record<string, string>>({})
+  const { handleSubmitQuestionAnswers, handleRejectPendingQuestion, loading } = useChatMessaging();
+  const { t } = useTranslation();
+  const [currentStep, setCurrentStep] = useState(0);
+  const [answers, setAnswers] = useState<QuestionAnswers>({});
+  const [otherTexts, setOtherTexts] = useState<Record<string, string>>({});
 
-  const questions = Array.isArray(pendingQuestion.questions) ? pendingQuestion.questions : []
-  const currentQuestion = questions[currentStep]
-  const isLastStep = currentStep === questions.length - 1
-  const isFirstStep = currentStep === 0
-  const totalSteps = questions.length
+  const questions = Array.isArray(pendingQuestion.questions) ? pendingQuestion.questions : [];
+  const currentQuestion = questions[currentStep];
+  const isLastStep = currentStep === questions.length - 1;
+  const isFirstStep = currentStep === 0;
+  const totalSteps = questions.length;
 
   // Get current answer for the current question
-  const currentAnswer = answers[currentQuestion?.id]
-  const currentOtherText = otherTexts[currentQuestion?.id] || ''
+  const currentAnswer = answers[currentQuestion?.id];
+  const currentOtherText = otherTexts[currentQuestion?.id] || '';
 
   const handleOptionChange = useCallback(
     (optionLabel: string, checked: boolean) => {
-      if (!currentQuestion) return
-      const questionId = currentQuestion.id
-      const existingAnswer = answers[questionId] || { options: [] }
-      const isOtherOption = optionLabel === '__other__'
-      const isMultiSelect = currentQuestion.type === 'MULTIPLE_CHOICE'
+      if (!currentQuestion) {return;}
+      const questionId = currentQuestion.id;
+      const existingAnswer = answers[questionId] || { options: [] };
+      const isOtherOption = optionLabel === '__other__';
+      const isMultiSelect = currentQuestion.type === 'MULTIPLE_CHOICE';
 
       // "Other" is mutually exclusive with predefined options.
       if (isOtherOption) {
@@ -58,23 +58,23 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
             options: [],
             customText: checked ? currentOtherText : undefined,
           },
-        })
-        return
+        });
+        return;
       }
 
-      let newOptions: string[]
+      let newOptions: string[];
       if (isMultiSelect) {
         // Multi-select: toggle option
         if (!checked) {
-          newOptions = existingAnswer.options.filter((o) => o !== optionLabel)
+          newOptions = existingAnswer.options.filter((o) => o !== optionLabel);
         } else if (existingAnswer.options.includes(optionLabel)) {
-          newOptions = existingAnswer.options
+          newOptions = existingAnswer.options;
         } else {
-          newOptions = [...existingAnswer.options, optionLabel]
+          newOptions = [...existingAnswer.options, optionLabel];
         }
       } else {
         // Single-select: replace selection (radio)
-        newOptions = checked ? [optionLabel] : []
+        newOptions = checked ? [optionLabel] : [];
       }
 
       setAnswers({
@@ -83,16 +83,16 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
           options: newOptions,
           customText: undefined,
         },
-      })
+      });
     },
     [currentQuestion, answers, currentOtherText]
-  )
+  );
 
   const handleOtherTextChange = useCallback(
     (text: string) => {
-      if (!currentQuestion) return
-      const questionId = currentQuestion.id
-      setOtherTexts({ ...otherTexts, [questionId]: text })
+      if (!currentQuestion) {return;}
+      const questionId = currentQuestion.id;
+      setOtherTexts({ ...otherTexts, [questionId]: text });
 
       // Update the answer with custom text ("Other" is selected when customText is set)
       setAnswers({
@@ -101,55 +101,55 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
           options: [],
           customText: text,
         },
-      })
+      });
     },
     [currentQuestion, answers, otherTexts]
-  )
+  );
 
   const isCurrentAnswerValid = (): boolean => {
-    if (!currentQuestion) return false
+    if (!currentQuestion) {return false;}
 
-    const answer = answers[currentQuestion.id]
-    const required = currentQuestion.required ?? true
+    const answer = answers[currentQuestion.id];
+    const required = currentQuestion.required ?? true;
 
-    if (!answer) return !required
+    if (!answer) {return !required;}
 
-    const hasOptionSelection = answer.options.length > 0
-    const hasOtherSelected = answer.customText !== undefined
-    const hasOtherText = (answer.customText?.trim().length ?? 0) > 0
+    const hasOptionSelection = answer.options.length > 0;
+    const hasOtherSelected = answer.customText !== undefined;
+    const hasOtherText = (answer.customText?.trim().length ?? 0) > 0;
 
     if (!hasOptionSelection && !hasOtherSelected) {
-      return !required
+      return !required;
     }
 
     if (hasOptionSelection) {
-      return true
+      return true;
     }
 
     // "Other" selected: require non-empty text if required
-    return !required || hasOtherText
-  }
+    return !required || hasOtherText;
+  };
 
   const handleNext = () => {
-    if (!isCurrentAnswerValid()) return
+    if (!isCurrentAnswerValid()) {return;}
 
     if (isLastStep) {
-      handleSubmitQuestionAnswers(answers)
+      handleSubmitQuestionAnswers(answers);
     } else {
-      setCurrentStep(currentStep + 1)
+      setCurrentStep(currentStep + 1);
     }
-  }
+  };
 
   const handleBack = () => {
     if (!isFirstStep) {
-      setCurrentStep(currentStep - 1)
+      setCurrentStep(currentStep - 1);
     }
-  }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    handleNext()
-  }
+    e.preventDefault();
+    handleNext();
+  };
 
   if (!currentQuestion) {
     return (
@@ -172,19 +172,19 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
           </button>
         </div>
       </div>
-    )
+    );
   }
 
-  const isMultiSelect = currentQuestion.type === 'MULTIPLE_CHOICE'
+  const isMultiSelect = currentQuestion.type === 'MULTIPLE_CHOICE';
   const options = (currentQuestion.options || [])
     .filter((option) => Boolean(option && typeof option.label === 'string'))
     .map((option, index) => ({
       id: option.id || `${currentQuestion.id}-option-${index}`,
       label: option.label,
       value: option.value || option.label,
-    }))
-  const isOtherSelected = currentAnswer?.customText !== undefined
-  const canProceed = isCurrentAnswerValid()
+    }));
+  const isOtherSelected = currentAnswer?.customText !== undefined;
+  const canProceed = isCurrentAnswerValid();
 
   return (
     <div className="animate-slide-up rounded-2xl border border-gray-200 dark:border-gray-700/50 bg-gradient-to-b from-primary-50/80 to-white dark:from-primary-950/30 dark:to-gray-900/80 shadow-sm overflow-hidden">
@@ -221,8 +221,8 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
         {totalSteps > 1 && (
           <div className="flex items-center gap-1.5 px-4 pb-3">
             {questions.map((_, index) => {
-              const isCompleted = index < currentStep
-              const isCurrent = index === currentStep
+              const isCompleted = index < currentStep;
+              const isCurrent = index === currentStep;
               return (
                 <div
                   key={index}
@@ -236,7 +236,7 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
                         : '',
                   ].join(' ')}
                 />
-              )
+              );
             })}
           </div>
         )}
@@ -256,7 +256,7 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
         {/* Options as clickable cards */}
         <div className="px-4 pb-2 space-y-1.5">
           {options.map((option) => {
-            const isSelected = currentAnswer?.options.includes(option.label) || false
+            const isSelected = currentAnswer?.options.includes(option.label) || false;
             return (
               <label
                 key={option.id}
@@ -297,7 +297,7 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
                   {option.label}
                 </span>
               </label>
-            )
+            );
           })}
 
           {/* "Other" option */}
@@ -392,5 +392,5 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
         </div>
       </form>
     </div>
-  )
+  );
 }

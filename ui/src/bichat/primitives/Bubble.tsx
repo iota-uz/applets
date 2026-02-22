@@ -8,8 +8,8 @@ import {
   useContext,
   forwardRef,
   type HTMLAttributes,
-} from 'react'
-import { Slot, type AsChildProps } from './Slot'
+} from 'react';
+import { Slot, type AsChildProps } from './Slot';
 
 /* -------------------------------------------------------------------------------------------------
  * BubbleContext
@@ -21,14 +21,14 @@ interface BubbleContextValue {
   variant?: BubbleVariant
 }
 
-const BubbleContext = createContext<BubbleContextValue | undefined>(undefined)
+const BubbleContext = createContext<BubbleContextValue | undefined>(undefined);
 
 function useBubbleContext() {
-  const context = useContext(BubbleContext)
+  const context = useContext(BubbleContext);
   if (!context) {
-    throw new Error('Bubble components must be used within Bubble.Root')
+    throw new Error('Bubble components must be used within Bubble.Root');
   }
-  return context
+  return context;
 }
 
 /* -------------------------------------------------------------------------------------------------
@@ -41,8 +41,8 @@ type BubbleRootProps = AsChildProps<HTMLAttributes<HTMLDivElement>> & {
 }
 
 const BubbleRoot = forwardRef<HTMLDivElement, BubbleRootProps>((props, ref) => {
-  const { asChild, variant, children, ...domProps } = props
-  const Comp = asChild ? Slot : 'div'
+  const { asChild, variant, children, ...domProps } = props;
+  const Comp = asChild ? Slot : 'div';
 
   return (
     <BubbleContext.Provider value={{ variant }}>
@@ -50,10 +50,10 @@ const BubbleRoot = forwardRef<HTMLDivElement, BubbleRootProps>((props, ref) => {
         {children}
       </Comp>
     </BubbleContext.Provider>
-  )
-})
+  );
+});
 
-BubbleRoot.displayName = 'Bubble.Root'
+BubbleRoot.displayName = 'Bubble.Root';
 
 /* -------------------------------------------------------------------------------------------------
  * Bubble.Content
@@ -62,17 +62,17 @@ BubbleRoot.displayName = 'Bubble.Root'
 type BubbleContentProps = AsChildProps<HTMLAttributes<HTMLDivElement>>
 
 const BubbleContent = forwardRef<HTMLDivElement, BubbleContentProps>((props, ref) => {
-  const { asChild, children, ...domProps } = props
-  const Comp = asChild ? Slot : 'div'
+  const { asChild, children, ...domProps } = props;
+  const Comp = asChild ? Slot : 'div';
 
   return (
     <Comp ref={ref} data-bubble-part="content" {...domProps}>
       {children}
     </Comp>
-  )
-})
+  );
+});
 
-BubbleContent.displayName = 'Bubble.Content'
+BubbleContent.displayName = 'Bubble.Content';
 
 /* -------------------------------------------------------------------------------------------------
  * Bubble.Header
@@ -81,17 +81,17 @@ BubbleContent.displayName = 'Bubble.Content'
 type BubbleHeaderProps = AsChildProps<HTMLAttributes<HTMLDivElement>>
 
 const BubbleHeader = forwardRef<HTMLDivElement, BubbleHeaderProps>((props, ref) => {
-  const { asChild, children, ...domProps } = props
-  const Comp = asChild ? Slot : 'div'
+  const { asChild, children, ...domProps } = props;
+  const Comp = asChild ? Slot : 'div';
 
   return (
     <Comp ref={ref} data-bubble-part="header" {...domProps}>
       {children}
     </Comp>
-  )
-})
+  );
+});
 
-BubbleHeader.displayName = 'Bubble.Header'
+BubbleHeader.displayName = 'Bubble.Header';
 
 /* -------------------------------------------------------------------------------------------------
  * Bubble.Footer
@@ -100,17 +100,17 @@ BubbleHeader.displayName = 'Bubble.Header'
 type BubbleFooterProps = AsChildProps<HTMLAttributes<HTMLDivElement>>
 
 const BubbleFooter = forwardRef<HTMLDivElement, BubbleFooterProps>((props, ref) => {
-  const { asChild, children, ...domProps } = props
-  const Comp = asChild ? Slot : 'div'
+  const { asChild, children, ...domProps } = props;
+  const Comp = asChild ? Slot : 'div';
 
   return (
     <Comp ref={ref} data-bubble-part="footer" {...domProps}>
       {children}
     </Comp>
-  )
-})
+  );
+});
 
-BubbleFooter.displayName = 'Bubble.Footer'
+BubbleFooter.displayName = 'Bubble.Footer';
 
 /* -------------------------------------------------------------------------------------------------
  * Bubble.Metadata
@@ -119,17 +119,17 @@ BubbleFooter.displayName = 'Bubble.Footer'
 type BubbleMetadataProps = AsChildProps<HTMLAttributes<HTMLDivElement>>
 
 const BubbleMetadata = forwardRef<HTMLDivElement, BubbleMetadataProps>((props, ref) => {
-  const { asChild, children, ...domProps } = props
-  const Comp = asChild ? Slot : 'div'
+  const { asChild, children, ...domProps } = props;
+  const Comp = asChild ? Slot : 'div';
 
   return (
     <Comp ref={ref} data-bubble-part="metadata" {...domProps}>
       {children}
     </Comp>
-  )
-})
+  );
+});
 
-BubbleMetadata.displayName = 'Bubble.Metadata'
+BubbleMetadata.displayName = 'Bubble.Metadata';
 
 /* -------------------------------------------------------------------------------------------------
  * Exports
@@ -141,9 +141,9 @@ export const Bubble = {
   Header: BubbleHeader,
   Footer: BubbleFooter,
   Metadata: BubbleMetadata,
-}
+};
 
-export { useBubbleContext }
+export { useBubbleContext };
 export type {
   BubbleRootProps,
   BubbleContentProps,
@@ -151,4 +151,4 @@ export type {
   BubbleFooterProps,
   BubbleMetadataProps,
   BubbleVariant,
-}
+};

@@ -8,8 +8,8 @@
  * @internal — Not part of the public API. Consumed by HttpDataSource modules.
  */
 
-import type { Session as RPCSession } from './rpc.generated'
-import type { PendingQuestion as RPCPendingQuestion } from './rpc.generated'
+import type { Session as RPCSession } from './rpc.generated';
+import type { PendingQuestion as RPCPendingQuestion } from './rpc.generated';
 import type {
   Session,
   ConversationTurn,
@@ -20,10 +20,10 @@ import type {
   Attachment,
   AssistantTurn,
   RenderTableData,
-} from '../types'
-import { MessageRole } from '../types'
-import { parseChartDataFromSpec, parseChartDataFromJsonString, isRecord } from '../utils/chartSpec'
-import { parseRenderTableDataFromJsonString, parseRenderTableDataFromMetadata } from '../utils/tableSpec'
+} from '../types';
+import { MessageRole } from '../types';
+import { parseChartDataFromSpec, parseChartDataFromJsonString, isRecord } from '../utils/chartSpec';
+import { parseRenderTableDataFromJsonString, parseRenderTableDataFromMetadata } from '../utils/tableSpec';
 
 // ---------------------------------------------------------------------------
 // Internal helper types
@@ -49,7 +49,7 @@ export interface RPCArtifact {
 // ---------------------------------------------------------------------------
 
 export function warnMalformedSessionPayload(message: string, details?: Record<string, unknown>): void {
-  console.warn(`[BiChat] ${message}`, details || {})
+  console.warn(`[BiChat] ${message}`, details || {});
 }
 
 // ---------------------------------------------------------------------------
@@ -57,63 +57,63 @@ export function warnMalformedSessionPayload(message: string, details?: Record<st
 // ---------------------------------------------------------------------------
 
 function readString(value: unknown, fallback = ''): string {
-  return typeof value === 'string' ? value : fallback
+  return typeof value === 'string' ? value : fallback;
 }
 
 function readNonEmptyString(value: unknown): string | null {
-  if (typeof value !== 'string') return null
-  const trimmed = value.trim()
-  return trimmed.length > 0 ? trimmed : null
+  if (typeof value !== 'string') {return null;}
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 function readFiniteNumber(value: unknown, fallback = 0): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
 function readOptionalFiniteNumber(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
 function extractFilenameFromURL(value: unknown): string | null {
-  const raw = readNonEmptyString(value)
-  if (!raw) return null
+  const raw = readNonEmptyString(value);
+  if (!raw) {return null;}
 
   try {
-    const parsed = new URL(raw)
-    const path = parsed.pathname
-    if (!path) return null
-    const segments = path.split('/').filter(Boolean)
-    if (segments.length === 0) return null
-    const candidate = decodeURIComponent(segments[segments.length - 1])
-    return readNonEmptyString(candidate)
+    const parsed = new URL(raw);
+    const path = parsed.pathname;
+    if (!path) {return null;}
+    const segments = path.split('/').filter(Boolean);
+    if (segments.length === 0) {return null;}
+    const candidate = decodeURIComponent(segments[segments.length - 1]);
+    return readNonEmptyString(candidate);
   } catch {
     // Relative path fallback: extract last segment without URL parsing
     try {
-      const segments = raw.split('/').filter(Boolean)
-      if (segments.length === 0) return null
-      const candidate = decodeURIComponent(segments[segments.length - 1])
-      return readNonEmptyString(candidate)
+      const segments = raw.split('/').filter(Boolean);
+      if (segments.length === 0) {return null;}
+      const candidate = decodeURIComponent(segments[segments.length - 1]);
+      return readNonEmptyString(candidate);
     } catch {
-      return null
+      return null;
     }
   }
 }
 
 function resolveArtifactName(artifact: RPCArtifact): string {
-  const explicit = readNonEmptyString(artifact.name)
+  const explicit = readNonEmptyString(artifact.name);
   if (explicit) {
-    return explicit
+    return explicit;
   }
 
-  const fromURL = extractFilenameFromURL(artifact.url)
+  const fromURL = extractFilenameFromURL(artifact.url);
   if (fromURL) {
-    return fromURL
+    return fromURL;
   }
 
-  const type = readNonEmptyString(artifact.type) || 'artifact'
-  const label = type.replace(/_/g, ' ')
-  if (label === 'artifact' || label.endsWith(' artifact')) return label
-  return `${label} artifact`
+  const type = readNonEmptyString(artifact.type) || 'artifact';
+  const label = type.replace(/_/g, ' ');
+  if (label === 'artifact' || label.endsWith(' artifact')) {return label;}
+  return `${label} artifact`;
 }
 
 // ---------------------------------------------------------------------------
@@ -124,15 +124,15 @@ export function toSession(session: RPCSession): Session {
   return {
     ...session,
     status: session.status === 'archived' ? 'archived' : 'active',
-  }
+  };
 }
 
 export function toSessionArtifact(artifact: RPCArtifact): SessionArtifact {
-  const rawCreatedAt = readNonEmptyString(artifact.createdAt)
+  const rawCreatedAt = readNonEmptyString(artifact.createdAt);
   if (!rawCreatedAt) {
-    warnMalformedSessionPayload('Artifact missing createdAt; defaulting to epoch', { id: artifact.id })
+    warnMalformedSessionPayload('Artifact missing createdAt; defaulting to epoch', { id: artifact.id });
   }
-  const createdAt = rawCreatedAt ?? '1970-01-01T00:00:00.000Z'
+  const createdAt = rawCreatedAt ?? '1970-01-01T00:00:00.000Z';
 
   return {
     id: readString(artifact.id),
@@ -147,7 +147,7 @@ export function toSessionArtifact(artifact: RPCArtifact): SessionArtifact {
     sizeBytes: Math.max(0, readFiniteNumber(artifact.sizeBytes)),
     metadata: isRecord(artifact.metadata) ? artifact.metadata : undefined,
     createdAt,
-  }
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -155,16 +155,16 @@ export function toSessionArtifact(artifact: RPCArtifact): SessionArtifact {
 // ---------------------------------------------------------------------------
 
 function normalizeQuestionType(rawType: unknown): 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' {
-  const normalized = readString(rawType).trim().toUpperCase().replace(/[\s-]+/g, '_')
-  return normalized === 'MULTIPLE_CHOICE' ? 'MULTIPLE_CHOICE' : 'SINGLE_CHOICE'
+  const normalized = readString(rawType).trim().toUpperCase().replace(/[\s-]+/g, '_');
+  return normalized === 'MULTIPLE_CHOICE' ? 'MULTIPLE_CHOICE' : 'SINGLE_CHOICE';
 }
 
 function normalizeMessageRole(rawRole: unknown): MessageRole {
-  const normalized = readString(rawRole).trim().toLowerCase()
-  if (normalized === MessageRole.User) return MessageRole.User
-  if (normalized === MessageRole.System) return MessageRole.System
-  if (normalized === MessageRole.Tool) return MessageRole.Tool
-  return MessageRole.Assistant
+  const normalized = readString(rawRole).trim().toLowerCase();
+  if (normalized === MessageRole.User) {return MessageRole.User;}
+  if (normalized === MessageRole.System) {return MessageRole.System;}
+  if (normalized === MessageRole.Tool) {return MessageRole.Tool;}
+  return MessageRole.Assistant;
 }
 
 // ---------------------------------------------------------------------------
@@ -173,17 +173,17 @@ function normalizeMessageRole(rawRole: unknown): MessageRole {
 
 function sanitizeAttachment(rawAttachment: unknown, turnId: string, index: number): Attachment | null {
   if (!isRecord(rawAttachment)) {
-    warnMalformedSessionPayload('Dropped malformed attachment entry', { turnId, index })
-    return null
+    warnMalformedSessionPayload('Dropped malformed attachment entry', { turnId, index });
+    return null;
   }
 
-  const filename = readString(rawAttachment.filename, 'attachment')
-  const mimeType = readString(rawAttachment.mimeType, 'application/octet-stream')
-  const id = readNonEmptyString(rawAttachment.id) || undefined
+  const filename = readString(rawAttachment.filename, 'attachment');
+  const mimeType = readString(rawAttachment.mimeType, 'application/octet-stream');
+  const id = readNonEmptyString(rawAttachment.id) || undefined;
   const clientKey =
     readNonEmptyString(rawAttachment.clientKey) ||
     id ||
-    `${turnId}-attachment-${index}`
+    `${turnId}-attachment-${index}`;
 
   return {
     id,
@@ -195,36 +195,36 @@ function sanitizeAttachment(rawAttachment: unknown, turnId: string, index: numbe
     base64Data: readNonEmptyString(rawAttachment.base64Data) || undefined,
     url: readNonEmptyString(rawAttachment.url) || undefined,
     preview: readNonEmptyString(rawAttachment.preview) || undefined,
-  }
+  };
 }
 
 function sanitizeUserAttachments(rawAttachments: unknown, turnId: string): Attachment[] {
-  if (!Array.isArray(rawAttachments)) return []
-  const result: Attachment[] = []
+  if (!Array.isArray(rawAttachments)) {return [];}
+  const result: Attachment[] = [];
   for (let i = 0; i < rawAttachments.length; i++) {
-    const sanitized = sanitizeAttachment(rawAttachments[i], turnId, i)
-    if (sanitized) result.push(sanitized)
+    const sanitized = sanitizeAttachment(rawAttachments[i], turnId, i);
+    if (sanitized) {result.push(sanitized);}
   }
-  return result
+  return result;
 }
 
 function sanitizeAssistantArtifacts(rawArtifacts: unknown, turnId: string): DownloadArtifact[] {
-  if (!Array.isArray(rawArtifacts)) return []
-  const artifacts: DownloadArtifact[] = []
+  if (!Array.isArray(rawArtifacts)) {return [];}
+  const artifacts: DownloadArtifact[] = [];
   for (let i = 0; i < rawArtifacts.length; i++) {
-    const raw = rawArtifacts[i]
+    const raw = rawArtifacts[i];
     if (!isRecord(raw)) {
-      warnMalformedSessionPayload('Dropped malformed assistant artifact', { turnId, index: i })
-      continue
+      warnMalformedSessionPayload('Dropped malformed assistant artifact', { turnId, index: i });
+      continue;
     }
-    const type = readString(raw.type).toLowerCase()
+    const type = readString(raw.type).toLowerCase();
     if (type !== 'excel' && type !== 'pdf') {
-      continue
+      continue;
     }
-    const url = readNonEmptyString(raw.url)
+    const url = readNonEmptyString(raw.url);
     if (!url) {
-      warnMalformedSessionPayload('Dropped assistant artifact without url', { turnId, index: i })
-      continue
+      warnMalformedSessionPayload('Dropped assistant artifact without url', { turnId, index: i });
+      continue;
     }
     artifacts.push({
       type,
@@ -234,9 +234,9 @@ function sanitizeAssistantArtifacts(rawArtifacts: unknown, turnId: string): Down
       rowCount:
         typeof raw.rowCount === 'number' && Number.isFinite(raw.rowCount) ? raw.rowCount : undefined,
       description: readNonEmptyString(raw.description) || undefined,
-    })
+    });
   }
-  return artifacts
+  return artifacts;
 }
 
 // ---------------------------------------------------------------------------
@@ -248,16 +248,16 @@ function sanitizeAssistantTurn(
   fallbackCreatedAt: string,
   turnId: string
 ): AssistantTurn | undefined {
-  if (rawAssistantTurn == null) return undefined
+  if (rawAssistantTurn == null) {return undefined;}
   if (!isRecord(rawAssistantTurn)) {
-    warnMalformedSessionPayload('Dropped malformed assistant turn payload', { turnId })
-    return undefined
+    warnMalformedSessionPayload('Dropped malformed assistant turn payload', { turnId });
+    return undefined;
   }
 
-  const assistantID = readNonEmptyString(rawAssistantTurn.id)
+  const assistantID = readNonEmptyString(rawAssistantTurn.id);
   if (!assistantID) {
-    warnMalformedSessionPayload('Dropped assistant turn without id', { turnId })
-    return undefined
+    warnMalformedSessionPayload('Dropped assistant turn without id', { turnId });
+    return undefined;
   }
 
   const citations = Array.isArray(rawAssistantTurn.citations)
@@ -272,7 +272,7 @@ function sanitizeAssistantTurn(
         endIndex: readFiniteNumber(item.endIndex),
         excerpt: readNonEmptyString(item.excerpt) || undefined,
       }))
-    : []
+    : [];
 
   const toolCalls = Array.isArray(rawAssistantTurn.toolCalls)
     ? rawAssistantTurn.toolCalls
@@ -285,23 +285,23 @@ function sanitizeAssistantTurn(
         error: readNonEmptyString(item.error) || undefined,
         durationMs: readFiniteNumber(item.durationMs),
       }))
-    : []
+    : [];
 
   const codeOutputs = Array.isArray(rawAssistantTurn.codeOutputs)
     ? rawAssistantTurn.codeOutputs
       .filter((item) => isRecord(item))
       .map((item) => ({
         type: ((): 'image' | 'text' | 'error' => {
-          const normalizedType = readString(item.type, 'text').toLowerCase()
-          if (normalizedType === 'image' || normalizedType === 'error') return normalizedType
-          return 'text'
+          const normalizedType = readString(item.type, 'text').toLowerCase();
+          if (normalizedType === 'image' || normalizedType === 'error') {return normalizedType;}
+          return 'text';
         })(),
         content: readString(item.content),
         filename: readNonEmptyString(item.filename) || undefined,
         mimeType: readNonEmptyString(item.mimeType) || undefined,
         sizeBytes: readOptionalFiniteNumber(item.sizeBytes),
       }))
-    : []
+    : [];
 
   const debugTrace = isRecord(rawAssistantTurn.debug)
     ? {
@@ -409,7 +409,7 @@ function sanitizeAssistantTurn(
           }))
         : [],
     }
-    : undefined
+    : undefined;
 
   return {
     id: assistantID,
@@ -425,7 +425,7 @@ function sanitizeAssistantTurn(
     lifecycle: 'complete',
     debug: debugTrace,
     createdAt: readString(rawAssistantTurn.createdAt, fallbackCreatedAt),
-  }
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -434,26 +434,26 @@ function sanitizeAssistantTurn(
 
 function sanitizeConversationTurn(rawTurn: unknown, index: number, fallbackSessionID: string): ConversationTurn | null {
   if (!isRecord(rawTurn)) {
-    warnMalformedSessionPayload('Dropped malformed turn payload (not an object)', { index })
-    return null
+    warnMalformedSessionPayload('Dropped malformed turn payload (not an object)', { index });
+    return null;
   }
 
   if (!isRecord(rawTurn.userTurn)) {
-    warnMalformedSessionPayload('Dropped malformed turn payload (missing user turn)', { index })
-    return null
+    warnMalformedSessionPayload('Dropped malformed turn payload (missing user turn)', { index });
+    return null;
   }
 
-  const userTurnID = readNonEmptyString(rawTurn.userTurn.id)
+  const userTurnID = readNonEmptyString(rawTurn.userTurn.id);
   if (!userTurnID) {
-    warnMalformedSessionPayload('Dropped malformed turn payload (missing user turn id)', { index })
-    return null
+    warnMalformedSessionPayload('Dropped malformed turn payload (missing user turn id)', { index });
+    return null;
   }
 
-  const turnID = readString(rawTurn.id, userTurnID)
+  const turnID = readString(rawTurn.id, userTurnID);
   const createdAt = readString(
     rawTurn.createdAt,
     readString(rawTurn.userTurn.createdAt, new Date().toISOString())
-  )
+  );
 
   return {
     id: turnID,
@@ -466,23 +466,23 @@ function sanitizeConversationTurn(rawTurn: unknown, index: number, fallbackSessi
     },
     assistantTurn: sanitizeAssistantTurn(rawTurn.assistantTurn, createdAt, turnID),
     createdAt,
-  }
+  };
 }
 
 export function sanitizeConversationTurns(rawTurns: unknown, sessionID: string): ConversationTurn[] {
   if (!Array.isArray(rawTurns)) {
-    warnMalformedSessionPayload('Session payload contained non-array turns field', { sessionID })
-    return []
+    warnMalformedSessionPayload('Session payload contained non-array turns field', { sessionID });
+    return [];
   }
 
-  const turns: ConversationTurn[] = []
-  let dropped = 0
+  const turns: ConversationTurn[] = [];
+  let dropped = 0;
   for (let i = 0; i < rawTurns.length; i++) {
-    const sanitizedTurn = sanitizeConversationTurn(rawTurns[i], i, sessionID)
+    const sanitizedTurn = sanitizeConversationTurn(rawTurns[i], i, sessionID);
     if (sanitizedTurn) {
-      turns.push(sanitizedTurn)
+      turns.push(sanitizedTurn);
     } else {
-      dropped++
+      dropped++;
     }
   }
 
@@ -491,10 +491,10 @@ export function sanitizeConversationTurns(rawTurns: unknown, sessionID: string):
       sessionID,
       dropped,
       total: rawTurns.length,
-    })
+    });
   }
 
-  return turns
+  return turns;
 }
 
 // ---------------------------------------------------------------------------
@@ -505,19 +505,19 @@ export function sanitizePendingQuestion(
   rawPendingQuestion: RPCPendingQuestion | null | undefined,
   sessionID: string
 ): PendingQuestion | null {
-  if (!rawPendingQuestion) return null
+  if (!rawPendingQuestion) {return null;}
 
-  const checkpointID = readNonEmptyString(rawPendingQuestion.checkpointId)
+  const checkpointID = readNonEmptyString(rawPendingQuestion.checkpointId);
   if (!checkpointID) {
-    warnMalformedSessionPayload('Dropped malformed pendingQuestion without checkpointId', { sessionID })
-    return null
+    warnMalformedSessionPayload('Dropped malformed pendingQuestion without checkpointId', { sessionID });
+    return null;
   }
 
   if (!Array.isArray(rawPendingQuestion.questions)) {
     warnMalformedSessionPayload('Pending question had non-array questions payload', {
       sessionID,
       checkpointID,
-    })
+    });
   }
 
   const questions: Question[] = Array.isArray(rawPendingQuestion.questions)
@@ -527,13 +527,13 @@ export function sanitizePendingQuestion(
           warnMalformedSessionPayload('Dropped malformed question from pendingQuestion', {
             sessionID,
             checkpointID,
-          })
-          return false
+          });
+          return false;
         }
-        return true
+        return true;
       })
       .map((question, index) => {
-        const questionID = readString(question.id, `${checkpointID}-q-${index}`)
+        const questionID = readString(question.id, `${checkpointID}-q-${index}`);
         const options = Array.isArray(question.options)
           ? question.options
             .filter((option) => {
@@ -542,29 +542,29 @@ export function sanitizePendingQuestion(
                   sessionID,
                   checkpointID,
                   questionID,
-                })
-                return false
+                });
+                return false;
               }
-              return true
+              return true;
             })
             .map((option, optionIndex) => {
-              const label = readString(option.label)
+              const label = readString(option.label);
               return {
                 id: readString(option.id, `${questionID}-opt-${optionIndex}`),
                 label,
                 value: label,
-              }
+              };
             })
-          : []
+          : [];
 
         return {
           id: questionID,
           text: readString(question.text),
           type: normalizeQuestionType(question.type),
           options,
-        }
+        };
       })
-    : []
+    : [];
 
   return {
     id: checkpointID,
@@ -572,7 +572,7 @@ export function sanitizePendingQuestion(
     agentName: readNonEmptyString(rawPendingQuestion.agentName) || undefined,
     questions,
     status: 'PENDING',
-  }
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -580,41 +580,41 @@ export function sanitizePendingQuestion(
 // ---------------------------------------------------------------------------
 
 function formatSizeReadable(bytes: number): string | undefined {
-  if (!Number.isFinite(bytes) || bytes <= 0) return undefined
+  if (!Number.isFinite(bytes) || bytes <= 0) {return undefined;}
 
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  let value = bytes
-  let idx = 0
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let value = bytes;
+  let idx = 0;
   while (value >= 1024 && idx < units.length - 1) {
-    value /= 1024
-    idx++
+    value /= 1024;
+    idx++;
   }
-  const precision = idx === 0 ? 0 : value >= 10 ? 1 : 2
-  return `${value.toFixed(precision)} ${units[idx]}`
+  const precision = idx === 0 ? 0 : value >= 10 ? 1 : 2;
+  return `${value.toFixed(precision)} ${units[idx]}`;
 }
 
 function parseRowCount(metadata?: Record<string, unknown>): number | undefined {
-  if (!metadata) return undefined
-  const raw = metadata.row_count ?? metadata.rowCount
+  if (!metadata) {return undefined;}
+  const raw = metadata.row_count ?? metadata.rowCount;
   if (typeof raw === 'number' && Number.isFinite(raw)) {
-    return raw
+    return raw;
   }
   if (typeof raw === 'string') {
-    const parsed = Number.parseInt(raw, 10)
+    const parsed = Number.parseInt(raw, 10);
     if (Number.isFinite(parsed)) {
-      return parsed
+      return parsed;
     }
   }
-  return undefined
+  return undefined;
 }
 
 function inferDownloadType(artifact: SessionArtifact): DownloadArtifact['type'] | null {
-  const mime = artifact.mimeType?.toLowerCase() || ''
-  const name = artifact.name?.toLowerCase() || ''
-  const cleanURL = artifact.url?.split('?')[0].toLowerCase() || ''
+  const mime = artifact.mimeType?.toLowerCase() || '';
+  const name = artifact.name?.toLowerCase() || '';
+  const cleanURL = artifact.url?.split('?')[0].toLowerCase() || '';
 
-  const isPDF = mime.includes('pdf') || name.endsWith('.pdf') || cleanURL.endsWith('.pdf')
-  if (isPDF) return 'pdf'
+  const isPDF = mime.includes('pdf') || name.endsWith('.pdf') || cleanURL.endsWith('.pdf');
+  if (isPDF) {return 'pdf';}
 
   const isExcel =
     mime.includes('spreadsheet') ||
@@ -622,27 +622,27 @@ function inferDownloadType(artifact: SessionArtifact): DownloadArtifact['type'] 
     name.endsWith('.xlsx') ||
     name.endsWith('.xls') ||
     cleanURL.endsWith('.xlsx') ||
-    cleanURL.endsWith('.xls')
-  if (isExcel) return 'excel'
+    cleanURL.endsWith('.xls');
+  if (isExcel) {return 'excel';}
 
-  return null
+  return null;
 }
 
 function extractFilename(artifact: SessionArtifact): string {
-  const name = artifact.name?.trim()
-  if (name) return name
+  const name = artifact.name?.trim();
+  if (name) {return name;}
 
-  const urlPath = artifact.url?.split('?')[0] || ''
-  const fromURL = urlPath.split('/').filter(Boolean).pop()
-  if (fromURL) return fromURL
+  const urlPath = artifact.url?.split('?')[0] || '';
+  const fromURL = urlPath.split('/').filter(Boolean).pop();
+  if (fromURL) {return fromURL;}
 
-  return 'download'
+  return 'download';
 }
 
 function toDownloadArtifact(artifact: SessionArtifact): DownloadArtifact | null {
-  if (!artifact.url) return null
-  const type = inferDownloadType(artifact)
-  if (!type) return null
+  if (!artifact.url) {return null;}
+  const type = inferDownloadType(artifact);
+  if (!type) {return null;}
 
   return {
     type,
@@ -651,7 +651,7 @@ function toDownloadArtifact(artifact: SessionArtifact): DownloadArtifact | null 
     sizeReadable: formatSizeReadable(artifact.sizeBytes),
     rowCount: parseRowCount(artifact.metadata),
     description: artifact.description,
-  }
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -667,19 +667,19 @@ function cloneChartData(chart: import('../types').ChartData): import('../types')
     options: chart.options && typeof chart.options === 'object' && !Array.isArray(chart.options)
       ? JSON.parse(JSON.stringify(chart.options))
       : chart.options,
-  }
+  };
 }
 
 function extractChartsFromToolCalls(toolCalls?: Array<{ name: string; result?: string }>): import('../types').ChartData[] {
-  if (!toolCalls) return []
-  const charts: import('../types').ChartData[] = []
+  if (!toolCalls) {return [];}
+  const charts: import('../types').ChartData[] = [];
   for (const tc of toolCalls) {
     if (tc.name === 'draw_chart' && tc.result) {
-      const parsed = parseChartDataFromJsonString(tc.result)
-      if (parsed) charts.push(cloneChartData(parsed))
+      const parsed = parseChartDataFromJsonString(tc.result);
+      if (parsed) {charts.push(cloneChartData(parsed));}
     }
   }
-  return charts
+  return charts;
 }
 
 function cloneRenderTableData(table: RenderTableData): RenderTableData {
@@ -688,47 +688,47 @@ function cloneRenderTableData(table: RenderTableData): RenderTableData {
     columns: [...(table.columns ?? [])],
     headers: [...(table.headers ?? [])],
     rows: table.rows?.map((row) => [...row]) ?? [],
-  }
+  };
 }
 
 function extractRenderTablesFromToolCalls(toolCalls?: Array<{ id: string; name: string; result?: string }>): RenderTableData[] {
-  if (!toolCalls) return []
+  if (!toolCalls) {return [];}
 
-  const tables: RenderTableData[] = []
+  const tables: RenderTableData[] = [];
   for (const tc of toolCalls) {
-    if (tc.name !== 'render_table' || !tc.result) continue
-    const parsed = parseRenderTableDataFromJsonString(tc.result, tc.id)
+    if (tc.name !== 'render_table' || !tc.result) {continue;}
+    const parsed = parseRenderTableDataFromJsonString(tc.result, tc.id);
     if (parsed) {
-      tables.push(cloneRenderTableData(parsed))
+      tables.push(cloneRenderTableData(parsed));
     }
   }
 
-  return tables
+  return tables;
 }
 
 const EXPORT_TOOL_NAMES: Record<string, DownloadArtifact['type']> = {
   export_query_to_excel: 'excel',
   export_data_to_excel: 'excel',
   export_to_pdf: 'pdf',
-}
+};
 
 function extractDownloadArtifactsFromToolCalls(toolCalls?: Array<{ name: string; result?: string }>): DownloadArtifact[] {
-  if (!toolCalls) return []
-  const artifacts: DownloadArtifact[] = []
+  if (!toolCalls) {return [];}
+  const artifacts: DownloadArtifact[] = [];
   for (const tc of toolCalls) {
-    const type = EXPORT_TOOL_NAMES[tc.name]
-    if (!type || !tc.result) continue
+    const type = EXPORT_TOOL_NAMES[tc.name];
+    if (!type || !tc.result) {continue;}
 
-    let parsed: unknown
-    try { parsed = JSON.parse(tc.result) } catch { continue }
-    if (!isRecord(parsed) || typeof parsed.url !== 'string' || !parsed.url) continue
+    let parsed: unknown;
+    try { parsed = JSON.parse(tc.result); } catch { continue; }
+    if (!isRecord(parsed) || typeof parsed.url !== 'string' || !parsed.url) {continue;}
 
     const filename = typeof parsed.filename === 'string' && parsed.filename
       ? parsed.filename
-      : parsed.url.split('/').pop() || 'download'
+      : parsed.url.split('/').pop() || 'download';
 
-    const sizeKB = typeof parsed.file_size_kb === 'number' ? parsed.file_size_kb : undefined
-    const sizeBytes = typeof parsed.size === 'number' ? parsed.size : (sizeKB != null ? sizeKB * 1024 : undefined)
+    const sizeKB = typeof parsed.file_size_kb === 'number' ? parsed.file_size_kb : undefined;
+    const sizeBytes = typeof parsed.size === 'number' ? parsed.size : (sizeKB != null ? sizeKB * 1024 : undefined);
 
     artifacts.push({
       type,
@@ -737,9 +737,9 @@ function extractDownloadArtifactsFromToolCalls(toolCalls?: Array<{ name: string;
       sizeReadable: sizeBytes != null ? formatSizeReadable(sizeBytes) : undefined,
       rowCount: parseRowCount(parsed as Record<string, unknown>),
       description: typeof parsed.description === 'string' ? parsed.description : undefined,
-    })
+    });
   }
-  return artifacts
+  return artifacts;
 }
 
 // ---------------------------------------------------------------------------
@@ -747,20 +747,20 @@ function extractDownloadArtifactsFromToolCalls(toolCalls?: Array<{ name: string;
 // ---------------------------------------------------------------------------
 
 function normalizeAssistantTurn(turn: Partial<AssistantTurn> & { id: string; content: string; createdAt: string }): AssistantTurn {
-  const existingArtifacts = turn.artifacts || []
-  const fromToolCalls = extractDownloadArtifactsFromToolCalls(turn.toolCalls)
-  const renderTables = turn.renderTables || extractRenderTablesFromToolCalls(turn.toolCalls)
+  const existingArtifacts = turn.artifacts || [];
+  const fromToolCalls = extractDownloadArtifactsFromToolCalls(turn.toolCalls);
+  const renderTables = turn.renderTables || extractRenderTablesFromToolCalls(turn.toolCalls);
   // Merge: add tool-call artifacts that aren't already present (by URL + filename)
-  const merged = [...existingArtifacts]
+  const merged = [...existingArtifacts];
   for (const a of fromToolCalls) {
     if (!merged.some((e) => e.url === a.url && e.filename === a.filename)) {
-      merged.push(a)
+      merged.push(a);
     }
   }
 
-  const chartsRaw = turn.charts?.length ? turn.charts : extractChartsFromToolCalls(turn.toolCalls)
-  const charts = chartsRaw?.map(cloneChartData) ?? []
-  const renderTablesCloned = renderTables.map(cloneRenderTableData)
+  const chartsRaw = turn.charts?.length ? turn.charts : extractChartsFromToolCalls(turn.toolCalls);
+  const charts = chartsRaw?.map(cloneChartData) ?? [];
+  const renderTablesCloned = renderTables.map(cloneRenderTableData);
 
   return {
     ...turn,
@@ -771,17 +771,17 @@ function normalizeAssistantTurn(turn: Partial<AssistantTurn> & { id: string; con
     artifacts: merged,
     codeOutputs: turn.codeOutputs || [],
     lifecycle: turn.lifecycle || 'complete',
-  }
+  };
 }
 
 export function normalizeTurns(raw: ConversationTurn[]): ConversationTurn[] {
   return raw.map((turn) => {
-    if (!turn.assistantTurn) return turn
+    if (!turn.assistantTurn) {return turn;}
     return {
       ...turn,
       assistantTurn: normalizeAssistantTurn(turn.assistantTurn),
-    }
-  })
+    };
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -789,34 +789,34 @@ export function normalizeTurns(raw: ConversationTurn[]): ConversationTurn[] {
 // ---------------------------------------------------------------------------
 
 function toMillis(value: string): number {
-  const parsed = Date.parse(value)
-  return Number.isFinite(parsed) ? parsed : Number.NaN
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
 }
 
 export function attachArtifactsToTurns(
   turns: ConversationTurn[],
   artifacts: SessionArtifact[]
 ): ConversationTurn[] {
-  if (artifacts.length === 0) return turns
+  if (artifacts.length === 0) {return turns;}
 
   const downloadArtifacts = artifacts
     .map((raw) => ({ raw, mapped: toDownloadArtifact(raw) }))
     .filter((entry): entry is { raw: SessionArtifact; mapped: DownloadArtifact } => entry.mapped !== null)
-    .sort((a, b) => toMillis(a.raw.createdAt) - toMillis(b.raw.createdAt))
+    .sort((a, b) => toMillis(a.raw.createdAt) - toMillis(b.raw.createdAt));
 
   const chartArtifacts = artifacts
     .filter((a) => a.type === 'chart')
-    .sort((a, b) => toMillis(a.createdAt) - toMillis(b.createdAt))
+    .sort((a, b) => toMillis(a.createdAt) - toMillis(b.createdAt));
 
   const tableArtifacts = artifacts
     .filter((a) => a.type === 'table')
-    .sort((a, b) => toMillis(a.createdAt) - toMillis(b.createdAt))
+    .sort((a, b) => toMillis(a.createdAt) - toMillis(b.createdAt));
 
-  if (downloadArtifacts.length === 0 && chartArtifacts.length === 0 && tableArtifacts.length === 0) return turns
+  if (downloadArtifacts.length === 0 && chartArtifacts.length === 0 && tableArtifacts.length === 0) {return turns;}
 
   const nextTurns = turns.map((turn) => {
     if (!turn.assistantTurn) {
-      return turn
+      return turn;
     }
     return {
       ...turn,
@@ -824,87 +824,87 @@ export function attachArtifactsToTurns(
         ...turn.assistantTurn,
         artifacts: [...(turn.assistantTurn.artifacts || [])],
       },
-    }
-  })
+    };
+  });
 
-  const turnIndexByMessageID = new Map<string, number>()
+  const turnIndexByMessageID = new Map<string, number>();
 
   nextTurns.forEach((turn, index) => {
-    turnIndexByMessageID.set(turn.userTurn.id, index)
+    turnIndexByMessageID.set(turn.userTurn.id, index);
 
-    const assistantTurn = turn.assistantTurn
-    if (!assistantTurn) return
-    turnIndexByMessageID.set(assistantTurn.id, index)
-  })
+    const assistantTurn = turn.assistantTurn;
+    if (!assistantTurn) {return;}
+    turnIndexByMessageID.set(assistantTurn.id, index);
+  });
 
   for (const entry of downloadArtifacts) {
-    const messageID = entry.raw.messageId
+    const messageID = entry.raw.messageId;
     // Only attach artifacts that are explicitly linked to a message.
     // Orphan artifacts (uploaded via the artifacts panel) have no messageId
     // and should not appear on any message.
-    if (!messageID) continue
-    const targetIndex = turnIndexByMessageID.get(messageID)
-    if (targetIndex === undefined) continue
+    if (!messageID) {continue;}
+    const targetIndex = turnIndexByMessageID.get(messageID);
+    if (targetIndex === undefined) {continue;}
 
-    const assistantTurn = nextTurns[targetIndex]?.assistantTurn
-    if (!assistantTurn) continue
+    const assistantTurn = nextTurns[targetIndex]?.assistantTurn;
+    if (!assistantTurn) {continue;}
 
     const exists = assistantTurn.artifacts.some(
       (existing) =>
         existing.url === entry.mapped.url && existing.filename === entry.mapped.filename
-    )
+    );
     if (!exists) {
-      assistantTurn.artifacts.push(entry.mapped)
+      assistantTurn.artifacts.push(entry.mapped);
     }
   }
 
   for (const raw of chartArtifacts) {
-    const messageID = raw.messageId
-    if (!messageID) continue
-    const targetIndex = turnIndexByMessageID.get(messageID)
-    if (targetIndex === undefined) continue
+    const messageID = raw.messageId;
+    if (!messageID) {continue;}
+    const targetIndex = turnIndexByMessageID.get(messageID);
+    if (targetIndex === undefined) {continue;}
 
-    const assistantTurn = nextTurns[targetIndex]?.assistantTurn
-    if (!assistantTurn) continue
+    const assistantTurn = nextTurns[targetIndex]?.assistantTurn;
+    if (!assistantTurn) {continue;}
 
-    const metadata = raw.metadata
-    if (!metadata || typeof metadata !== 'object' || metadata === null) continue
+    const metadata = raw.metadata;
+    if (!metadata || typeof metadata !== 'object' || metadata === null) {continue;}
     const spec =
       metadata.spec && typeof metadata.spec === 'object' && metadata.spec !== null
         ? (metadata.spec as Record<string, unknown>)
-        : (metadata as Record<string, unknown>)
+        : (metadata as Record<string, unknown>);
 
-    const chart = parseChartDataFromSpec(spec, raw.name)
+    const chart = parseChartDataFromSpec(spec, raw.name);
     if (chart) {
-      if (!assistantTurn.charts) assistantTurn.charts = []
-      assistantTurn.charts.push(cloneChartData(chart))
+      if (!assistantTurn.charts) {assistantTurn.charts = [];}
+      assistantTurn.charts.push(cloneChartData(chart));
     }
   }
 
   for (const raw of tableArtifacts) {
-    const messageID = raw.messageId
-    if (!messageID) continue
-    const targetIndex = turnIndexByMessageID.get(messageID)
-    if (targetIndex === undefined) continue
+    const messageID = raw.messageId;
+    if (!messageID) {continue;}
+    const targetIndex = turnIndexByMessageID.get(messageID);
+    if (targetIndex === undefined) {continue;}
 
-    const assistantTurn = nextTurns[targetIndex]?.assistantTurn
-    if (!assistantTurn) continue
+    const assistantTurn = nextTurns[targetIndex]?.assistantTurn;
+    if (!assistantTurn) {continue;}
 
     if (assistantTurn.renderTables === undefined) {
-      assistantTurn.renderTables = extractRenderTablesFromToolCalls(assistantTurn.toolCalls)
+      assistantTurn.renderTables = extractRenderTablesFromToolCalls(assistantTurn.toolCalls);
     }
-    const existing = assistantTurn.renderTables
+    const existing = assistantTurn.renderTables;
 
-    const metadata = raw.metadata
-    if (!metadata || typeof metadata !== 'object' || metadata === null) continue
-    const tableData = parseRenderTableDataFromMetadata(metadata as Record<string, unknown>, raw.id)
-    if (!tableData) continue
+    const metadata = raw.metadata;
+    if (!metadata || typeof metadata !== 'object' || metadata === null) {continue;}
+    const tableData = parseRenderTableDataFromMetadata(metadata as Record<string, unknown>, raw.id);
+    if (!tableData) {continue;}
 
-    const dedupeKey = (t: RenderTableData) => `${t.query}|${t.columns.join(',')}`
-    const key = dedupeKey(tableData)
-    if (existing.some((t) => dedupeKey(t) === key)) continue
-    assistantTurn.renderTables = [...existing, cloneRenderTableData(tableData)]
+    const dedupeKey = (t: RenderTableData) => `${t.query}|${t.columns.join(',')}`;
+    const key = dedupeKey(tableData);
+    if (existing.some((t) => dedupeKey(t) === key)) {continue;}
+    assistantTurn.renderTables = [...existing, cloneRenderTableData(tableData)];
   }
 
-  return nextTurns
+  return nextTurns;
 }

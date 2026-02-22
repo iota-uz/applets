@@ -8,10 +8,10 @@
  * - Translations for "New Chat", "Archived", etc.
  */
 
-import { ReactNode } from 'react'
-import { Session } from '../types'
-import { useTranslation } from '../hooks/useTranslation'
-import { useBranding } from '../hooks/useBranding'
+import { ReactNode } from 'react';
+import { Session } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
+import { useBranding } from '../hooks/useBranding';
 
 interface ChatHeaderProps {
   session: Session | null
@@ -24,8 +24,8 @@ interface ChatHeaderProps {
 }
 
 export function ChatHeader({ session, onBack, readOnly, logoSlot, actionsSlot }: ChatHeaderProps) {
-  const { t } = useTranslation()
-  const branding = useBranding()
+  const { t } = useTranslation();
+  const branding = useBranding();
 
   const BackButton = onBack ? (
     <button
@@ -37,11 +37,11 @@ export function ChatHeader({ session, onBack, readOnly, logoSlot, actionsSlot }:
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
       </svg>
     </button>
-  ) : null
+  ) : null;
 
   const Logo = logoSlot || (branding.logoUrl ? (
     <img src={branding.logoUrl} alt={branding.appName} className="h-6 w-auto" />
-  ) : null)
+  ) : null);
 
   if (!session) {
     return (
@@ -57,10 +57,10 @@ export function ChatHeader({ session, onBack, readOnly, logoSlot, actionsSlot }:
           {actionsSlot && <div className="flex items-center gap-2">{actionsSlot}</div>}
         </div>
       </header>
-    )
+    );
   }
 
-  const resolvedSessionTitle = session.title?.trim() || t('BiChat.Chat.NewChat')
+  const resolvedSessionTitle = session.title?.trim() || t('BiChat.Chat.NewChat');
 
   return (
     <header className="bichat-header border-b border-gray-200 dark:border-gray-700 px-4 py-3">
@@ -95,5 +95,5 @@ export function ChatHeader({ session, onBack, readOnly, logoSlot, actionsSlot }:
         </div>
       </div>
     </header>
-  )
+  );
 }

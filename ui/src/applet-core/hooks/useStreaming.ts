@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from 'react'
-import type { StreamingHook } from '../types'
+import { useState, useRef, useCallback } from 'react';
+import type { StreamingHook } from '../types';
 
 /**
  * useStreaming provides SSE (Server-Sent Events) streaming utilities with cancellation support.
@@ -19,8 +19,8 @@ import type { StreamingHook } from '../types'
  * reset()
  */
 export function useStreaming(): StreamingHook {
-  const [isStreaming, setIsStreaming] = useState(false)
-  const abortControllerRef = useRef<AbortController | null>(null)
+  const [isStreaming, setIsStreaming] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const processStream = useCallback(
     async <T,>(
@@ -28,61 +28,61 @@ export function useStreaming(): StreamingHook {
       onChunk: (chunk: T) => void,
       signal?: AbortSignal
     ): Promise<void> => {
-      setIsStreaming(true)
+      setIsStreaming(true);
 
       // Create abort controller if not provided
-      const controller = new AbortController()
-      abortControllerRef.current = controller
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
 
       // Listen to external signal if provided
-      const onExternalAbort = signal ? () => { controller.abort() } : undefined
+      const onExternalAbort = signal ? () => { controller.abort(); } : undefined;
       if (signal && onExternalAbort) {
-        signal.addEventListener('abort', onExternalAbort)
+        signal.addEventListener('abort', onExternalAbort);
       }
 
       try {
         for await (const chunk of generator) {
           // Check if stream was cancelled
           if (controller.signal.aborted) {
-            break
+            break;
           }
 
-          onChunk(chunk)
+          onChunk(chunk);
         }
       } catch (error) {
         // Stream was cancelled or errored
         if (controller.signal.aborted) {
           // Cancellation is expected, don't throw
-          return
+          return;
         }
-        throw error
+        throw error;
       } finally {
         if (signal && onExternalAbort) {
-          signal.removeEventListener('abort', onExternalAbort)
+          signal.removeEventListener('abort', onExternalAbort);
         }
-        setIsStreaming(false)
-        abortControllerRef.current = null
+        setIsStreaming(false);
+        abortControllerRef.current = null;
       }
     },
     []
-  )
+  );
 
   const cancel = useCallback(() => {
     if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
+      abortControllerRef.current.abort();
     }
-    setIsStreaming(false)
-  }, [])
+    setIsStreaming(false);
+  }, []);
 
   const reset = useCallback(() => {
-    abortControllerRef.current = null
-    setIsStreaming(false)
-  }, [])
+    abortControllerRef.current = null;
+    setIsStreaming(false);
+  }, []);
 
   return {
     isStreaming,
     processStream,
     cancel,
     reset
-  }
+  };
 }

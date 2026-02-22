@@ -1,8 +1,8 @@
-import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
-import { Copy, Check } from '@phosphor-icons/react'
-import type { FormattedCell } from '../utils/columnTypes'
-import { useTranslation } from '../hooks/useTranslation'
+import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { Copy, Check } from '@phosphor-icons/react';
+import type { FormattedCell } from '../utils/columnTypes';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface DataTableCellProps {
   formatted: FormattedCell
@@ -19,15 +19,15 @@ type CellRenderer = (props: {
   onMouseLeave: () => void
 }) => ReactNode
 
-const SAFE_URL_PROTOCOLS = ['http:', 'https:', 'mailto:']
+const SAFE_URL_PROTOCOLS = ['http:', 'https:', 'mailto:'];
 
 function safeHref(input: string): string {
-  if (!input || typeof input !== 'string') return '#'
+  if (!input || typeof input !== 'string') {return '#';}
   try {
-    const url = new URL(input, 'https://example.com')
-    return SAFE_URL_PROTOCOLS.includes(url.protocol) ? url.href : '#'
+    const url = new URL(input, 'https://example.com');
+    return SAFE_URL_PROTOCOLS.includes(url.protocol) ? url.href : '#';
   } catch {
-    return '#'
+    return '#';
   }
 }
 
@@ -44,7 +44,7 @@ const cellRenderers: Record<string, CellRenderer> = {
     </span>
   ),
   url: ({ formatted, tooltipRef, onMouseEnter, onMouseLeave }) => {
-    const href = safeHref(formatted.display)
+    const href = safeHref(formatted.display);
     if (href === '#') {
       return (
         <span
@@ -55,7 +55,7 @@ const cellRenderers: Record<string, CellRenderer> = {
         >
           {formatted.display}
         </span>
-      )
+      );
     }
     return (
       <a
@@ -74,7 +74,7 @@ const cellRenderers: Record<string, CellRenderer> = {
           {formatted.display}
         </span>
       </a>
-    )
+    );
   },
   number: ({ formatted, tooltipRef, onMouseEnter, onMouseLeave }) => (
     <span
@@ -96,7 +96,7 @@ const cellRenderers: Record<string, CellRenderer> = {
       {formatted.display}
     </span>
   ),
-}
+};
 
 const defaultRenderer: CellRenderer = ({ formatted, tooltipRef, onMouseEnter, onMouseLeave }) => (
   <span
@@ -107,7 +107,7 @@ const defaultRenderer: CellRenderer = ({ formatted, tooltipRef, onMouseEnter, on
   >
     {formatted.display}
   </span>
-)
+);
 
 export const DataTableCell = memo(function DataTableCell({
   formatted,
@@ -116,58 +116,58 @@ export const DataTableCell = memo(function DataTableCell({
   isSticky,
   stickyClassName,
 }: DataTableCellProps) {
-  const { t } = useTranslation()
-  const [copied, setCopied] = useState(false)
-  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>()
+  const { t } = useTranslation();
+  const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const tdRef = useRef<HTMLTableCellElement>(null)
+  const tdRef = useRef<HTMLTableCellElement>(null);
 
   const handleCopy = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!onCopy) return
-    const text = formatted.isNull ? '' : String(formatted.raw ?? formatted.display)
-    onCopy(text)
-    clearTimeout(copyTimerRef.current)
-    setCopied(true)
-    copyTimerRef.current = setTimeout(() => setCopied(false), 2000)
-  }, [onCopy, formatted])
+    e.stopPropagation();
+    if (!onCopy) {return;}
+    const text = formatted.isNull ? '' : String(formatted.raw ?? formatted.display);
+    onCopy(text);
+    clearTimeout(copyTimerRef.current);
+    setCopied(true);
+    copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
+  }, [onCopy, formatted]);
 
-  const [hovered, setHovered] = useState(false)
+  const [hovered, setHovered] = useState(false);
 
-  const tooltipRef = useRef<HTMLSpanElement>(null)
-  const [tooltip, setTooltip] = useState<{ x: number; y: number } | null>(null)
-  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout>>()
+  const tooltipRef = useRef<HTMLSpanElement>(null);
+  const [tooltip, setTooltip] = useState<{ x: number; y: number } | null>(null);
+  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const handleMouseEnter = useCallback(() => {
-    const el = tooltipRef.current
-    if (!el || el.scrollWidth <= el.clientWidth) return
+    const el = tooltipRef.current;
+    if (!el || el.scrollWidth <= el.clientWidth) {return;}
     tooltipTimerRef.current = setTimeout(() => {
-      const rect = el.getBoundingClientRect()
+      const rect = el.getBoundingClientRect();
       setTooltip({
         x: rect.left + rect.width / 2,
         y: rect.bottom + 4,
-      })
-    }, 300)
-  }, [])
+      });
+    }, 300);
+  }, []);
 
   const handleMouseLeave = useCallback(() => {
-    clearTimeout(tooltipTimerRef.current)
-    setTooltip(null)
-  }, [])
+    clearTimeout(tooltipTimerRef.current);
+    setTooltip(null);
+  }, []);
 
   useEffect(() => {
     return () => {
-      clearTimeout(tooltipTimerRef.current)
-      clearTimeout(copyTimerRef.current)
-    }
-  }, [])
+      clearTimeout(tooltipTimerRef.current);
+      clearTimeout(copyTimerRef.current);
+    };
+  }, []);
 
-  const hasOverflow = formatted.type === 'string' || formatted.type === 'url' || formatted.type === 'date' || formatted.type === 'number'
-  const tooltipContent = formatted.isNull ? null : (formatted.type === 'number' || formatted.type === 'date') ? String(formatted.raw) : formatted.display
+  const hasOverflow = formatted.type === 'string' || formatted.type === 'url' || formatted.type === 'date' || formatted.type === 'number';
+  const tooltipContent = formatted.isNull ? null : (formatted.type === 'number' || formatted.type === 'date') ? String(formatted.raw) : formatted.display;
 
-  const rendererProps = { formatted, tooltipRef, onMouseEnter: handleMouseEnter, onMouseLeave: handleMouseLeave }
+  const rendererProps = { formatted, tooltipRef, onMouseEnter: handleMouseEnter, onMouseLeave: handleMouseLeave };
 
-  const showCopyButton = onCopy && (hovered || copied) && !formatted.isNull
+  const showCopyButton = onCopy && (hovered || copied) && !formatted.isNull;
 
   return (
     <td
@@ -210,5 +210,5 @@ export const DataTableCell = memo(function DataTableCell({
         document.body,
       )}
     </td>
-  )
-})
+  );
+});

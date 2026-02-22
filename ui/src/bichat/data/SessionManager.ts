@@ -4,15 +4,15 @@
  * @internal — Not part of the public API. Consumed by HttpDataSource.
  */
 
-import { AppletRPCException } from '../../applet-host'
-import type { BichatRPC } from './rpc.generated'
+import { AppletRPCException } from '../../applet-host';
+import type { BichatRPC } from './rpc.generated';
 import type {
   Session,
   SessionListResult,
   SessionArtifact,
   ConversationTurn,
   PendingQuestion,
-} from '../types'
+} from '../types';
 import {
   toSession,
   sanitizeConversationTurns,
@@ -20,7 +20,7 @@ import {
   normalizeTurns,
   attachArtifactsToTurns,
   warnMalformedSessionPayload,
-} from './mappers'
+} from './mappers';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -47,8 +47,8 @@ type FetchSessionArtifactsFn = (
 // ---------------------------------------------------------------------------
 
 function isSessionNotFoundError(err: unknown): boolean {
-  if (!(err instanceof AppletRPCException)) return false
-  return err.code === 'not_found' || err.code === 'session_not_found'
+  if (!(err instanceof AppletRPCException)) {return false;}
+  return err.code === 'not_found' || err.code === 'session_not_found';
 }
 
 // ---------------------------------------------------------------------------
@@ -56,8 +56,8 @@ function isSessionNotFoundError(err: unknown): boolean {
 // ---------------------------------------------------------------------------
 
 export async function createSession(callRPC: RPCCaller): Promise<Session> {
-  const data = await callRPC('bichat.session.create', { title: '' })
-  return toSession(data.session)
+  const data = await callRPC('bichat.session.create', { title: '' });
+  return toSession(data.session);
 }
 
 export async function fetchSession(
@@ -69,36 +69,36 @@ export async function fetchSession(
     const [data, artifactsData] = await Promise.all([
       callRPC('bichat.session.get', { id }),
       fetchArtifacts(id, { limit: 200, offset: 0 }).catch((err) => {
-        console.warn('Failed to fetch session artifacts:', err)
-        return { artifacts: [] as SessionArtifact[], hasMore: false, nextOffset: 0 }
+        console.warn('Failed to fetch session artifacts:', err);
+        return { artifacts: [] as SessionArtifact[], hasMore: false, nextOffset: 0 };
       }),
-    ])
+    ]);
 
-    const sanitizedTurns = sanitizeConversationTurns(data.turns, id)
+    const sanitizedTurns = sanitizeConversationTurns(data.turns, id);
     const turns = attachArtifactsToTurns(
       normalizeTurns(sanitizedTurns),
       artifactsData.artifacts || []
-    )
-    const pendingQuestion = sanitizePendingQuestion(data.pendingQuestion, id)
+    );
+    const pendingQuestion = sanitizePendingQuestion(data.pendingQuestion, id);
 
     if (data.pendingQuestion && pendingQuestion && pendingQuestion.questions.length === 0) {
       warnMalformedSessionPayload('Pending question normalized to zero renderable questions', {
         sessionID: id,
         checkpointID: pendingQuestion.id,
-      })
+      });
     }
 
     return {
       session: toSession(data.session),
       turns,
       pendingQuestion,
-    }
+    };
   } catch (err) {
     if (isSessionNotFoundError(err)) {
-      return null
+      return null;
     }
-    console.error('Failed to fetch session:', err)
-    throw err instanceof Error ? err : new Error('Failed to fetch session')
+    console.error('Failed to fetch session:', err);
+    throw err instanceof Error ? err : new Error('Failed to fetch session');
   }
 }
 
@@ -114,46 +114,46 @@ export async function listSessions(
     limit: options?.limit ?? 200,
     offset: options?.offset ?? 0,
     includeArchived: options?.includeArchived ?? false,
-  })
+  });
   return {
     sessions: data.sessions.map(toSession),
     total: typeof data.total === 'number' ? data.total : data.sessions.length,
     hasMore: typeof data.hasMore === 'boolean' ? data.hasMore : false,
-  }
+  };
 }
 
 export async function archiveSession(callRPC: RPCCaller, sessionId: string): Promise<Session> {
-  const data = await callRPC('bichat.session.archive', { id: sessionId })
-  return toSession(data.session)
+  const data = await callRPC('bichat.session.archive', { id: sessionId });
+  return toSession(data.session);
 }
 
 export async function unarchiveSession(callRPC: RPCCaller, sessionId: string): Promise<Session> {
-  const data = await callRPC('bichat.session.unarchive', { id: sessionId })
-  return toSession(data.session)
+  const data = await callRPC('bichat.session.unarchive', { id: sessionId });
+  return toSession(data.session);
 }
 
 export async function pinSession(callRPC: RPCCaller, sessionId: string): Promise<Session> {
-  const data = await callRPC('bichat.session.pin', { id: sessionId })
-  return toSession(data.session)
+  const data = await callRPC('bichat.session.pin', { id: sessionId });
+  return toSession(data.session);
 }
 
 export async function unpinSession(callRPC: RPCCaller, sessionId: string): Promise<Session> {
-  const data = await callRPC('bichat.session.unpin', { id: sessionId })
-  return toSession(data.session)
+  const data = await callRPC('bichat.session.unpin', { id: sessionId });
+  return toSession(data.session);
 }
 
 export async function deleteSession(callRPC: RPCCaller, sessionId: string): Promise<void> {
-  await callRPC('bichat.session.delete', { id: sessionId })
+  await callRPC('bichat.session.delete', { id: sessionId });
 }
 
 export async function renameSession(callRPC: RPCCaller, sessionId: string, title: string): Promise<Session> {
-  const data = await callRPC('bichat.session.updateTitle', { id: sessionId, title })
-  return toSession(data.session)
+  const data = await callRPC('bichat.session.updateTitle', { id: sessionId, title });
+  return toSession(data.session);
 }
 
 export async function regenerateSessionTitle(callRPC: RPCCaller, sessionId: string): Promise<Session> {
-  const data = await callRPC('bichat.session.regenerateTitle', { id: sessionId })
-  return toSession(data.session)
+  const data = await callRPC('bichat.session.regenerateTitle', { id: sessionId });
+  return toSession(data.session);
 }
 
 export async function clearSessionHistory(callRPC: RPCCaller, sessionId: string): Promise<{
@@ -161,7 +161,7 @@ export async function clearSessionHistory(callRPC: RPCCaller, sessionId: string)
   deletedMessages: number
   deletedArtifacts: number
 }> {
-  return callRPC('bichat.session.clear', { id: sessionId })
+  return callRPC('bichat.session.clear', { id: sessionId });
 }
 
 export async function compactSessionHistory(callRPC: RPCCaller, sessionId: string): Promise<{
@@ -170,5 +170,5 @@ export async function compactSessionHistory(callRPC: RPCCaller, sessionId: strin
   deletedMessages: number
   deletedArtifacts: number
 }> {
-  return callRPC('bichat.session.compact', { id: sessionId })
+  return callRPC('bichat.session.compact', { id: sessionId });
 }

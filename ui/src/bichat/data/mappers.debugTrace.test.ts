@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'vitest'
-import { sanitizeConversationTurns } from './mappers'
+import { describe, expect, it } from 'vitest';
+import { sanitizeConversationTurns } from './mappers';
 
 describe('sanitizeConversationTurns debug trace metadata', () => {
   it('maps traceId and traceUrl into assistant debug trace', () => {
-    const sessionID = 'session-1'
+    const sessionID = 'session-1';
     const turns = sanitizeConversationTurns([
       {
         id: 'turn-1',
@@ -27,10 +27,10 @@ describe('sanitizeConversationTurns debug trace metadata', () => {
           },
         },
       },
-    ], sessionID)
+    ], sessionID);
 
-    expect(turns).toHaveLength(1)
-    expect(turns[0]?.assistantTurn?.debug?.traceId).toBe('trace-123')
-    expect(turns[0]?.assistantTurn?.debug?.traceUrl).toBe('https://langfuse.local/trace/trace-123')
-  })
-})
+    expect(turns).toHaveLength(1);
+    expect(turns[0]?.assistantTurn?.debug?.traceId).toBe('trace-123');
+    expect(turns[0]?.assistantTurn?.debug?.traceUrl).toBe('https://langfuse.local/trace/trace-123');
+  });
+});

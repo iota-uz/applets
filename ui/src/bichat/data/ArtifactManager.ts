@@ -4,11 +4,11 @@
  * @internal — Not part of the public API. Consumed by HttpDataSource.
  */
 
-import type { BichatRPC } from './rpc.generated'
-import type { SessionArtifact } from '../types'
-import { validateAttachmentFile, validateFileCount } from '../utils/fileUtils'
-import { toSessionArtifact, type RPCArtifact } from './mappers'
-import type { CoreUploadResponse } from './AttachmentUploader'
+import type { BichatRPC } from './rpc.generated';
+import type { SessionArtifact } from '../types';
+import { validateAttachmentFile, validateFileCount } from '../utils/fileUtils';
+import { toSessionArtifact, type RPCArtifact } from './mappers';
+import type { CoreUploadResponse } from './AttachmentUploader';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -28,29 +28,29 @@ export async function fetchSessionArtifacts(
   sessionId: string,
   options?: { limit?: number; offset?: number }
 ): Promise<{ artifacts: SessionArtifact[]; hasMore?: boolean; nextOffset?: number }> {
-  const limit = options?.limit ?? 50
-  const offset = options?.offset ?? 0
+  const limit = options?.limit ?? 50;
+  const offset = options?.offset ?? 0;
   const data = await callRPC('bichat.session.artifacts', {
     sessionId,
     limit,
     offset,
-  })
+  });
 
-  const artifacts = (data.artifacts || []).map((artifact) => toSessionArtifact(artifact))
+  const artifacts = (data.artifacts || []).map((artifact) => toSessionArtifact(artifact));
   const hasMore =
     typeof data.hasMore === 'boolean'
       ? data.hasMore
-      : artifacts.length >= limit
+      : artifacts.length >= limit;
   const nextOffset =
     typeof data.nextOffset === 'number'
       ? data.nextOffset
-      : offset + artifacts.length
+      : offset + artifacts.length;
 
   return {
     artifacts,
     hasMore,
     nextOffset,
-  }
+  };
 }
 
 export async function uploadSessionArtifacts(
@@ -60,23 +60,23 @@ export async function uploadSessionArtifacts(
   uploadFileFn: (file: File) => Promise<CoreUploadResponse>,
 ): Promise<{ artifacts: SessionArtifact[] }> {
   if (!Array.isArray(files) || files.length === 0) {
-    return { artifacts: [] }
+    return { artifacts: [] };
   }
 
-  validateFileCount(0, files.length, 10)
-  files.forEach((file) => validateAttachmentFile(file))
-  const uploads = await Promise.all(files.map((file) => uploadFileFn(file)))
+  validateFileCount(0, files.length, 10);
+  files.forEach((file) => validateAttachmentFile(file));
+  const uploads = await Promise.all(files.map((file) => uploadFileFn(file)));
 
   const data = await callRPC('bichat.session.uploadArtifacts', {
     sessionId,
     attachments: uploads.map((upload) => ({
       uploadId: upload.id,
     })),
-  })
+  });
 
   return {
     artifacts: (data.artifacts || []).map((artifact) => toSessionArtifact(artifact)),
-  }
+  };
 }
 
 export async function renameSessionArtifact(
@@ -89,13 +89,13 @@ export async function renameSessionArtifact(
     id: artifactId,
     name,
     description,
-  })
-  return toSessionArtifact(data.artifact as RPCArtifact)
+  });
+  return toSessionArtifact(data.artifact as RPCArtifact);
 }
 
 export async function deleteSessionArtifact(
   callRPC: RPCCaller,
   artifactId: string
 ): Promise<void> {
-  await callRPC('bichat.artifact.delete', { id: artifactId })
+  await callRPC('bichat.artifact.delete', { id: artifactId });
 }

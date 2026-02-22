@@ -1,16 +1,16 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { UserMessage } from './UserMessage'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
-import { makeUserTurn, makeAttachment } from '@sb-helpers/bichatFixtures'
-import { largeText } from '@sb-helpers/textFixtures'
+import { UserMessage } from './UserMessage';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
+import { makeUserTurn, makeAttachment } from '@sb-helpers/bichatFixtures';
+import { largeText } from '@sb-helpers/textFixtures';
 
 const meta: Meta<typeof UserMessage> = {
   title: 'BiChat/Components/UserMessage',
   component: UserMessage,
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof UserMessage>
 
 export const Playground: Story = {
@@ -20,7 +20,7 @@ export const Playground: Story = {
     }),
     initials: 'UK',
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -66,4 +66,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};
