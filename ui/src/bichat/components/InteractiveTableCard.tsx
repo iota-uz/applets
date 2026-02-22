@@ -1,5 +1,5 @@
-import { memo, useCallback, useEffect, useRef, useState } from 'react'
-import { MagnifyingGlass, X } from '@phosphor-icons/react'
+import { memo, useCallback, useState } from 'react'
+import { MagnifyingGlass } from '@phosphor-icons/react'
 import type { RenderTableData } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
 import { useToast } from '../hooks/useToast'
@@ -9,6 +9,7 @@ import { DataTableHeader } from './DataTableHeader'
 import { DataTableCell } from './DataTableCell'
 import { DataTableToolbar } from './DataTableToolbar'
 import { DataTableFooter } from './DataTableFooter'
+import { FullscreenOverlay } from './FullscreenOverlay'
 
 function getPageNumbers(current: number, total: number): (number | 'ellipsis')[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
@@ -53,70 +54,6 @@ function PaginationButton({
   )
 }
 
-/**
- * Shadow-DOM-safe fullscreen overlay. Headless UI Dialog portals to document.body
- * which escapes the shadow DOM boundary and loses Tailwind styles.
- * This component stays inline within the shadow tree.
- */
-function FullscreenOverlay({
-  title,
-  onClose,
-  closeLabel,
-  children,
-}: {
-  title: string
-  onClose: () => void
-  closeLabel: string
-  children: React.ReactNode
-}) {
-  const panelRef = useRef<HTMLDivElement>(null)
-  const onCloseRef = useRef(onClose)
-  onCloseRef.current = onClose
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation()
-        onCloseRef.current()
-      }
-    }
-    document.addEventListener('keydown', onKeyDown)
-    panelRef.current?.focus()
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [])
-
-  return (
-    <div className="fixed inset-0" style={{ zIndex: 99999 }}>
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden
-      />
-      {/* Panel */}
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        tabIndex={-1}
-        className="absolute inset-4 flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl outline-none dark:border-gray-700 dark:bg-gray-900"
-      >
-        <span className="sr-only">{title}</span>
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-3 top-3 z-10 cursor-pointer rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-          aria-label={closeLabel}
-        >
-          <X size={18} weight="bold" />
-        </button>
-        {children}
-      </div>
-    </div>
-  )
-}
-
 interface InteractiveTableCardProps {
   table: RenderTableData
   onSendMessage?: (content: string) => void
@@ -124,6 +61,10 @@ interface InteractiveTableCardProps {
   options?: DataTableOptions
   /** When true, strips outer card chrome (border, rounding, header) for embedding inside a container like TabbedTableGroup. */
   embedded?: boolean
+  /** When true, table body uses flex-1 instead of max-h-420px (for fullscreen containers). */
+  fillHeight?: boolean
+  /** External fullscreen toggle — when provided, the card delegates fullscreen to the parent instead of rendering its own overlay. */
+  onToggleFullscreen?: () => void
 }
 
 export const InteractiveTableCard = memo(function InteractiveTableCard({
@@ -132,6 +73,8 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
   sendDisabled = false,
   options,
   embedded = false,
+  fillHeight = false,
+  onToggleFullscreen: externalToggleFullscreen,
 }: InteractiveTableCardProps) {
   const { t } = useTranslation()
   const toast = useToast()
@@ -186,7 +129,9 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
       .catch(() => toast.error(t('BiChat.Message.FailedToCopy')))
   }, [dt, toast, t])
 
-  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [internalFullscreen, setInternalFullscreen] = useState(false)
+  const isFullscreen = externalToggleFullscreen ? false : internalFullscreen
+  const toggleFullscreen = externalToggleFullscreen ?? (() => setInternalFullscreen((v) => !v))
 
   const hasHiddenColumns = dt.columns.some((c) => !c.visible)
   const from = dt.totalFilteredRows === 0 ? 0 : (dt.page - 1) * dt.pageSize + 1
@@ -208,7 +153,7 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
       onClearSort={dt.clearSort}
       onCopyTable={handleCopyTable}
       isFullscreen={fullscreen}
-      onToggleFullscreen={() => setIsFullscreen((v) => !v)}
+      onToggleFullscreen={toggleFullscreen}
     />
   )
 
@@ -401,7 +346,7 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
     ) : null
 
   const sectionClassName = embedded
-    ? 'w-full min-w-0 overflow-hidden'
+    ? `w-full min-w-0 overflow-hidden${fillHeight ? ' flex flex-col flex-1' : ''}`
     : 'w-full min-w-0 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/40 overflow-hidden'
 
   return (
@@ -409,7 +354,7 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
       <section className={sectionClassName}>
         {renderToolbar(false)}
         {!embedded && renderHeader()}
-        {renderTable('max-h-[420px] overflow-auto')}
+        {renderTable(fillHeight ? 'flex-1 overflow-auto' : 'max-h-[420px] overflow-auto')}
         {renderPagination(table.id)}
         {renderTruncationNotice()}
       </section>
@@ -417,7 +362,7 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
       {isFullscreen && (
         <FullscreenOverlay
           title={table.title || t('BiChat.Table.QueryResults')}
-          onClose={() => setIsFullscreen(false)}
+          onClose={() => setInternalFullscreen(false)}
           closeLabel={t('BiChat.DataTable.Collapse')}
         >
           {renderToolbar(true)}

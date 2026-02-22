@@ -6,11 +6,12 @@
  * All tables stay mounted (hidden) so useDataTable state is preserved.
  */
 
-import { useState, useMemo, memo } from 'react'
+import { useState, useMemo, useCallback, memo } from 'react'
 import type { RenderTableData } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
 import { TabBar } from './TabBar'
 import { InteractiveTableCard } from './InteractiveTableCard'
+import { FullscreenOverlay } from './FullscreenOverlay'
 
 export interface TabbedTableGroupProps {
   tables: RenderTableData[]
@@ -25,6 +26,9 @@ export const TabbedTableGroup = memo(function TabbedTableGroup({
 }: TabbedTableGroupProps) {
   const { t } = useTranslation()
   const [activeTabId, setActiveTabId] = useState(tables[0]?.id ?? '')
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  const toggleFullscreen = useCallback(() => setIsFullscreen((v) => !v), [])
 
   const tabs = useMemo(
     () =>
@@ -42,26 +46,46 @@ export const TabbedTableGroup = memo(function TabbedTableGroup({
 
   if (tables.length === 0) return null
 
-  return (
-    <section className="w-full min-w-0 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/40 overflow-hidden">
-      <TabBar tabs={tabs} activeTab={resolvedActiveId} onTabChange={setActiveTabId} />
+  const activeTitle = tables.find((t) => t.id === resolvedActiveId)?.title || t('BiChat.Table.QueryResults')
 
-      {tables.map((table) => (
-        <div
-          key={table.id}
-          id={`${table.id}-panel`}
-          role="tabpanel"
-          aria-labelledby={table.id}
-          hidden={table.id !== resolvedActiveId}
+  const renderPanels = (fillHeight: boolean) =>
+    tables.map((table) => (
+      <div
+        key={table.id}
+        id={`${table.id}-panel`}
+        role="tabpanel"
+        aria-labelledby={table.id}
+        hidden={table.id !== resolvedActiveId}
+        className={fillHeight ? 'flex-1 flex flex-col min-h-0' : undefined}
+      >
+        <InteractiveTableCard
+          table={table}
+          onSendMessage={onSendMessage}
+          sendDisabled={sendDisabled}
+          embedded
+          fillHeight={fillHeight}
+          onToggleFullscreen={toggleFullscreen}
+        />
+      </div>
+    ))
+
+  return (
+    <>
+      <section className="w-full min-w-0 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/40 overflow-hidden">
+        <TabBar tabs={tabs} activeTab={resolvedActiveId} onTabChange={setActiveTabId} />
+        {renderPanels(false)}
+      </section>
+
+      {isFullscreen && (
+        <FullscreenOverlay
+          title={activeTitle}
+          onClose={toggleFullscreen}
+          closeLabel={t('BiChat.DataTable.Collapse')}
         >
-          <InteractiveTableCard
-            table={table}
-            onSendMessage={onSendMessage}
-            sendDisabled={sendDisabled}
-            embedded
-          />
-        </div>
-      ))}
-    </section>
+          <TabBar tabs={tabs} activeTab={resolvedActiveId} onTabChange={setActiveTabId} />
+          {renderPanels(true)}
+        </FullscreenOverlay>
+      )}
+    </>
   )
 })
