@@ -14,6 +14,7 @@ const meta: Meta<typeof EditableText> = {
       options: ['sm', 'md', 'lg'],
     },
     isLoading: { control: 'boolean' },
+    placeholder: { control: 'text' },
   },
   decorators: [
     (Story) => (
@@ -72,10 +73,12 @@ export const Empty: Story = {
 const longText =
   'This is a very long editable title that exceeds typical length to test how the component handles truncation and overflow in a narrow container'
 
+const stressOnSave = fn()
 export const Stress: Story = {
+  parameters: { layout: 'fullscreen' },
   decorators: [
     (Story) => (
-      <div className="w-[42rem] overflow-x-auto">
+      <div className="w-[42rem] overflow-x-auto p-4">
         <Story />
       </div>
     ),
@@ -91,7 +94,7 @@ export const Stress: Story = {
             <div className="w-64">
               <EditableText
                 value="Revenue Analysis Q4"
-                onSave={fn()}
+                onSave={stressOnSave}
               />
             </div>
           ),
@@ -104,7 +107,7 @@ export const Stress: Story = {
               <EditableText
                 value="Generating title..."
                 isLoading
-                onSave={fn()}
+                onSave={stressOnSave}
               />
             </div>
           ),
@@ -117,7 +120,7 @@ export const Stress: Story = {
               <EditableText
                 value=""
                 placeholder="Untitled"
-                onSave={fn()}
+                onSave={stressOnSave}
               />
             </div>
           ),
@@ -129,7 +132,7 @@ export const Stress: Story = {
             <div className="w-64">
               <EditableText
                 value={longText}
-                onSave={fn()}
+                onSave={stressOnSave}
               />
             </div>
           ),

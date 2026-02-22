@@ -70,18 +70,20 @@ function FullscreenOverlay({
   children: React.ReactNode
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation()
-        onClose()
+        onCloseRef.current()
       }
     }
     document.addEventListener('keydown', onKeyDown)
     panelRef.current?.focus()
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [onClose])
+  }, [])
 
   return (
     <div className="fixed inset-0" style={{ zIndex: 99999 }}>

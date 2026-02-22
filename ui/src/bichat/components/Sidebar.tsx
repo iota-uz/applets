@@ -75,6 +75,7 @@ const SESSION_RECONCILE_POLL_INTERVAL_MS = 2000
 const SESSION_RECONCILE_MAX_POLLS = 30
 const ACTIVE_SESSION_MISS_MAX_RETRIES = 8
 const ACTIVE_SESSION_MISS_RETRY_DELAY_MS = 1000
+const MAX_COLLAPSED_INDICATORS = 5
 
 function useSidebarCollapse() {
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -474,7 +475,6 @@ export default function Sidebar({
   }, [unpinnedSessions, t])
 
   // Collapsed sidebar indicators — pinned first, then most recent
-  const MAX_COLLAPSED_INDICATORS = 5
   const collapsedIndicators = useMemo(() => {
     const seen = new Set<string>()
     const result: Session[] = []
@@ -649,7 +649,7 @@ export default function Sidebar({
                           <ChatCircle size={16} weight="fill" />
                         )}
                       </motion.button>
-                      <div className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 w-52 rounded-lg bg-gray-900 dark:bg-gray-100 px-3 py-2 text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover/indicator:opacity-100 transition-opacity shadow-lg break-words">
+                      <div className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 w-52 rounded-lg bg-gray-900 dark:bg-gray-100 px-3 py-2 text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover/indicator:opacity-100 group-focus-within/indicator:opacity-100 transition-opacity shadow-lg break-words">
                         {session.title || t('BiChat.Chat.NewChat')}
                       </div>
                     </motion.div>
@@ -673,12 +673,12 @@ export default function Sidebar({
                         toggle()
                       }}
                       className="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-semibold bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none"
-                      aria-label={t('BiChat.Sidebar.ChatSessions')}
+                      aria-label={overflowCount > 0 ? `${t('BiChat.Sidebar.ChatSessions')} (+${overflowCount})` : t('BiChat.Sidebar.ChatSessions')}
                       whileTap={{ scale: 0.95 }}
                     >
                       +{overflowCount}
                     </motion.button>
-                    <span className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 rounded-md bg-gray-900 dark:bg-gray-100 px-2 py-1 text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover/overflow:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
+                    <span className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 rounded-md bg-gray-900 dark:bg-gray-100 px-2 py-1 text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover/overflow:opacity-100 group-focus-within/overflow:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
                       {t('BiChat.Sidebar.ChatSessions')}
                     </span>
                   </motion.div>

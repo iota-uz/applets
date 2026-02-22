@@ -111,7 +111,9 @@ function resolveArtifactName(artifact: RPCArtifact): string {
   }
 
   const type = readNonEmptyString(artifact.type) || 'artifact'
-  return `${type.replace(/_/g, ' ')} artifact`
+  const label = type.replace(/_/g, ' ')
+  if (label === 'artifact' || label.endsWith(' artifact')) return label
+  return `${label} artifact`
 }
 
 // ---------------------------------------------------------------------------
@@ -126,10 +128,11 @@ export function toSession(session: RPCSession): Session {
 }
 
 export function toSessionArtifact(artifact: RPCArtifact): SessionArtifact {
-  const createdAt = readNonEmptyString(artifact.createdAt) || '1970-01-01T00:00:00.000Z'
-  if (!readNonEmptyString(artifact.createdAt)) {
+  const rawCreatedAt = readNonEmptyString(artifact.createdAt)
+  if (!rawCreatedAt) {
     warnMalformedSessionPayload('Artifact missing createdAt; defaulting to epoch', { id: artifact.id })
   }
+  const createdAt = rawCreatedAt ?? '1970-01-01T00:00:00.000Z'
 
   return {
     id: readString(artifact.id),

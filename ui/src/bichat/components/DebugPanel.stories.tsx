@@ -136,7 +136,22 @@ export const Empty: Story = {
   ),
 }
 
+const pendingToolTrace: DebugTrace = {
+  generationMs: undefined,
+  usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, cachedTokens: 0 },
+  tools: [{ callId: 'p1', name: 'long_running_analysis', arguments: '{"dataset":"full"}' }],
+}
+
+export const PendingTool: Story = {
+  render: () => (
+    <Wrapper>
+      <DebugPanel trace={pendingToolTrace} />
+    </Wrapper>
+  ),
+}
+
 export const Stress: Story = {
+  parameters: { layout: 'fullscreen' },
   render: () => (
     <ScenarioGrid
       columns={2}
@@ -185,13 +200,7 @@ export const Stress: Story = {
           name: 'Pending tool (no result or error)',
           content: (
             <Wrapper>
-              <DebugPanel
-                trace={{
-                  generationMs: undefined,
-                  usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, cachedTokens: 0 },
-                  tools: [{ callId: 'p1', name: 'long_running_analysis', arguments: '{"dataset":"full"}' }],
-                }}
-              />
+              <DebugPanel trace={pendingToolTrace} />
             </Wrapper>
           ),
         },

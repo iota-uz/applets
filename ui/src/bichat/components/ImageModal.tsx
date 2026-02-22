@@ -46,7 +46,7 @@ function ToolbarButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="cursor-pointer flex items-center justify-center w-8 h-8 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors disabled:text-white/20 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+      className="cursor-pointer flex items-center justify-center w-8 h-8 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors disabled:text-white/20 disabled:cursor-not-allowed disabled:hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
       aria-label={ariaLabel}
     >
       {children}
@@ -170,9 +170,9 @@ function ImageModal({
         setPosition({ x: 0, y: 0 })
         setRotation(0)
       } else if (e.key === 'r' && !e.shiftKey) {
-        setRotation((r) => r + 90)
+        setRotation((r) => (r + 90) % 360)
       } else if (e.key === 'R' || (e.key === 'r' && e.shiftKey)) {
-        setRotation((r) => r - 90)
+        setRotation((r) => ((r - 90) % 360 + 360) % 360)
       }
     }
 
@@ -425,8 +425,8 @@ function ImageModal({
               isTransformed={isTransformed}
               onZoomIn={zoomIn}
               onZoomOut={zoomOut}
-              onRotateLeft={() => setRotation((r) => r - 90)}
-              onRotateRight={() => setRotation((r) => r + 90)}
+              onRotateLeft={() => setRotation((r) => ((r - 90) % 360 + 360) % 360)}
+              onRotateRight={() => setRotation((r) => (r + 90) % 360)}
               onReset={resetZoom}
               t={t}
             />

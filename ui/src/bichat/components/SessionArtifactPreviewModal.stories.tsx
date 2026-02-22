@@ -21,7 +21,7 @@ const mockArtifact: SessionArtifact = {
   mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   sizeBytes: 184_320,
   url: 'https://example.com/files/Q4-Revenue-Report.xlsx',
-  createdAt: new Date().toISOString(),
+  createdAt: '2025-01-15T10:00:00.000Z',
 }
 
 const pdfArtifact: SessionArtifact = {
@@ -32,7 +32,7 @@ const pdfArtifact: SessionArtifact = {
   mimeType: 'application/pdf',
   sizeBytes: 2_100_000,
   url: 'https://example.com/files/Annual-Report-2025.pdf',
-  createdAt: new Date().toISOString(),
+  createdAt: '2025-01-15T10:00:00.000Z',
 }
 
 export const Playground: Story = {
@@ -54,6 +54,8 @@ export const ReadOnly: Story = {
     canRename: false,
     canDelete: false,
     onClose: fn(),
+    onRename: fn(async () => {}),
+    onDelete: fn(async () => {}),
   },
 }
 

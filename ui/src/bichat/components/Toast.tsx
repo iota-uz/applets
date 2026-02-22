@@ -56,6 +56,18 @@ const typeConfig: Record<
   },
 }
 
+function subscribeReducedMotion(callback: () => void): () => void {
+  const mql = window.matchMedia('(prefers-reduced-motion: reduce)')
+  mql.addEventListener('change', callback)
+  return () => mql.removeEventListener('change', callback)
+}
+function getReducedMotionSnapshot(): boolean {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+function getReducedMotionServerSnapshot(): boolean {
+  return false
+}
+
 export function Toast({
   id,
   type,
@@ -75,13 +87,9 @@ export function Toast({
   const startRef = useRef(Date.now())
 
   const prefersReducedMotion = useSyncExternalStore(
-    (onStoreChange) => {
-      const mql = window.matchMedia('(prefers-reduced-motion: reduce)')
-      mql.addEventListener('change', onStoreChange)
-      return () => mql.removeEventListener('change', onStoreChange)
-    },
-    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-    () => false
+    subscribeReducedMotion,
+    getReducedMotionSnapshot,
+    getReducedMotionServerSnapshot
   )
 
   // Trigger enter transition on mount
@@ -148,6 +156,7 @@ export function Toast({
         {/* Action button */}
         {action && (
           <button
+            type="button"
             onClick={() => {
               action.onClick()
               handleDismiss()

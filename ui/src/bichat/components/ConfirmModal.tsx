@@ -74,16 +74,15 @@ function ConfirmModalBase({
             <button
               type="button"
               onClick={onCancel}
-              {...(isDanger ? { 'data-autofocus': true as const } : {})}
+              {...(isDanger ? { 'data-autofocus': true } : {})}
               className="cursor-pointer px-4 py-2 text-sm font-medium rounded-xl text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/60 hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-250 dark:active:bg-gray-600 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
-              aria-label={resolvedCancelText}
               data-testid="confirm-modal-cancel"
             >
               {resolvedCancelText}
             </button>
             <button
               type="button"
-              {...(!isDanger ? { 'data-autofocus': true as const } : {})}
+              {...(!isDanger ? { 'data-autofocus': true } : {})}
               onClick={onConfirm}
               className={[
                 'cursor-pointer px-4 py-2 text-sm font-medium rounded-xl text-white',
@@ -93,7 +92,6 @@ function ConfirmModalBase({
                   ? 'bg-red-600 hover:bg-red-700 active:bg-red-800 focus-visible:ring-red-500/50'
                   : 'bg-primary-600 hover:bg-primary-700 active:bg-primary-800 focus-visible:ring-primary-500/50',
               ].join(' ')}
-              aria-label={resolvedConfirmText}
               data-testid="confirm-modal-confirm"
             >
               {resolvedConfirmText}

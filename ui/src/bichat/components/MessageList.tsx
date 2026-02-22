@@ -117,8 +117,14 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
     messagesEndRef.current?.scrollIntoView({ behavior })
   }, [])
 
-  // Auto-scroll to bottom on new turns or streaming content
+  // Auto-scroll to bottom on new turns or streaming content (only when user is near bottom)
   useEffect(() => {
+    const container = containerRef.current
+    if (container) {
+      const { scrollTop, scrollHeight, clientHeight } = container
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
+      if (!isNearBottom) return
+    }
     scrollToBottom('smooth')
   }, [turns.length, streamingContent, scrollToBottom])
 
