@@ -894,7 +894,7 @@ export default function Sidebar({
                   </MenuButton>
                   <MenuItems
                     anchor="top start"
-                    className="w-48 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg rounded-xl shadow-lg border border-gray-200/80 dark:border-gray-700/60 z-[var(--bichat-z-dropdown,10)] [--anchor-gap:8px] mb-1 p-1.5"
+                    className="w-48 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-[var(--bichat-z-dropdown,10)] [--anchor-gap:8px] mb-1 p-1.5"
                   >
                     {onArchivedView && (
                       <MenuItem>
