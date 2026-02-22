@@ -46,6 +46,12 @@ export function deriveMessagingSnapshot(
     | 'setCodeOutputs'
   >
 ): MessagingSnapshot {
+  const hasActiveSteps = state.messaging.activeSteps.some((s: { status: string }) => s.status === 'active')
+  const showActivityTrace = !state.messaging.isCompacting && (
+    (state.messaging.loading && !state.messaging.streamingContent) ||
+    (state.messaging.isStreaming && hasActiveSteps && !state.messaging.streamingContent)
+  )
+
   return {
     turns: state.messaging.turns,
     streamingContent: state.messaging.streamingContent,
@@ -58,6 +64,9 @@ export function deriveMessagingSnapshot(
     isCompacting: state.messaging.isCompacting,
     compactionSummary: null,
     artifactsInvalidationTrigger: state.messaging.artifactsInvalidationTrigger,
+    thinkingContent: state.messaging.thinkingContent,
+    activeSteps: state.messaging.activeSteps,
+    showActivityTrace,
     ...methods,
   }
 }

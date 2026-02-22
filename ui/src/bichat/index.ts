@@ -52,6 +52,15 @@ export { LoadingSpinner } from './components/LoadingSpinner'
 export { TableExportButton } from './components/TableExportButton'
 export { TableWithExport } from './components/TableWithExport'
 export { InteractiveTableCard } from './components/InteractiveTableCard'
+export {
+  useDataTable,
+  type UseDataTableReturn,
+  type DataTableOptions,
+  type ColumnMeta,
+  type SortState,
+  type ColumnStats,
+} from './hooks/useDataTable'
+export { type ColumnType, type FormattedCell } from './utils/columnTypes'
 
 // Phase 5 generic components
 export { Toast, type ToastProps } from './components/Toast'
@@ -61,6 +70,7 @@ export { UserAvatar, type UserAvatarProps } from './components/UserAvatar'
 export { PermissionGuard, type PermissionGuardProps } from './components/PermissionGuard'
 export { ErrorBoundary, DefaultErrorContent } from './components/ErrorBoundary'
 export { TypingIndicator, type TypingIndicatorProps } from './components/TypingIndicator'
+export { ActivityTrace, type ActivityTraceProps } from './components/ActivityTrace'
 
 // Session management components
 export { default as Sidebar } from './components/Sidebar'
@@ -144,7 +154,7 @@ export { useStreaming } from './hooks/useStreaming'
 export { useTranslation } from './hooks/useTranslation'
 export { useModalLock } from './hooks/useModalLock'
 export { useFocusTrap } from './hooks/useFocusTrap'
-export { useToast, type ToastItem, type ToastType, type UseToastReturn } from './hooks/useToast'
+export { useToast, type ToastAction, type ToastItem, type ToastType, type UseToastReturn } from './hooks/useToast'
 
 // New composability hooks
 export {
@@ -239,6 +249,8 @@ export { parseBichatStream, parseBichatStreamEvents, parseSSEStream } from './ut
 // =============================================================================
 
 export { RateLimiter } from './utils/RateLimiter'
+export { getToolLabel } from './utils/toolLabels'
+export { groupSteps } from './utils/activitySteps'
 export * from './utils/fileUtils'
 export { groupSessionsByDate } from './utils/sessionGrouping'
 export { toErrorDisplay, isPermissionDeniedError, type RPCErrorDisplay } from './utils/errorDisplay'
@@ -290,6 +302,8 @@ export type {
   ConversationTurn,
   UserTurn,
   AssistantTurn,
+  // Activity trace types
+  ActivityStep,
 } from './types'
 
 export type { Theme, ThemeColors, ThemeSpacing, ThemeBorderRadius } from './theme/types'

@@ -72,7 +72,9 @@ function ConfirmModalBase({
           {/* Actions */}
           <div className="flex items-center justify-end gap-2.5 px-6 pb-5">
             <button
+              type="button"
               onClick={onCancel}
+              {...(isDanger ? { 'data-autofocus': true as const } : {})}
               className="cursor-pointer px-4 py-2 text-sm font-medium rounded-xl text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700/60 hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-250 dark:active:bg-gray-600 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
               aria-label={resolvedCancelText}
               data-testid="confirm-modal-cancel"
@@ -80,6 +82,8 @@ function ConfirmModalBase({
               {resolvedCancelText}
             </button>
             <button
+              type="button"
+              {...(!isDanger ? { 'data-autofocus': true as const } : {})}
               onClick={onConfirm}
               className={[
                 'cursor-pointer px-4 py-2 text-sm font-medium rounded-xl text-white',

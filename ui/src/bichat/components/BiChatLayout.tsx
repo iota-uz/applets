@@ -109,7 +109,7 @@ export function BiChatLayout({
             {/* Backdrop */}
             <motion.div
               key="sidebar-backdrop"
-              className="fixed inset-0 z-40 bg-black/40"
+              className="fixed inset-0 z-[var(--bichat-z-overlay,30)] bg-black/40"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -119,7 +119,7 @@ export function BiChatLayout({
             {/* Drawer */}
             <motion.div
               key="sidebar-drawer"
-              className="fixed inset-y-0 left-0 z-50 w-[18rem] max-w-[85vw] shadow-2xl"
+              className="fixed inset-y-0 left-0 z-[var(--bichat-z-modal,40)] w-[18rem] max-w-[85vw] shadow-2xl"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
@@ -146,7 +146,7 @@ export function BiChatLayout({
           <button
             ref={menuButtonRef}
             onClick={openMobile}
-            className="md:hidden absolute top-3 left-3 z-30 w-10 h-10 rounded-xl bg-white/90 dark:bg-gray-900/90 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-gray-800/80 shadow-sm flex items-center justify-center hover:bg-white dark:hover:bg-gray-900 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-primary-400/50"
+            className="md:hidden absolute top-3 left-3 z-[var(--bichat-z-sticky,20)] w-10 h-10 rounded-xl bg-white/90 dark:bg-gray-900/90 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-gray-800/80 shadow-sm flex items-center justify-center hover:bg-white dark:hover:bg-gray-900 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-primary-400/50"
             aria-label={t('BiChat.Layout.OpenSidebar')}
             title={t('BiChat.Layout.OpenSidebar')}
           >

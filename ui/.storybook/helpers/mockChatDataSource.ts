@@ -2,18 +2,21 @@ import type {
   ChatDataSource,
   Session,
   SessionListResult,
+  SessionUser,
   ConversationTurn,
   PendingQuestion,
   StreamChunk,
   QuestionAnswers,
   SendMessageOptions,
 } from '../../src/bichat/types'
-import { makeSession } from './bichatFixtures'
+import { makeSession, makeSessions, makeSessionUser } from './bichatFixtures'
 
 export class MockChatDataSource implements ChatDataSource {
   constructor(
     private options: {
       session?: Session
+      sessions?: Session[]
+      users?: SessionUser[]
       turns?: ConversationTurn[]
       pendingQuestion?: PendingQuestion | null
       streamingDelay?: number
@@ -87,9 +90,52 @@ export class MockChatDataSource implements ChatDataSource {
     console.log('Mock navigate to session:', sessionId)
   }
 
-  // Session management stubs
-  async listSessions(): Promise<SessionListResult> {
-    return { sessions: [], total: 0, hasMore: false }
+  // Session management
+  async listSessions(opts?: {
+    limit?: number
+    offset?: number
+    includeArchived?: boolean
+  }): Promise<SessionListResult> {
+    const all = this.options.sessions ?? makeSessions()
+    const filtered = opts?.includeArchived
+      ? all
+      : all.filter((s) => s.status === 'active')
+    const offset = opts?.offset ?? 0
+    const limit = opts?.limit ?? 50
+    const slice = filtered.slice(offset, offset + limit)
+    return { sessions: slice, total: filtered.length, hasMore: offset + limit < filtered.length }
+  }
+
+  async listUsers(): Promise<SessionUser[]> {
+    return this.options.users ?? [
+      makeSessionUser({ id: 'u-1', firstName: 'Alice', lastName: 'Smith', initials: 'AS' }),
+      makeSessionUser({ id: 'u-2', firstName: 'Bob', lastName: 'Johnson', initials: 'BJ' }),
+    ]
+  }
+
+  async listAllSessions(opts?: {
+    limit?: number
+    offset?: number
+    includeArchived?: boolean
+    userId?: string | null
+  }): Promise<{
+    sessions: Array<Session & { owner: SessionUser }>
+    total: number
+    hasMore: boolean
+  }> {
+    const all = this.options.sessions ?? makeSessions()
+    const filtered = opts?.includeArchived
+      ? all
+      : all.filter((s) => s.status === 'active')
+    const offset = opts?.offset ?? 0
+    const limit = opts?.limit ?? 20
+    const slice = filtered.slice(offset, offset + limit)
+    const owners = this.options.users ?? [
+      makeSessionUser({ id: 'u-1', firstName: 'Alice', lastName: 'Smith', initials: 'AS' }),
+      makeSessionUser({ id: 'u-2', firstName: 'Bob', lastName: 'Johnson', initials: 'BJ' }),
+    ]
+    const sessions = slice.map((s, i) => ({ ...s, owner: owners[i % owners.length] }))
+    return { sessions, total: filtered.length, hasMore: offset + limit < filtered.length }
   }
   async archiveSession(sessionId: string): Promise<Session> {
     return this.options.session ?? makeSession({ id: sessionId, status: 'archived' })

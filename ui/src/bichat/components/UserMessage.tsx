@@ -3,7 +3,7 @@
  * Styled component with slot-based customization for user messages
  */
 
-import { useState, useCallback, useRef, useEffect, type ReactNode } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo, type ReactNode } from 'react'
 import { Check, Copy, PencilSimple } from '@phosphor-icons/react'
 import { formatRelativeTime } from '../utils/dateFormatting'
 import AttachmentGrid from './AttachmentGrid'
@@ -114,7 +114,7 @@ const COPY_FEEDBACK_MS = 2000
 
 const defaultClassNames: Required<UserMessageClassNames> = {
   root: 'flex gap-3 justify-end group',
-  wrapper: 'flex-1 flex flex-col items-end max-w-[75%]',
+  wrapper: 'flex-1 flex flex-col items-end max-w-[var(--bichat-bubble-max-width)]',
   avatar: 'flex-shrink-0 w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-medium text-sm',
   bubble: 'bg-primary-600 text-white rounded-2xl rounded-br-sm px-4 py-3 shadow-sm',
   content: 'text-sm whitespace-pre-wrap break-words leading-relaxed',
@@ -143,6 +143,64 @@ function mergeClassNames(
 }
 
 /* -------------------------------------------------------------------------------------------------
+ * EditForm Sub-component
+ * -----------------------------------------------------------------------------------------------*/
+
+interface EditFormProps {
+  draftContent: string
+  onDraftChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
+  onSave: () => void
+  onCancel: () => void
+  onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void
+  textareaRef: React.Ref<HTMLTextAreaElement>
+  disabled: boolean
+  originalContent: string
+  t: (key: string) => string
+}
+
+function EditForm({ draftContent, onDraftChange, onSave, onCancel, onKeyDown, textareaRef, disabled, originalContent, t }: EditFormProps) {
+  return (
+    <div className="space-y-3">
+      <textarea
+        ref={textareaRef}
+        value={draftContent}
+        onChange={onDraftChange}
+        onKeyDown={onKeyDown}
+        className="w-full min-h-[60px] max-h-[300px] resize-none rounded-xl border border-white/20 bg-white/[0.08] px-3.5 py-2.5 text-sm text-white leading-relaxed outline-none focus:bg-white/[0.12] focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all duration-200"
+        aria-label={t('BiChat.Message.EditMessage')}
+        rows={1}
+      />
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[11px] text-white/30 select-none hidden sm:inline">
+          Esc · {typeof navigator !== 'undefined' && /mac|iphone|ipad/i.test(
+            (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform
+              ?? navigator?.platform
+              ?? ''
+          ) ? '⌘' : 'Ctrl'}+Enter
+        </span>
+        <div className="flex items-center gap-2 ml-auto">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="cursor-pointer px-3 py-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors text-sm"
+          >
+            {t('BiChat.Message.Cancel')}
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            className="cursor-pointer px-4 py-1.5 rounded-lg bg-white text-primary-700 font-medium text-sm hover:bg-white/90 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+            disabled={disabled || !draftContent.trim() || draftContent === originalContent}
+          >
+            {t('BiChat.Message.Save')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------------------------------
  * Component
  * -----------------------------------------------------------------------------------------------*/
 
@@ -166,6 +224,7 @@ export function UserMessage({
   const [isCopied, setIsCopied] = useState(false)
   const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const editTextareaRef = useRef<HTMLTextAreaElement>(null)
+  const bubbleRef = useRef<HTMLDivElement>(null)
   const classes = mergeClassNames(defaultClassNames, classNameOverrides)
 
   useEffect(() => {
@@ -176,6 +235,12 @@ export function UserMessage({
       }
     }
   }, [])
+
+  // Reset edit state when the turn changes
+  useEffect(() => {
+    setIsEditing(false)
+    setDraftContent('')
+  }, [turnId])
 
   // Auto-focus textarea when entering edit mode
   useEffect(() => {
@@ -189,51 +254,73 @@ export function UserMessage({
     }
   }, [isEditing])
 
-  const normalizedAttachments: Attachment[] = turn.attachments.map((attachment) => {
-    if (!attachment.mimeType.startsWith('image/')) {
-      return attachment
+  // Click-outside to cancel edit
+  useEffect(() => {
+    if (!isEditing) return
+
+    const handleMouseDown = (e: MouseEvent) => {
+      if (bubbleRef.current && !bubbleRef.current.contains(e.target as Node)) {
+        setIsEditing(false)
+        setDraftContent('')
+      }
     }
 
-    if (attachment.preview) {
-      return attachment
-    }
-    if (attachment.base64Data) {
-      if (attachment.base64Data.startsWith('data:')) {
-        return {
-          ...attachment,
-          preview: attachment.base64Data,
+    document.addEventListener('mousedown', handleMouseDown)
+    return () => document.removeEventListener('mousedown', handleMouseDown)
+  }, [isEditing])
+
+  const normalizedAttachments: Attachment[] = useMemo(
+    () =>
+      turn.attachments.map((attachment) => {
+        if (!attachment.mimeType.startsWith('image/')) {
+          return attachment
         }
-      }
-      return {
-        ...attachment,
-        preview: `data:${attachment.mimeType};base64,${attachment.base64Data}`,
-      }
-    }
-    if (attachment.url) {
-      return {
-        ...attachment,
-        preview: attachment.url,
-      }
-    }
-    return attachment
-  })
 
-  const imageAttachments: ImageAttachment[] = []
-  const imageIndexByAttachmentIndex = new Map<number, number>()
-  normalizedAttachments.forEach((attachment, index) => {
-    if (!attachment.mimeType.startsWith('image/')) {
-      return
-    }
-    if (!attachment.preview && !attachment.url) {
-      return
-    }
-    imageIndexByAttachmentIndex.set(index, imageAttachments.length)
-    imageAttachments.push({
-      ...attachment,
-      base64Data: attachment.base64Data || '',
-      preview: attachment.preview || attachment.url || '',
+        if (attachment.preview) {
+          return attachment
+        }
+        if (attachment.base64Data) {
+          if (attachment.base64Data.startsWith('data:')) {
+            return {
+              ...attachment,
+              preview: attachment.base64Data,
+            }
+          }
+          return {
+            ...attachment,
+            preview: `data:${attachment.mimeType};base64,${attachment.base64Data}`,
+          }
+        }
+        if (attachment.url) {
+          return {
+            ...attachment,
+            preview: attachment.url,
+          }
+        }
+        return attachment
+      }),
+    [turn.attachments],
+  )
+
+  const { imageAttachments, imageIndexByAttachmentIndex } = useMemo(() => {
+    const images: ImageAttachment[] = []
+    const indexMap = new Map<number, number>()
+    normalizedAttachments.forEach((attachment, index) => {
+      if (!attachment.mimeType.startsWith('image/')) {
+        return
+      }
+      if (!attachment.preview && !attachment.url) {
+        return
+      }
+      indexMap.set(index, images.length)
+      images.push({
+        ...attachment,
+        base64Data: attachment.base64Data || '',
+        preview: attachment.preview || attachment.url || '',
+      })
     })
-  })
+    return { imageAttachments: images, imageIndexByAttachmentIndex: indexMap }
+  }, [normalizedAttachments])
 
   const handleCopyClick = useCallback(async () => {
     try {
@@ -367,46 +454,20 @@ export function UserMessage({
 
         {/* Message bubble */}
         {turn.content && (
-          <div className={classes.bubble}>
+          <div ref={bubbleRef} className={classes.bubble}>
             <div className={classes.content}>
               {isEditing ? (
-                <div className="space-y-3">
-                  <textarea
-                    ref={editTextareaRef}
-                    value={draftContent}
-                    onChange={handleDraftChange}
-                    onKeyDown={handleEditKeyDown}
-                    className="w-full min-h-[60px] max-h-[300px] resize-none rounded-xl border border-white/20 bg-white/[0.08] px-3.5 py-2.5 text-sm text-white leading-relaxed outline-none focus:bg-white/[0.12] focus:border-white/30 focus:ring-1 focus:ring-white/20 transition-all duration-200"
-                    aria-label={t('BiChat.Message.EditMessage')}
-                    rows={1}
-                  />
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[11px] text-white/30 select-none hidden sm:inline">
-                      Esc · {typeof navigator !== 'undefined' && /mac|iphone|ipad/i.test(
-                        (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform
-                          ?? navigator?.platform
-                          ?? ''
-                      ) ? '⌘' : 'Ctrl'}+Enter
-                    </span>
-                    <div className="flex items-center gap-2 ml-auto">
-                      <button
-                        type="button"
-                        onClick={handleEditCancel}
-                        className="cursor-pointer px-3 py-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors text-sm"
-                      >
-                        {t('BiChat.Message.Cancel')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleEditSave}
-                        className="cursor-pointer px-4 py-1.5 rounded-lg bg-white text-primary-700 font-medium text-sm hover:bg-white/90 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
-                        disabled={!draftContent.trim() || draftContent === turn.content}
-                      >
-                        {t('BiChat.Message.Save')}
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <EditForm
+                  draftContent={draftContent}
+                  onDraftChange={handleDraftChange}
+                  onSave={handleEditSave}
+                  onCancel={handleEditCancel}
+                  onKeyDown={handleEditKeyDown}
+                  textareaRef={editTextareaRef}
+                  disabled={false}
+                  originalContent={turn.content}
+                  t={t}
+                />
               ) : (
                 renderSlot(slots?.content, contentSlotProps, turn.content)
               )}

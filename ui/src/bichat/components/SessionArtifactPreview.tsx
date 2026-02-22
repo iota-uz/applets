@@ -4,6 +4,13 @@ import type { SessionArtifact } from '../types'
 import { parseChartDataFromSpec, isRecord } from '../utils/chartSpec'
 import { ChartCard } from './ChartCard'
 import { useTranslation } from '../hooks/useTranslation'
+import {
+  getArtifactName,
+  isImageArtifact,
+  isPDFArtifact,
+  isOfficeDocumentArtifact,
+  isTextArtifact,
+} from '../utils/artifactHelpers'
 
 interface SessionArtifactPreviewProps {
   artifact: SessionArtifact
@@ -22,45 +29,7 @@ function parseChartDataFromArtifact(artifact: SessionArtifact) {
     return null
   }
 
-  return parseChartDataFromSpec(spec, artifact.name)
-}
-
-function isImageArtifact(artifact: SessionArtifact): boolean {
-  const mime = artifact.mimeType?.toLowerCase() || ''
-  const name = artifact.name.toLowerCase()
-  return mime.startsWith('image/') || /\.(png|jpe?g|gif|webp|svg|bmp)$/.test(name)
-}
-
-function isPDFArtifact(artifact: SessionArtifact): boolean {
-  const mime = artifact.mimeType?.toLowerCase() || ''
-  const name = artifact.name.toLowerCase()
-  return mime.includes('pdf') || name.endsWith('.pdf')
-}
-
-function isOfficeDocumentArtifact(artifact: SessionArtifact): boolean {
-  const mime = artifact.mimeType?.toLowerCase() || ''
-  const name = artifact.name.toLowerCase()
-  return (
-    mime.includes('wordprocessingml') ||
-    mime.includes('msword') ||
-    mime.includes('excel') ||
-    mime.includes('spreadsheet') ||
-    /\.(docx?|xlsx?|xlsm|xlsb)$/.test(name)
-  )
-}
-
-function isTextArtifact(artifact: SessionArtifact): boolean {
-  const mime = artifact.mimeType?.toLowerCase() || ''
-  const name = artifact.name.toLowerCase()
-  return (
-    mime.startsWith('text/') ||
-    mime.includes('json') ||
-    mime.includes('xml') ||
-    mime.includes('yaml') ||
-    mime.includes('csv') ||
-    mime.includes('tab-separated') ||
-    /\.(txt|md|json|xml|ya?ml|csv|tsv|log|sql)$/.test(name)
-  )
+  return parseChartDataFromSpec(spec, getArtifactName(artifact))
 }
 
 function isAbsoluteHTTPURL(url: string): boolean {
@@ -181,6 +150,7 @@ function TextArtifactPreview({ artifact }: { artifact: SessionArtifact }) {
 
 export function SessionArtifactPreview({ artifact }: SessionArtifactPreviewProps) {
   const { t } = useTranslation()
+  const artifactName = getArtifactName(artifact)
 
   const officeViewerURL = useMemo(() => {
     if (!artifact.url || !isAbsoluteHTTPURL(artifact.url)) {
@@ -207,7 +177,7 @@ export function SessionArtifactPreview({ artifact }: SessionArtifactPreviewProps
         <div className="overflow-hidden rounded-xl border border-gray-200/80 bg-gray-50/50 dark:border-gray-700/60 dark:bg-gray-800/30">
           <img
             src={artifact.url}
-            alt={artifact.name}
+            alt={artifactName}
             className="h-auto max-h-[72vh] w-full object-contain"
             loading="lazy"
           />
@@ -227,7 +197,7 @@ export function SessionArtifactPreview({ artifact }: SessionArtifactPreviewProps
         <div className="overflow-hidden rounded-xl border border-gray-200/80 bg-gray-50 dark:border-gray-700/60 dark:bg-gray-900">
           <iframe
             src={artifact.url}
-            title={artifact.name}
+            title={artifactName}
             className="h-[72vh] w-full"
           />
         </div>
@@ -247,7 +217,7 @@ export function SessionArtifactPreview({ artifact }: SessionArtifactPreviewProps
           <div className="overflow-hidden rounded-xl border border-gray-200/80 bg-gray-50 dark:border-gray-700/60 dark:bg-gray-900">
             <iframe
               src={officeViewerURL}
-              title={artifact.name}
+              title={artifactName}
               className="h-[72vh] w-full"
             />
           </div>

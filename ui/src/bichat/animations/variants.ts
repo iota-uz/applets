@@ -1,13 +1,11 @@
 /**
  * Framer Motion animation variants for BiChat UI
  * Subtle, professional animations for enterprise applications
- * Respects prefers-reduced-motion for accessibility
+ *
+ * Reduced-motion handling: Framer Motion's built-in `<MotionConfig reducedMotion="user">`
+ * or the `useReducedMotion()` hook handle OS-level accessibility preferences reactively.
+ * Variant objects declare their intended durations; Framer suppresses them automatically.
  */
-
-const prefersReducedMotion = () => {
-  if (typeof window === 'undefined') return false
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
 
 /**
  * Fade in animation
@@ -16,15 +14,11 @@ export const fadeInVariants = {
   initial: { opacity: 0 },
   animate: {
     opacity: 1,
-    transition: {
-      duration: prefersReducedMotion() ? 0 : 0.2,
-    },
+    transition: { duration: 0.2 },
   },
   exit: {
     opacity: 0,
-    transition: {
-      duration: prefersReducedMotion() ? 0 : 0.15,
-    },
+    transition: { duration: 0.15 },
   },
 }
 
@@ -37,16 +31,14 @@ export const fadeInUpVariants = {
     opacity: 1,
     y: 0,
     transition: {
-      duration: prefersReducedMotion() ? 0 : 0.2,
+      duration: 0.2,
       ease: [0.4, 0, 0.2, 1],
     },
   },
   exit: {
     opacity: 0,
     y: 8,
-    transition: {
-      duration: prefersReducedMotion() ? 0 : 0.15,
-    },
+    transition: { duration: 0.15 },
   },
 }
 
@@ -58,16 +50,12 @@ export const scaleFadeVariants = {
   animate: {
     opacity: 1,
     scale: 1,
-    transition: {
-      duration: prefersReducedMotion() ? 0 : 0.15,
-    },
+    transition: { duration: 0.15 },
   },
   exit: {
     opacity: 0,
     scale: 0.98,
-    transition: {
-      duration: prefersReducedMotion() ? 0 : 0.1,
-    },
+    transition: { duration: 0.1 },
   },
 }
 
@@ -78,15 +66,11 @@ export const backdropVariants = {
   initial: { opacity: 0 },
   animate: {
     opacity: 1,
-    transition: {
-      duration: prefersReducedMotion() ? 0 : 0.15,
-    },
+    transition: { duration: 0.15 },
   },
   exit: {
     opacity: 0,
-    transition: {
-      duration: 0.15,
-    },
+    transition: { duration: 0.15 },
   },
 }
 
@@ -142,15 +126,13 @@ export const messageVariants = {
     opacity: 1,
     y: 0,
     transition: {
-      duration: prefersReducedMotion() ? 0 : 0.2,
+      duration: 0.2,
       ease: [0.4, 0, 0.2, 1],
     },
   },
   exit: {
     opacity: 0,
-    transition: {
-      duration: prefersReducedMotion() ? 0 : 0.15,
-    },
+    transition: { duration: 0.15 },
   },
 }
 
@@ -176,7 +158,7 @@ export const typingDotVariants = {
   animate: {
     opacity: [0.4, 1, 0.4],
     transition: {
-      duration: prefersReducedMotion() ? 0 : 1,
+      duration: 1,
       repeat: Infinity,
       ease: 'easeInOut',
     },
@@ -196,16 +178,14 @@ export const verbTransitionVariants = {
     y: 0,
     opacity: 1,
     transition: {
-      duration: prefersReducedMotion() ? 0 : 0.2,
+      duration: 0.2,
       ease: 'easeOut',
     },
   },
   exit: {
     y: -16,
     opacity: 0,
-    transition: {
-      duration: prefersReducedMotion() ? 0 : 0.15,
-    },
+    transition: { duration: 0.15 },
   },
 }
 
@@ -220,16 +200,12 @@ export const floatingButtonVariants = {
   animate: {
     opacity: 1,
     scale: 1,
-    transition: {
-      duration: prefersReducedMotion() ? 0 : 0.2,
-    },
+    transition: { duration: 0.2 },
   },
   exit: {
     opacity: 0,
     scale: 0.9,
-    transition: {
-      duration: prefersReducedMotion() ? 0 : 0.15,
-    },
+    transition: { duration: 0.15 },
   },
 }
 
@@ -241,7 +217,7 @@ export const dropdownVariants = {
   animate: {
     opacity: 1,
     y: 0,
-    transition: { duration: prefersReducedMotion() ? 0 : 0.15 },
+    transition: { duration: 0.15 },
   },
   exit: {
     opacity: 0,
@@ -258,22 +234,16 @@ export const sessionItemVariants = {
   animate: {
     opacity: 1,
     x: 0,
-    transition: {
-      duration: prefersReducedMotion() ? 0 : 0.3,
-    },
+    transition: { duration: 0.3 },
   },
   hover: {
     x: 4,
-    transition: {
-      duration: prefersReducedMotion() ? 0 : 0.2,
-    },
+    transition: { duration: 0.2 },
   },
   exit: {
     opacity: 0,
     x: -20,
-    transition: {
-      duration: prefersReducedMotion() ? 0 : 0.2,
-    },
+    transition: { duration: 0.2 },
   },
 }
 
@@ -287,7 +257,7 @@ export const errorMessageVariants = {
     y: 0,
     height: 'auto',
     transition: {
-      duration: prefersReducedMotion() ? 0 : 0.3,
+      duration: 0.3,
       ease: [0.4, 0, 0.2, 1],
     },
   },
@@ -295,8 +265,6 @@ export const errorMessageVariants = {
     opacity: 0,
     y: -10,
     height: 0,
-    transition: {
-      duration: prefersReducedMotion() ? 0 : 0.2,
-    },
+    transition: { duration: 0.2 },
   },
 }

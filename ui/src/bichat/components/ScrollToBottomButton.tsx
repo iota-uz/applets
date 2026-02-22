@@ -56,7 +56,11 @@ function ScrollToBottomButton({
 
                 {/* Unread count badge */}
                 {unreadCount > 0 && (
-                  <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] bg-primary-600 dark:bg-primary-500 text-white text-xs font-semibold rounded-full flex items-center justify-center px-1">
+                  <span
+                    className="absolute -top-2 -right-2 min-w-[18px] h-[18px] bg-primary-600 dark:bg-primary-500 text-white text-xs font-semibold rounded-full flex items-center justify-center px-1"
+                    aria-live="polite"
+                    aria-atomic="true"
+                  >
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}

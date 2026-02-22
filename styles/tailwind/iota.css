@@ -115,9 +115,9 @@
     --clr-btn-bg-active: var(--gray-200);
     --clr-btn-bg-hover: var(--gray-100);
     --clr-btn-text: var(--black);
-    --crl-btn-text-hover: var(--black);
-    --clr-btn-border: var(--transaprent);
-    --clr-btn-border-hover: var(--transaprent);
+    --clr-btn-text-hover: var(--black);
+    --clr-btn-border: var(--transparent);
+    --clr-btn-border-hover: var(--transparent);
 
     /* Primary btn */
     --clr-primary-btn-bg: var(--primary-500);
@@ -428,12 +428,12 @@
   .btn {
     --text-color: var(--clr-btn-text);
     --loading-indicator-color: var(--clr-btn-text);
-    --text-hover: var(--crl-btn-text-hover);
-    --bg-color: var(--crl-btn-bg);
+    --text-hover: var(--clr-btn-text-hover);
+    --bg-color: var(--clr-btn-bg);
     --bg-active: var(--clr-btn-bg-active);
     --bg-hover: var(--clr-btn-bg-hover);
     --border-color: var(--clr-btn-border);
-    --border-hover: var(--crl-btn-border-hover);
+    --border-hover: var(--clr-btn-border-hover);
     --border-size: 1px;
     --size-x: calc(1rem - var(--border-size) * 2);
     --size-y: calc(0.75rem - var(--border-size) * 2);

@@ -13,6 +13,8 @@ interface ErrorBoundaryProps {
   fallback?: ReactNode | ((error: Error | null, reset: () => void) => ReactNode)
   /** Callback when an error is caught */
   onError?: (error: Error, errorInfo: ErrorInfo) => void
+  /** Pre-translated strings for the emergency fallback (hook-free). Cache these before errors occur. */
+  emergencyStrings?: { title: string; fallback: string; retry: string }
 }
 
 interface ErrorBoundaryState {
@@ -25,6 +27,7 @@ interface FallbackGuardProps {
   onReset: () => void
   renderFallback: () => ReactNode
   onFallbackError?: (error: Error, errorInfo: ErrorInfo) => void
+  cachedStrings?: { title: string; fallback: string; retry: string }
 }
 
 interface FallbackGuardState {
@@ -94,9 +97,15 @@ function DefaultErrorContent({
 function StaticEmergencyErrorContent({
   error,
   onReset,
+  titleText,
+  fallbackText,
+  retryText,
 }: {
   error: Error | null
   onReset?: () => void
+  titleText?: string
+  fallbackText?: string
+  retryText?: string
 }) {
   return (
     <div className="flex flex-col items-center justify-center p-8 text-center min-h-[200px]">
@@ -108,9 +117,9 @@ function StaticEmergencyErrorContent({
           </div>
         </div>
 
-        <h2 className="text-lg font-semibold text-gray-900 mb-1.5">Something went wrong</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1.5">{titleText || 'Something went wrong'}</h2>
         <p className="text-sm text-gray-500 mb-5 max-w-md leading-relaxed">
-          {error?.message || 'An unexpected UI error occurred.'}
+          {error?.message || fallbackText || 'An unexpected UI error occurred.'}
         </p>
 
         {onReset && (
@@ -120,7 +129,7 @@ function StaticEmergencyErrorContent({
             className="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-lg transition-colors shadow-sm text-sm font-medium"
           >
             <ArrowClockwise size={16} weight="bold" />
-            Try again
+            {retryText || 'Try again'}
           </button>
         )}
       </div>
@@ -144,7 +153,15 @@ class FallbackGuard extends Component<FallbackGuardProps, FallbackGuardState> {
 
   render() {
     if (this.state.fallbackFailed) {
-      return <StaticEmergencyErrorContent error={this.props.primaryError} onReset={this.props.onReset} />
+      return (
+        <StaticEmergencyErrorContent
+          error={this.props.primaryError}
+          onReset={this.props.onReset}
+          titleText={this.props.cachedStrings?.title}
+          fallbackText={this.props.cachedStrings?.fallback}
+          retryText={this.props.cachedStrings?.retry}
+        />
+      )
     }
     return this.props.renderFallback()
   }
@@ -186,6 +203,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
           primaryError={this.state.error}
           onReset={this.handleReset}
           onFallbackError={this.handleFallbackError}
+          cachedStrings={this.props.emergencyStrings}
           renderFallback={() => {
             // Custom fallback
             if (this.props.fallback) {

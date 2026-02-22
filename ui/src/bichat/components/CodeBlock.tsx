@@ -3,7 +3,7 @@
  * Syntax highlighted code blocks with copy functionality and dark mode support
  */
 
-import { useState, useEffect, useRef, memo } from 'react'
+import { useState, useEffect, useRef, useSyncExternalStore, memo } from 'react'
 import { Copy, Check } from '@phosphor-icons/react'
 import { useTranslation } from '../hooks/useTranslation'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
@@ -22,10 +22,45 @@ interface CodeBlockProps {
   copiedLabel?: string
 }
 
-// Get initial dark mode state from DOM
-const getInitialDarkMode = () => {
-  if (typeof document === 'undefined') return false
-  return document.documentElement.classList.contains('dark')
+// Module-level singleton dark mode detection — shared across all CodeBlock instances
+const darkModeStore = (() => {
+  let current =
+    typeof document !== 'undefined' &&
+    (document.documentElement.classList.contains('dark') ||
+      (!document.documentElement.classList.contains('light') &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches))
+  const listeners = new Set<() => void>()
+
+  function check() {
+    const next =
+      typeof document !== 'undefined' &&
+      (document.documentElement.classList.contains('dark') ||
+        (!document.documentElement.classList.contains('light') &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches))
+    if (next !== current) {
+      current = next
+      listeners.forEach((fn) => fn())
+    }
+  }
+
+  if (typeof document !== 'undefined') {
+    const observer = new MutationObserver(check)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', check)
+  }
+
+  return {
+    subscribe: (fn: () => void) => {
+      listeners.add(fn)
+      return () => { listeners.delete(fn) }
+    },
+    getSnapshot: () => current,
+    getServerSnapshot: () => false,
+  }
+})()
+
+function useDarkMode() {
+  return useSyncExternalStore(darkModeStore.subscribe, darkModeStore.getSnapshot, darkModeStore.getServerSnapshot)
 }
 
 // Language aliases for normalization
@@ -70,40 +105,11 @@ function CodeBlock({
   const resolvedCopiedLabel = copiedLabel ?? t('BiChat.Message.Copied')
   const [copied, setCopied] = useState(false)
   const [copyFailed, setCopyFailed] = useState(false)
-  const [isDarkMode, setIsDarkMode] = useState(getInitialDarkMode)
-  const [isLoaded, setIsLoaded] = useState(false)
+  const isDarkMode = useDarkMode()
   const copyTimeoutRef = useRef<number | null>(null)
   const copyFailedTimeoutRef = useRef<number | null>(null)
 
   const normalizedLanguage = normalizeLanguage(language)
-
-  // Detect dark mode and mark as loaded
-  useEffect(() => {
-    setIsDarkMode(document.documentElement.classList.contains('dark'))
-    setIsLoaded(true)
-
-    // Watch for dark mode changes via class attribute
-    const observer = new MutationObserver(() => {
-      setIsDarkMode(document.documentElement.classList.contains('dark'))
-    })
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    })
-
-    // Also listen for system prefers-color-scheme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    const handleMediaChange = () => {
-      setIsDarkMode(document.documentElement.classList.contains('dark'))
-    }
-    mediaQuery.addEventListener('change', handleMediaChange)
-
-    return () => {
-      observer.disconnect()
-      mediaQuery.removeEventListener('change', handleMediaChange)
-    }
-  }, [])
 
   // Cleanup timeouts on unmount
   useEffect(() => {
@@ -149,15 +155,6 @@ function CodeBlock({
       <code className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded text-sm font-mono">
         {value}
       </code>
-    )
-  }
-
-  // Loading fallback
-  if (!isLoaded) {
-    return (
-      <pre className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 overflow-x-auto my-4 border border-gray-300 dark:border-gray-700">
-        <code className="text-gray-700 dark:text-gray-300 text-sm font-mono">{value}</code>
-      </pre>
     )
   }
 

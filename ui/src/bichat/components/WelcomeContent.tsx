@@ -19,6 +19,8 @@ interface WelcomeContentProps {
   title?: string
   description?: string
   disabled?: boolean
+  /** Custom prompts to replace the default i18n prompts. Icons cycle from defaults if not provided. */
+  prompts?: Array<{ category: string; text: string; icon?: Icon }>
 }
 
 /** Default prompt definitions with i18n keys and English fallbacks. */
@@ -94,22 +96,31 @@ function tOr(t: (key: string) => string, key: string, defaultValue: string): str
   return v !== key ? v : defaultValue
 }
 
+const DEFAULT_ICONS: Icon[] = PROMPT_DEFS.map((d) => d.icon)
+
 function WelcomeContent({
   onPromptSelect,
   title,
   description,
-  disabled = false
+  disabled = false,
+  prompts: customPrompts,
 }: WelcomeContentProps) {
   const { t } = useTranslation()
   const shouldReduceMotion = useReducedMotion()
   const resolvedTitle = title || ''
   const resolvedDescription = description || ''
 
-  const prompts: ExamplePrompt[] = PROMPT_DEFS.map((def) => ({
-    category: tOr(t, def.categoryKey, def.defaultCategory),
-    text: tOr(t, def.textKey, def.defaultText),
-    icon: def.icon,
-  }))
+  const prompts: ExamplePrompt[] = customPrompts?.length
+    ? customPrompts.map((p, i) => ({
+        category: p.category,
+        text: p.text,
+        icon: p.icon ?? DEFAULT_ICONS[i % DEFAULT_ICONS.length],
+      }))
+    : PROMPT_DEFS.map((def) => ({
+        category: tOr(t, def.categoryKey, def.defaultCategory),
+        text: tOr(t, def.textKey, def.defaultText),
+        icon: def.icon,
+      }))
 
   const handlePromptClick = (prompt: string) => {
     if (onPromptSelect && !disabled) {
@@ -155,9 +166,9 @@ function WelcomeContent({
           <div className="h-px flex-1 bg-gradient-to-l from-transparent to-gray-200 dark:to-gray-700/70" />
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className={`grid gap-3 ${prompts.length <= 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3'}`}>
           {prompts.map((prompt, index) => {
-            const style = PROMPT_STYLES[index]
+            const style = PROMPT_STYLES[index % PROMPT_STYLES.length]
             return (
               <motion.button
                 key={index}

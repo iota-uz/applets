@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useState, useMemo } from 'react'
 import {
   ChartBar,
   Code,
@@ -9,6 +9,7 @@ import {
 import type { SessionArtifact } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
 import { formatFileSize, getFileVisual, CHART_VISUAL, type FileVisual } from '../utils/fileUtils'
+import { getArtifactName, isImageArtifact } from '../utils/artifactHelpers'
 
 interface SessionArtifactListProps {
   artifacts: SessionArtifact[]
@@ -40,12 +41,6 @@ function getGroupIcon(type: string): ReactNode {
   }
 }
 
-function isImageArtifact(artifact: SessionArtifact): boolean {
-  const mime = artifact.mimeType?.toLowerCase() || ''
-  const name = artifact.name.toLowerCase()
-  return mime.startsWith('image/') || /\.(png|jpe?g|gif|webp|svg|bmp)$/.test(name)
-}
-
 function ImageThumbnail({ src, alt }: { src: string; alt: string }) {
   const [failed, setFailed] = useState(false)
   if (failed) {
@@ -68,14 +63,14 @@ function ImageThumbnail({ src, alt }: { src: string; alt: string }) {
 function getArtifactFileVisual(artifact: SessionArtifact): FileVisual {
   if (artifact.type === 'chart') return CHART_VISUAL
   if (artifact.type === 'code_output') {
-    const v = getFileVisual(artifact.mimeType, artifact.name)
+    const v = getFileVisual(artifact.mimeType, getArtifactName(artifact))
     // Code outputs get a sky accent unless they resolve to something specific (image, etc.)
     if (v.label === 'TEXT' || v.label === 'FILE') {
       return { ...v, iconColor: 'text-sky-600 dark:text-sky-400', bgColor: 'bg-sky-100 dark:bg-sky-900/40' }
     }
     return v
   }
-  return getFileVisual(artifact.mimeType, artifact.name)
+  return getFileVisual(artifact.mimeType, getArtifactName(artifact))
 }
 
 function groupArtifactsByType(artifacts: SessionArtifact[]): Array<{ type: string; items: SessionArtifact[] }> {
@@ -105,7 +100,7 @@ export function SessionArtifactList({
   onSelect,
 }: SessionArtifactListProps) {
   const { t } = useTranslation()
-  const grouped = groupArtifactsByType(artifacts)
+  const grouped = useMemo(() => groupArtifactsByType(artifacts), [artifacts])
 
   if (artifacts.length === 0) {
     return (
@@ -146,6 +141,7 @@ export function SessionArtifactList({
               const isSelected = artifact.id === selectedArtifactId
               const visual = getArtifactFileVisual(artifact)
               const Icon = visual.icon
+              const artifactName = getArtifactName(artifact)
               return (
                 <button
                   key={artifact.id}
@@ -159,10 +155,10 @@ export function SessionArtifactList({
                 >
                   {isImageArtifact(artifact) && artifact.url ? (
                     <div>
-                      <ImageThumbnail src={artifact.url} alt={artifact.name} />
+                      <ImageThumbnail src={artifact.url} alt={artifactName} />
                       <div className="mt-2">
                         <span className="block truncate text-[13px] font-medium text-gray-900 dark:text-gray-100">
-                          {artifact.name}
+                          {artifactName}
                         </span>
                         <span className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500">
                           <span>{formatFileSize(artifact.sizeBytes)}</span>
@@ -182,7 +178,7 @@ export function SessionArtifactList({
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[13px] font-medium text-gray-900 dark:text-gray-100">
-                          {artifact.name}
+                          {artifactName}
                         </span>
                         <span className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500">
                           <span>{formatFileSize(artifact.sizeBytes)}</span>
