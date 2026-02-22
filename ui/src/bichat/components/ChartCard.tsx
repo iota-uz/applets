@@ -13,9 +13,16 @@ import { DownloadSimple } from '@phosphor-icons/react'
 import type { ChartData } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
 
+/** External container control. When provided, the card runs in embedded mode. */
+export interface ChartCardHost {
+  isFullscreen: boolean
+}
+
 interface ChartCardProps {
   chartData: ChartData
   onExportError?: (error: string) => void
+  /** When provided, the card runs in embedded mode — strips outer chrome, fills container height in fullscreen. */
+  host?: ChartCardHost
 }
 
 interface InlineTooltipState {
@@ -167,7 +174,7 @@ function applyMoneyFormatting(
 /**
  * ChartCard renders a single chart visualization with optional PNG export.
  */
-export function ChartCard({ chartData, onExportError }: ChartCardProps) {
+export function ChartCard({ chartData, onExportError, host }: ChartCardProps) {
   const { t } = useTranslation()
   const chartId = useId().replace(/:/g, '_')
   const [isExporting, setIsExporting] = useState(false)
@@ -419,19 +426,29 @@ export function ChartCard({ chartData, onExportError }: ChartCardProps) {
     }
   }
 
+  const fillHeight = host?.isFullscreen ?? false
+  const cardClassName = host
+    ? `group/chart relative w-full min-w-0 overflow-hidden${fillHeight ? ' flex flex-col flex-1' : ''}`
+    : 'group/chart relative rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow dark:border-gray-700/60 dark:bg-gray-800'
+  const chartHeight = fillHeight
+    ? '100%'
+    : isRecord(options.chart) && typeof options.chart.height === 'number' ? options.chart.height : height
+
   return (
     <div
       ref={cardRef}
-      className="group/chart relative rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow dark:border-gray-700/60 dark:bg-gray-800"
+      className={cardClassName}
       onMouseLeave={handleMouseLeave}
     >
-      <ReactApexChart
-        options={options}
-        series={apexSeries}
-        type={chartType}
-        width="100%"
-        height={isRecord(options.chart) && typeof options.chart.height === 'number' ? options.chart.height : height}
-      />
+      <div className={fillHeight ? 'flex-1 min-h-0 p-4' : undefined}>
+        <ReactApexChart
+          options={options}
+          series={apexSeries}
+          type={chartType}
+          width="100%"
+          height={chartHeight}
+        />
+      </div>
       {useInlineTooltip && inlineTooltip && (
         <div
           className="pointer-events-none absolute z-20"

@@ -20,7 +20,7 @@ export { TurnBubble, type TurnBubbleProps, type TurnBubbleClassNames } from './c
 export { UserTurnView, type UserTurnViewProps } from './components/UserTurnView'
 export { AssistantTurnView, type AssistantTurnViewProps } from './components/AssistantTurnView'
 export { MarkdownRenderer } from './components/MarkdownRenderer'
-export { ChartCard } from './components/ChartCard'
+export { ChartCard, type ChartCardHost } from './components/ChartCard'
 export { SourcesPanel } from './components/SourcesPanel'
 export { DownloadCard } from './components/DownloadCard'
 export { InlineQuestionForm } from './components/InlineQuestionForm'
@@ -53,6 +53,7 @@ export { TableExportButton } from './components/TableExportButton'
 export { TableWithExport } from './components/TableWithExport'
 export { InteractiveTableCard, type TableCardHost } from './components/InteractiveTableCard'
 export { TabbedTableGroup, type TabbedTableGroupProps } from './components/TabbedTableGroup'
+export { TabbedChartGroup, type TabbedChartGroupProps } from './components/TabbedChartGroup'
 export {
   useDataTable,
   type UseDataTableReturn,

@@ -12,6 +12,7 @@ import StreamingCursor from './StreamingCursor'
 import { ChartCard } from './ChartCard'
 import { InteractiveTableCard } from './InteractiveTableCard'
 import { TabbedTableGroup } from './TabbedTableGroup'
+import { TabbedChartGroup } from './TabbedChartGroup'
 import { SourcesPanel } from './SourcesPanel'
 import { DownloadCard } from './DownloadCard'
 import { InlineQuestionForm } from './InlineQuestionForm'
@@ -57,8 +58,8 @@ export interface AssistantMessageSourcesSlotProps {
 }
 
 export interface AssistantMessageChartsSlotProps {
-  /** Chart data */
-  chartData: ChartData
+  /** Chart data array */
+  charts: ChartData[]
 }
 
 export interface AssistantMessageCodeOutputsSlotProps {
@@ -295,7 +296,7 @@ export function AssistantMessage({
     )
   const hasPendingQuestion = pendingQuestionMatchesTurn && !!pendingQuestion
   const hasCodeOutputs = !!turn.codeOutputs?.length
-  const hasChart = !!turn.chartData
+  const hasChart = !!turn.charts?.length
   const hasTables = !!turn.renderTables?.length
   const hasArtifacts = !!turn.artifacts?.length
   const hasDebug = showDebug && !!turn.debug
@@ -360,7 +361,7 @@ export function AssistantMessage({
     citations: turn.citations || [],
   }
   const chartsSlotProps: AssistantMessageChartsSlotProps = {
-    chartData: turn.chartData!,
+    charts: turn.charts || [],
   }
   const codeOutputsSlotProps: AssistantMessageCodeOutputsSlotProps = {
     outputs: turn.codeOutputs || [],
@@ -422,9 +423,17 @@ export function AssistantMessage({
         )}
 
         {/* Charts */}
-        {turn.chartData && (
+        {turn.charts && turn.charts.length > 0 && (
           <div className={classes.charts}>
-            {renderSlot(slots?.charts, chartsSlotProps, <ChartCard chartData={turn.chartData} />)}
+            {renderSlot(
+              slots?.charts,
+              chartsSlotProps,
+              turn.charts.length === 1 ? (
+                <ChartCard chartData={turn.charts[0]} />
+              ) : (
+                <TabbedChartGroup charts={turn.charts} />
+              )
+            )}
           </div>
         )}
 

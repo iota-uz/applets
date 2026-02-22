@@ -418,7 +418,7 @@ function sanitizeAssistantTurn(
     explanation: readNonEmptyString(rawAssistantTurn.explanation) || undefined,
     citations,
     toolCalls,
-    chartData: undefined,
+    charts: undefined,
     renderTables: undefined,
     artifacts: sanitizeAssistantArtifacts(rawAssistantTurn.artifacts, turnId),
     codeOutputs,
@@ -658,15 +658,16 @@ function toDownloadArtifact(artifact: SessionArtifact): DownloadArtifact | null 
 // Tool-call extraction helpers
 // ---------------------------------------------------------------------------
 
-function extractChartDataFromToolCalls(toolCalls?: Array<{ name: string; result?: string }>): import('../types').ChartData | undefined {
-  if (!toolCalls) return undefined
+function extractChartsFromToolCalls(toolCalls?: Array<{ name: string; result?: string }>): import('../types').ChartData[] {
+  if (!toolCalls) return []
+  const charts: import('../types').ChartData[] = []
   for (const tc of toolCalls) {
     if (tc.name === 'draw_chart' && tc.result) {
       const parsed = parseChartDataFromJsonString(tc.result)
-      if (parsed) return parsed
+      if (parsed) charts.push(parsed)
     }
   }
-  return undefined
+  return charts
 }
 
 function extractRenderTablesFromToolCalls(toolCalls?: Array<{ id: string; name: string; result?: string }>): RenderTableData[] {
@@ -739,7 +740,7 @@ function normalizeAssistantTurn(turn: Partial<AssistantTurn> & { id: string; con
   return {
     ...turn,
     role: (turn.role as MessageRole) || MessageRole.Assistant,
-    chartData: turn.chartData || extractChartDataFromToolCalls(turn.toolCalls),
+    charts: turn.charts?.length ? turn.charts : extractChartsFromToolCalls(turn.toolCalls),
     renderTables,
     citations: turn.citations || [],
     artifacts: merged,
@@ -841,8 +842,6 @@ export function attachArtifactsToTurns(
     const assistantTurn = nextTurns[targetIndex]?.assistantTurn
     if (!assistantTurn) continue
 
-    if (assistantTurn.chartData) continue
-
     const metadata = raw.metadata
     if (!metadata || typeof metadata !== 'object' || metadata === null) continue
     const spec =
@@ -850,9 +849,10 @@ export function attachArtifactsToTurns(
         ? (metadata.spec as Record<string, unknown>)
         : (metadata as Record<string, unknown>)
 
-    const chartData = parseChartDataFromSpec(spec, raw.name)
-    if (chartData) {
-      assistantTurn.chartData = chartData
+    const chart = parseChartDataFromSpec(spec, raw.name)
+    if (chart) {
+      if (!assistantTurn.charts) assistantTurn.charts = []
+      assistantTurn.charts.push(chart)
     }
   }
 

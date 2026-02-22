@@ -36,7 +36,7 @@ function makeAssistantTurn(overrides: Partial<NonNullable<ConversationTurn['assi
     createdAt: overrides.createdAt ?? '2026-01-01T00:00:00.000Z',
     explanation: overrides.explanation,
     toolCalls: overrides.toolCalls,
-    chartData: overrides.chartData,
+    charts: overrides.charts,
     renderTables: overrides.renderTables,
     debug: overrides.debug,
   }

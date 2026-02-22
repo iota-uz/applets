@@ -1,6 +1,6 @@
 /**
  * Shared chart spec parsing for draw_chart tool output and artifact metadata.
- * Used by SessionArtifactPreview, HttpDataSource (turn.chartData), and MarkdownRenderer (code blocks).
+ * Used by SessionArtifactPreview, HttpDataSource (turn.charts), and MarkdownRenderer (code blocks).
  */
 
 import type { ChartData, ChartSeries } from '../types'

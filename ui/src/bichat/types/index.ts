@@ -57,7 +57,7 @@ export interface AssistantTurn {
   explanation?: string
   citations: Citation[]
   toolCalls?: ToolCall[]
-  chartData?: ChartData
+  charts?: ChartData[]
   renderTables?: RenderTableData[]
   artifacts: Artifact[]
   codeOutputs: CodeOutput[]
