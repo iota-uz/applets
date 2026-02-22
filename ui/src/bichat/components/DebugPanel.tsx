@@ -236,6 +236,16 @@ export function DebugPanel({ trace }: DebugPanelProps) {
   const hasData = !!trace && hasDebugTrace(trace)
   const traceID = trace?.traceId?.trim() || ''
   const traceURL = trace?.traceUrl?.trim() || ''
+  const safeTraceURL = (() => {
+    if (!traceURL) return ''
+    try {
+      const parsed = new URL(traceURL)
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return ''
+      return parsed.toString()
+    } catch {
+      return ''
+    }
+  })()
 
   const tokensPerSecond = calculateCompletionTokensPerSecond(trace?.usage, trace?.generationMs)
 
@@ -304,7 +314,7 @@ export function DebugPanel({ trace }: DebugPanelProps) {
 
       {hasData && trace ? (
         <div className="space-y-4">
-          {(traceID || traceURL) && (
+          {(traceID || safeTraceURL) && (
             <div className="rounded-lg border border-gray-200/60 dark:border-gray-700/40 bg-gray-50/50 dark:bg-gray-800/40 p-3 space-y-2">
               {traceID && (
                 <div className="flex items-center justify-between gap-2">
@@ -317,9 +327,9 @@ export function DebugPanel({ trace }: DebugPanelProps) {
                   <CopyPill text={traceID} />
                 </div>
               )}
-              {traceURL && (
+              {safeTraceURL && (
                 <a
-                  href={traceURL}
+                  href={safeTraceURL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-[11px] font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"

@@ -376,6 +376,8 @@ export interface DebugTrace {
   generationMs?: number
   usage?: DebugUsage
   tools: StreamToolPayload[]
+  traceId?: string
+  traceUrl?: string
 }
 
 export interface DebugLimits {

@@ -12,7 +12,13 @@ export function hasMeaningfulUsage(trace?: DebugTrace['usage']): boolean {
 }
 
 export function hasDebugTrace(trace: DebugTrace): boolean {
-  return trace.tools.length > 0 || hasMeaningfulUsage(trace.usage) || !!trace.generationMs
+  return (
+    trace.tools.length > 0 ||
+    hasMeaningfulUsage(trace.usage) ||
+    !!trace.generationMs ||
+    !!trace.traceId ||
+    !!trace.traceUrl
+  )
 }
 
 export function getSessionDebugUsage(turns: ConversationTurn[]): SessionDebugUsage {

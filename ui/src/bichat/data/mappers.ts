@@ -306,6 +306,8 @@ function sanitizeAssistantTurn(
   const debugTrace = isRecord(rawAssistantTurn.debug)
     ? {
       generationMs: readOptionalFiniteNumber(rawAssistantTurn.debug.generationMs),
+      traceId: readNonEmptyString(rawAssistantTurn.debug.traceId) || undefined,
+      traceUrl: readNonEmptyString(rawAssistantTurn.debug.traceUrl) || undefined,
       usage: isRecord(rawAssistantTurn.debug.usage)
         ? {
           promptTokens: readFiniteNumber(rawAssistantTurn.debug.usage.promptTokens),

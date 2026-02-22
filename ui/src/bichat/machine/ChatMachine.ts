@@ -28,6 +28,7 @@ import type {
 import type { RateLimiter } from '../utils/RateLimiter'
 import { normalizeRPCError } from '../utils/errorDisplay'
 import { loadQueue, saveQueue } from '../utils/queueStorage'
+import { loadDebugMode, saveDebugMode } from '../utils/debugModeStorage'
 import { getSessionDebugUsage } from '../utils/debugTrace'
 import {
   ARTIFACT_TOOL_NAMES,
@@ -196,6 +197,7 @@ export class ChatMachine {
     if (id === prev) return
 
     this.state.session.currentSessionId = id
+    this._hydrateDebugModeForSession(id)
     this._notifySession()
 
     // Reset queue for new session
@@ -342,6 +344,29 @@ export class ChatMachine {
     const sid = this.state.session.currentSessionId
     if (!sid || sid === 'new') return
     saveQueue(sid, this.state.input.messageQueue)
+  }
+
+  private _setDebugModeForSession(sessionId: string, enabled: boolean): void {
+    const nextDebugModeBySession = { ...this.state.session.debugModeBySession }
+    if (enabled) {
+      nextDebugModeBySession[sessionId] = true
+    } else {
+      delete nextDebugModeBySession[sessionId]
+    }
+
+    this._updateSession({ debugModeBySession: nextDebugModeBySession })
+    saveDebugMode(sessionId, enabled)
+  }
+
+  private _hydrateDebugModeForSession(sessionId: string | undefined): void {
+    if (!sessionId || sessionId === 'new') return
+    if (this.state.session.debugModeBySession[sessionId] === true) return
+    if (!loadDebugMode(sessionId)) return
+
+    this.state.session.debugModeBySession = {
+      ...this.state.session.debugModeBySession,
+      [sessionId]: true,
+    }
   }
 
   // =====================================================================
@@ -510,12 +535,7 @@ export class ChatMachine {
       const debugMode = deriveDebugMode(this.state)
       const key = this.state.session.currentSessionId || 'new'
       const nextDebugMode = !debugMode
-      this._updateSession({
-        debugModeBySession: {
-          ...this.state.session.debugModeBySession,
-          [key]: nextDebugMode,
-        },
-      })
+      this._setDebugModeForSession(key, nextDebugMode)
 
       if (nextDebugMode && this.state.session.currentSessionId && this.state.session.currentSessionId !== 'new') {
         try {
@@ -633,12 +653,7 @@ export class ChatMachine {
         activeSessionId = createdSessionID
         this._updateSession({ currentSessionId: createdSessionID })
         if (debugMode) {
-          this._updateSession({
-            debugModeBySession: {
-              ...this.state.session.debugModeBySession,
-              [createdSessionID]: true,
-            },
-          })
+          this._setDebugModeForSession(createdSessionID, true)
         }
         shouldNavigateAfter = true
       }
