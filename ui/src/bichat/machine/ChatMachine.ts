@@ -401,10 +401,12 @@ export class ChatMachine {
     if (this.state.session.debugModeBySession[sessionId] === true) {return;}
     if (!loadDebugMode(sessionId)) {return;}
 
-    this.state.session.debugModeBySession = {
-      ...this.state.session.debugModeBySession,
-      [sessionId]: true,
-    };
+    this._updateSession({
+      debugModeBySession: {
+        ...this.state.session.debugModeBySession,
+        [sessionId]: true,
+      },
+    });
   }
 
   // =====================================================================
@@ -557,8 +559,12 @@ export class ChatMachine {
             if (this.state.session.currentSessionId === sessionId && result) {
               this._setTurnsFromFetch(result.turns, result.pendingQuestion ?? null);
             }
+          }).catch((err) => {
+            console.error('[ChatMachine] fetchSession after stream inactive:', err);
           });
         }
+      }).catch((err) => {
+        console.error('[ChatMachine] getStreamStatus:', err);
       });
     }, PASSIVE_POLL_INTERVAL_MS);
   }

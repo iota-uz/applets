@@ -169,21 +169,43 @@ export async function* sendMessage(
 // Stop stream (explicit stop — backend discards partial assistant message)
 // ---------------------------------------------------------------------------
 
-export async function stopStream(
-  deps: Pick<MessageTransportDeps, 'baseUrl' | 'streamEndpoint' | 'createHeaders'>,
-  sessionId: string
-): Promise<void> {
+function buildStreamUrl(
+  deps: Pick<MessageTransportDeps, 'baseUrl' | 'streamEndpoint'>,
+  path: string
+): string {
   const base = deps.baseUrl.replace(/\/+$/, '');
   const streamPath = deps.streamEndpoint.replace(/\/$/, '');
-  const stopUrl = `${base}${streamPath}/stop`;
-  const response = await fetch(stopUrl, {
-    method: 'POST',
-    headers: deps.createHeaders(),
-    body: JSON.stringify({ sessionId }),
-  });
-  if (!response.ok) {
-    // Non-fatal: local abort will still stop the stream
-    console.warn('Stop stream request failed:', response.status);
+  return `${base}${streamPath}${path}`;
+}
+
+const DEFAULT_STOP_STREAM_TIMEOUT_MS = 5000;
+
+export async function stopStream(
+  deps: Pick<MessageTransportDeps, 'baseUrl' | 'streamEndpoint' | 'createHeaders'> & { timeoutMs?: number },
+  sessionId: string
+): Promise<void> {
+  const timeoutMs = deps.timeoutMs ?? DEFAULT_STOP_STREAM_TIMEOUT_MS;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const stopUrl = buildStreamUrl(deps, '/stop');
+    const response = await fetch(stopUrl, {
+      method: 'POST',
+      headers: deps.createHeaders(),
+      body: JSON.stringify({ sessionId }),
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      console.warn('Stop stream request failed:', response.status);
+    }
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      console.warn('Stop stream request timed out');
+    } else {
+      throw err;
+    }
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -191,29 +213,42 @@ export async function stopStream(
 // Stream status and resume (refresh-safe)
 // ---------------------------------------------------------------------------
 
+const DEFAULT_STREAM_STATUS_TIMEOUT_MS = 5000;
+
 type StreamStatusResumeDeps = Pick<
   MessageTransportDeps,
   'baseUrl' | 'streamEndpoint' | 'createHeaders'
->
+> & { timeoutMs?: number }
 
 export async function getStreamStatus(
   deps: StreamStatusResumeDeps,
   sessionId: string
 ): Promise<StreamStatus | null> {
-  const base = deps.baseUrl.replace(/\/+$/, '');
-  const streamPath = deps.streamEndpoint.replace(/\/$/, '');
-  const url = `${base}${streamPath}/status?sessionId=${encodeURIComponent(sessionId)}`;
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: deps.createHeaders(),
-  });
-  if (!response.ok) {
-    if (response.status === 404) {return null;}
-    console.warn('Stream status request failed:', response.status);
-    return null;
+  const timeoutMs = deps.timeoutMs ?? DEFAULT_STREAM_STATUS_TIMEOUT_MS;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const url = buildStreamUrl(deps, `/status?sessionId=${encodeURIComponent(sessionId)}`);
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: deps.createHeaders(),
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      if (response.status === 404) return null;
+      console.warn('Stream status request failed:', response.status);
+      return null;
+    }
+    const data = (await response.json()) as StreamStatus;
+    return data;
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      return null;
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
   }
-  const data = (await response.json()) as StreamStatus;
-  return data;
 }
 
 export async function resumeStream(
@@ -223,27 +258,38 @@ export async function resumeStream(
   onChunk: (chunk: StreamChunk) => void,
   signal?: AbortSignal
 ): Promise<void> {
-  const base = deps.baseUrl.replace(/\/+$/, '');
-  const streamPath = deps.streamEndpoint.replace(/\/$/, '');
-  const url = `${base}${streamPath}/resume`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: deps.createHeaders(),
-    body: JSON.stringify({ sessionId, runId }),
-    signal,
-  });
-  if (!response.ok) {
-    throw new Error(`Resume stream failed: HTTP ${response.status}`);
+  const url = buildStreamUrl(deps, '/resume');
+  const controller = new AbortController();
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeoutMs = deps.timeout;
+  if (timeoutMs != null && timeoutMs > 0) {
+    timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   }
-  if (!response.body) {
-    throw new Error('Resume response body is null');
+  if (signal) {
+    signal.addEventListener('abort', () => controller.abort());
   }
-  const reader = response.body.getReader();
-  for await (const chunk of parseBichatStream(reader)) {
-    onChunk(chunk);
-    if (chunk.type === 'done' || chunk.type === 'error') {
-      return;
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: deps.createHeaders(),
+      body: JSON.stringify({ sessionId, runId }),
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      throw new Error(`Resume stream failed: HTTP ${response.status}`);
     }
+    if (!response.body) {
+      throw new Error('Resume response body is null');
+    }
+    const reader = response.body.getReader();
+    for await (const chunk of parseBichatStream(reader)) {
+      onChunk(chunk);
+      if (chunk.type === 'done' || chunk.type === 'error') {
+        return;
+      }
+    }
+  } finally {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
   }
 }
 

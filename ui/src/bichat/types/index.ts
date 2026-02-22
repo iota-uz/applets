@@ -329,10 +329,6 @@ export type StreamEvent =
   | { type: 'done'; sessionId?: string; generationMs?: number }
   | { type: 'error'; error: string }
 
-/**
- * @deprecated Use `StreamEvent` instead. `StreamChunk` is kept for backwards
- * compatibility but the flat all-optional shape is unsound.
- */
 /** Partial state when resuming a stream after refresh */
 export interface StreamSnapshotPayload {
   partialContent?: string
@@ -347,6 +343,10 @@ export interface StreamStatus {
   startedAt?: number
 }
 
+/**
+ * @deprecated Use `StreamEvent` instead. `StreamChunk` is kept for backwards
+ * compatibility but the flat all-optional shape is unsound.
+ */
 export interface StreamChunk {
   type: 'chunk' | 'content' | 'thinking' | 'tool_start' | 'tool_end' | 'usage' | 'done' | 'error' | 'user_message' | 'interrupt' | 'snapshot' | 'stream_started'
   content?: string

@@ -31,7 +31,6 @@ export interface DataTableOptions {
   enableSort?: boolean
   enableResize?: boolean
   enableColumnVisibility?: boolean
-  enableStats?: boolean
 }
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 200];

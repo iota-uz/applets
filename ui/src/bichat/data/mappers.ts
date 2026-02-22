@@ -823,6 +823,8 @@ export function attachArtifactsToTurns(
       assistantTurn: {
         ...turn.assistantTurn,
         artifacts: [...(turn.assistantTurn.artifacts || [])],
+        charts: turn.assistantTurn.charts ? [...turn.assistantTurn.charts] : undefined,
+        renderTables: turn.assistantTurn.renderTables ? [...turn.assistantTurn.renderTables] : undefined,
       },
     };
   });

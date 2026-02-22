@@ -1,4 +1,4 @@
-import { memo, useCallback, useState, useRef } from 'react';
+import { memo, useCallback, useEffect, useState, useRef } from 'react';
 import { ArrowsIn, ArrowsOut, CaretUp, CaretDown, Columns, Copy, X, Check } from '@phosphor-icons/react';
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react';
 import type { ColumnMeta, SortState } from '../hooks/useDataTable';
@@ -35,6 +35,15 @@ export const DataTableToolbar = memo(function DataTableToolbar({
   const [searchFocused, setSearchFocused] = useState(false);
   const [copied, setCopied] = useState(false);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current !== undefined) {
+        clearTimeout(copyTimerRef.current);
+        copyTimerRef.current = undefined;
+      }
+    };
+  }, []);
 
   const handleSearchClear = useCallback(() => {
     onSearchChange('');

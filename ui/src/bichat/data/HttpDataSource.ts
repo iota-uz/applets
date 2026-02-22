@@ -216,6 +216,7 @@ export class HttpDataSource implements ChatDataSource {
         baseUrl: this.config.baseUrl,
         streamEndpoint: this.config.streamEndpoint!,
         createHeaders: (h) => this.createHeaders(h),
+        timeoutMs: this.config.timeout,
       },
       sessionId
     );

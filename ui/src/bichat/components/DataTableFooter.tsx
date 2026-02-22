@@ -29,14 +29,15 @@ const StatRow = memo(function StatRow({
   showRowNumbers,
   odd,
 }: StatRowProps) {
-  const zebra = odd ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-850';
+  const zebra = odd ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-900';
   return (
     <tr className={zebra}>
-      {showRowNumbers && (
-        <td colSpan={2} className={`sticky left-0 z-20 px-3 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 select-none ${zebra}`}>
-          {label}
-        </td>
-      )}
+      <td
+        colSpan={showRowNumbers ? 2 : 1}
+        className={`sticky left-0 z-20 px-3 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 select-none ${zebra}`}
+      >
+        {label}
+      </td>
       {visibleColumns.map((col, colIdx) => {
         if (colIdx === 0 && showRowNumbers) {return null;}
         const s = stats.get(col.index);

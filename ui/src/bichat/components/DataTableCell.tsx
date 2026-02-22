@@ -120,8 +120,6 @@ export const DataTableCell = memo(function DataTableCell({
   const [copied, setCopied] = useState(false);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const tdRef = useRef<HTMLTableCellElement>(null);
-
   const handleCopy = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (!onCopy) {return;}
@@ -171,7 +169,6 @@ export const DataTableCell = memo(function DataTableCell({
 
   return (
     <td
-      ref={tdRef}
       className={`relative px-3 py-2 align-top ${alignment === 'right' ? 'text-right' : 'text-left'} ${isSticky ? stickyClassName ?? '' : ''}`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}

@@ -98,7 +98,7 @@ export interface SessionSnapshot {
   retryFetchSession: () => void
 }
 
-/** Mirrors ChatMessagingStateValue. */
+/** Superset of ChatMessagingStateValue used internally by the state machine; includes internal-only fields such as generationInProgress. */
 export interface MessagingSnapshot {
   turns: ConversationTurn[]
   streamingContent: string

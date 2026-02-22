@@ -130,6 +130,11 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
 
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
 
+  const rowBg = (rowIndex: number): string =>
+    hoveredRow === rowIndex
+      ? 'bg-gray-100 dark:bg-gray-800/40'
+      : rowIndex % 2 === 1 ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-900';
+
   const hasHiddenColumns = dt.columns.some((c) => !c.visible);
   const from = dt.totalFilteredRows === 0 ? 0 : (dt.page - 1) * dt.pageSize + 1;
   const to = Math.min(dt.page * dt.pageSize, dt.totalFilteredRows);
@@ -196,19 +201,11 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
           {dt.pageRows.map((row, rowIndex) => (
             <tr
               key={`${table.id}-row-${rowIndex}`}
-              className={`border-b border-gray-100 dark:border-gray-800 ${
-                hoveredRow === rowIndex
-                  ? 'bg-gray-100 dark:bg-gray-800/40'
-                  : rowIndex % 2 === 1 ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-900'
-              }`}
+              className={`border-b border-gray-100 dark:border-gray-800 ${rowBg(rowIndex)}`}
               onMouseEnter={() => setHoveredRow(rowIndex)}
               onMouseLeave={() => setHoveredRow(null)}
             >
-              <td className={`sticky left-0 z-[2] w-10 px-2 py-2 text-right text-xs tabular-nums text-gray-400 dark:text-gray-500 select-none ${
-                hoveredRow === rowIndex
-                  ? 'bg-gray-100 dark:bg-gray-800/40'
-                  : rowIndex % 2 === 1 ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-900'
-              }`}>
+              <td className={`sticky left-0 z-[2] w-10 px-2 py-2 text-right text-xs tabular-nums text-gray-400 dark:text-gray-500 select-none ${rowBg(rowIndex)}`}>
                 {(dt.page - 1) * dt.pageSize + rowIndex + 1}
               </td>
               {dt.visibleColumns.map((col, colIdx) => (
@@ -218,11 +215,7 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
                   alignment={dt.getCellAlignment(col.index)}
                   onCopy={handleCellCopy}
                   isSticky={colIdx === 0}
-                  stickyClassName={`sticky left-[2.5rem] z-[1] ${
-                    hoveredRow === rowIndex
-                      ? 'bg-gray-100 dark:bg-gray-800/40'
-                      : rowIndex % 2 === 1 ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-900'
-                  }`}
+                  stickyClassName={`sticky left-[2.5rem] z-[1] ${rowBg(rowIndex)}`}
                 />
               ))}
             </tr>
