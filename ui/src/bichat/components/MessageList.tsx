@@ -215,7 +215,8 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
           {turns.map((turn, index) => {
             const turnDate = new Date(turn.createdAt)
             const prevDate = index > 0 ? new Date(turns[index - 1].createdAt) : null
-            const showDateSeparator = !prevDate || !isSameDay(turnDate, prevDate)
+            // Only show date separators when the conversation spans multiple days
+            const showDateSeparator = !!prevDate && !isSameDay(turnDate, prevDate)
 
             return (
               <Fragment key={turn.id}>
