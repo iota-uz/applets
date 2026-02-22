@@ -24,7 +24,11 @@ interface CodeBlockProps {
 
 // Module-level singleton dark mode detection — shared across all CodeBlock instances
 const darkModeStore = (() => {
-  let current = typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+  let current =
+    typeof document !== 'undefined' &&
+    (document.documentElement.classList.contains('dark') ||
+      (!document.documentElement.classList.contains('light') &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches))
   const listeners = new Set<() => void>()
 
   function check() {

@@ -76,7 +76,7 @@ const highVolumeTrace: DebugTrace = {
     { callId: 'c1', name: 'vector_search', arguments: '{"query":"..."}', result: '{"hits":250}', durationMs: 1200 },
     { callId: 'c2', name: 'run_sql_query', arguments: '{"sql":"SELECT ..."}', result: '{"rows":1500}', durationMs: 3400 },
     { callId: 'c3', name: 'calculate_metrics', arguments: '{"fn":"aggregate"}', result: '{"revenue":2300000}', durationMs: 200 },
-    { callId: 'c4', name: 'generate_report', arguments: '{"format":"xlsx"}', durationMs: undefined },
+    { callId: 'c4', name: 'generate_report', arguments: '{"format":"xlsx"}' },
     { callId: 'c5', name: 'send_notification', arguments: '{}', error: 'SMTP connection refused', durationMs: 5020 },
   ],
 }
@@ -188,6 +188,7 @@ export const Stress: Story = {
               <DebugPanel
                 trace={{
                   generationMs: undefined,
+                  usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, cachedTokens: 0 },
                   tools: [{ callId: 'p1', name: 'long_running_analysis', arguments: '{"dataset":"full"}' }],
                 }}
               />

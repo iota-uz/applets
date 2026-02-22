@@ -79,6 +79,7 @@ export const Stress: Story = {
               <SystemMessage
                 content="Summary without a timestamp shown."
                 createdAt={now}
+                onCopy={noop}
                 hideTimestamp
               />
             ),

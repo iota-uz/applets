@@ -487,8 +487,8 @@ export default function Sidebar({
     return result
   }, [pinnedSessions, unpinnedSessions])
 
-  const totalSessionCount = sessions.length
-  const overflowCount = totalSessionCount - collapsedIndicators.length
+  const totalSessionCount = filteredSessions.length
+  const overflowCount = Math.max(0, totalSessionCount - collapsedIndicators.length)
 
   // Keyboard navigation for session list (WAI-ARIA listbox pattern)
   const handleSessionListKeyDown = useCallback(

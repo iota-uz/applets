@@ -87,7 +87,15 @@ function extractFilenameFromURL(value: unknown): string | null {
     const candidate = decodeURIComponent(segments[segments.length - 1])
     return readNonEmptyString(candidate)
   } catch {
-    return null
+    // Relative path fallback: extract last segment without URL parsing
+    try {
+      const segments = raw.split('/').filter(Boolean)
+      if (segments.length === 0) return null
+      const candidate = decodeURIComponent(segments[segments.length - 1])
+      return readNonEmptyString(candidate)
+    } catch {
+      return null
+    }
   }
 }
 
@@ -119,6 +127,9 @@ export function toSession(session: RPCSession): Session {
 
 export function toSessionArtifact(artifact: RPCArtifact): SessionArtifact {
   const createdAt = readNonEmptyString(artifact.createdAt) || '1970-01-01T00:00:00.000Z'
+  if (!readNonEmptyString(artifact.createdAt)) {
+    warnMalformedSessionPayload('Artifact missing createdAt; defaulting to epoch', { id: artifact.id })
+  }
 
   return {
     id: readString(artifact.id),

@@ -90,16 +90,24 @@ export const Stress: Story = {
             name: 'Many users (10 — dropdown scrolls)',
             content: <UserFilter users={manyUsers} selectedUser={null} onUserChange={noop} />,
           },
-          {
-            name: 'Long user name (truncation)',
-            content: (
-              <UserFilter
-                users={[makeSessionUser({ id: 'u-long', firstName: 'Alexandria', lastName: 'Bartholomew-Richardson III', initials: 'AB' })]}
-                selectedUser={makeSessionUser({ id: 'u-long', firstName: 'Alexandria', lastName: 'Bartholomew-Richardson III', initials: 'AB' })}
-                onUserChange={noop}
-              />
-            ),
-          },
+          (() => {
+            const longUser = makeSessionUser({
+              id: 'u-long',
+              firstName: 'Alexandria',
+              lastName: 'Bartholomew-Richardson III',
+              initials: 'AB',
+            })
+            return {
+              name: 'Long user name (truncation)',
+              content: (
+                <UserFilter
+                  users={[longUser]}
+                  selectedUser={longUser}
+                  onUserChange={noop}
+                />
+              ),
+            }
+          })(),
         ]}
       />
     )

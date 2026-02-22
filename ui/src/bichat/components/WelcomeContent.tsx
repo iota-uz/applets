@@ -110,7 +110,7 @@ function WelcomeContent({
   const resolvedTitle = title || ''
   const resolvedDescription = description || ''
 
-  const prompts: ExamplePrompt[] = customPrompts
+  const prompts: ExamplePrompt[] = customPrompts?.length
     ? customPrompts.map((p, i) => ({
         category: p.category,
         text: p.text,

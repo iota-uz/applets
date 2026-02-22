@@ -15,21 +15,23 @@ type Story = StoryObj<typeof SessionArtifactPreviewModal>
 const mockArtifact: SessionArtifact = {
   id: 'artifact-1',
   sessionId: 'session-1',
-  type: 'excel',
+  type: 'export',
   name: 'Q4 Revenue Report.xlsx',
   description: 'Quarterly revenue breakdown by region',
   mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   sizeBytes: 184_320,
+  url: 'https://example.com/files/Q4-Revenue-Report.xlsx',
   createdAt: new Date().toISOString(),
 }
 
 const pdfArtifact: SessionArtifact = {
   id: 'artifact-2',
   sessionId: 'session-1',
-  type: 'pdf',
+  type: 'export',
   name: 'Annual Report 2025.pdf',
   mimeType: 'application/pdf',
   sizeBytes: 2_100_000,
+  url: 'https://example.com/files/Annual-Report-2025.pdf',
   createdAt: new Date().toISOString(),
 }
 

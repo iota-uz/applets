@@ -75,7 +75,7 @@ const longText =
 export const Stress: Story = {
   decorators: [
     (Story) => (
-      <div className="w-[42rem]">
+      <div className="w-[42rem] overflow-x-auto">
         <Story />
       </div>
     ),

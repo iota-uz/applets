@@ -1,6 +1,6 @@
 /**
  * Combined story for DataTable internal sub-components:
- * DataTableCell, DataTableHeader, DataTableToolbar, DataTableStatsBar
+ * DataTableCell, DataTableToolbar, DataTableStatsBar
  *
  * These are internal building blocks of InteractiveTableCard. They are
  * showcased here for visual reference and isolated testing.

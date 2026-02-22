@@ -230,12 +230,13 @@ function ImageModal({
     setRotation(0)
   }, [])
 
-  // Double-click to toggle between fit and 2x zoom
+  // Double-click to toggle between fit and 2x zoom (reset rotation when returning to 1x for consistency with resetZoom and '0' key)
   const handleDoubleClick = useCallback(() => {
     const current = scaleRef.current
     if (current !== 1) {
       setScale(1)
       setPosition({ x: 0, y: 0 })
+      setRotation(0)
     } else {
       setScale(2)
     }
@@ -264,12 +265,12 @@ function ImageModal({
     setIsDragging(false)
   }, [])
 
-  // Click background to close (only when not transformed)
+  // Click background to close (only when not zoomed; rotation alone does not block close)
   const handleBackdropClick = useCallback((e: React.MouseEvent) => {
-    if (e.target === e.currentTarget && !isTransformed) {
+    if (e.target === e.currentTarget && !isZoomed) {
       onClose()
     }
-  }, [isTransformed, onClose])
+  }, [isZoomed, onClose])
 
   const previewUrl =
     attachment.preview || createDataUrl(attachment.base64Data, attachment.mimeType)
