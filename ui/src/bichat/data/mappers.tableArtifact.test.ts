@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ConversationTurn, SessionArtifact } from '../types'
+import { MessageRole } from '../types'
 import { attachArtifactsToTurns } from './mappers'
 
 describe('attachArtifactsToTurns table artifacts', () => {
@@ -18,7 +19,7 @@ describe('attachArtifactsToTurns table artifacts', () => {
         },
         assistantTurn: {
           id: assistantId,
-          role: 'assistant',
+          role: MessageRole.Assistant,
           content: 'Here is the table.',
           citations: [],
           artifacts: [],
@@ -74,7 +75,7 @@ describe('attachArtifactsToTurns table artifacts', () => {
         },
         assistantTurn: {
           id: assistantId,
-          role: 'assistant',
+          role: MessageRole.Assistant,
           content: 'Done.',
           citations: [],
           artifacts: [],
