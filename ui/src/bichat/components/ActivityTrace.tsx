@@ -55,6 +55,8 @@ function ActivityTraceInner({
   const hasContent = thinkingContent || activeSteps.length > 0
   if (!hasContent) return null
 
+  const hasActiveSteps = activeSteps.some((s) => s.status === 'active')
+
   return (
     <MotionConfig reducedMotion="user">
       <div
@@ -110,6 +112,15 @@ function ActivityTraceInner({
                 />
               ))}
             </AnimatePresence>
+
+            {/* Typing shimmer while tools are running */}
+            {hasActiveSteps && !thinkingContent && (
+              <div className="flex items-center gap-1.5 pt-0.5" aria-hidden="true">
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce motion-reduce:animate-none [animation-delay:0ms]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce motion-reduce:animate-none [animation-delay:150ms]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce motion-reduce:animate-none [animation-delay:300ms]" />
+              </div>
+            )}
           </div>
         </div>
       </div>

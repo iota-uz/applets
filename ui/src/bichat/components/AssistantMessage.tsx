@@ -23,6 +23,7 @@ import type {
   CodeOutput,
   PendingQuestion,
   RenderTableData,
+  DebugLimits,
 } from '../types'
 import { DebugPanel } from './DebugPanel'
 import { useTranslation } from '../hooks/useTranslation'
@@ -181,6 +182,8 @@ export interface AssistantMessageProps {
   hideTimestamp?: boolean
   /** Show debug panel */
   showDebug?: boolean
+  /** Context/token limits for debug usage ratio */
+  debugLimits?: DebugLimits | null
 }
 
 type AssistantRenderMode =
@@ -207,8 +210,8 @@ const defaultClassNames: Required<AssistantMessageClassNames> = {
   artifacts: 'mb-1 flex flex-wrap gap-2',
   sources: '',
   explanation: 'mt-4 border-t border-gray-100 dark:border-gray-700 pt-4',
-  actions: 'flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150',
-  actionButton: 'cursor-pointer p-2 text-gray-500 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 rounded-md transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50',
+  actions: 'flex items-center gap-1 transition-opacity duration-150 group-focus-within:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100',
+  actionButton: 'cursor-pointer p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 rounded-md transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50',
   timestamp: 'text-xs text-gray-400 dark:text-gray-500 mr-1',
 }
 
@@ -254,6 +257,7 @@ export function AssistantMessage({
   hideActions = false,
   hideTimestamp = false,
   showDebug = false,
+  debugLimits = null,
 }: AssistantMessageProps) {
   const { t } = useTranslation()
   const [explanationExpanded, setExplanationExpanded] = useState(false)
@@ -510,7 +514,7 @@ export function AssistantMessage({
               </div>
             )}
 
-            {showDebug && <DebugPanel trace={turn.debug} />}
+            {showDebug && <DebugPanel trace={turn.debug} debugLimits={debugLimits} />}
           </div>
         )}
 

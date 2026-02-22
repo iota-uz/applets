@@ -28,12 +28,14 @@ import type { DebugTrace, StreamToolPayload } from '../types'
 import { hasMeaningfulUsage, hasDebugTrace } from '../utils/debugTrace'
 import {
   calculateCompletionTokensPerSecond,
+  calculateContextUsagePercent,
   formatDuration,
   formatGenerationDuration,
 } from '../utils/debugMetrics'
 
 export interface DebugPanelProps {
   trace?: DebugTrace
+  debugLimits?: import('../types').DebugLimits | null
 }
 
 // ─── CopyPill ───────────────────────────────────────────────
@@ -232,7 +234,7 @@ function ToolCard({ tool }: { tool: StreamToolPayload }) {
 
 // ─── DebugPanel ─────────────────────────────────────────────
 
-export function DebugPanel({ trace }: DebugPanelProps) {
+export function DebugPanel({ trace, debugLimits = null }: DebugPanelProps) {
   const hasData = !!trace && hasDebugTrace(trace)
   const traceID = trace?.traceId?.trim() || ''
   const traceURL = trace?.traceUrl?.trim() || ''
@@ -248,6 +250,33 @@ export function DebugPanel({ trace }: DebugPanelProps) {
   })()
 
   const tokensPerSecond = calculateCompletionTokensPerSecond(trace?.usage, trace?.generationMs)
+  const effectiveMaxTokens = debugLimits?.effectiveMaxTokens ?? 0
+  const promptTokens = trace?.usage?.promptTokens ?? 0
+  const contextUsagePercent = calculateContextUsagePercent(promptTokens, effectiveMaxTokens)
+  const contextUsagePercentLabel = contextUsagePercent !== null ? contextUsagePercent.toFixed(1) : null
+
+  const formatCompactTokens = (value: number): string => {
+    if (!Number.isFinite(value) || value <= 0) return '0 tokens'
+    return `${new Intl.NumberFormat('en-US', {
+      notation: 'compact',
+      maximumFractionDigits: value >= 100_000 ? 0 : 1,
+    }).format(value)} tokens`
+  }
+
+  const contextPercentValue = contextUsagePercent ?? 0
+  const contextUsageToneClass =
+    contextPercentValue > 75
+      ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+      : contextPercentValue > 50
+      ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+      : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+
+  const contextUsageBarClass =
+    contextPercentValue > 75
+      ? 'bg-gradient-to-r from-red-400 to-red-500'
+      : contextPercentValue > 50
+      ? 'bg-gradient-to-r from-amber-400 to-amber-500'
+      : 'bg-gradient-to-r from-emerald-400 to-emerald-500'
 
   // Build metric list from available data
   const metrics: MetricChipProps[] = []
@@ -366,6 +395,30 @@ export function DebugPanel({ trace }: DebugPanelProps) {
                 {trace.tools.map((tool, idx) => (
                   <ToolCard key={`${tool.callId || tool.name}-${idx}`} tool={tool} />
                 ))}
+              </div>
+            </div>
+          )}
+
+          {contextUsagePercentLabel !== null && (
+            <div className="rounded-lg border border-gray-200/60 dark:border-gray-700/40 bg-gray-50/50 dark:bg-gray-800/40 p-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Context usage
+                </span>
+                <span className="font-mono text-[10px] text-gray-500 dark:text-gray-400 tabular-nums">
+                  {formatCompactTokens(promptTokens)} / {formatCompactTokens(effectiveMaxTokens)}
+                </span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold tabular-nums ${contextUsageToneClass}`}>
+                  {contextUsagePercentLabel}%
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full bg-gray-200/80 dark:bg-gray-700/50 overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-700 ease-out ${contextUsageBarClass}`}
+                  style={{
+                    width: `${Math.min(contextPercentValue, 100)}%`,
+                  }}
+                />
               </div>
             </div>
           )}

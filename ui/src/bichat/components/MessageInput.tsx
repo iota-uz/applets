@@ -530,9 +530,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
         } else if (isSlashMode) {
           setCommandListDismissed(true)
         } else {
-          onMessageChange('')
-          setAttachments([])
-          setError(null)
+          textareaRef.current?.blur()
         }
       }
 

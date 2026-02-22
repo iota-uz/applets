@@ -224,7 +224,7 @@ const SessionItem = memo<SessionItemProps>(
             className={`block w-full text-left px-3 py-2 rounded-lg transition-smooth group relative touch-tap cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 ${
               isActive
                 ? 'bg-primary-50/50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 border-l-4 border-primary-400 dark:border-primary-600'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 border-l-4 border-transparent'
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 border-l-4 border-transparent'
             } ${className}`}
             aria-current={isActive ? 'page' : undefined}
             data-session-item

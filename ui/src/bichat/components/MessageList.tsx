@@ -21,8 +21,10 @@ import { useKeyboardShortcuts, type ShortcutConfig } from '../hooks/useKeyboardS
 import { useTranslation } from '../hooks/useTranslation'
 import { isSameDay } from 'date-fns'
 
+// Eagerly start loading the chunk so it's ready before streaming begins
+const markdownImport = import('./MarkdownRenderer')
 const MarkdownRenderer = lazy(() =>
-  import('./MarkdownRenderer').then((m) => ({ default: m.MarkdownRenderer }))
+  markdownImport.then((m) => ({ default: m.MarkdownRenderer }))
 )
 
 function MessageListSkeleton() {
@@ -240,13 +242,13 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
             )
           })}
           {/* Activity Trace — shown during thinking / tool execution phase */}
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             {showActivityTrace && (
               <motion.div
                 key="activity-trace"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                exit={{ opacity: 0 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               >
                 {(thinkingContent || activeSteps.length > 0) ? (
