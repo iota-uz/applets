@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { ChatDataSource, SendMessageOptions, Session, StreamChunk } from '../types'
+import type { Attachment, ChatDataSource, SendMessageOptions, Session, StreamChunk } from '../types'
 import type { RateLimiter } from '../utils/RateLimiter'
 import { ChatMachine } from './ChatMachine'
 
@@ -65,9 +65,9 @@ function createDataSource(sendOptions: Array<SendMessageOptions | undefined>): C
     sendMessage: async function* (
       _sessionId: string,
       _content: string,
-      _attachments,
-      _signal,
-      options
+      _attachments: Attachment[] = [],
+      _signal?: AbortSignal,
+      options?: SendMessageOptions
     ): AsyncGenerator<StreamChunk> {
       sendOptions.push(options)
       yield { type: 'done', sessionId: SESSION_ID }
