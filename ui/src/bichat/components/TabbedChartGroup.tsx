@@ -31,8 +31,16 @@ export const TabbedChartGroup = memo(function TabbedChartGroup({
   const [activeTabId, setActiveTabId] = useState('chart-0')
   const [isFullscreen, setIsFullscreen] = useState(false)
   const containerRef = useRef<HTMLElement>(null)
+  const fullscreenTriggerRef = useRef<HTMLElement | null>(null)
 
-  const toggleFullscreen = useCallback(() => setIsFullscreen((v) => !v), [])
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen((v) => {
+      if (!v) {
+        fullscreenTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+      }
+      return !v
+    })
+  }, [])
 
   // Escape key + focus management for fullscreen
   useEffect(() => {
@@ -46,6 +54,15 @@ export const TabbedChartGroup = memo(function TabbedChartGroup({
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
+  }, [isFullscreen])
+
+  // Restore focus to trigger when exiting fullscreen
+  useEffect(() => {
+    if (!isFullscreen && fullscreenTriggerRef.current) {
+      const el = fullscreenTriggerRef.current
+      fullscreenTriggerRef.current = null
+      if (typeof el.focus === 'function') el.focus()
+    }
   }, [isFullscreen])
 
   const tabs = useMemo(

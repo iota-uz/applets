@@ -361,6 +361,7 @@ export function DebugPanel({ trace, debugLimits = null }: DebugPanelProps) {
                   href={safeTraceURL}
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label="View full trace in Langfuse (opens in new tab)"
                   className="inline-flex items-center gap-1.5 text-[11px] font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                 >
                   <ArrowSquareOut size={12} weight="bold" />

@@ -21,6 +21,8 @@ export function useStreaming(options: UseStreamingOptions = {}) {
   optionsRef.current = options
 
   const core = useCoreStreaming()
+  const coreRef = useRef(core)
+  coreRef.current = core
 
   const processStream = useCallback(
     async (stream: AsyncGenerator<StreamChunk>, signal?: AbortSignal) => {
@@ -28,7 +30,7 @@ export function useStreaming(options: UseStreamingOptions = {}) {
       setContent('')
 
       try {
-        await core.processStream<StreamChunk>(
+        await coreRef.current.processStream<StreamChunk>(
           stream,
           (chunk) => {
             if ((chunk.type === 'chunk' || chunk.type === 'content') && chunk.content) {
@@ -54,18 +56,18 @@ export function useStreaming(options: UseStreamingOptions = {}) {
         optionsRef.current.onError?.(errorObj.message)
       }
     },
-    [core]
+    []
   )
 
   const cancel = useCallback(() => {
-    core.cancel()
-  }, [core])
+    coreRef.current.cancel()
+  }, [])
 
   const reset = useCallback(() => {
     setContent('')
     setError(null)
-    core.reset()
-  }, [core])
+    coreRef.current.reset()
+  }, [])
 
   return {
     content,

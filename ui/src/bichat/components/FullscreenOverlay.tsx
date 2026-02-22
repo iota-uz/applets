@@ -50,7 +50,6 @@ export function FullscreenOverlay({ title, onClose, closeLabel, children }: Full
         tabIndex={-1}
         className="absolute inset-4 flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl outline-none dark:border-gray-700 dark:bg-gray-900"
       >
-        <span className="sr-only">{title}</span>
         <button
           type="button"
           onClick={onClose}

@@ -183,7 +183,10 @@ export function ChartCard({ chartData, onExportError, host }: ChartCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
 
   const { chartType, title, series, labels, colors, height = 350 } = chartData
-  const richOptions = isRecord(chartData.options) ? cloneDeep(chartData.options) : null
+  const richOptions = useMemo(
+    () => (isRecord(chartData.options) ? cloneDeep(chartData.options) : null),
+    [chartData.options]
+  )
   const chartLabels = useMemo(
     () => (labels ?? []).filter((label): label is string => label !== null),
     [labels]
@@ -215,9 +218,9 @@ export function ChartCard({ chartData, onExportError, host }: ChartCardProps) {
           .filter((item): item is { name?: unknown; data: unknown[] } => isRecord(item) && Array.isArray(item.data))
           .map((item, idx) => ({
             name: typeof item.name === 'string' && item.name.trim() ? item.name : `Series ${idx + 1}`,
-            data: item.data.map((v) => (typeof v === 'number' && Number.isFinite(v) ? v : null)).filter((v): v is number => v !== null),
+            data: item.data.map((v) => (typeof v === 'number' && Number.isFinite(v) ? v : null)),
           }))
-          .filter((item) => item.data.length > 0)
+          .filter((item) => item.data.some((v) => v !== null))
         if (mapped.length > 0) return mapped
       }
     }

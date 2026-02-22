@@ -658,16 +658,37 @@ function toDownloadArtifact(artifact: SessionArtifact): DownloadArtifact | null 
 // Tool-call extraction helpers
 // ---------------------------------------------------------------------------
 
+function cloneChartData(chart: import('../types').ChartData): import('../types').ChartData {
+  return {
+    ...chart,
+    series: chart.series?.map((s) => ({ ...s, data: [...(s.data ?? [])] })) ?? [],
+    labels: chart.labels ? [...chart.labels] : undefined,
+    colors: chart.colors ? [...chart.colors] : undefined,
+    options: chart.options && typeof chart.options === 'object' && !Array.isArray(chart.options)
+      ? JSON.parse(JSON.stringify(chart.options))
+      : chart.options,
+  }
+}
+
 function extractChartsFromToolCalls(toolCalls?: Array<{ name: string; result?: string }>): import('../types').ChartData[] {
   if (!toolCalls) return []
   const charts: import('../types').ChartData[] = []
   for (const tc of toolCalls) {
     if (tc.name === 'draw_chart' && tc.result) {
       const parsed = parseChartDataFromJsonString(tc.result)
-      if (parsed) charts.push(parsed)
+      if (parsed) charts.push(cloneChartData(parsed))
     }
   }
   return charts
+}
+
+function cloneRenderTableData(table: RenderTableData): RenderTableData {
+  return {
+    ...table,
+    columns: [...(table.columns ?? [])],
+    headers: [...(table.headers ?? [])],
+    rows: table.rows?.map((row) => [...row]) ?? [],
+  }
 }
 
 function extractRenderTablesFromToolCalls(toolCalls?: Array<{ id: string; name: string; result?: string }>): RenderTableData[] {
@@ -678,7 +699,7 @@ function extractRenderTablesFromToolCalls(toolCalls?: Array<{ id: string; name: 
     if (tc.name !== 'render_table' || !tc.result) continue
     const parsed = parseRenderTableDataFromJsonString(tc.result, tc.id)
     if (parsed) {
-      tables.push(parsed)
+      tables.push(cloneRenderTableData(parsed))
     }
   }
 
@@ -737,11 +758,15 @@ function normalizeAssistantTurn(turn: Partial<AssistantTurn> & { id: string; con
     }
   }
 
+  const chartsRaw = turn.charts?.length ? turn.charts : extractChartsFromToolCalls(turn.toolCalls)
+  const charts = chartsRaw?.map(cloneChartData) ?? []
+  const renderTablesCloned = renderTables.map(cloneRenderTableData)
+
   return {
     ...turn,
     role: (turn.role as MessageRole) || MessageRole.Assistant,
-    charts: turn.charts?.length ? turn.charts : extractChartsFromToolCalls(turn.toolCalls),
-    renderTables,
+    charts: charts.length ? charts : undefined,
+    renderTables: renderTablesCloned,
     citations: turn.citations || [],
     artifacts: merged,
     codeOutputs: turn.codeOutputs || [],
@@ -852,7 +877,7 @@ export function attachArtifactsToTurns(
     const chart = parseChartDataFromSpec(spec, raw.name)
     if (chart) {
       if (!assistantTurn.charts) assistantTurn.charts = []
-      assistantTurn.charts.push(chart)
+      assistantTurn.charts.push(cloneChartData(chart))
     }
   }
 
@@ -878,7 +903,7 @@ export function attachArtifactsToTurns(
     const dedupeKey = (t: RenderTableData) => `${t.query}|${t.columns.join(',')}`
     const key = dedupeKey(tableData)
     if (existing.some((t) => dedupeKey(t) === key)) continue
-    assistantTurn.renderTables = [...existing, tableData]
+    assistantTurn.renderTables = [...existing, cloneRenderTableData(tableData)]
   }
 
   return nextTurns

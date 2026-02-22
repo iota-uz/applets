@@ -173,8 +173,8 @@ export async function stopStream(
   deps: Pick<MessageTransportDeps, 'baseUrl' | 'streamEndpoint' | 'createHeaders'>,
   sessionId: string
 ): Promise<void> {
-  const base = (deps.baseUrl ?? '').replace(/\/+$/, '')
-  const streamPath = (deps.streamEndpoint ?? '/stream').replace(/\/$/, '')
+  const base = deps.baseUrl.replace(/\/+$/, '')
+  const streamPath = deps.streamEndpoint.replace(/\/$/, '')
   const stopUrl = `${base}${streamPath}/stop`
   const response = await fetch(stopUrl, {
     method: 'POST',
@@ -200,8 +200,8 @@ export async function getStreamStatus(
   deps: StreamStatusResumeDeps,
   sessionId: string
 ): Promise<StreamStatus | null> {
-  const base = (deps.baseUrl ?? '').replace(/\/+$/, '')
-  const streamPath = (deps.streamEndpoint ?? '/stream').replace(/\/$/, '')
+  const base = deps.baseUrl.replace(/\/+$/, '')
+  const streamPath = deps.streamEndpoint.replace(/\/$/, '')
   const url = `${base}${streamPath}/status?sessionId=${encodeURIComponent(sessionId)}`
   const response = await fetch(url, {
     method: 'GET',
@@ -223,8 +223,8 @@ export async function resumeStream(
   onChunk: (chunk: StreamChunk) => void,
   signal?: AbortSignal
 ): Promise<void> {
-  const base = (deps.baseUrl ?? '').replace(/\/+$/, '')
-  const streamPath = (deps.streamEndpoint ?? '/stream').replace(/\/$/, '')
+  const base = deps.baseUrl.replace(/\/+$/, '')
+  const streamPath = deps.streamEndpoint.replace(/\/$/, '')
   const url = `${base}${streamPath}/resume`
   const response = await fetch(url, {
     method: 'POST',

@@ -199,6 +199,7 @@ export class HttpDataSource implements ChatDataSource {
   // -------------------------------------------------------------------------
 
   async stopGeneration(sessionId: string): Promise<void> {
+    this.cancelStream()
     await Messages.stopStream(
       {
         baseUrl: this.config.baseUrl,
