@@ -112,6 +112,7 @@ export interface MessagingSnapshot {
   thinkingContent: string
   activeSteps: ActivityStep[]
   showActivityTrace: boolean
+  showTypingIndicator: boolean
   sendMessage: (content: string, attachments?: Attachment[]) => Promise<void>
   handleRegenerate?: (turnId: string) => Promise<void>
   handleEdit?: (turnId: string, newContent: string) => Promise<void>

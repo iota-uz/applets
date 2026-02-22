@@ -382,6 +382,9 @@ export interface DebugTrace {
   tools: StreamToolPayload[]
   traceId?: string
   traceUrl?: string
+  sessionId?: string
+  thinking?: string
+  observationReason?: string
 }
 
 export interface DebugLimits {
@@ -561,6 +564,7 @@ export interface ChatMessagingStateValue {
   /** Ephemeral activity steps (tools, thinking, delegations), cleared on done. */
   activeSteps: ActivityStep[]
   showActivityTrace: boolean
+  showTypingIndicator: boolean
   sendMessage: (content: string, attachments?: Attachment[]) => Promise<void>
   handleRegenerate?: (turnId: string) => Promise<void>
   handleEdit?: (turnId: string, newContent: string) => Promise<void>
