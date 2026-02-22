@@ -56,10 +56,10 @@ export interface MessageInputProps {
 interface DebugStatsPanelProps {
   debugSessionUsage?: SessionDebugUsage
   debugLimits?: DebugLimits | null
-  t: (key: string, params?: Record<string, string | number | boolean>) => string
 }
 
-function DebugStatsPanel({ debugSessionUsage, debugLimits, t }: DebugStatsPanelProps) {
+/** Debug stats are English-only (developer-facing) — no i18n. */
+function DebugStatsPanel({ debugSessionUsage, debugLimits }: DebugStatsPanelProps) {
   const formatTokens = (value: number): string => new Intl.NumberFormat().format(value)
   const latestPromptTokens = debugSessionUsage?.latestPromptTokens ?? 0
   const sessionTotalTokens = debugSessionUsage?.totalTokens ?? 0
@@ -73,81 +73,57 @@ function DebugStatsPanel({ debugSessionUsage, debugLimits, t }: DebugStatsPanelP
   const contextPercent = contextPercentValue !== null ? contextPercentValue.toFixed(1) : null
 
   return (
-    <div className="mb-3 space-y-2 text-xs">
-      {/* Debug badge with animated pulse indicator */}
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 rounded-full font-medium text-[11px]">
+    <div className="mb-2 space-y-1.5 text-xs">
+      {/* Debug badge */}
+      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 rounded-full font-medium text-[10px]">
         <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
           <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
         </span>
-        <Bug size={12} />
-        {t('BiChat.Slash.DebugBadge')}
+        <Bug size={10} />
+        Debug
       </span>
 
       {/* Stats container */}
-      <div className="rounded-xl border border-gray-200/60 dark:border-gray-700/40 bg-gray-50/50 dark:bg-gray-800/30 p-3 space-y-3">
+      <div className="rounded-lg border border-gray-200/60 dark:border-gray-700/40 bg-gray-50/50 dark:bg-gray-800/30 px-3 py-2 space-y-2">
         {hasUsage ? (
-          <div className="grid grid-cols-3 gap-1.5">
-            <div className="flex flex-col items-center gap-1 py-2 rounded-lg bg-white dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/30">
-              <div className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500">
-                <ArrowUp size={10} weight="bold" className="text-blue-500 dark:text-blue-400" />
-                {t('BiChat.Slash.DebugPromptTokens')}
-              </div>
-              <span className="font-mono font-semibold text-xs text-gray-900 dark:text-gray-100 tabular-nums">
-                {formatTokens(sessionPromptTokens)}
-              </span>
-            </div>
-            <div className="flex flex-col items-center gap-1 py-2 rounded-lg bg-white dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/30">
-              <div className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500">
-                <ArrowDown size={10} weight="bold" className="text-indigo-500 dark:text-indigo-400" />
-                {t('BiChat.Slash.DebugCompletionTokens')}
-              </div>
-              <span className="font-mono font-semibold text-xs text-gray-900 dark:text-gray-100 tabular-nums">
-                {formatTokens(sessionCompletionTokens)}
-              </span>
-            </div>
-            <div className="flex flex-col items-center gap-1 py-2 rounded-lg bg-white dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/30">
-              <div className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500">
-                <Stack size={10} weight="bold" className="text-violet-500 dark:text-violet-400" />
-                {t('BiChat.Slash.DebugTotalTokens')}
-              </div>
-              <span className="font-mono font-semibold text-xs text-gray-900 dark:text-gray-100 tabular-nums">
-                {formatTokens(sessionTotalTokens)}
-              </span>
-            </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] tabular-nums">
+            <span className="inline-flex items-center gap-1 text-gray-500 dark:text-gray-400">
+              <ArrowUp size={10} weight="bold" className="text-blue-500 dark:text-blue-400" />
+              <span className="font-mono font-medium text-gray-700 dark:text-gray-300">{formatTokens(sessionPromptTokens)}</span>
+              prompt
+            </span>
+            <span className="inline-flex items-center gap-1 text-gray-500 dark:text-gray-400">
+              <ArrowDown size={10} weight="bold" className="text-indigo-500 dark:text-indigo-400" />
+              <span className="font-mono font-medium text-gray-700 dark:text-gray-300">{formatTokens(sessionCompletionTokens)}</span>
+              completion
+            </span>
+            <span className="inline-flex items-center gap-1 text-gray-500 dark:text-gray-400">
+              <Stack size={10} weight="bold" className="text-violet-500 dark:text-violet-400" />
+              <span className="font-mono font-medium text-gray-700 dark:text-gray-300">{formatTokens(sessionTotalTokens)}</span>
+              total
+            </span>
           </div>
         ) : (
-          <p className="text-[11px] text-gray-400 dark:text-gray-500 text-center py-1">
-            {t('BiChat.Slash.DebugSessionUsageUnavailable')}
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 text-center py-0.5">
+            Session usage unavailable
           </p>
         )}
 
         {debugLimits && (
-          <div className="grid grid-cols-3 gap-1.5">
-            <div className="flex flex-col gap-1 py-2 px-2 rounded-lg bg-white dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/30">
-              <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                {t('BiChat.Slash.DebugPolicyMaxContextWindow')}
-              </span>
-              <span className="font-mono font-semibold text-xs text-gray-900 dark:text-gray-100 tabular-nums">
-                {formatTokens(policyMaxTokens)}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1 py-2 px-2 rounded-lg bg-white dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/30">
-              <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                {t('BiChat.Slash.DebugModelMaxContextWindow')}
-              </span>
-              <span className="font-mono font-semibold text-xs text-gray-900 dark:text-gray-100 tabular-nums">
-                {formatTokens(modelMaxTokens)}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1 py-2 px-2 rounded-lg bg-white dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/30">
-              <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                {t('BiChat.Slash.DebugEffectiveContextWindow')}
-              </span>
-              <span className="font-mono font-semibold text-xs text-gray-900 dark:text-gray-100 tabular-nums">
-                {formatTokens(effectiveMaxTokens)}
-              </span>
-            </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] tabular-nums text-gray-500 dark:text-gray-400">
+            <span>
+              Policy max{' '}
+              <span className="font-mono font-medium text-gray-700 dark:text-gray-300">{formatTokens(policyMaxTokens)}</span>
+            </span>
+            <span>
+              Model max{' '}
+              <span className="font-mono font-medium text-gray-700 dark:text-gray-300">{formatTokens(modelMaxTokens)}</span>
+            </span>
+            <span>
+              Effective{' '}
+              <span className="font-mono font-medium text-gray-700 dark:text-gray-300">{formatTokens(effectiveMaxTokens)}</span>
+            </span>
           </div>
         )}
 
@@ -155,7 +131,7 @@ function DebugStatsPanel({ debugSessionUsage, debugLimits, t }: DebugStatsPanelP
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                {t('BiChat.Slash.DebugContextUsage')}
+                Context usage
               </span>
               <div className="flex items-center gap-2">
                 <span className="font-mono text-[10px] text-gray-400 dark:text-gray-500 tabular-nums">
@@ -627,7 +603,6 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
             <DebugStatsPanel
               debugSessionUsage={debugSessionUsage}
               debugLimits={debugLimits}
-              t={t}
             />
           )}
 

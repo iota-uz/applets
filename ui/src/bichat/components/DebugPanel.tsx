@@ -1,7 +1,9 @@
 /**
  * DebugPanel Component
- * Beautiful debug trace viewer with metric cards, expandable tool calls,
+ * Debug trace viewer with metric chips, expandable tool calls,
  * and terminal-inspired code blocks.
+ *
+ * Debug UI is English-only (developer-facing) — no i18n.
  */
 
 import { useState, useRef, useEffect, type ReactNode } from 'react'
@@ -20,6 +22,7 @@ import {
   ArrowDown,
   Stack,
   Database,
+  ArrowSquareOut,
 } from '@phosphor-icons/react'
 import type { DebugTrace, StreamToolPayload } from '../types'
 import { hasMeaningfulUsage, hasDebugTrace } from '../utils/debugTrace'
@@ -28,7 +31,6 @@ import {
   formatDuration,
   formatGenerationDuration,
 } from '../utils/debugMetrics'
-import { useTranslation } from '../hooks/useTranslation'
 
 export interface DebugPanelProps {
   trace?: DebugTrace
@@ -36,7 +38,7 @@ export interface DebugPanelProps {
 
 // ─── CopyPill ───────────────────────────────────────────────
 
-function CopyPill({ text, label, copiedLabel }: { text: string; label: string; copiedLabel: string }) {
+function CopyPill({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
   const timerRef = useRef<number | null>(null)
 
@@ -71,51 +73,26 @@ function CopyPill({ text, label, copiedLabel }: { text: string; label: string; c
       ].join(' ')}
     >
       {copied ? <Check size={10} weight="bold" /> : <Copy size={10} />}
-      <span>{copied ? copiedLabel : label}</span>
+      <span>{copied ? 'Copied!' : 'Copy'}</span>
     </button>
   )
 }
 
-// ─── MetricCard ─────────────────────────────────────────────
+// ─── MetricChip ─────────────────────────────────────────────
 
-interface MetricCardProps {
+interface MetricChipProps {
   icon: ReactNode
   value: string
   label: string
-  accentBorder: string
-  accentBg: string
 }
 
-function MetricCard({ icon, value, label, accentBorder, accentBg }: MetricCardProps) {
+function MetricChip({ icon, value, label }: MetricChipProps) {
   return (
-    <div
-      className={[
-        'flex items-center gap-2.5 p-2.5 rounded-lg',
-        'border border-gray-200/60 dark:border-gray-700/40',
-        'border-l-2', accentBorder,
-        'bg-gray-50/40 dark:bg-gray-800/30',
-        'hover:bg-white dark:hover:bg-gray-800/60',
-        'hover:shadow-[0_1px_3px_rgba(0,0,0,0.04)] dark:hover:shadow-[0_1px_3px_rgba(0,0,0,0.2)]',
-        'transition-all duration-150',
-      ].join(' ')}
-    >
-      <div
-        className={[
-          'flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-lg',
-          accentBg,
-        ].join(' ')}
-      >
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="font-mono font-semibold text-sm text-gray-900 dark:text-gray-50 tabular-nums leading-none">
-          {value}
-        </div>
-        <div className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 mt-1 leading-none">
-          {label}
-        </div>
-      </div>
-    </div>
+    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-800/40 text-[11px] tabular-nums">
+      {icon}
+      <span className="font-mono font-medium text-gray-700 dark:text-gray-300">{value}</span>
+      <span className="text-gray-400 dark:text-gray-500">{label}</span>
+    </span>
   )
 }
 
@@ -123,7 +100,6 @@ function MetricCard({ icon, value, label, accentBorder, accentBg }: MetricCardPr
 
 function ToolCard({ tool }: { tool: StreamToolPayload }) {
   const [expanded, setExpanded] = useState(false)
-  const { t } = useTranslation()
 
   const hasResult = !!tool.result && !tool.error
   const hasError = !!tool.error
@@ -209,13 +185,9 @@ function ToolCard({ tool }: { tool: StreamToolPayload }) {
               <div className="rounded-lg bg-[#1a1b26] dark:bg-gray-950 overflow-hidden ring-1 ring-gray-800/10 dark:ring-white/5">
                 <div className="flex items-center justify-between px-3 py-1.5 bg-[#1e1f2e] dark:bg-gray-900/80 border-b border-white/5">
                   <span className="text-[10px] uppercase tracking-wider font-medium text-gray-500">
-                    {t('BiChat.Slash.DebugArguments')}
+                    Arguments
                   </span>
-                  <CopyPill
-                    text={tool.arguments}
-                    label={t('BiChat.Slash.DebugCopyTrace')}
-                    copiedLabel={t('BiChat.Slash.DebugCopied')}
-                  />
+                  <CopyPill text={tool.arguments} />
                 </div>
                 <pre className="p-3 text-[11px] font-mono text-gray-300 overflow-x-auto max-h-60 overflow-y-auto whitespace-pre-wrap break-all leading-relaxed">
                   {tool.arguments}
@@ -228,13 +200,9 @@ function ToolCard({ tool }: { tool: StreamToolPayload }) {
               <div className="rounded-lg bg-[#1a1b26] dark:bg-gray-950 overflow-hidden ring-1 ring-gray-800/10 dark:ring-white/5">
                 <div className="flex items-center justify-between px-3 py-1.5 bg-[#1e1f2e] dark:bg-gray-900/80 border-b border-white/5">
                   <span className="text-[10px] uppercase tracking-wider font-medium text-gray-500">
-                    {t('BiChat.Slash.DebugResult')}
+                    Result
                   </span>
-                  <CopyPill
-                    text={tool.result}
-                    label={t('BiChat.Slash.DebugCopyTrace')}
-                    copiedLabel={t('BiChat.Slash.DebugCopied')}
-                  />
+                  <CopyPill text={tool.result} />
                 </div>
                 <pre className="p-3 text-[11px] font-mono text-gray-300 overflow-x-auto max-h-60 overflow-y-auto whitespace-pre-wrap break-all leading-relaxed">
                   {tool.result}
@@ -247,7 +215,7 @@ function ToolCard({ tool }: { tool: StreamToolPayload }) {
               <div className="rounded-lg bg-red-950/80 dark:bg-red-950/40 overflow-hidden ring-1 ring-red-800/20">
                 <div className="px-3 py-1.5 border-b border-red-800/20">
                   <span className="text-[10px] uppercase tracking-wider font-medium text-red-400">
-                    {t('BiChat.Slash.DebugError')}
+                    Error
                   </span>
                 </div>
                 <pre className="p-3 text-[11px] font-mono text-red-300 overflow-x-auto whitespace-pre-wrap break-all leading-relaxed">
@@ -265,64 +233,53 @@ function ToolCard({ tool }: { tool: StreamToolPayload }) {
 // ─── DebugPanel ─────────────────────────────────────────────
 
 export function DebugPanel({ trace }: DebugPanelProps) {
-  const { t } = useTranslation()
   const hasData = !!trace && hasDebugTrace(trace)
+  const traceID = trace?.traceId?.trim() || ''
+  const traceURL = trace?.traceUrl?.trim() || ''
 
   const tokensPerSecond = calculateCompletionTokensPerSecond(trace?.usage, trace?.generationMs)
 
   // Build metric list from available data
-  const metrics: MetricCardProps[] = []
+  const metrics: MetricChipProps[] = []
 
   if (hasData && trace) {
     if (trace.generationMs !== undefined) {
-        metrics.push({
-          icon: <Timer size={14} weight="duotone" className="text-amber-600 dark:text-amber-400" />,
-          value: formatGenerationDuration(trace.generationMs),
-          label: t('BiChat.Slash.DebugGeneration'),
-          accentBorder: 'border-l-amber-400 dark:border-l-amber-500',
-          accentBg: 'bg-amber-50 dark:bg-amber-950/30',
+      metrics.push({
+        icon: <Timer size={12} weight="duotone" className="text-amber-500 dark:text-amber-400" />,
+        value: formatGenerationDuration(trace.generationMs),
+        label: 'generation',
       })
     }
     if (tokensPerSecond !== null) {
       metrics.push({
-        icon: <Lightning size={14} weight="fill" className="text-orange-500 dark:text-orange-400" />,
+        icon: <Lightning size={12} weight="fill" className="text-orange-500 dark:text-orange-400" />,
         value: `${tokensPerSecond.toFixed(1)}/s`,
-        label: t('BiChat.Slash.DebugTokensPerSecond'),
-        accentBorder: 'border-l-orange-400 dark:border-l-orange-500',
-        accentBg: 'bg-orange-50 dark:bg-orange-950/30',
+        label: 'tok/s',
       })
     }
     if (hasMeaningfulUsage(trace.usage) && trace.usage) {
       metrics.push(
         {
-          icon: <Stack size={14} weight="duotone" className="text-violet-600 dark:text-violet-400" />,
+          icon: <Stack size={12} weight="duotone" className="text-violet-500 dark:text-violet-400" />,
           value: trace.usage.totalTokens.toLocaleString(),
-          label: t('BiChat.Slash.DebugTotalTokens'),
-          accentBorder: 'border-l-violet-400 dark:border-l-violet-500',
-          accentBg: 'bg-violet-50 dark:bg-violet-950/30',
+          label: 'total',
         },
         {
-          icon: <ArrowUp size={14} weight="bold" className="text-blue-600 dark:text-blue-400" />,
+          icon: <ArrowUp size={12} weight="bold" className="text-blue-500 dark:text-blue-400" />,
           value: trace.usage.promptTokens.toLocaleString(),
-          label: t('BiChat.Slash.DebugPromptTokens'),
-          accentBorder: 'border-l-blue-400 dark:border-l-blue-500',
-          accentBg: 'bg-blue-50 dark:bg-blue-950/30',
+          label: 'prompt',
         },
         {
-          icon: <ArrowDown size={14} weight="bold" className="text-indigo-600 dark:text-indigo-400" />,
+          icon: <ArrowDown size={12} weight="bold" className="text-indigo-500 dark:text-indigo-400" />,
           value: trace.usage.completionTokens.toLocaleString(),
-          label: t('BiChat.Slash.DebugCompletionTokens'),
-          accentBorder: 'border-l-indigo-400 dark:border-l-indigo-500',
-          accentBg: 'bg-indigo-50 dark:bg-indigo-950/30',
+          label: 'completion',
         },
       )
       if (trace.usage.cachedTokens !== undefined && trace.usage.cachedTokens > 0) {
         metrics.push({
-          icon: <Database size={14} weight="duotone" className="text-pink-600 dark:text-pink-400" />,
+          icon: <Database size={12} weight="duotone" className="text-pink-500 dark:text-pink-400" />,
           value: trace.usage.cachedTokens.toLocaleString(),
-          label: t('BiChat.Slash.DebugCachedTokens'),
-          accentBorder: 'border-l-pink-400 dark:border-l-pink-500',
-          accentBg: 'bg-pink-50 dark:bg-pink-950/30',
+          label: 'cached',
         })
       }
     }
@@ -337,25 +294,48 @@ export function DebugPanel({ trace }: DebugPanelProps) {
             <Bug size={14} weight="duotone" className="text-gray-500 dark:text-gray-400" />
           </div>
           <h3 className="text-[11px] uppercase tracking-widest font-semibold text-gray-400 dark:text-gray-500">
-            {t('BiChat.Slash.DebugPanelTitle')}
+            Debug
           </h3>
         </div>
         {hasData && trace && (
-          <CopyPill
-            text={JSON.stringify(trace, null, 2)}
-            label={t('BiChat.Slash.DebugCopyTrace')}
-            copiedLabel={t('BiChat.Slash.DebugCopied')}
-          />
+          <CopyPill text={JSON.stringify(trace, null, 2)} />
         )}
       </div>
 
       {hasData && trace ? (
         <div className="space-y-4">
-          {/* Metric cards */}
+          {(traceID || traceURL) && (
+            <div className="rounded-lg border border-gray-200/60 dark:border-gray-700/40 bg-gray-50/50 dark:bg-gray-800/40 p-3 space-y-2">
+              {traceID && (
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Trace ID</div>
+                    <div className="font-mono text-[11px] text-gray-800 dark:text-gray-200 break-all">
+                      {traceID}
+                    </div>
+                  </div>
+                  <CopyPill text={traceID} />
+                </div>
+              )}
+              {traceURL && (
+                <a
+                  href={traceURL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-[11px] font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  <ArrowSquareOut size={12} weight="bold" />
+                  <span>Open in Langfuse</span>
+                </a>
+              )}
+            </div>
+          )}
+
+          {/* Metric chips */}
           {metrics.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {metrics.map((m, i) => (
-                <MetricCard key={i} {...m} />
+                <MetricChip key={i} {...m} />
               ))}
             </div>
           )}
@@ -366,7 +346,7 @@ export function DebugPanel({ trace }: DebugPanelProps) {
               <div className="flex items-center gap-2 mb-2.5">
                 <Wrench size={13} weight="duotone" className="text-gray-400 dark:text-gray-500" />
                 <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                  {t('BiChat.Slash.DebugToolCalls')}
+                  Tool Calls
                 </span>
                 <span className="px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-[10px] font-mono font-medium text-gray-500 dark:text-gray-400 tabular-nums">
                   {trace.tools.length}
@@ -382,7 +362,7 @@ export function DebugPanel({ trace }: DebugPanelProps) {
         </div>
       ) : (
         <p className="text-xs text-gray-400 dark:text-gray-500 italic">
-          {t('BiChat.Slash.DebugUnavailable')}
+          Debug info unavailable
         </p>
       )}
     </div>
