@@ -65,6 +65,8 @@ type Listener = () => void
 
 const MAX_QUEUE_SIZE = 5
 const RUN_MARKER_PREFIX = 'bichat.run.'
+/** Interval (ms) for polling stream status when another tab has an active generation. */
+const PASSIVE_POLL_INTERVAL_MS = 2000
 
 function getRunMarkerKey(sessionId: string): string {
   return `${RUN_MARKER_PREFIX}${sessionId}`
@@ -257,10 +259,7 @@ export class ChatMachine {
   dispose(): void {
     this.disposed = true
     this.fetchCancelled = true
-    if (this.passivePollingId) {
-      clearInterval(this.passivePollingId)
-      this.passivePollingId = null
-    }
+    this._stopPassivePolling()
     this.abortController?.abort()
     this.sessionListeners.clear()
     this.messagingListeners.clear()
@@ -536,18 +535,23 @@ export class ChatMachine {
       })
   }
 
+  private _stopPassivePolling(): void {
+    if (this.passivePollingId) {
+      clearInterval(this.passivePollingId)
+      this.passivePollingId = null
+    }
+  }
+
   private _startPassivePolling(sessionId: string): void {
-    if (this.passivePollingId) clearInterval(this.passivePollingId)
+    this._stopPassivePolling()
     this.passivePollingId = setInterval(() => {
       if (this.disposed || this.state.session.currentSessionId !== sessionId) {
-        if (this.passivePollingId) clearInterval(this.passivePollingId)
-        this.passivePollingId = null
+        this._stopPassivePolling()
         return
       }
       this.dataSource.getStreamStatus?.(sessionId).then((status) => {
         if (!status?.active) {
-          if (this.passivePollingId) clearInterval(this.passivePollingId)
-          this.passivePollingId = null
+          this._stopPassivePolling()
           this._updateMessaging({ generationInProgress: false })
           this.dataSource.fetchSession(sessionId).then((result) => {
             if (this.state.session.currentSessionId === sessionId && result) {
@@ -556,7 +560,7 @@ export class ChatMachine {
           })
         }
       })
-    }, 2000)
+    }, PASSIVE_POLL_INTERVAL_MS)
   }
 
   private async _runResumeStream(sessionId: string, runId: string): Promise<void> {
