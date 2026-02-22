@@ -4,7 +4,7 @@
  * Router-agnostic: uses onSelect callback instead of Link
  */
 
-import React, { useRef, memo, useState, useEffect } from 'react'
+import React, { useRef, memo, useState, useEffect, useMemo } from 'react'
 import { motion, useMotionValue, useTransform, type PanInfo } from 'framer-motion'
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import { DotsThree, Check, Bookmark, PencilSimple, Archive, ArrowsClockwise, ArrowUUpLeft, Trash } from '@phosphor-icons/react'
@@ -14,6 +14,7 @@ import type { Session } from '../types'
 import { useLongPress } from '../hooks/useLongPress'
 import { TouchContextMenu, type ContextMenuItem } from './TouchContextMenu'
 import { useTranslation } from '../hooks/useTranslation'
+import { formatRelativeTime } from '../utils/dateFormatting'
 
 interface SessionItemProps {
   session: Session
@@ -81,6 +82,7 @@ const SessionItem = memo<SessionItemProps>(
 
     // Generate title from session (use existing title or show generating state)
     const displayTitle = isTitleGenerating ? t('BiChat.Common.Generating') : (session.title ?? t('BiChat.Common.Untitled'))
+    const lastActivity = formatRelativeTime(session.updatedAt, t)
 
     // Long press handlers for touch devices
     const { handlers: longPressHandlers } = useLongPress({
@@ -112,55 +114,59 @@ const SessionItem = memo<SessionItemProps>(
       return () => element.removeEventListener('contextmenu', handleContextMenu)
     }, [itemRef])
 
-    const contextMenuItems: ContextMenuItem[] = mode === 'archived'
-      ? [
-        ...(onRestore ? [{
-          id: 'restore',
-          label: t('BiChat.Archived.RestoreButton'),
-          icon: <ArrowUUpLeft size={20} />,
-          onClick: () => onRestore(),
-        }] : []),
-        ...(onRename ? [{
-          id: 'rename',
-          label: t('BiChat.Sidebar.RenameChat'),
-          icon: <PencilSimple size={20} />,
-          onClick: () => editableTitleRef.current?.startEditing(),
-        }] : []),
-      ]
-      : [
-        ...(onPin ? [{
-          id: 'pin',
-          label: session.pinned ? t('BiChat.Sidebar.UnpinChat') : t('BiChat.Sidebar.PinChat'),
-          icon: session.pinned ? <Check size={20} /> : <Bookmark size={20} />,
-          onClick: () => onPin(),
-        }] : []),
-        ...(onRename ? [{
-          id: 'rename',
-          label: t('BiChat.Sidebar.RenameChat'),
-          icon: <PencilSimple size={20} />,
-          onClick: () => editableTitleRef.current?.startEditing(),
-        }] : []),
-        ...(onRegenerateTitle ? [{
-          id: 'regenerate',
-          label: t('BiChat.Sidebar.RegenerateTitle'),
-          icon: <ArrowsClockwise size={20} />,
-          onClick: () => onRegenerateTitle(),
-        }] : []),
-        ...(onArchive ? [{
-          id: 'archive',
-          label: t('BiChat.Sidebar.ArchiveChat'),
-          icon: <Archive size={20} />,
-          onClick: () => onArchive(),
-          variant: 'danger' as const,
-        }] : []),
-        ...(onDelete ? [{
-          id: 'delete',
-          label: t('BiChat.Sidebar.DeleteChat'),
-          icon: <Trash size={20} />,
-          onClick: () => onDelete(),
-          variant: 'danger' as const,
-        }] : []),
-      ]
+    const contextMenuItems: ContextMenuItem[] = useMemo(
+      () =>
+        mode === 'archived'
+          ? [
+            ...(onRestore ? [{
+              id: 'restore',
+              label: t('BiChat.Archived.RestoreButton'),
+              icon: <ArrowUUpLeft size={20} />,
+              onClick: () => onRestore(),
+            }] : []),
+            ...(onRename ? [{
+              id: 'rename',
+              label: t('BiChat.Sidebar.RenameChat'),
+              icon: <PencilSimple size={20} />,
+              onClick: () => editableTitleRef.current?.startEditing(),
+            }] : []),
+          ]
+          : [
+            ...(onPin ? [{
+              id: 'pin',
+              label: session.pinned ? t('BiChat.Sidebar.UnpinChat') : t('BiChat.Sidebar.PinChat'),
+              icon: session.pinned ? <Check size={20} /> : <Bookmark size={20} />,
+              onClick: () => onPin(),
+            }] : []),
+            ...(onRename ? [{
+              id: 'rename',
+              label: t('BiChat.Sidebar.RenameChat'),
+              icon: <PencilSimple size={20} />,
+              onClick: () => editableTitleRef.current?.startEditing(),
+            }] : []),
+            ...(onRegenerateTitle ? [{
+              id: 'regenerate',
+              label: t('BiChat.Sidebar.RegenerateTitle'),
+              icon: <ArrowsClockwise size={20} />,
+              onClick: () => onRegenerateTitle(),
+            }] : []),
+            ...(onArchive ? [{
+              id: 'archive',
+              label: t('BiChat.Sidebar.ArchiveChat'),
+              icon: <Archive size={20} />,
+              onClick: () => onArchive(),
+              variant: 'danger' as const,
+            }] : []),
+            ...(onDelete ? [{
+              id: 'delete',
+              label: t('BiChat.Sidebar.DeleteChat'),
+              icon: <Trash size={20} />,
+              onClick: () => onDelete(),
+              variant: 'danger' as const,
+            }] : []),
+          ],
+      [mode, session.pinned, onRestore, onPin, onRename, onRegenerateTitle, onArchive, onDelete, t],
+    )
 
     const hasContextMenu = contextMenuItems.length > 0
 
@@ -226,13 +232,16 @@ const SessionItem = memo<SessionItemProps>(
             {...longPressHandlers}
           >
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className="flex flex-col min-w-0 flex-1">
                 <EditableText
                   ref={editableTitleRef}
                   value={displayTitle}
                   onSave={(newTitle) => onRename?.(newTitle)}
                   isLoading={isTitleGenerating}
                 />
+                <span className="text-[11px] text-gray-400 dark:text-gray-500 truncate mt-0.5">
+                  {lastActivity}
+                </span>
               </div>
               {!isTouch && hasContextMenu && (
                 <Menu>

@@ -60,6 +60,7 @@ export function createCompactedSystemTurn(sessionId: string, summary: string): C
       citations: [],
       artifacts: [],
       codeOutputs: [],
+      lifecycle: 'complete',
       createdAt: now,
     },
     createdAt: now,

@@ -13,6 +13,7 @@ import type {
   CodeOutput,
   QueuedMessage,
   Attachment,
+  ActivityStep,
   ChatDataSource,
   SessionDebugUsage,
   DebugLimits,
@@ -56,6 +57,10 @@ export interface MessagingState {
   codeOutputs: CodeOutput[]
   isCompacting: boolean
   artifactsInvalidationTrigger: number
+  /** Ephemeral: accumulated reasoning/thinking content during streaming. */
+  thinkingContent: string
+  /** Ephemeral: ordered list of activity steps (thinking, tools, delegations). */
+  activeSteps: ActivityStep[]
 }
 
 export interface InputState {
@@ -104,6 +109,9 @@ export interface MessagingSnapshot {
   isCompacting: boolean
   compactionSummary: string | null
   artifactsInvalidationTrigger: number
+  thinkingContent: string
+  activeSteps: ActivityStep[]
+  showActivityTrace: boolean
   sendMessage: (content: string, attachments?: Attachment[]) => Promise<void>
   handleRegenerate?: (turnId: string) => Promise<void>
   handleEdit?: (turnId: string, newContent: string) => Promise<void>

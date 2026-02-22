@@ -4,7 +4,8 @@
  */
 
 import { useState, useCallback, lazy, Suspense, useRef, useEffect, type ReactNode } from 'react'
-import { Check, Copy, ArrowsClockwise } from '@phosphor-icons/react'
+import { AnimatePresence } from 'framer-motion'
+import { Check, Copy, ArrowsClockwise, CaretRight } from '@phosphor-icons/react'
 import { formatRelativeTime } from '../utils/dateFormatting'
 import CodeOutputsPanel from './CodeOutputsPanel'
 import StreamingCursor from './StreamingCursor'
@@ -182,6 +183,13 @@ export interface AssistantMessageProps {
   showDebug?: boolean
 }
 
+type AssistantRenderMode =
+  | 'content'
+  | 'hitl_form'
+  | 'hitl_waiting'
+  | 'retry'
+  | 'empty'
+
 const COPY_FEEDBACK_MS = 2000
 
 /* -------------------------------------------------------------------------------------------------
@@ -190,12 +198,12 @@ const COPY_FEEDBACK_MS = 2000
 
 const defaultClassNames: Required<AssistantMessageClassNames> = {
   root: 'flex gap-3 group',
-  wrapper: 'flex-1 flex flex-col gap-3 max-w-[85%]',
+  wrapper: 'flex-1 min-w-0 flex flex-col gap-3 max-w-[var(--bichat-bubble-assistant-max-width,85%)]',
   avatar: 'flex-shrink-0 w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-medium text-xs',
   bubble: 'bg-white dark:bg-gray-800 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm',
   codeOutputs: '',
   charts: 'mb-1 w-full',
-  tables: 'mb-1 flex flex-col gap-3',
+  tables: 'mb-1 flex flex-col gap-3 min-w-0',
   artifacts: 'mb-1 flex flex-wrap gap-2',
   sources: '',
   explanation: 'mt-4 border-t border-gray-100 dark:border-gray-700 pt-4',
@@ -271,26 +279,40 @@ export function AssistantMessage({
 
   const hasContent = turn.content?.trim().length > 0
   const hasExplanation = !!turn.explanation?.trim()
-  const hasPendingQuestion =
+  const isAwaitingHumanInput = turn.lifecycle === 'waiting_for_human_input'
+  const pendingQuestionMatchesTurn =
     !!pendingQuestion &&
     pendingQuestion.status === 'PENDING' &&
-    pendingQuestion.turnId === turnId
+    (
+      pendingQuestion.turnId === turnId ||
+      pendingQuestion.turnId === turn.id ||
+      (!pendingQuestion.turnId && isLastTurn)
+    )
+  const hasPendingQuestion = pendingQuestionMatchesTurn && !!pendingQuestion
   const hasCodeOutputs = !!turn.codeOutputs?.length
   const hasChart = !!turn.chartData
   const hasTables = !!turn.renderTables?.length
   const hasArtifacts = !!turn.artifacts?.length
   const hasDebug = showDebug && !!turn.debug
-  const hasRenderablePayload =
+  const hasAnyRenderedContent =
     hasContent ||
     hasExplanation ||
-    hasPendingQuestion ||
     hasCodeOutputs ||
     hasChart ||
     hasTables ||
     hasArtifacts ||
     hasDebug
   const canRegenerate = !!onRegenerate && !!turnId && !isSystemMessage && isLastTurn
-  const showInlineRetry = !hasRenderablePayload && canRegenerate
+  const renderMode: AssistantRenderMode = hasPendingQuestion
+    ? 'hitl_form'
+    : isAwaitingHumanInput
+      ? 'hitl_waiting'
+      : hasAnyRenderedContent
+        ? 'content'
+        : canRegenerate
+          ? 'retry'
+          : 'empty'
+  const showInlineRetry = renderMode === 'retry'
 
   const handleCopyClick = useCallback(async () => {
     try {
@@ -371,7 +393,7 @@ export function AssistantMessage({
   return (
     <div className={classes.root}>
       {/* Avatar */}
-      {!hideAvatar && !showInlineRetry && (
+      {!hideAvatar && (
         <div className={avatarClassName}>
           {renderSlot(slots?.avatar, avatarSlotProps, isSystemMessage ? 'SYS' : 'AI')}
         </div>
@@ -379,7 +401,9 @@ export function AssistantMessage({
 
       <div className={classes.wrapper}>
         {/* Inline recovery for empty assistant responses */}
-        {showInlineRetry && <RetryActionArea onRetry={() => { void handleRegenerateClick() }} />}
+        <AnimatePresence>
+          {showInlineRetry && <RetryActionArea key="inline-retry" onRetry={() => { void handleRegenerateClick() }} />}
+        </AnimatePresence>
 
         {/* Code outputs */}
         {turn.codeOutputs && turn.codeOutputs.length > 0 && (
@@ -467,19 +491,11 @@ export function AssistantMessage({
                       className="cursor-pointer flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 rounded-md p-1 -m-1"
                       aria-expanded={explanationExpanded}
                     >
-                      <svg
-                        className={`w-4 h-4 transition-transform duration-150 ${explanationExpanded ? 'rotate-90' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
+                      <CaretRight
+                        size={16}
+                        weight="bold"
+                        className={`transition-transform duration-150 ${explanationExpanded ? 'rotate-90' : ''}`}
+                      />
                       <span className="font-medium">{t('BiChat.Assistant.Explanation')}</span>
                     </button>
                     {explanationExpanded && (
@@ -511,8 +527,20 @@ export function AssistantMessage({
           </div>
         )}
 
-        {/* Inline Question Form */}
-        {hasPendingQuestion && pendingQuestion && (
+        {/* HITL waiting state */}
+        {renderMode === 'hitl_waiting' && (
+          <div className="animate-slide-up rounded-2xl border border-primary-200 dark:border-primary-700/40 bg-gradient-to-b from-primary-50/70 to-white dark:from-primary-900/20 dark:to-gray-900/80 shadow-sm p-4">
+            <p className="text-sm font-medium text-primary-700 dark:text-primary-300">
+              {t('BiChat.InlineQuestion.InputNeeded')}
+            </p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {t('BiChat.InlineQuestion.WaitingForDetails')}
+            </p>
+          </div>
+        )}
+
+        {/* HITL question form */}
+        {renderMode === 'hitl_form' && pendingQuestion && (
           <InlineQuestionForm pendingQuestion={pendingQuestion} />
         )}
 

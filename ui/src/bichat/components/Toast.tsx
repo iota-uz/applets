@@ -4,10 +4,10 @@
  * Uses @headlessui/react Transition for CSS-driven enter/leave animations.
  */
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useSyncExternalStore } from 'react'
 import { Transition } from '@headlessui/react'
 import { CheckCircle, XCircle, Info, Warning, X } from '@phosphor-icons/react'
-import type { ToastType } from '../hooks/useToast'
+import type { ToastType, ToastAction } from '../hooks/useToast'
 import { useTranslation } from '../hooks/useTranslation'
 
 export interface ToastProps {
@@ -18,6 +18,8 @@ export interface ToastProps {
   onDismiss: (id: string) => void
   /** Label for dismiss button (defaults to "Dismiss") */
   dismissLabel?: string
+  /** Optional action button rendered in the toast */
+  action?: ToastAction
 }
 
 const typeConfig: Record<
@@ -54,6 +56,29 @@ const typeConfig: Record<
   },
 }
 
+const reducedMotionQuery = '(prefers-reduced-motion: reduce)'
+let reducedMotionMql: MediaQueryList | null = null
+function getReducedMotionMql(): MediaQueryList | null {
+  if (typeof window === 'undefined') return null
+  if (!reducedMotionMql) {
+    reducedMotionMql = window.matchMedia(reducedMotionQuery)
+  }
+  return reducedMotionMql
+}
+function subscribeReducedMotion(callback: () => void): () => void {
+  const mql = getReducedMotionMql()
+  if (!mql) return () => {}
+  mql.addEventListener('change', callback)
+  return () => mql.removeEventListener('change', callback)
+}
+function getReducedMotionSnapshot(): boolean {
+  const mql = getReducedMotionMql()
+  return mql ? mql.matches : false
+}
+function getReducedMotionServerSnapshot(): boolean {
+  return false
+}
+
 export function Toast({
   id,
   type,
@@ -61,6 +86,7 @@ export function Toast({
   duration = 5000,
   onDismiss,
   dismissLabel,
+  action,
 }: ToastProps) {
   const { t } = useTranslation()
   const resolvedDismissLabel = dismissLabel ?? t('BiChat.Chat.DismissNotification')
@@ -70,6 +96,12 @@ export function Toast({
   const [paused, setPaused] = useState(false)
   const remainingRef = useRef(duration)
   const startRef = useRef(Date.now())
+
+  const prefersReducedMotion = useSyncExternalStore(
+    subscribeReducedMotion,
+    getReducedMotionSnapshot,
+    getReducedMotionServerSnapshot
+  )
 
   // Trigger enter transition on mount
   useEffect(() => {
@@ -132,6 +164,20 @@ export function Toast({
           {message}
         </p>
 
+        {/* Action button */}
+        {action && (
+          <button
+            type="button"
+            onClick={() => {
+              action.onClick()
+              handleDismiss()
+            }}
+            className={`shrink-0 text-sm font-semibold underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500/50 cursor-pointer ${config.accent}`}
+          >
+            {action.label}
+          </button>
+        )}
+
         {/* Dismiss */}
         <button
           onClick={handleDismiss}
@@ -144,11 +190,15 @@ export function Toast({
         {/* Progress bar */}
         <div className="absolute inset-x-0 bottom-0 h-0.5 bg-black/5 dark:bg-white/5">
           <div
-            className={`h-full ${config.progress} origin-left`}
-            style={{
-              animation: `bichat-toast-progress ${duration}ms linear forwards`,
-              animationPlayState: paused ? 'paused' : 'running',
-            }}
+            className={`h-full ${config.progress} origin-left motion-reduce:animate-none`}
+            style={
+              prefersReducedMotion
+                ? {}
+                : {
+                    animation: `bichat-toast-progress ${duration}ms linear forwards`,
+                    animationPlayState: paused ? 'paused' : 'running',
+                  }
+            }
           />
         </div>
       </div>

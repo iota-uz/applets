@@ -12,7 +12,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { X, Plus, Archive, CaretLineLeft, CaretLineRight, Gear, Users, List } from '@phosphor-icons/react'
+import { X, Plus, Archive, CaretLineLeft, CaretLineRight, Gear, Users, List, ChatCircle, MagnifyingGlass } from '@phosphor-icons/react'
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
 import SessionSkeleton from './SessionSkeleton'
 import SessionItem from './SessionItem'
@@ -32,6 +32,9 @@ import {
 import type { Session, ChatDataSource } from '../types'
 import { ToastContainer } from './ToastContainer'
 import { toErrorDisplay, type RPCErrorDisplay } from '../utils/errorDisplay'
+
+/** Matches sidebar width transition (duration-300) + small buffer for focus-after-expand */
+const SIDEBAR_EXPAND_FOCUS_DELAY_MS = 350
 
 function ErrorAlert({ error }: { error: RPCErrorDisplay }) {
   const amber = error.isPermissionDenied
@@ -72,6 +75,7 @@ const SESSION_RECONCILE_POLL_INTERVAL_MS = 2000
 const SESSION_RECONCILE_MAX_POLLS = 30
 const ACTIVE_SESSION_MISS_MAX_RETRIES = 8
 const ACTIVE_SESSION_MISS_RETRY_DELAY_MS = 1000
+const MAX_COLLAPSED_INDICATORS = 5
 
 function useSidebarCollapse() {
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -147,7 +151,7 @@ export default function Sidebar({
   const activeSessionMissRetriesRef = useRef<Record<string, number>>({})
 
   // Collapse state — disabled when used as a mobile drawer (onClose present)
-  const { isCollapsed, toggle, collapse } = useSidebarCollapse()
+  const { isCollapsed, toggle, expand, collapse } = useSidebarCollapse()
   const collapsible = !onClose // desktop only
 
   // Click-on-empty-space to toggle (same pattern as SDK sidebar)
@@ -193,6 +197,17 @@ export default function Sidebar({
   }, [collapsible, collapse])
 
   const showCollapsed = collapsible && isCollapsed
+
+  // Allow tooltips to escape sidebar bounds once collapse transition settles
+  const [collapsedOverflowVisible, setCollapsedOverflowVisible] = useState(false)
+  useEffect(() => {
+    if (!showCollapsed) {
+      setCollapsedOverflowVisible(false)
+      return
+    }
+    const timer = setTimeout(() => setCollapsedOverflowVisible(true), 300)
+    return () => clearTimeout(timer)
+  }, [showCollapsed])
 
   // View state (my chats vs all chats)
   const [activeTab, setActiveTab] = useState<ActiveTab>('my-chats')
@@ -317,21 +332,40 @@ export default function Sidebar({
     setShowConfirm(true)
   }
 
+  const handleUndoArchive = useCallback(async (sessionId: string) => {
+    try {
+      await dataSource.unarchiveSession(sessionId)
+      setRefreshKey((k) => k + 1)
+      window.dispatchEvent(new CustomEvent('bichat:sessions-updated', {
+        detail: { reason: 'unarchived', sessionId },
+      }))
+    } catch (undoErr) {
+      console.error('Failed to restore session:', undoErr)
+      toast.error(t('BiChat.Sidebar.FailedToRestoreChat'))
+    }
+  }, [dataSource, t, toast])
+
   const confirmArchive = async () => {
     if (!sessionToArchive) return
 
     const wasCurrentSession = activeSessionId === sessionToArchive
+    const archivedId = sessionToArchive
 
     try {
-      await dataSource.archiveSession(sessionToArchive)
+      await dataSource.archiveSession(archivedId)
       setRefreshKey((k) => k + 1)
       window.dispatchEvent(new CustomEvent('bichat:sessions-updated', {
-        detail: { reason: 'archived', sessionId: sessionToArchive },
+        detail: { reason: 'archived', sessionId: archivedId },
       }))
 
       if (wasCurrentSession) {
         onSessionSelect('')
       }
+
+      toast.success(t('BiChat.Sidebar.ChatArchived'), 8000, {
+        label: t('BiChat.Common.Undo'),
+        onClick: () => handleUndoArchive(archivedId),
+      })
     } catch (err) {
       console.error('Failed to archive session:', err)
       const display = toErrorDisplay(err, t('BiChat.Sidebar.FailedToArchiveChat'))
@@ -390,6 +424,28 @@ export default function Sidebar({
     }
   }
 
+  // Stable callbacks for SessionItem — accept session ID as parameter
+  const handleSessionSelect = useCallback(
+    (sessionId: string) => onSessionSelect(sessionId),
+    [onSessionSelect],
+  )
+  const handleSessionArchive = useCallback(
+    (sessionId: string) => handleArchiveRequest(sessionId),
+    [],
+  )
+  const handleSessionPin = useCallback(
+    (sessionId: string, pinned: boolean) => handleTogglePin(sessionId, pinned),
+    [handleTogglePin],
+  )
+  const handleSessionRename = useCallback(
+    (sessionId: string, newTitle: string) => handleRenameSession(sessionId, newTitle),
+    [handleRenameSession],
+  )
+  const handleSessionRegenerateTitle = useCallback(
+    (sessionId: string) => handleRegenerateTitle(sessionId),
+    [handleRegenerateTitle],
+  )
+
   // Filter sessions by search
   const filteredSessions = useMemo(() => {
     if (!searchQuery.trim()) return sessions
@@ -417,6 +473,22 @@ export default function Sidebar({
         }))
       : []
   }, [unpinnedSessions, t])
+
+  // Collapsed sidebar indicators — pinned first, then most recent
+  const collapsedIndicators = useMemo(() => {
+    const seen = new Set<string>()
+    const result: Session[] = []
+    for (const s of [...pinnedSessions, ...unpinnedSessions]) {
+      if (seen.has(s.id)) continue
+      seen.add(s.id)
+      result.push(s)
+      if (result.length >= MAX_COLLAPSED_INDICATORS) break
+    }
+    return result
+  }, [pinnedSessions, unpinnedSessions])
+
+  const totalSessionCount = filteredSessions.length
+  const overflowCount = Math.max(0, totalSessionCount - collapsedIndicators.length)
 
   // Keyboard navigation for session list (WAI-ARIA listbox pattern)
   const handleSessionListKeyDown = useCallback(
@@ -469,7 +541,7 @@ export default function Sidebar({
     <>
       <aside
         onClick={collapsible ? handleSidebarClick : undefined}
-        className={`relative bg-surface-300 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-full min-h-0 flex flex-col overflow-hidden transition-[width] duration-300 ease-in-out ${
+        className={`relative bg-surface-300 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-full min-h-0 flex flex-col ${collapsedOverflowVisible ? 'overflow-visible' : 'overflow-hidden'} transition-[width] duration-300 ease-in-out ${
           showCollapsed
             ? 'w-16 cursor-e-resize'
             : collapsible
@@ -511,6 +583,108 @@ export default function Sidebar({
                 {t('BiChat.Chat.NewChat')}
               </span>
             </div>
+
+            {/* Search button — expands sidebar and focuses search */}
+            <div className="group/search relative">
+              <motion.button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  expand()
+                  setTimeout(() => {
+                    const input = searchContainerRef.current?.querySelector('input')
+                    input?.focus()
+                  }, SIDEBAR_EXPAND_FOCUS_DELAY_MS)
+                }}
+                className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 flex items-center justify-center cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none"
+                aria-label={t('BiChat.Sidebar.SearchChats')}
+                whileTap={{ scale: 0.95 }}
+              >
+                <MagnifyingGlass size={18} />
+              </motion.button>
+              <span className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 rounded-md bg-gray-900 dark:bg-gray-100 px-2 py-1 text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover/search:opacity-100 group-focus-within/search:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
+                {t('BiChat.Sidebar.SearchChats')}
+              </span>
+            </div>
+
+            {/* Session indicators */}
+            {collapsedIndicators.length > 0 && (
+              <motion.div
+                className="flex flex-col items-center gap-1.5 mt-1"
+                variants={shouldReduceMotion ? undefined : staggerContainerVariants}
+                initial="hidden"
+                animate={showCollapsed ? 'visible' : 'hidden'}
+              >
+                {collapsedIndicators.map((session) => {
+                  const isActive = session.id === activeSessionId
+                  const initial = session.title?.trim()?.[0]?.toUpperCase()
+                  return (
+                    <motion.div
+                      key={session.id}
+                      className="group/indicator relative"
+                      variants={
+                        shouldReduceMotion
+                          ? undefined
+                          : {
+                              hidden: { opacity: 0, scale: 0.8 },
+                              visible: { opacity: 1, scale: 1 },
+                            }
+                      }
+                    >
+                      <motion.button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onSessionSelect(session.id)
+                        }}
+                        className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none ${
+                          isActive
+                            ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 ring-2 ring-primary-500 dark:ring-primary-400'
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                        }`}
+                        aria-label={session.title || t('BiChat.Chat.NewChat')}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        {initial ? (
+                          initial
+                        ) : (
+                          <ChatCircle size={16} weight="fill" />
+                        )}
+                      </motion.button>
+                      <div className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 w-52 rounded-lg bg-gray-900 dark:bg-gray-100 px-3 py-2 text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover/indicator:opacity-100 group-focus-within/indicator:opacity-100 transition-opacity shadow-lg break-words">
+                        {session.title || t('BiChat.Chat.NewChat')}
+                      </div>
+                    </motion.div>
+                  )
+                })}
+                {overflowCount > 0 && (
+                  <motion.div
+                    className="group/overflow relative"
+                    variants={
+                      shouldReduceMotion
+                        ? undefined
+                        : {
+                            hidden: { opacity: 0, scale: 0.8 },
+                            visible: { opacity: 1, scale: 1 },
+                          }
+                    }
+                  >
+                    <motion.button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggle()
+                      }}
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-semibold bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none"
+                      aria-label={t('BiChat.Sidebar.MoreChats', { count: overflowCount })}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      +{overflowCount}
+                    </motion.button>
+                    <span className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 rounded-md bg-gray-900 dark:bg-gray-100 px-2 py-1 text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover/overflow:opacity-100 group-focus-within/overflow:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
+                      {t('BiChat.Sidebar.ChatSessions')}
+                    </span>
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
           </div>
         )}
 
@@ -621,19 +795,11 @@ export default function Sidebar({
                               key={session.id}
                               session={session}
                               isActive={session.id === activeSessionId}
-                              onSelect={() => onSessionSelect(session.id)}
-                              onArchive={() =>
-                                handleArchiveRequest(session.id)
-                              }
-                              onPin={() =>
-                                handleTogglePin(session.id, session.pinned)
-                              }
-                              onRename={(newTitle) =>
-                                handleRenameSession(session.id, newTitle)
-                              }
-                              onRegenerateTitle={() =>
-                                handleRegenerateTitle(session.id)
-                              }
+                              onSelect={() => handleSessionSelect(session.id)}
+                              onArchive={() => handleSessionArchive(session.id)}
+                              onPin={() => handleSessionPin(session.id, session.pinned)}
+                              onRename={(newTitle) => handleSessionRename(session.id, newTitle)}
+                              onRegenerateTitle={() => handleSessionRegenerateTitle(session.id)}
                             />
                           ))}
                         </motion.div>
@@ -661,19 +827,11 @@ export default function Sidebar({
                               key={session.id}
                               session={session}
                               isActive={session.id === activeSessionId}
-                              onSelect={() => onSessionSelect(session.id)}
-                              onArchive={() =>
-                                handleArchiveRequest(session.id)
-                              }
-                              onPin={() =>
-                                handleTogglePin(session.id, session.pinned)
-                              }
-                              onRename={(newTitle) =>
-                                handleRenameSession(session.id, newTitle)
-                              }
-                              onRegenerateTitle={() =>
-                                handleRegenerateTitle(session.id)
-                              }
+                              onSelect={() => handleSessionSelect(session.id)}
+                              onArchive={() => handleSessionArchive(session.id)}
+                              onPin={() => handleSessionPin(session.id, session.pinned)}
+                              onRename={(newTitle) => handleSessionRename(session.id, newTitle)}
+                              onRegenerateTitle={() => handleSessionRegenerateTitle(session.id)}
                             />
                           ))}
                         </motion.div>
@@ -736,7 +894,7 @@ export default function Sidebar({
                   </MenuButton>
                   <MenuItems
                     anchor="top start"
-                    className="w-48 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg rounded-xl shadow-lg border border-gray-200/80 dark:border-gray-700/60 z-30 [--anchor-gap:8px] mb-1 p-1.5"
+                    className="w-48 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg rounded-xl shadow-lg border border-gray-200/80 dark:border-gray-700/60 z-[var(--bichat-z-dropdown,10)] [--anchor-gap:8px] mb-1 p-1.5"
                   >
                     {onArchivedView && (
                       <MenuItem>

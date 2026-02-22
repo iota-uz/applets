@@ -11,6 +11,7 @@ import {
   CaretLeft,
   CaretRight,
   ArrowClockwise,
+  ArrowCounterClockwise,
   ImageBroken,
   MagnifyingGlassPlus,
   MagnifyingGlassMinus,
@@ -27,6 +28,89 @@ interface ImageModalProps {
   allAttachments?: ImageAttachment[]
   currentIndex?: number
   onNavigate?: (direction: 'prev' | 'next') => void
+}
+
+function ToolbarButton({
+  onClick,
+  disabled,
+  'aria-label': ariaLabel,
+  children,
+}: {
+  onClick: () => void
+  disabled?: boolean
+  'aria-label': string
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="cursor-pointer flex items-center justify-center w-8 h-8 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors disabled:text-white/20 disabled:cursor-not-allowed disabled:hover:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+      aria-label={ariaLabel}
+    >
+      {children}
+    </button>
+  )
+}
+
+interface ViewerToolbarProps {
+  scale: number
+  zoomPercent: number
+  isTransformed: boolean
+  onZoomIn: () => void
+  onZoomOut: () => void
+  onRotateLeft: () => void
+  onRotateRight: () => void
+  onReset: () => void
+  t: (key: string) => string
+}
+
+function ViewerToolbar({
+  scale,
+  zoomPercent,
+  isTransformed,
+  onZoomIn,
+  onZoomOut,
+  onRotateLeft,
+  onRotateRight,
+  onReset,
+  t,
+}: ViewerToolbarProps) {
+  return (
+    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-0.5 bg-black/50 backdrop-blur-xl rounded-full px-1.5 py-1.5 border border-white/10 shadow-2xl">
+      <ToolbarButton onClick={onZoomOut} disabled={scale <= MIN_SCALE} aria-label={t('BiChat.Image.ZoomOut')}>
+        <MagnifyingGlassMinus size={16} weight="bold" />
+      </ToolbarButton>
+
+      <span className="text-xs text-white/60 tabular-nums font-medium min-w-[3.5rem] text-center select-none">
+        {zoomPercent}%
+      </span>
+
+      <ToolbarButton onClick={onZoomIn} disabled={scale >= MAX_SCALE} aria-label={t('BiChat.Image.ZoomIn')}>
+        <MagnifyingGlassPlus size={16} weight="bold" />
+      </ToolbarButton>
+
+      <div className="w-px h-4 bg-white/15 mx-1" />
+
+      <ToolbarButton onClick={onRotateLeft} aria-label={t('BiChat.Image.RotateLeft')}>
+        <ArrowCounterClockwise size={16} weight="bold" />
+      </ToolbarButton>
+
+      <ToolbarButton onClick={onRotateRight} aria-label={t('BiChat.Image.RotateRight')}>
+        <ArrowClockwise size={16} weight="bold" />
+      </ToolbarButton>
+
+      {isTransformed && (
+        <>
+          <div className="w-px h-4 bg-white/15 mx-1" />
+          <ToolbarButton onClick={onReset} aria-label={t('BiChat.Image.ResetZoom')}>
+            <ArrowsIn size={16} weight="bold" />
+          </ToolbarButton>
+        </>
+      )}
+    </div>
+  )
 }
 
 const MIN_SCALE = 0.25
@@ -46,9 +130,10 @@ function ImageModal({
   const [imageError, setImageError] = useState(false)
   const [retryKey, setRetryKey] = useState(0)
 
-  // Zoom & pan state
+  // Zoom, pan & rotation state
   const [scale, setScale] = useState(1)
   const [position, setPosition] = useState({ x: 0, y: 0 })
+  const [rotation, setRotation] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
   const dragStartRef = useRef({ x: 0, y: 0 })
   const positionRef = useRef({ x: 0, y: 0 })
@@ -60,10 +145,18 @@ function ImageModal({
   const canNavigateNext =
     hasMultipleImages && currentIndex < (allAttachments?.length || 1) - 1
   const isZoomed = scale > 1
+  const isTransformed = isZoomed || rotation !== 0
 
   // Keep refs in sync for event handlers
   useEffect(() => { scaleRef.current = scale }, [scale])
   useEffect(() => { positionRef.current = position }, [position])
+
+  const rotateLeft = useCallback(() => {
+    setRotation((r) => ((r - 90) % 360 + 360) % 360)
+  }, [])
+  const rotateRight = useCallback(() => {
+    setRotation((r) => (r + 90) % 360)
+  }, [])
 
   // Keyboard navigation + zoom shortcuts
   useEffect(() => {
@@ -82,12 +175,17 @@ function ImageModal({
       } else if (e.key === '0') {
         setScale(1)
         setPosition({ x: 0, y: 0 })
+        setRotation(0)
+      } else if (e.key === 'r' && !e.shiftKey) {
+        rotateRight()
+      } else if (e.key === 'R' || (e.key === 'r' && e.shiftKey)) {
+        rotateLeft()
       }
     }
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onNavigate, canNavigatePrev, canNavigateNext])
+  }, [isOpen, onNavigate, canNavigatePrev, canNavigateNext, rotateLeft, rotateRight])
 
   // Reset state on attachment change
   useEffect(() => {
@@ -95,6 +193,7 @@ function ImageModal({
     setImageError(false)
     setScale(1)
     setPosition({ x: 0, y: 0 })
+    setRotation(0)
   }, [attachment])
 
   // Mouse wheel zoom (needs native listener for preventDefault on passive)
@@ -135,14 +234,16 @@ function ImageModal({
   const resetZoom = useCallback(() => {
     setScale(1)
     setPosition({ x: 0, y: 0 })
+    setRotation(0)
   }, [])
 
-  // Double-click to toggle between fit and 2x zoom
+  // Double-click to toggle between fit and 2x zoom (reset rotation when returning to 1x for consistency with resetZoom and '0' key)
   const handleDoubleClick = useCallback(() => {
     const current = scaleRef.current
     if (current !== 1) {
       setScale(1)
       setPosition({ x: 0, y: 0 })
+      setRotation(0)
     } else {
       setScale(2)
     }
@@ -171,7 +272,7 @@ function ImageModal({
     setIsDragging(false)
   }, [])
 
-  // Click background to close (only when not zoomed)
+  // Click background to close (only when not zoomed; rotation alone does not block close)
   const handleBackdropClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget && !isZoomed) {
       onClose()
@@ -270,7 +371,7 @@ function ImageModal({
               isImageLoaded ? 'opacity-100' : 'opacity-0',
             ].join(' ')}
             style={{
-              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+              transform: `translate(${position.x}px, ${position.y}px) scale(${scale}) rotate(${rotation}deg)`,
               transformOrigin: 'center center',
               transition: isDragging
                 ? 'opacity 0.3s ease-out'
@@ -325,45 +426,17 @@ function ImageModal({
 
           {/* ── Zoom toolbar ── */}
           {isImageLoaded && !imageError && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-0.5 bg-black/50 backdrop-blur-xl rounded-full px-1.5 py-1.5 border border-white/10 shadow-2xl">
-              <button
-                type="button"
-                onClick={zoomOut}
-                disabled={scale <= MIN_SCALE}
-                className="cursor-pointer flex items-center justify-center w-8 h-8 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors disabled:text-white/20 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                aria-label={t('BiChat.Image.ZoomOut')}
-              >
-                <MagnifyingGlassMinus size={16} weight="bold" />
-              </button>
-
-              <span className="text-xs text-white/60 tabular-nums font-medium min-w-[3.5rem] text-center select-none">
-                {zoomPercent}%
-              </span>
-
-              <button
-                type="button"
-                onClick={zoomIn}
-                disabled={scale >= MAX_SCALE}
-                className="cursor-pointer flex items-center justify-center w-8 h-8 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors disabled:text-white/20 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                aria-label={t('BiChat.Image.ZoomIn')}
-              >
-                <MagnifyingGlassPlus size={16} weight="bold" />
-              </button>
-
-              {isZoomed && (
-                <>
-                  <div className="w-px h-4 bg-white/15 mx-1" />
-                  <button
-                    type="button"
-                    onClick={resetZoom}
-                    className="cursor-pointer flex items-center justify-center w-8 h-8 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                    aria-label={t('BiChat.Image.ResetZoom')}
-                  >
-                    <ArrowsIn size={16} weight="bold" />
-                  </button>
-                </>
-              )}
-            </div>
+            <ViewerToolbar
+              scale={scale}
+              zoomPercent={zoomPercent}
+              isTransformed={isTransformed}
+              onZoomIn={zoomIn}
+              onZoomOut={zoomOut}
+              onRotateLeft={rotateLeft}
+              onRotateRight={rotateRight}
+              onReset={resetZoom}
+              t={t}
+            />
           )}
         </div>
       </DialogPanel>

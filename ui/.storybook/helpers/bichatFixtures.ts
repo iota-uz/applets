@@ -1,4 +1,5 @@
 import type {
+  ActivityStep,
   Attachment,
   AssistantTurn,
   Artifact,
@@ -8,7 +9,9 @@ import type {
   ConversationTurn,
   PendingQuestion,
   Question,
+  RenderTableData,
   Session,
+  SessionUser,
   UserTurn,
   ImageAttachment,
 } from '../../src/bichat/types'
@@ -146,6 +149,7 @@ export function makeAssistantTurn(partial?: Partial<AssistantTurn>): AssistantTu
     chartData: partial?.chartData,
     artifacts: partial?.artifacts ?? [],
     codeOutputs: partial?.codeOutputs ?? [],
+    lifecycle: partial?.lifecycle ?? 'complete',
     createdAt: partial?.createdAt ?? now,
   }
 }
@@ -181,6 +185,151 @@ export function makePendingQuestion(partial?: Partial<PendingQuestion>): Pending
     status: partial?.status ?? 'PENDING',
   }
 }
+
+// ---------------------------------------------------------------------------
+// Activity Trace Fixtures
+// ---------------------------------------------------------------------------
+
+export function makeActivityStep(partial?: Partial<ActivityStep>): ActivityStep {
+  const now = Date.now()
+  return {
+    id: partial?.id ?? `step-${Math.random().toString(36).slice(2)}`,
+    type: partial?.type ?? 'tool',
+    toolName: partial?.toolName ?? 'query_database',
+    arguments: partial?.arguments,
+    agentName: partial?.agentName,
+    status: partial?.status ?? 'active',
+    startedAt: partial?.startedAt ?? now,
+    completedAt: partial?.completedAt,
+    durationMs: partial?.durationMs,
+  }
+}
+
+export function makeActivitySteps(): ActivityStep[] {
+  const now = Date.now()
+  return [
+    makeActivityStep({
+      id: 'step-1',
+      type: 'tool',
+      toolName: 'query_database',
+      status: 'completed',
+      startedAt: now - 3200,
+      completedAt: now - 2000,
+      durationMs: 1200,
+    }),
+    makeActivityStep({
+      id: 'step-2',
+      type: 'tool',
+      toolName: 'run_code',
+      arguments: JSON.stringify({ language: 'python' }),
+      status: 'completed',
+      startedAt: now - 2000,
+      completedAt: now - 800,
+      durationMs: 1200,
+    }),
+    makeActivityStep({
+      id: 'step-3',
+      type: 'tool',
+      toolName: 'generate_chart',
+      status: 'active',
+      startedAt: now - 500,
+    }),
+  ]
+}
+
+export function makeAgentActivitySteps(): ActivityStep[] {
+  const now = Date.now()
+  return [
+    makeActivityStep({
+      id: 'step-4',
+      type: 'agent_delegation',
+      toolName: 'delegate_task',
+      agentName: 'Data Analyst',
+      status: 'completed',
+      startedAt: now - 4000,
+      completedAt: now - 3500,
+      durationMs: 500,
+    }),
+    ...makeActivitySteps(),
+    makeActivityStep({
+      id: 'step-5',
+      type: 'tool',
+      toolName: 'fetch_metrics',
+      agentName: 'Data Analyst',
+      status: 'active',
+      startedAt: now - 300,
+    }),
+  ]
+}
+
+// ---------------------------------------------------------------------------
+// Render Table Fixtures
+// ---------------------------------------------------------------------------
+
+export function makeRenderTableData(partial?: Partial<RenderTableData>): RenderTableData {
+  return {
+    id: partial?.id ?? 'table-1',
+    title: partial?.title ?? 'Revenue by Region (Q4 2025)',
+    query: partial?.query ?? 'SELECT region, revenue, growth FROM quarterly_revenue ORDER BY revenue DESC',
+    columns: partial?.columns ?? ['region', 'revenue', 'growth', 'customers', 'avg_order'],
+    columnTypes: partial?.columnTypes ?? ['string', 'number', 'number', 'number', 'number'],
+    headers: partial?.headers ?? ['Region', 'Revenue ($)', 'Growth (%)', 'Customers', 'Avg Order ($)'],
+    rows: partial?.rows ?? [
+      ['EMEA', 1_240_000, 18.5, 3420, 362],
+      ['APAC', 980_000, 24.2, 2890, 339],
+      ['AMER', 1_850_000, 12.1, 5100, 363],
+      ['LATAM', 420_000, 31.0, 1200, 350],
+      ['MEA', 310_000, 8.4, 890, 348],
+    ],
+    totalRows: partial?.totalRows ?? 5,
+    pageSize: partial?.pageSize ?? 20,
+    truncated: partial?.truncated ?? false,
+    export: partial?.export,
+    exportPrompt: partial?.exportPrompt,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Session List Fixtures (for Sidebar / AllChatsList)
+// ---------------------------------------------------------------------------
+
+export function makeSessionUser(partial?: Partial<SessionUser>): SessionUser {
+  return {
+    id: partial?.id ?? `user-${Math.random().toString(36).slice(2)}`,
+    firstName: partial?.firstName ?? 'Story',
+    lastName: partial?.lastName ?? 'Book',
+    initials: partial?.initials ?? 'SB',
+  }
+}
+
+export function makeSessions(count = 8): Session[] {
+  const titles = [
+    'Revenue analysis Q4',
+    'Customer churn breakdown',
+    'Marketing campaign ROI',
+    'Product roadmap review',
+    'Team capacity planning',
+    'Quarterly OKR review',
+    'Budget forecasting 2026',
+    'User retention analysis',
+    'Supply chain optimization',
+    'Sales pipeline review',
+  ]
+  return Array.from({ length: count }).map((_, i) => {
+    const dayOffset = i * 24 * 60 * 60 * 1000
+    return makeSession({
+      id: `session-${i + 1}`,
+      title: titles[i % titles.length],
+      pinned: i < 2,
+      createdAt: isoNow(-dayOffset - 3600000),
+      updatedAt: isoNow(-dayOffset),
+    })
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Pre-built Turn Arrays
+// ---------------------------------------------------------------------------
 
 export const turnsShort: ConversationTurn[] = [
   makeConversationTurn({
@@ -226,4 +375,3 @@ export const turnsLong: ConversationTurn[] = Array.from({ length: 24 }).map((_, 
     }),
   })
 })
-
