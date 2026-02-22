@@ -235,7 +235,7 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
     </header>
   )
 
-  const renderTable = (scrollClass: string) => (
+  const render_table = (scrollClass: string) => (
     <div className={scrollClass}>
       <table className="min-w-full border-collapse text-sm">
         <DataTableHeader
@@ -400,7 +400,7 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
       <section className="w-full min-w-0 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/40 overflow-hidden">
         {renderToolbar(false)}
         {renderHeader()}
-        {renderTable('max-h-[420px] overflow-auto')}
+        {render_table('max-h-[420px] overflow-auto')}
         {renderPagination(table.id)}
         {renderTruncationNotice()}
       </section>
@@ -413,7 +413,7 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
         >
           {renderToolbar(true)}
           {renderHeader()}
-          {renderTable('flex-1 overflow-auto')}
+          {render_table('flex-1 overflow-auto')}
           {renderPagination(`${table.id}-fs`)}
           {renderTruncationNotice()}
         </FullscreenOverlay>
