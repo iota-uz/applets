@@ -185,6 +185,10 @@ export interface ChartData {
   colors?: string[]
   /** Chart height in pixels */
   height?: number
+  /** Optional original Apex options (used by richer renderers) */
+  options?: Record<string, unknown>
+  /** Optional logarithmic Y-axis hint */
+  logarithmic?: boolean
 }
 
 /**
