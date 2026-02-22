@@ -54,18 +54,18 @@ export function useStreaming(options: UseStreamingOptions = {}) {
         optionsRef.current.onError?.(errorObj.message)
       }
     },
-    [core.processStream]
+    [core]
   )
 
   const cancel = useCallback(() => {
     core.cancel()
-  }, [core.cancel])
+  }, [core])
 
   const reset = useCallback(() => {
     setContent('')
     setError(null)
     core.reset()
-  }, [core.reset])
+  }, [core])
 
   return {
     content,

@@ -491,6 +491,11 @@ export interface ChatDataSource {
   ): Promise<{ success: boolean; error?: string }>
   rejectPendingQuestion(sessionId: string): Promise<{ success: boolean; error?: string }>
   /**
+   * Stops the active stream for the given session. No partial assistant message is persisted.
+   * Optional for backward compatibility with data sources that do not support stop.
+   */
+  stopGeneration?(sessionId: string): Promise<void>
+  /**
    * @deprecated Pass `onSessionCreated` to `ChatSessionProvider` instead.
    * This method couples navigation to the data source, causing component
    * remounts during active streams.

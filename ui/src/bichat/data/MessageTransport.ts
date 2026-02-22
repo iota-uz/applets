@@ -165,6 +165,28 @@ export async function* sendMessage(
 }
 
 // ---------------------------------------------------------------------------
+// Stop stream (explicit stop — backend discards partial assistant message)
+// ---------------------------------------------------------------------------
+
+export async function stopStream(
+  deps: Pick<MessageTransportDeps, 'baseUrl' | 'streamEndpoint' | 'createHeaders'>,
+  sessionId: string
+): Promise<void> {
+  const base = (deps.baseUrl ?? '').replace(/\/+$/, '')
+  const streamPath = (deps.streamEndpoint ?? '/stream').replace(/\/$/, '')
+  const stopUrl = `${base}${streamPath}/stop`
+  const response = await fetch(stopUrl, {
+    method: 'POST',
+    headers: deps.createHeaders(),
+    body: JSON.stringify({ sessionId }),
+  })
+  if (!response.ok) {
+    // Non-fatal: local abort will still stop the stream
+    console.warn('Stop stream request failed:', response.status)
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Question submission / rejection
 // ---------------------------------------------------------------------------
 

@@ -377,7 +377,7 @@ export default function Sidebar({
     }
   }
 
-  const handleTogglePin = async (
+  const handleTogglePin = useCallback(async (
     sessionId: string,
     currentlyPinned: boolean
   ) => {
@@ -394,9 +394,9 @@ export default function Sidebar({
       setActionError(display)
       toast.error(display.title)
     }
-  }
+  }, [dataSource, t, toast])
 
-  const handleRenameSession = async (sessionId: string, newTitle: string) => {
+  const handleRenameSession = useCallback(async (sessionId: string, newTitle: string) => {
     try {
       await dataSource.renameSession(sessionId, newTitle)
       toast.success(t('BiChat.Sidebar.ChatRenamedSuccessfully'))
@@ -407,9 +407,9 @@ export default function Sidebar({
       setActionError(display)
       toast.error(display.title)
     }
-  }
+  }, [dataSource, t, toast])
 
-  const handleRegenerateTitle = async (sessionId: string) => {
+  const handleRegenerateTitle = useCallback(async (sessionId: string) => {
     try {
       await dataSource.regenerateSessionTitle(sessionId)
       toast.success(t('BiChat.Sidebar.TitleRegenerated'))
@@ -422,7 +422,7 @@ export default function Sidebar({
       setActionError(display)
       toast.error(display.title)
     }
-  }
+  }, [dataSource, t, toast])
 
   // Stable callbacks for SessionItem — accept session ID as parameter
   const handleSessionSelect = useCallback(

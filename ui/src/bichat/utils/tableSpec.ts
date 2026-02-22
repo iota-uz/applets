@@ -40,22 +40,18 @@ function parseExport(value: unknown): RenderTableExport | undefined {
   }
 }
 
-export function parseRenderTableDataFromJsonString(
-  json: string,
+/**
+ * Parses RenderTableData from a record (e.g. artifact metadata from render_table tool).
+ */
+export function parseRenderTableDataFromMetadata(
+  metadata: Record<string, unknown>,
   fallbackId: string
 ): RenderTableData | null {
-  const trimmed = json.trim()
-  if (!trimmed) return null
+  if (!isRecord(metadata)) return null
+  return parseRenderTableDataFromObject(metadata, fallbackId)
+}
 
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(trimmed)
-  } catch {
-    return null
-  }
-
-  if (!isRecord(parsed)) return null
-
+function parseRenderTableDataFromObject(parsed: Record<string, unknown>, fallbackId: string): RenderTableData | null {
   const columns = Array.isArray(parsed.columns)
     ? parsed.columns
         .map((column) => readString(column))
@@ -103,4 +99,22 @@ export function parseRenderTableDataFromJsonString(
     export: parseExport(parsed.export),
     exportPrompt: readString(parsed.export_prompt) || readString(parsed.exportPrompt) || undefined,
   }
+}
+
+export function parseRenderTableDataFromJsonString(
+  json: string,
+  fallbackId: string
+): RenderTableData | null {
+  const trimmed = json.trim()
+  if (!trimmed) return null
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(trimmed)
+  } catch {
+    return null
+  }
+
+  if (!isRecord(parsed)) return null
+  return parseRenderTableDataFromObject(parsed, fallbackId)
 }

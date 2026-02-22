@@ -5,6 +5,7 @@ import {
   FileCsv,
   Image as ImageIcon,
   Package,
+  Table as TableIcon,
 } from '@phosphor-icons/react'
 import type { SessionArtifact } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
@@ -19,6 +20,7 @@ interface SessionArtifactListProps {
 
 const TYPE_LABEL_KEYS: Record<string, string> = {
   chart: 'BiChat.Artifacts.GroupCharts',
+  table: 'BiChat.Artifacts.GroupTables',
   code_output: 'BiChat.Artifacts.GroupCodeOutputs',
   export: 'BiChat.Artifacts.GroupExports',
   attachment: 'BiChat.Artifacts.GroupAttachments',
@@ -30,6 +32,8 @@ function getGroupIcon(type: string): ReactNode {
   switch (type) {
     case 'chart':
       return <ChartBar className={cls} weight="bold" />
+    case 'table':
+      return <TableIcon className={cls} weight="bold" />
     case 'code_output':
       return <Code className={cls} weight="bold" />
     case 'export':

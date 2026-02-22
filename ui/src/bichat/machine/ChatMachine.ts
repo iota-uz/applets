@@ -496,11 +496,18 @@ export class ChatMachine {
 
   private _cancel(): void {
     if (this.abortController) {
+      const sessionId = this.sendingSessionId ?? this.state.session.currentSessionId
+      if (sessionId && sessionId !== 'new' && this.dataSource.stopGeneration) {
+        this.dataSource.stopGeneration(sessionId).catch(() => {
+          // Non-fatal; local abort still stops the stream
+        })
+      }
       this.abortController.abort()
       this.abortController = null
       this._updateMessaging({
         isStreaming: false,
         loading: false,
+        streamingContent: '',
         thinkingContent: '',
         activeSteps: [],
       })
@@ -680,7 +687,7 @@ export class ChatMachine {
     debugMode: boolean
     replaceFromMessageID?: string
     tempTurnId: string
-  }): Promise<{ createdSessionId?: string; sessionFetched: boolean }> {
+  }): Promise<{ createdSessionId?: string; sessionFetched: boolean; stopped?: boolean }> {
     const {
       activeSessionId,
       content,
@@ -757,7 +764,8 @@ export class ChatMachine {
       }
     }
 
-    return { createdSessionId, sessionFetched }
+    const stopped = this.abortController?.signal.aborted ?? false
+    return { createdSessionId, sessionFetched, stopped }
   }
 
   private async _ensureSessionSyncAfterStream(
@@ -798,6 +806,13 @@ export class ChatMachine {
     if (err instanceof Error && err.name === 'AbortError') {
       this._updateInput({ message: content })
       this._clearStreamError()
+      this._updateMessaging({
+        turns: this.state.messaging.turns.filter((turn) => turn.id !== tempTurnId),
+      })
+      const sessionId = this.sendingSessionId ?? this.state.session.currentSessionId
+      if (sessionId && sessionId !== 'new') {
+        this._syncSessionFromServer(sessionId, true).catch(() => {})
+      }
       return false
     }
 
@@ -901,6 +916,7 @@ export class ChatMachine {
       const {
         createdSessionId,
         sessionFetched,
+        stopped,
       } = await this._runSendStream({
         activeSessionId,
         content,
@@ -909,10 +925,22 @@ export class ChatMachine {
         replaceFromMessageID,
         tempTurnId: tempTurn.id,
       })
-      await this._ensureSessionSyncAfterStream(activeSessionId, createdSessionId, sessionFetched)
 
-      const targetSessionId = createdSessionId || activeSessionId
-      this._finalizeSuccessfulSend(targetSessionId, shouldNavigateAfter)
+      if (stopped) {
+        this._updateMessaging({
+          turns: this.state.messaging.turns.filter((turn) => turn.id !== tempTurn.id),
+        })
+        this._updateInput({ message: content })
+        this._clearStreamError()
+        const syncId = createdSessionId || activeSessionId
+        if (syncId && syncId !== 'new') {
+          await this._syncSessionFromServer(syncId, true).catch(() => {})
+        }
+      } else {
+        await this._ensureSessionSyncAfterStream(activeSessionId, createdSessionId, sessionFetched)
+        const targetSessionId = createdSessionId || activeSessionId
+        this._finalizeSuccessfulSend(targetSessionId, shouldNavigateAfter)
+      }
     } catch (err) {
       shouldDrainQueue = this._handleSendError(err, content, tempTurn.id)
     } finally {

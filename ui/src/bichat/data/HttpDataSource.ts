@@ -197,6 +197,17 @@ export class HttpDataSource implements ChatDataSource {
   // Message transport (delegates to MessageTransport)
   // -------------------------------------------------------------------------
 
+  async stopGeneration(sessionId: string): Promise<void> {
+    await Messages.stopStream(
+      {
+        baseUrl: this.config.baseUrl,
+        streamEndpoint: this.config.streamEndpoint!,
+        createHeaders: (h) => this.createHeaders(h),
+      },
+      sessionId
+    )
+  }
+
   async *sendMessage(
     sessionId: string,
     content: string,

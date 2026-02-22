@@ -370,6 +370,29 @@ export function DebugPanel({ trace, debugLimits = null }: DebugPanelProps) {
             </div>
           )}
 
+          {(trace.thinking || trace.observationReason || trace.sessionId) && (
+            <div className="rounded-lg border border-gray-200/60 dark:border-gray-700/40 bg-gray-50/50 dark:bg-gray-800/40 p-3 space-y-2">
+              {trace.sessionId && (
+                <div className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Session: <span className="font-mono normal-case break-all">{trace.sessionId}</span>
+                </div>
+              )}
+              {trace.observationReason && (
+                <div className="text-[11px] text-amber-700 dark:text-amber-300">
+                  Observation: <span className="font-mono">{trace.observationReason}</span>
+                </div>
+              )}
+              {trace.thinking && (
+                <div>
+                  <div className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Reasoning</div>
+                  <pre className="p-2 rounded bg-gray-100 dark:bg-gray-900 text-[11px] whitespace-pre-wrap break-words text-gray-700 dark:text-gray-200">
+                    {trace.thinking}
+                  </pre>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Metric chips */}
           {metrics.length > 0 && (
             <div className="flex flex-wrap gap-1.5">

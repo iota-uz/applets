@@ -23,7 +23,7 @@ import type {
 } from '../types'
 import { MessageRole } from '../types'
 import { parseChartDataFromSpec, parseChartDataFromJsonString, isRecord } from '../utils/chartSpec'
-import { parseRenderTableDataFromJsonString } from '../utils/tableSpec'
+import { parseRenderTableDataFromJsonString, parseRenderTableDataFromMetadata } from '../utils/tableSpec'
 
 // ---------------------------------------------------------------------------
 // Internal helper types
@@ -308,6 +308,9 @@ function sanitizeAssistantTurn(
       generationMs: readOptionalFiniteNumber(rawAssistantTurn.debug.generationMs),
       traceId: readNonEmptyString(rawAssistantTurn.debug.traceId) || undefined,
       traceUrl: readNonEmptyString(rawAssistantTurn.debug.traceUrl) || undefined,
+      sessionId: readNonEmptyString(rawAssistantTurn.debug.sessionId) || undefined,
+      thinking: readNonEmptyString(rawAssistantTurn.debug.thinking) || undefined,
+      observationReason: readNonEmptyString(rawAssistantTurn.debug.observationReason) || undefined,
       usage: isRecord(rawAssistantTurn.debug.usage)
         ? {
           promptTokens: readFiniteNumber(rawAssistantTurn.debug.usage.promptTokens),
@@ -703,7 +706,11 @@ export function attachArtifactsToTurns(
     .filter((a) => a.type === 'chart')
     .sort((a, b) => toMillis(a.createdAt) - toMillis(b.createdAt))
 
-  if (downloadArtifacts.length === 0 && chartArtifacts.length === 0) return turns
+  const tableArtifacts = artifacts
+    .filter((a) => a.type === 'table')
+    .sort((a, b) => toMillis(a.createdAt) - toMillis(b.createdAt))
+
+  if (downloadArtifacts.length === 0 && chartArtifacts.length === 0 && tableArtifacts.length === 0) return turns
 
   const nextTurns = turns.map((turn) => {
     if (!turn.assistantTurn) {
@@ -771,6 +778,31 @@ export function attachArtifactsToTurns(
     if (chartData) {
       assistantTurn.chartData = chartData
     }
+  }
+
+  for (const raw of tableArtifacts) {
+    const messageID = raw.messageId
+    if (!messageID) continue
+    const targetIndex = turnIndexByMessageID.get(messageID)
+    if (targetIndex === undefined) continue
+
+    const assistantTurn = nextTurns[targetIndex]?.assistantTurn
+    if (!assistantTurn) continue
+
+    if (assistantTurn.renderTables === undefined) {
+      assistantTurn.renderTables = extractRenderTablesFromToolCalls(assistantTurn.toolCalls)
+    }
+    const existing = assistantTurn.renderTables
+
+    const metadata = raw.metadata
+    if (!metadata || typeof metadata !== 'object' || metadata === null) continue
+    const tableData = parseRenderTableDataFromMetadata(metadata as Record<string, unknown>, raw.id)
+    if (!tableData) continue
+
+    const dedupeKey = (t: RenderTableData) => `${t.query}|${t.columns.join(',')}`
+    const key = dedupeKey(tableData)
+    if (existing.some((t) => dedupeKey(t) === key)) continue
+    assistantTurn.renderTables = [...existing, tableData]
   }
 
   return nextTurns

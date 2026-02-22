@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowSquareOut, DownloadSimple, FileText, SpinnerGap, WarningCircle } from '@phosphor-icons/react'
 import type { SessionArtifact } from '../types'
 import { parseChartDataFromSpec, isRecord } from '../utils/chartSpec'
+import { parseRenderTableDataFromMetadata } from '../utils/tableSpec'
 import { ChartCard } from './ChartCard'
+import { InteractiveTableCard } from './InteractiveTableCard'
 import { useTranslation } from '../hooks/useTranslation'
 import {
   getArtifactName,
@@ -165,6 +167,21 @@ export function SessionArtifactPreview({ artifact }: SessionArtifactPreviewProps
       return <ChartCard chartData={chartData} />
     }
     return <WarningBox message={t('BiChat.Artifacts.ChartUnavailable')} />
+  }
+
+  if (artifact.type === 'table' && artifact.metadata && typeof artifact.metadata === 'object') {
+    const tableData = parseRenderTableDataFromMetadata(
+      artifact.metadata as Record<string, unknown>,
+      artifact.id
+    )
+    if (tableData) {
+      return (
+        <div className="rounded-xl border border-gray-200/80 bg-white dark:border-gray-700/60 dark:bg-gray-900/30">
+          <InteractiveTableCard table={tableData} />
+        </div>
+      )
+    }
+    return <WarningBox message={t('BiChat.Artifacts.PreviewUnavailable')} />
   }
 
   if (isImageArtifact(artifact)) {
