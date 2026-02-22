@@ -104,6 +104,10 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
   const [showScrollButton, setShowScrollButton] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const prevTurnsLengthRef = useRef(turns.length)
+  // Tracks whether auto-scroll should follow new content.
+  // Updated by the scroll event handler (reflects actual user scroll position
+  // BEFORE the DOM grows), so it's not fooled by content height changes.
+  const isAutoScrollRef = useRef(true)
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
     const container = containerRef.current
@@ -117,15 +121,12 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
     messagesEndRef.current?.scrollIntoView({ behavior })
   }, [])
 
-  // Auto-scroll to bottom on new turns or streaming content (only when user is near bottom)
+  // Auto-scroll on new turns or streaming content
   useEffect(() => {
-    const container = containerRef.current
-    if (container) {
-      const { scrollTop, scrollHeight, clientHeight } = container
-      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
-      if (!isNearBottom) return
-    }
-    scrollToBottom('smooth')
+    if (!isAutoScrollRef.current) return
+    // Use instant scroll during streaming to keep up with rapid updates;
+    // smooth scroll for new turns (less frequent, feels nicer).
+    scrollToBottom(streamingContent ? 'auto' : 'smooth')
   }, [turns.length, streamingContent, scrollToBottom])
 
   // On first open of a session, jump to latest message immediately.
@@ -136,6 +137,7 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
     const runInitialScroll = () => {
       scrollToBottom('auto')
       setShowScrollButton(false)
+      isAutoScrollRef.current = true
     }
 
     requestAnimationFrame(() => {
@@ -153,14 +155,15 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
     }
   }, [currentSessionId, fetching, turns.length, scrollToBottom])
 
-  // Scroll detection for ScrollToBottomButton
+  // Scroll detection — updates auto-scroll flag and ScrollToBottomButton
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
 
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = container
-      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 150
+      isAutoScrollRef.current = isNearBottom
       setShowScrollButton(!isNearBottom)
       if (isNearBottom) {
         setUnreadCount(0)
