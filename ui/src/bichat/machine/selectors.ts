@@ -50,6 +50,7 @@ export function deriveMessagingSnapshot(
     turns, loading, isStreaming, streamingContent, isCompacting,
     streamError, streamErrorRetryable, pendingQuestion, codeOutputs,
     artifactsInvalidationTrigger, thinkingContent, activeSteps,
+    generationInProgress,
   } = state.messaging
 
   // ---------------------------------------------------------------------------
@@ -90,6 +91,7 @@ export function deriveMessagingSnapshot(
     artifactsInvalidationTrigger,
     thinkingContent,
     activeSteps,
+    generationInProgress,
     showActivityTrace,
     showTypingIndicator,
     ...methods,

@@ -21,6 +21,7 @@ import type {
   SessionArtifact,
   Attachment,
   StreamChunk,
+  StreamStatus,
   QuestionAnswers,
   SendMessageOptions,
 } from '../types'
@@ -205,6 +206,37 @@ export class HttpDataSource implements ChatDataSource {
         createHeaders: (h) => this.createHeaders(h),
       },
       sessionId
+    )
+  }
+
+  async getStreamStatus(sessionId: string): Promise<StreamStatus | null> {
+    return Messages.getStreamStatus(
+      {
+        baseUrl: this.config.baseUrl,
+        streamEndpoint: this.config.streamEndpoint!,
+        createHeaders: (h) => this.createHeaders(h),
+      },
+      sessionId
+    )
+  }
+
+  async resumeStream(
+    sessionId: string,
+    runId: string,
+    onChunk: (chunk: StreamChunk) => void,
+    signal?: AbortSignal
+  ): Promise<void> {
+    await Messages.resumeStream(
+      {
+        baseUrl: this.config.baseUrl,
+        streamEndpoint: this.config.streamEndpoint!,
+        createHeaders: (h) => this.createHeaders(h),
+        timeout: this.config.timeout,
+      },
+      sessionId,
+      runId,
+      onChunk,
+      signal
     )
   }
 

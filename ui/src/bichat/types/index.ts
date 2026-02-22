@@ -333,8 +333,22 @@ export type StreamEvent =
  * @deprecated Use `StreamEvent` instead. `StreamChunk` is kept for backwards
  * compatibility but the flat all-optional shape is unsound.
  */
+/** Partial state when resuming a stream after refresh */
+export interface StreamSnapshotPayload {
+  partialContent?: string
+  partialMetadata?: Record<string, unknown>
+}
+
+/** Active stream status for a session (from GET /stream/status) */
+export interface StreamStatus {
+  active: boolean
+  runId?: string
+  snapshot?: StreamSnapshotPayload
+  startedAt?: number
+}
+
 export interface StreamChunk {
-  type: 'chunk' | 'content' | 'thinking' | 'tool_start' | 'tool_end' | 'usage' | 'done' | 'error' | 'user_message' | 'interrupt'
+  type: 'chunk' | 'content' | 'thinking' | 'tool_start' | 'tool_end' | 'usage' | 'done' | 'error' | 'user_message' | 'interrupt' | 'snapshot' | 'stream_started'
   content?: string
   error?: string
   sessionId?: string
@@ -343,6 +357,9 @@ export interface StreamChunk {
   interrupt?: StreamInterruptPayload
   generationMs?: number
   timestamp?: number
+  snapshot?: StreamSnapshotPayload
+  /** Set when type is 'stream_started'; client should store for refresh-safe resume */
+  runId?: string
 }
 
 export interface StreamInterruptPayload {
@@ -554,6 +571,22 @@ export interface ChatDataSource {
    * Optional for backward compatibility with data sources that do not support stop.
    */
   stopGeneration?(sessionId: string): Promise<void>
+  /**
+   * Returns active stream status for the session (for refresh-safe resume).
+   * Optional; if absent, no resume/passive flow is used.
+   */
+  getStreamStatus?(sessionId: string): Promise<StreamStatus | null>
+  /**
+   * Resumes an active stream: delivers snapshot then new chunks. Use when getStreamStatus
+   * reported active and the client has the same-browser run marker.
+   * Optional; if absent, resume is not supported.
+   */
+  resumeStream?(
+    sessionId: string,
+    runId: string,
+    onChunk: (chunk: StreamChunk) => void,
+    signal?: AbortSignal
+  ): Promise<void>
   /**
    * @deprecated Pass `onSessionCreated` to `ChatSessionProvider` instead.
    * This method couples navigation to the data source, causing component

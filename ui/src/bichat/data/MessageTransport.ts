@@ -8,6 +8,7 @@ import type { BichatRPC } from './rpc.generated'
 import type {
   Attachment,
   StreamChunk,
+  StreamStatus,
   QuestionAnswers,
   SendMessageOptions,
 } from '../types'
@@ -183,6 +184,66 @@ export async function stopStream(
   if (!response.ok) {
     // Non-fatal: local abort will still stop the stream
     console.warn('Stop stream request failed:', response.status)
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Stream status and resume (refresh-safe)
+// ---------------------------------------------------------------------------
+
+type StreamStatusResumeDeps = Pick<
+  MessageTransportDeps,
+  'baseUrl' | 'streamEndpoint' | 'createHeaders'
+>
+
+export async function getStreamStatus(
+  deps: StreamStatusResumeDeps,
+  sessionId: string
+): Promise<StreamStatus | null> {
+  const base = (deps.baseUrl ?? '').replace(/\/+$/, '')
+  const streamPath = (deps.streamEndpoint ?? '/stream').replace(/\/$/, '')
+  const url = `${base}${streamPath}/status?sessionId=${encodeURIComponent(sessionId)}`
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: deps.createHeaders(),
+  })
+  if (!response.ok) {
+    if (response.status === 404) return null
+    console.warn('Stream status request failed:', response.status)
+    return null
+  }
+  const data = (await response.json()) as StreamStatus
+  return data
+}
+
+export async function resumeStream(
+  deps: StreamStatusResumeDeps & { timeout?: number },
+  sessionId: string,
+  runId: string,
+  onChunk: (chunk: StreamChunk) => void,
+  signal?: AbortSignal
+): Promise<void> {
+  const base = (deps.baseUrl ?? '').replace(/\/+$/, '')
+  const streamPath = (deps.streamEndpoint ?? '/stream').replace(/\/$/, '')
+  const url = `${base}${streamPath}/resume`
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: deps.createHeaders(),
+    body: JSON.stringify({ sessionId, runId }),
+    signal,
+  })
+  if (!response.ok) {
+    throw new Error(`Resume stream failed: HTTP ${response.status}`)
+  }
+  if (!response.body) {
+    throw new Error('Resume response body is null')
+  }
+  const reader = response.body.getReader()
+  for await (const chunk of parseBichatStream(reader)) {
+    onChunk(chunk)
+    if (chunk.type === 'done' || chunk.type === 'error') {
+      return
+    }
   }
 }
 

@@ -1,5 +1,5 @@
-import { memo, useCallback, useState } from 'react'
-import { ArrowsIn, ArrowsOut, CaretUp, CaretDown, ChartBar, Columns, ChartLineUp, Copy, X, Check } from '@phosphor-icons/react'
+import { memo, useCallback, useState, useRef } from 'react'
+import { ArrowsIn, ArrowsOut, CaretUp, CaretDown, Columns, Copy, X, Check } from '@phosphor-icons/react'
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react'
 import type { ColumnMeta, SortState } from '../hooks/useDataTable'
 import { useTranslation } from '../hooks/useTranslation'
@@ -8,12 +8,8 @@ interface DataTableToolbarProps {
   columns: ColumnMeta[]
   searchQuery: string
   onSearchChange: (query: string) => void
-  showStats: boolean
-  onToggleStats: (show: boolean) => void
   onToggleColumnVisibility: (columnIndex: number) => void
   onResetColumnVisibility: () => void
-  onSendMessage?: (content: string) => void
-  sendDisabled?: boolean
   hasHiddenColumns: boolean
   sort?: SortState | null
   onClearSort?: () => void
@@ -26,12 +22,8 @@ export const DataTableToolbar = memo(function DataTableToolbar({
   columns,
   searchQuery,
   onSearchChange,
-  showStats,
-  onToggleStats,
   onToggleColumnVisibility,
   onResetColumnVisibility,
-  onSendMessage,
-  sendDisabled,
   hasHiddenColumns,
   sort,
   onClearSort,
@@ -41,10 +33,19 @@ export const DataTableToolbar = memo(function DataTableToolbar({
 }: DataTableToolbarProps) {
   const { t } = useTranslation()
   const [searchFocused, setSearchFocused] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>()
 
   const handleSearchClear = useCallback(() => {
     onSearchChange('')
   }, [onSearchChange])
+
+  const handleCopy = useCallback(() => {
+    onCopyTable?.()
+    clearTimeout(copyTimerRef.current)
+    setCopied(true)
+    copyTimerRef.current = setTimeout(() => setCopied(false), 2000)
+  }, [onCopyTable])
 
   const hasSearch = searchQuery.length > 0
 
@@ -128,45 +129,20 @@ export const DataTableToolbar = memo(function DataTableToolbar({
         </PopoverPanel>
       </Popover>
 
-      {/* Stats toggle */}
-      <button
-        type="button"
-        onClick={() => onToggleStats(!showStats)}
-        className={`flex cursor-pointer items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors ${
-          showStats
-            ? 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
-            : 'border-gray-300 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800'
-        }`}
-        aria-label={t('BiChat.DataTable.ToggleStats')}
-      >
-        <ChartBar size={14} />
-        <span>{t('BiChat.DataTable.Stats')}</span>
-      </button>
-
       {/* Copy table */}
       {onCopyTable && (
         <button
           type="button"
-          onClick={onCopyTable}
-          className="flex cursor-pointer items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800"
+          onClick={handleCopy}
+          className={`flex cursor-pointer items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors ${
+            copied
+              ? 'border-green-300 bg-green-50 text-green-700 dark:border-green-600 dark:bg-green-900/20 dark:text-green-400'
+              : 'border-gray-300 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800'
+          }`}
           aria-label={t('BiChat.DataTable.CopyTable')}
         >
-          <Copy size={14} />
-          <span>{t('BiChat.DataTable.Copy')}</span>
-        </button>
-      )}
-
-      {/* Visualize */}
-      {onSendMessage && (
-        <button
-          type="button"
-          disabled={sendDisabled}
-          onClick={() => onSendMessage(t('BiChat.DataTable.Prompt.VisualizeChart'))}
-          className="flex cursor-pointer items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800"
-          aria-label={t('BiChat.DataTable.Visualize')}
-        >
-          <ChartLineUp size={14} />
-          <span>{t('BiChat.DataTable.Visualize')}</span>
+          {copied ? <Check size={14} weight="bold" /> : <Copy size={14} />}
+          <span>{copied ? t('BiChat.Message.Copied') : t('BiChat.DataTable.Copy')}</span>
         </button>
       )}
 

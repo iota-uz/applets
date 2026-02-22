@@ -64,6 +64,38 @@ import {
 type Listener = () => void
 
 const MAX_QUEUE_SIZE = 5
+const RUN_MARKER_PREFIX = 'bichat.run.'
+
+function getRunMarkerKey(sessionId: string): string {
+  return `${RUN_MARKER_PREFIX}${sessionId}`
+}
+
+function setRunMarker(sessionId: string, runId: string): void {
+  if (typeof window === 'undefined' || !sessionId || sessionId === 'new') return
+  try {
+    window.sessionStorage.setItem(getRunMarkerKey(sessionId), runId)
+  } catch {
+    // ignore
+  }
+}
+
+function getRunMarker(sessionId: string): string | null {
+  if (typeof window === 'undefined' || !sessionId || sessionId === 'new') return null
+  try {
+    return window.sessionStorage.getItem(getRunMarkerKey(sessionId))
+  } catch {
+    return null
+  }
+}
+
+function clearRunMarker(sessionId: string): void {
+  if (typeof window === 'undefined' || !sessionId || sessionId === 'new') return
+  try {
+    window.sessionStorage.removeItem(getRunMarkerKey(sessionId))
+  } catch {
+    // ignore
+  }
+}
 
 // ---------------------------------------------------------------------------
 // ChatMachine
@@ -87,6 +119,8 @@ export class ChatMachine {
   private disposed = false
   /** Memoized sessionDebugUsage — avoids unnecessary session re-renders during streaming. */
   private lastSessionDebugUsage: SessionDebugUsage | null = null
+  /** Interval handle for passive polling when another tab has an active stream. */
+  private passivePollingId: ReturnType<typeof setInterval> | null = null
 
   // ── Listeners ───────────────────────────────────────────────────────────
   private sessionListeners = new Set<Listener>()
@@ -153,6 +187,7 @@ export class ChatMachine {
         artifactsInvalidationTrigger: 0,
         thinkingContent: '',
         activeSteps: [],
+        generationInProgress: false,
       },
       input: {
         message: '',
@@ -222,6 +257,10 @@ export class ChatMachine {
   dispose(): void {
     this.disposed = true
     this.fetchCancelled = true
+    if (this.passivePollingId) {
+      clearInterval(this.passivePollingId)
+      this.passivePollingId = null
+    }
     this.abortController?.abort()
     this.sessionListeners.clear()
     this.messagingListeners.clear()
@@ -408,6 +447,7 @@ export class ChatMachine {
         if (result) {
           this._updateSession({ session: result.session, fetching: false })
           this._setTurnsFromFetch(result.turns, result.pendingQuestion || null)
+          this._checkStreamStatusAndResumeOrPoll(fetchId)
         } else {
           this._updateSession({ error: 'Session not found', fetching: false })
         }
@@ -465,6 +505,106 @@ export class ChatMachine {
     this._updateMessaging(patch)
   }
 
+  /**
+   * After fetch: if backend has an active stream, either resume (same-browser) or poll (passive).
+   */
+  private _checkStreamStatusAndResumeOrPoll(sessionId: string): void {
+    if (!this.dataSource.getStreamStatus || !this.dataSource.resumeStream) return
+    this.dataSource
+      .getStreamStatus(sessionId)
+      .then((status) => {
+        if (this.fetchCancelled || this.disposed) return
+        if (this.state.session.currentSessionId !== sessionId) return
+        if (this.sendingSessionId === sessionId) return
+        if (!status?.active || !status.runId) {
+          this._updateMessaging({ generationInProgress: false })
+          return
+        }
+        const storedRunId = getRunMarker(sessionId)
+        if (storedRunId === status.runId) {
+          this._runResumeStream(sessionId, status.runId).catch(() => {
+            clearRunMarker(sessionId)
+            this._updateMessaging({ generationInProgress: false })
+          })
+        } else {
+          this._updateMessaging({ generationInProgress: true })
+          this._startPassivePolling(sessionId)
+        }
+      })
+      .catch(() => {
+        this._updateMessaging({ generationInProgress: false })
+      })
+  }
+
+  private _startPassivePolling(sessionId: string): void {
+    if (this.passivePollingId) clearInterval(this.passivePollingId)
+    this.passivePollingId = setInterval(() => {
+      if (this.disposed || this.state.session.currentSessionId !== sessionId) {
+        if (this.passivePollingId) clearInterval(this.passivePollingId)
+        this.passivePollingId = null
+        return
+      }
+      this.dataSource.getStreamStatus?.(sessionId).then((status) => {
+        if (!status?.active) {
+          if (this.passivePollingId) clearInterval(this.passivePollingId)
+          this.passivePollingId = null
+          this._updateMessaging({ generationInProgress: false })
+          this.dataSource.fetchSession(sessionId).then((result) => {
+            if (this.state.session.currentSessionId === sessionId && result) {
+              this._setTurnsFromFetch(result.turns, result.pendingQuestion ?? null)
+            }
+          })
+        }
+      })
+    }, 2000)
+  }
+
+  private async _runResumeStream(sessionId: string, runId: string): Promise<void> {
+    if (this.sendingSessionId !== null) return
+    this.sendingSessionId = sessionId
+    this.abortController = new AbortController()
+    this._updateMessaging({ isStreaming: true })
+
+    try {
+      let accumulatedContent = ''
+      await this.dataSource.resumeStream!(
+        sessionId,
+        runId,
+        (chunk) => {
+          if (chunk.type === 'snapshot' && chunk.snapshot?.partialContent !== undefined) {
+            accumulatedContent = chunk.snapshot.partialContent
+            this._updateMessaging({ streamingContent: accumulatedContent })
+          } else if ((chunk.type === 'content' || chunk.type === 'chunk') && chunk.content) {
+            accumulatedContent += chunk.content
+            this._updateMessaging({ streamingContent: accumulatedContent })
+          } else if (chunk.type === 'thinking' && chunk.content) {
+            this._handleThinkingChunk(chunk.content)
+          } else if (chunk.type === 'tool_start' && chunk.tool) {
+            this._handleToolStart(chunk.tool)
+          } else if (chunk.type === 'tool_end' && chunk.tool) {
+            this._handleToolEnd(chunk.tool)
+          } else if (chunk.type === 'done' || chunk.type === 'error') {
+            // will sync below
+          }
+        },
+        this.abortController.signal
+      )
+      clearRunMarker(sessionId)
+      await this._syncSessionFromServer(sessionId, true)
+    } finally {
+      this.sendingSessionId = null
+      this.abortController = null
+      this._updateMessaging({
+        isStreaming: false,
+        loading: false,
+        streamingContent: '',
+        thinkingContent: '',
+        activeSteps: [],
+        generationInProgress: false,
+      })
+    }
+  }
+
   // =====================================================================
   // Private — actions
   // =====================================================================
@@ -497,10 +637,13 @@ export class ChatMachine {
   private _cancel(): void {
     if (this.abortController) {
       const sessionId = this.sendingSessionId ?? this.state.session.currentSessionId
-      if (sessionId && sessionId !== 'new' && this.dataSource.stopGeneration) {
-        this.dataSource.stopGeneration(sessionId).catch(() => {
-          // Non-fatal; local abort still stops the stream
-        })
+      if (sessionId && sessionId !== 'new') {
+        clearRunMarker(sessionId)
+        if (this.dataSource.stopGeneration) {
+          this.dataSource.stopGeneration(sessionId).catch(() => {
+            // Non-fatal; local abort still stops the stream
+          })
+        }
       }
       this.abortController.abort()
       this.abortController = null
@@ -700,6 +843,7 @@ export class ChatMachine {
     let accumulatedContent = ''
     let createdSessionId: string | undefined
     let sessionFetched = false
+    let currentRunId: string | undefined
     this._updateMessaging({ isStreaming: true })
 
     for await (const chunk of this.dataSource.sendMessage(
@@ -713,6 +857,13 @@ export class ChatMachine {
       }
     )) {
       if (this.abortController?.signal.aborted) break
+
+      if (chunk.type === 'stream_started' && chunk.runId) {
+        currentRunId = chunk.runId
+        if (activeSessionId && activeSessionId !== 'new') {
+          setRunMarker(activeSessionId, chunk.runId)
+        }
+      }
 
       if ((chunk.type === 'chunk' || chunk.type === 'content') && chunk.content) {
         accumulatedContent += chunk.content
@@ -761,7 +912,15 @@ export class ChatMachine {
         }
       } else if (chunk.type === 'user_message' && chunk.sessionId) {
         createdSessionId = chunk.sessionId
+        if (currentRunId && createdSessionId) {
+          setRunMarker(createdSessionId, currentRunId)
+        }
       }
+    }
+
+    const finalSessionId = createdSessionId || activeSessionId
+    if (finalSessionId && finalSessionId !== 'new') {
+      clearRunMarker(finalSessionId)
     }
 
     const stopped = this.abortController?.signal.aborted ?? false

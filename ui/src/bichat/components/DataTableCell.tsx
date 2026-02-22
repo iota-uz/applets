@@ -1,6 +1,8 @@
-import { memo, useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { Copy, Check } from '@phosphor-icons/react'
 import type { FormattedCell } from '../utils/columnTypes'
+import { useTranslation } from '../hooks/useTranslation'
 
 interface DataTableCellProps {
   formatted: FormattedCell
@@ -114,22 +116,23 @@ export const DataTableCell = memo(function DataTableCell({
   isSticky,
   stickyClassName,
 }: DataTableCellProps) {
-  const handleClick = useCallback(() => {
+  const { t } = useTranslation()
+  const [copied, setCopied] = useState(false)
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>()
+
+  const tdRef = useRef<HTMLTableCellElement>(null)
+
+  const handleCopy = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
     if (!onCopy) return
     const text = formatted.isNull ? '' : String(formatted.raw ?? formatted.display)
     onCopy(text)
+    clearTimeout(copyTimerRef.current)
+    setCopied(true)
+    copyTimerRef.current = setTimeout(() => setCopied(false), 2000)
   }, [onCopy, formatted])
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (!onCopy) return
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault()
-        handleClick()
-      }
-    },
-    [onCopy, handleClick],
-  )
+  const [hovered, setHovered] = useState(false)
 
   const tooltipRef = useRef<HTMLSpanElement>(null)
   const [tooltip, setTooltip] = useState<{ x: number; y: number } | null>(null)
@@ -153,7 +156,10 @@ export const DataTableCell = memo(function DataTableCell({
   }, [])
 
   useEffect(() => {
-    return () => clearTimeout(tooltipTimerRef.current)
+    return () => {
+      clearTimeout(tooltipTimerRef.current)
+      clearTimeout(copyTimerRef.current)
+    }
   }, [])
 
   const hasOverflow = formatted.type === 'string' || formatted.type === 'url' || formatted.type === 'date' || formatted.type === 'number'
@@ -161,18 +167,33 @@ export const DataTableCell = memo(function DataTableCell({
 
   const rendererProps = { formatted, tooltipRef, onMouseEnter: handleMouseEnter, onMouseLeave: handleMouseLeave }
 
+  const showCopyButton = onCopy && (hovered || copied) && !formatted.isNull
+
   return (
     <td
-      className={`px-3 py-2 align-top ${alignment === 'right' ? 'text-right' : 'text-left'} ${isSticky ? stickyClassName ?? '' : ''}`}
-      onClick={onCopy ? handleClick : undefined}
-      onKeyDown={onCopy ? handleKeyDown : undefined}
-      role={onCopy ? 'button' : undefined}
-      tabIndex={onCopy ? 0 : undefined}
+      ref={tdRef}
+      className={`relative px-3 py-2 align-top ${alignment === 'right' ? 'text-right' : 'text-left'} ${isSticky ? stickyClassName ?? '' : ''}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       {formatted.isNull ? (
         <span className="text-xs text-gray-400 dark:text-gray-500">&mdash;</span>
       ) : (
         (cellRenderers[formatted.type] ?? defaultRenderer)(rendererProps)
+      )}
+      {showCopyButton && (
+        <button
+          type="button"
+          onClick={handleCopy}
+          className={`absolute top-1 right-1 cursor-pointer rounded p-0.5 transition-colors ${
+            copied
+              ? 'text-green-600 dark:text-green-400'
+              : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'
+          }`}
+          aria-label={copied ? t('BiChat.Message.Copied') : t('BiChat.DataTable.Copy')}
+        >
+          {copied ? <Check size={14} weight="bold" /> : <Copy size={14} />}
+        </button>
       )}
       {tooltip && hasOverflow && tooltipContent && createPortal(
         <div

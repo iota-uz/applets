@@ -61,6 +61,8 @@ export interface MessagingState {
   thinkingContent: string
   /** Ephemeral: ordered list of activity steps (thinking, tools, delegations). */
   activeSteps: ActivityStep[]
+  /** True when another tab/device has an active stream; show "generation in progress" and poll. */
+  generationInProgress: boolean
 }
 
 export interface InputState {
@@ -111,6 +113,7 @@ export interface MessagingSnapshot {
   artifactsInvalidationTrigger: number
   thinkingContent: string
   activeSteps: ActivityStep[]
+  generationInProgress: boolean
   showActivityTrace: boolean
   showTypingIndicator: boolean
   sendMessage: (content: string, attachments?: Attachment[]) => Promise<void>

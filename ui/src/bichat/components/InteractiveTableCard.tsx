@@ -2,7 +2,6 @@ import { memo, useCallback, useState } from 'react'
 import { MagnifyingGlass } from '@phosphor-icons/react'
 import type { RenderTableData } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
-import { useToast } from '../hooks/useToast'
 import { useDataTable, type DataTableOptions } from '../hooks/useDataTable'
 import { TableExportButton } from './TableExportButton'
 import { DataTableHeader } from './DataTableHeader'
@@ -77,8 +76,6 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
   host,
 }: InteractiveTableCardProps) {
   const { t } = useTranslation()
-  const toast = useToast()
-
   const dt = useDataTable(table, options)
 
   const canExportViaPrompt = !!onSendMessage && !!table.exportPrompt
@@ -113,25 +110,25 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
 
   const handleCellCopy = useCallback(
     (text: string) => {
-      navigator.clipboard
-        .writeText(text)
-        .then(() => toast.success(t('BiChat.Message.CopiedToClipboard')))
-        .catch(() => toast.error(t('BiChat.Message.FailedToCopy')))
+      navigator.clipboard.writeText(text).catch(() => {
+        /* clipboard API unavailable */
+      })
     },
-    [toast, t],
+    [],
   )
 
   const handleCopyTable = useCallback(() => {
     const tsv = dt.getTableAsTSV()
-    navigator.clipboard
-      .writeText(tsv)
-      .then(() => toast.success(t('BiChat.DataTable.TableCopied')))
-      .catch(() => toast.error(t('BiChat.Message.FailedToCopy')))
-  }, [dt, toast, t])
+    navigator.clipboard.writeText(tsv).catch(() => {
+      /* clipboard API unavailable */
+    })
+  }, [dt])
 
   const [internalFullscreen, setInternalFullscreen] = useState(false)
   const isFullscreen = host ? host.isFullscreen : internalFullscreen
   const toggleFullscreen = host ? host.onToggleFullscreen : () => setInternalFullscreen((v) => !v)
+
+  const [hoveredRow, setHoveredRow] = useState<number | null>(null)
 
   const hasHiddenColumns = dt.columns.some((c) => !c.visible)
   const from = dt.totalFilteredRows === 0 ? 0 : (dt.page - 1) * dt.pageSize + 1
@@ -142,12 +139,8 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
       columns={dt.columns}
       searchQuery={dt.searchQuery}
       onSearchChange={dt.setSearchQuery}
-      showStats={dt.showStats}
-      onToggleStats={dt.setShowStats}
       onToggleColumnVisibility={dt.toggleColumnVisibility}
       onResetColumnVisibility={dt.resetColumnVisibility}
-      onSendMessage={onSendMessage}
-      sendDisabled={sendDisabled}
       hasHiddenColumns={hasHiddenColumns}
       sort={dt.sort}
       onClearSort={dt.clearSort}
@@ -203,11 +196,19 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
           {dt.pageRows.map((row, rowIndex) => (
             <tr
               key={`${table.id}-row-${rowIndex}`}
-              className={`border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/40 ${
-                rowIndex % 2 === 1 ? 'bg-gray-50/50 dark:bg-gray-800/20' : ''
+              className={`border-b border-gray-100 dark:border-gray-800 ${
+                hoveredRow === rowIndex
+                  ? 'bg-gray-100 dark:bg-gray-800/40'
+                  : rowIndex % 2 === 1 ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-900'
               }`}
+              onMouseEnter={() => setHoveredRow(rowIndex)}
+              onMouseLeave={() => setHoveredRow(null)}
             >
-              <td className={`sticky left-0 z-[2] w-10 px-2 py-2 text-right text-xs tabular-nums text-gray-400 dark:text-gray-500 select-none ${rowIndex % 2 === 1 ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-900'}`}>
+              <td className={`sticky left-0 z-[2] w-10 px-2 py-2 text-right text-xs tabular-nums text-gray-400 dark:text-gray-500 select-none ${
+                hoveredRow === rowIndex
+                  ? 'bg-gray-100 dark:bg-gray-800/40'
+                  : rowIndex % 2 === 1 ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-900'
+              }`}>
                 {(dt.page - 1) * dt.pageSize + rowIndex + 1}
               </td>
               {dt.visibleColumns.map((col, colIdx) => (
@@ -217,7 +218,11 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
                   alignment={dt.getCellAlignment(col.index)}
                   onCopy={handleCellCopy}
                   isSticky={colIdx === 0}
-                  stickyClassName={`sticky left-[2.5rem] z-[1] ${rowIndex % 2 === 1 ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-900'}`}
+                  stickyClassName={`sticky left-[2.5rem] z-[1] ${
+                    hoveredRow === rowIndex
+                      ? 'bg-gray-100 dark:bg-gray-800/40'
+                      : rowIndex % 2 === 1 ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-900'
+                  }`}
                 />
               ))}
             </tr>
@@ -251,13 +256,11 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
             </tr>
           )}
         </tbody>
-        {dt.showStats && (
-          <DataTableFooter
-            visibleColumns={dt.visibleColumns}
-            stats={dt.columnStats}
-            showRowNumbers
-          />
-        )}
+        <DataTableFooter
+          visibleColumns={dt.visibleColumns}
+          stats={dt.columnStats}
+          showRowNumbers
+        />
       </table>
     </div>
   )

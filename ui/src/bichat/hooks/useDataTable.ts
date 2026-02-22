@@ -56,8 +56,6 @@ export interface UseDataTableReturn {
   searchQuery: string
   setSearchQuery: (query: string) => void
 
-  showStats: boolean
-  setShowStats: (show: boolean) => void
   columnStats: Map<number, ColumnStats>
 
   toggleColumnVisibility: (columnIndex: number) => void
@@ -80,7 +78,6 @@ export function useDataTable(
   const [pageSize, setPageSize] = useState(defaultPageSize)
   const [sort, setSort] = useState<SortState | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [showStats, setShowStats] = useState(false)
   const [columnVisibility, setColumnVisibility] = useState<Map<number, boolean>>(new Map())
   const [columnWidths, setColumnWidths] = useState<Map<number, number>>(new Map())
 
@@ -90,7 +87,6 @@ export function useDataTable(
     setPageSize(Math.min(Math.max(table.pageSize || options?.defaultPageSize || 25, 1), 200))
     setSort(null)
     setSearchQuery('')
-    setShowStats(false)
     setColumnVisibility(new Map())
     setColumnWidths(new Map())
   }, [table.id]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -187,10 +183,8 @@ export function useDataTable(
 
   const totalFilteredRows = sortedRows.length
 
-  // Compute stats on filtered numeric columns (only visible columns when stats are shown)
+  // Compute stats on filtered numeric columns (visible columns only)
   const columnStats = useMemo<Map<number, ColumnStats>>(() => {
-    if (!showStats) return new Map()
-
     const stats = new Map<number, ColumnStats>()
     for (const col of visibleColumns) {
       if (col.type !== 'number') continue
@@ -226,7 +220,7 @@ export function useDataTable(
       }
     }
     return stats
-  }, [showStats, visibleColumns, sortedRows])
+  }, [visibleColumns, sortedRows])
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(totalFilteredRows / pageSize))
@@ -371,8 +365,6 @@ export function useDataTable(
     searchQuery,
     setSearchQuery: handleSetSearchQuery,
 
-    showStats,
-    setShowStats,
     columnStats,
 
     toggleColumnVisibility,
