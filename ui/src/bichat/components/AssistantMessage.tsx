@@ -11,6 +11,7 @@ import CodeOutputsPanel from './CodeOutputsPanel'
 import StreamingCursor from './StreamingCursor'
 import { ChartCard } from './ChartCard'
 import { InteractiveTableCard } from './InteractiveTableCard'
+import { TabbedTableGroup } from './TabbedTableGroup'
 import { SourcesPanel } from './SourcesPanel'
 import { DownloadCard } from './DownloadCard'
 import { InlineQuestionForm } from './InlineQuestionForm'
@@ -433,14 +434,19 @@ export function AssistantMessage({
             {renderSlot(
               slots?.tables,
               tablesSlotProps,
-              turn.renderTables.map((table) => (
+              turn.renderTables.length === 1 ? (
                 <InteractiveTableCard
-                  key={table.id}
-                  table={table}
+                  table={turn.renderTables[0]}
                   onSendMessage={onSendMessage}
                   sendDisabled={sendDisabled || isStreaming}
                 />
-              ))
+              ) : (
+                <TabbedTableGroup
+                  tables={turn.renderTables}
+                  onSendMessage={onSendMessage}
+                  sendDisabled={sendDisabled || isStreaming}
+                />
+              )
             )}
           </div>
         )}

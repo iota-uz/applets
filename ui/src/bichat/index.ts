@@ -52,6 +52,7 @@ export { LoadingSpinner } from './components/LoadingSpinner'
 export { TableExportButton } from './components/TableExportButton'
 export { TableWithExport } from './components/TableWithExport'
 export { InteractiveTableCard } from './components/InteractiveTableCard'
+export { TabbedTableGroup, type TabbedTableGroupProps } from './components/TabbedTableGroup'
 export {
   useDataTable,
   type UseDataTableReturn,

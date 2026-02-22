@@ -4,7 +4,7 @@
  * Generic: accepts any set of tabs via props
  */
 
-import { memo, useRef, useCallback } from 'react'
+import { memo, useId, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
 
 interface TabBarProps {
@@ -14,6 +14,7 @@ interface TabBarProps {
 }
 
 function TabBar({ tabs, activeTab, onTabChange }: TabBarProps) {
+  const instanceId = useId()
   const tablistRef = useRef<HTMLDivElement>(null)
 
   const handleKeyDown = useCallback(
@@ -73,6 +74,7 @@ function TabBar({ tabs, activeTab, onTabChange }: TabBarProps) {
           label={tab.label}
           isActive={activeTab === tab.id}
           onClick={() => onTabChange(tab.id)}
+          layoutId={instanceId + '-tab'}
         />
       ))}
     </div>
@@ -84,9 +86,10 @@ interface TabButtonProps {
   label: string
   isActive: boolean
   onClick: () => void
+  layoutId: string
 }
 
-function TabButton({ id, label, isActive, onClick }: TabButtonProps) {
+function TabButton({ id, label, isActive, onClick, layoutId }: TabButtonProps) {
   return (
     <button
       id={id}
@@ -109,7 +112,7 @@ function TabButton({ id, label, isActive, onClick }: TabButtonProps) {
       {/* Active indicator */}
       {isActive && (
         <motion.div
-          layoutId="activeTab"
+          layoutId={layoutId}
           className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-primary-500"
           transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
         />

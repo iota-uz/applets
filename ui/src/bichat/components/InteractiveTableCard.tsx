@@ -122,6 +122,8 @@ interface InteractiveTableCardProps {
   onSendMessage?: (content: string) => void
   sendDisabled?: boolean
   options?: DataTableOptions
+  /** When true, strips outer card chrome (border, rounding, header) for embedding inside a container like TabbedTableGroup. */
+  embedded?: boolean
 }
 
 export const InteractiveTableCard = memo(function InteractiveTableCard({
@@ -129,6 +131,7 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
   onSendMessage,
   sendDisabled = false,
   options,
+  embedded = false,
 }: InteractiveTableCardProps) {
   const { t } = useTranslation()
   const toast = useToast()
@@ -397,11 +400,15 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
       </p>
     ) : null
 
+  const sectionClassName = embedded
+    ? 'w-full min-w-0 overflow-hidden'
+    : 'w-full min-w-0 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/40 overflow-hidden'
+
   return (
     <>
-      <section className="w-full min-w-0 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/40 overflow-hidden">
+      <section className={sectionClassName}>
         {renderToolbar(false)}
-        {renderHeader()}
+        {!embedded && renderHeader()}
         {renderTable('max-h-[420px] overflow-auto')}
         {renderPagination(table.id)}
         {renderTruncationNotice()}
