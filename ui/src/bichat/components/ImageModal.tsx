@@ -151,6 +151,13 @@ function ImageModal({
   useEffect(() => { scaleRef.current = scale }, [scale])
   useEffect(() => { positionRef.current = position }, [position])
 
+  const rotateLeft = useCallback(() => {
+    setRotation((r) => ((r - 90) % 360 + 360) % 360)
+  }, [])
+  const rotateRight = useCallback(() => {
+    setRotation((r) => (r + 90) % 360)
+  }, [])
+
   // Keyboard navigation + zoom shortcuts
   useEffect(() => {
     if (!isOpen) return
@@ -228,13 +235,6 @@ function ImageModal({
     setScale(1)
     setPosition({ x: 0, y: 0 })
     setRotation(0)
-  }, [])
-
-  const rotateLeft = useCallback(() => {
-    setRotation((r) => ((r - 90) % 360 + 360) % 360)
-  }, [])
-  const rotateRight = useCallback(() => {
-    setRotation((r) => (r + 90) % 360)
   }, [])
 
   // Double-click to toggle between fit and 2x zoom (reset rotation when returning to 1x for consistency with resetZoom and '0' key)
