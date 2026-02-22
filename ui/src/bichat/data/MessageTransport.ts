@@ -235,7 +235,9 @@ export async function getStreamStatus(
       signal: controller.signal,
     });
     if (!response.ok) {
-      if (response.status === 404) return null;
+      if (response.status === 404) {
+        return null;
+      }
       console.warn('Stream status request failed:', response.status);
       return null;
     }
@@ -289,7 +291,9 @@ export async function resumeStream(
       }
     }
   } finally {
-    if (timeoutId !== undefined) clearTimeout(timeoutId);
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId);
+    }
   }
 }
 
