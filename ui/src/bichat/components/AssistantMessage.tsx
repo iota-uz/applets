@@ -191,7 +191,7 @@ const COPY_FEEDBACK_MS = 2000
 
 const defaultClassNames: Required<AssistantMessageClassNames> = {
   root: 'flex gap-3 group',
-  wrapper: 'flex-1 min-w-0 flex flex-col gap-3 max-w-[var(--bichat-bubble-assistant-max-width)]',
+  wrapper: 'flex-1 min-w-0 flex flex-col gap-3 max-w-[var(--bichat-bubble-assistant-max-width,85%)]',
   avatar: 'flex-shrink-0 w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-medium text-xs',
   bubble: 'bg-white dark:bg-gray-800 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm',
   codeOutputs: '',

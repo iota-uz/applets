@@ -350,7 +350,7 @@ function ChatSessionCore({
         ref={layoutContainerRef}
         className="relative flex min-h-0 flex-1 overflow-hidden"
       >
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           {showWelcome ? (
             <div className="flex flex-1 flex-col overflow-auto">
               <div className="flex flex-1 items-center justify-center px-4 py-8">

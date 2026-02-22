@@ -1,6 +1,5 @@
-import { memo, useCallback, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { MagnifyingGlass, X } from '@phosphor-icons/react'
-import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react'
 import type { RenderTableData } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
 import { useToast } from '../hooks/useToast'
@@ -51,6 +50,68 @@ function PaginationButton({
     >
       {children}
     </button>
+  )
+}
+
+/**
+ * Shadow-DOM-safe fullscreen overlay. Headless UI Dialog portals to document.body
+ * which escapes the shadow DOM boundary and loses Tailwind styles.
+ * This component stays inline within the shadow tree.
+ */
+function FullscreenOverlay({
+  title,
+  onClose,
+  closeLabel,
+  children,
+}: {
+  title: string
+  onClose: () => void
+  closeLabel: string
+  children: React.ReactNode
+}) {
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation()
+        onClose()
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    panelRef.current?.focus()
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
+
+  return (
+    <div className="fixed inset-0" style={{ zIndex: 99999 }}>
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden
+      />
+      {/* Panel */}
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        tabIndex={-1}
+        className="absolute inset-4 flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl outline-none dark:border-gray-700 dark:bg-gray-900"
+      >
+        <span className="sr-only">{title}</span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-3 top-3 z-10 cursor-pointer rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+          aria-label={closeLabel}
+        >
+          <X size={18} weight="bold" />
+        </button>
+        {children}
+      </div>
+    </div>
   )
 }
 
@@ -344,28 +405,19 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
         {renderTruncationNotice()}
       </section>
 
-      <Dialog open={isFullscreen} onClose={() => setIsFullscreen(false)} className="relative" style={{ zIndex: 99999 }}>
-        <DialogBackdrop className="fixed inset-0 bg-black/60 backdrop-blur-sm" style={{ zIndex: 99999 }} />
-        <DialogPanel
-          className="fixed inset-4 flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900"
-          style={{ zIndex: 100000 }}
+      {isFullscreen && (
+        <FullscreenOverlay
+          title={table.title || t('BiChat.Table.QueryResults')}
+          onClose={() => setIsFullscreen(false)}
+          closeLabel={t('BiChat.DataTable.Collapse')}
         >
-          <DialogTitle className="sr-only">{table.title || t('BiChat.Table.QueryResults')}</DialogTitle>
-          <button
-            type="button"
-            onClick={() => setIsFullscreen(false)}
-            className="absolute right-3 top-3 z-10 cursor-pointer rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-            aria-label={t('BiChat.DataTable.Collapse')}
-          >
-            <X size={18} weight="bold" />
-          </button>
           {renderToolbar(true)}
           {renderHeader()}
           {renderTable('flex-1 overflow-auto')}
           {renderPagination(`${table.id}-fs`)}
           {renderTruncationNotice()}
-        </DialogPanel>
-      </Dialog>
+        </FullscreenOverlay>
+      )}
     </>
   )
 })
