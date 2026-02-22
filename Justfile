@@ -24,24 +24,24 @@ lint-fix:
 
 # Build the npm package
 build-npm:
-    cd ui && pnpm build
+    pnpm build
 
 # Install npm dependencies
 deps-npm:
-    cd ui && pnpm install
+    pnpm install
 
 # Run npm build in watch mode
 watch-npm:
-    cd ui && pnpm build --watch
+    pnpm exec tsup --config tsup.dev.config.ts --watch
 
 # Lint the npm package
 lint-npm:
-    cd ui && pnpm lint
+    pnpm lint
 
 # Run all checks (vet + lint + test)
 check: vet lint test
 
 # Clean build artifacts
 clean:
-    rm -rf ui/dist
+    rm -rf dist
     go clean -cache

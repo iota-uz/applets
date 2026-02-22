@@ -25,6 +25,8 @@ Requires .applets/config.toml at the project root.`,
   applet rpc check --name bichat
   applet rpc watch --name bichat
   applet deps check
+  applet sdk link --sdk-root ../../applets
+  applet sdk unlink
   applet schema export --name bichat
   applet secrets set --name bichat --key OPENAI_API_KEY --value ...
   applet version`,
@@ -49,6 +51,7 @@ Requires .applets/config.toml at the project root.`,
 	root.AddCommand(NewCheckCommand())
 	root.AddCommand(NewRPCCommand())
 	root.AddCommand(NewDepsCommand())
+	root.AddCommand(NewSDKCommand())
 	root.AddCommand(NewSchemaCommand())
 	root.AddCommand(NewSecretsCommand())
 
