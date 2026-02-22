@@ -170,15 +170,15 @@ function ImageModal({
         setPosition({ x: 0, y: 0 })
         setRotation(0)
       } else if (e.key === 'r' && !e.shiftKey) {
-        setRotation((r) => (r + 90) % 360)
+        rotateRight()
       } else if (e.key === 'R' || (e.key === 'r' && e.shiftKey)) {
-        setRotation((r) => ((r - 90) % 360 + 360) % 360)
+        rotateLeft()
       }
     }
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onNavigate, canNavigatePrev, canNavigateNext])
+  }, [isOpen, onNavigate, canNavigatePrev, canNavigateNext, rotateLeft, rotateRight])
 
   // Reset state on attachment change
   useEffect(() => {
@@ -228,6 +228,13 @@ function ImageModal({
     setScale(1)
     setPosition({ x: 0, y: 0 })
     setRotation(0)
+  }, [])
+
+  const rotateLeft = useCallback(() => {
+    setRotation((r) => ((r - 90) % 360 + 360) % 360)
+  }, [])
+  const rotateRight = useCallback(() => {
+    setRotation((r) => (r + 90) % 360)
   }, [])
 
   // Double-click to toggle between fit and 2x zoom (reset rotation when returning to 1x for consistency with resetZoom and '0' key)
@@ -425,8 +432,8 @@ function ImageModal({
               isTransformed={isTransformed}
               onZoomIn={zoomIn}
               onZoomOut={zoomOut}
-              onRotateLeft={() => setRotation((r) => ((r - 90) % 360 + 360) % 360)}
-              onRotateRight={() => setRotation((r) => (r + 90) % 360)}
+              onRotateLeft={rotateLeft}
+              onRotateRight={rotateRight}
               onReset={resetZoom}
               t={t}
             />

@@ -46,9 +46,10 @@ export const LongContent: Story = {
   },
 }
 
+const noop = fn()
+
 export const Stress: Story = {
   render: () => {
-    const noop = fn()
     const now = new Date().toISOString()
     return (
       <ScenarioGrid

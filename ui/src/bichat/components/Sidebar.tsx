@@ -601,7 +601,7 @@ export default function Sidebar({
               >
                 <MagnifyingGlass size={18} />
               </motion.button>
-              <span className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 rounded-md bg-gray-900 dark:bg-gray-100 px-2 py-1 text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover/search:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
+              <span className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 rounded-md bg-gray-900 dark:bg-gray-100 px-2 py-1 text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover/search:opacity-100 group-focus-within/search:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
                 {t('BiChat.Sidebar.SearchChats')}
               </span>
             </div>
@@ -673,7 +673,7 @@ export default function Sidebar({
                         toggle()
                       }}
                       className="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-semibold bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-primary-400/50 focus-visible:outline-none"
-                      aria-label={overflowCount > 0 ? `${t('BiChat.Sidebar.ChatSessions')} (+${overflowCount})` : t('BiChat.Sidebar.ChatSessions')}
+                      aria-label={t('BiChat.Sidebar.MoreChats', { count: overflowCount })}
                       whileTap={{ scale: 0.95 }}
                     >
                       +{overflowCount}

@@ -60,7 +60,7 @@ function StreamingBubble({ content, normalizedContent }: { content: string; norm
       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-medium text-xs">
         AI
       </div>
-      <div className="flex-1 max-w-[85%] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-bl-sm px-4 py-3 text-gray-900 dark:text-gray-100">
+      <div className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-bl-sm px-4 py-3 text-gray-900 dark:text-gray-100" style={{ maxWidth: 'var(--bichat-bubble-assistant-max-width, 85%)' }}>
         <Suspense
           fallback={
             <div className="prose prose-sm max-w-none dark:prose-invert whitespace-pre-wrap">

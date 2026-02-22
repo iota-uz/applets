@@ -240,7 +240,6 @@ export function makeActivitySteps(): ActivityStep[] {
 export function makeAgentActivitySteps(): ActivityStep[] {
   const now = Date.now()
   return [
-    ...makeActivitySteps(),
     makeActivityStep({
       id: 'step-4',
       type: 'agent_delegation',
@@ -251,6 +250,7 @@ export function makeAgentActivitySteps(): ActivityStep[] {
       completedAt: now - 3500,
       durationMs: 500,
     }),
+    ...makeActivitySteps(),
     makeActivityStep({
       id: 'step-5',
       type: 'tool',

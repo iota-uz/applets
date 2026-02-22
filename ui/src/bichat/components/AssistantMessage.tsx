@@ -534,7 +534,7 @@ export function AssistantMessage({
               {t('BiChat.InlineQuestion.InputNeeded')}
             </p>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Waiting for the question details from the assistant...
+              {t('BiChat.InlineQuestion.WaitingForDetails')}
             </p>
           </div>
         )}

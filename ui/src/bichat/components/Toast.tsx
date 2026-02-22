@@ -56,13 +56,24 @@ const typeConfig: Record<
   },
 }
 
+const reducedMotionQuery = '(prefers-reduced-motion: reduce)'
+let reducedMotionMql: MediaQueryList | null = null
+function getReducedMotionMql(): MediaQueryList | null {
+  if (typeof window === 'undefined') return null
+  if (!reducedMotionMql) {
+    reducedMotionMql = window.matchMedia(reducedMotionQuery)
+  }
+  return reducedMotionMql
+}
 function subscribeReducedMotion(callback: () => void): () => void {
-  const mql = window.matchMedia('(prefers-reduced-motion: reduce)')
+  const mql = getReducedMotionMql()
+  if (!mql) return () => {}
   mql.addEventListener('change', callback)
   return () => mql.removeEventListener('change', callback)
 }
 function getReducedMotionSnapshot(): boolean {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const mql = getReducedMotionMql()
+  return mql ? mql.matches : false
 }
 function getReducedMotionServerSnapshot(): boolean {
   return false
@@ -161,7 +172,7 @@ export function Toast({
               action.onClick()
               handleDismiss()
             }}
-            className={`shrink-0 text-sm font-semibold underline-offset-2 hover:underline cursor-pointer ${config.accent}`}
+            className={`shrink-0 text-sm font-semibold underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500/50 cursor-pointer ${config.accent}`}
           >
             {action.label}
           </button>
