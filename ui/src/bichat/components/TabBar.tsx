@@ -11,9 +11,11 @@ interface TabBarProps {
   tabs: Array<{ id: string; label: string }>
   activeTab: string
   onTabChange: (tabId: string) => void
+  /** Tighter padding for space-constrained contexts like fullscreen overlays. */
+  compact?: boolean
 }
 
-function TabBar({ tabs, activeTab, onTabChange }: TabBarProps) {
+function TabBar({ tabs, activeTab, onTabChange, compact = false }: TabBarProps) {
   const instanceId = useId()
   const tablistRef = useRef<HTMLDivElement>(null)
 
@@ -63,7 +65,7 @@ function TabBar({ tabs, activeTab, onTabChange }: TabBarProps) {
   return (
     <div
       ref={tablistRef}
-      className="flex justify-center gap-1 px-4 pt-4 pb-2 border-b border-gray-200 dark:border-gray-700"
+      className={`flex justify-center gap-1 border-b border-gray-200 dark:border-gray-700 ${compact ? 'px-3 pt-2 pb-1' : 'px-4 pt-4 pb-2'}`}
       role="tablist"
       onKeyDown={handleKeyDown}
     >
@@ -75,6 +77,7 @@ function TabBar({ tabs, activeTab, onTabChange }: TabBarProps) {
           isActive={activeTab === tab.id}
           onClick={() => onTabChange(tab.id)}
           layoutId={instanceId + '-tab'}
+          compact={compact}
         />
       ))}
     </div>
@@ -87,9 +90,10 @@ interface TabButtonProps {
   isActive: boolean
   onClick: () => void
   layoutId: string
+  compact?: boolean
 }
 
-function TabButton({ id, label, isActive, onClick, layoutId }: TabButtonProps) {
+function TabButton({ id, label, isActive, onClick, layoutId, compact }: TabButtonProps) {
   return (
     <button
       id={id}
@@ -99,7 +103,8 @@ function TabButton({ id, label, isActive, onClick, layoutId }: TabButtonProps) {
       tabIndex={isActive ? 0 : -1}
       onClick={onClick}
       className={`
-        cursor-pointer relative px-4 py-2 rounded-t-lg text-sm font-medium transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50
+        cursor-pointer relative rounded-t-lg font-medium transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50
+        ${compact ? 'px-3 py-1.5 text-xs' : 'px-4 py-2 text-sm'}
         ${
           isActive
             ? 'text-primary-700 dark:text-primary-400'

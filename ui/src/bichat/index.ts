@@ -51,7 +51,7 @@ export { CodeBlock } from './components/CodeBlock'
 export { LoadingSpinner } from './components/LoadingSpinner'
 export { TableExportButton } from './components/TableExportButton'
 export { TableWithExport } from './components/TableWithExport'
-export { InteractiveTableCard } from './components/InteractiveTableCard'
+export { InteractiveTableCard, type TableCardHost } from './components/InteractiveTableCard'
 export { TabbedTableGroup, type TabbedTableGroupProps } from './components/TabbedTableGroup'
 export {
   useDataTable,

@@ -54,17 +54,19 @@ function PaginationButton({
   )
 }
 
+/** External container control. When provided, the card runs in embedded mode. */
+export interface TableCardHost {
+  onToggleFullscreen: () => void
+  isFullscreen: boolean
+}
+
 interface InteractiveTableCardProps {
   table: RenderTableData
   onSendMessage?: (content: string) => void
   sendDisabled?: boolean
   options?: DataTableOptions
-  /** When true, strips outer card chrome (border, rounding, header) for embedding inside a container like TabbedTableGroup. */
-  embedded?: boolean
-  /** When true, table body uses flex-1 instead of max-h-420px (for fullscreen containers). */
-  fillHeight?: boolean
-  /** External fullscreen toggle — when provided, the card delegates fullscreen to the parent instead of rendering its own overlay. */
-  onToggleFullscreen?: () => void
+  /** When provided, the card runs in embedded mode — strips outer chrome, hides header, delegates fullscreen to the host. */
+  host?: TableCardHost
 }
 
 export const InteractiveTableCard = memo(function InteractiveTableCard({
@@ -72,9 +74,7 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
   onSendMessage,
   sendDisabled = false,
   options,
-  embedded = false,
-  fillHeight = false,
-  onToggleFullscreen: externalToggleFullscreen,
+  host,
 }: InteractiveTableCardProps) {
   const { t } = useTranslation()
   const toast = useToast()
@@ -130,14 +130,14 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
   }, [dt, toast, t])
 
   const [internalFullscreen, setInternalFullscreen] = useState(false)
-  const isFullscreen = externalToggleFullscreen ? false : internalFullscreen
-  const toggleFullscreen = externalToggleFullscreen ?? (() => setInternalFullscreen((v) => !v))
+  const isFullscreen = host ? host.isFullscreen : internalFullscreen
+  const toggleFullscreen = host ? host.onToggleFullscreen : () => setInternalFullscreen((v) => !v)
 
   const hasHiddenColumns = dt.columns.some((c) => !c.visible)
   const from = dt.totalFilteredRows === 0 ? 0 : (dt.page - 1) * dt.pageSize + 1
   const to = Math.min(dt.page * dt.pageSize, dt.totalFilteredRows)
 
-  const renderToolbar = (fullscreen: boolean) => (
+  const renderToolbar = () => (
     <DataTableToolbar
       columns={dt.columns}
       searchQuery={dt.searchQuery}
@@ -152,7 +152,7 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
       sort={dt.sort}
       onClearSort={dt.clearSort}
       onCopyTable={handleCopyTable}
-      isFullscreen={fullscreen}
+      isFullscreen={isFullscreen}
       onToggleFullscreen={toggleFullscreen}
     />
   )
@@ -345,27 +345,30 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
       </p>
     ) : null
 
-  const sectionClassName = embedded
+  const fillHeight = host?.isFullscreen ?? false
+
+  const sectionClassName = host
     ? `w-full min-w-0 overflow-hidden${fillHeight ? ' flex flex-col flex-1' : ''}`
     : 'w-full min-w-0 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/40 overflow-hidden'
 
   return (
     <>
       <section className={sectionClassName}>
-        {renderToolbar(false)}
-        {!embedded && renderHeader()}
+        {renderToolbar()}
+        {!host && renderHeader()}
         {renderTable(fillHeight ? 'flex-1 overflow-auto' : 'max-h-[420px] overflow-auto')}
         {renderPagination(table.id)}
         {renderTruncationNotice()}
       </section>
 
-      {isFullscreen && (
+      {/* Standalone fullscreen — only when not hosted */}
+      {!host && isFullscreen && (
         <FullscreenOverlay
           title={table.title || t('BiChat.Table.QueryResults')}
           onClose={() => setInternalFullscreen(false)}
           closeLabel={t('BiChat.DataTable.Collapse')}
         >
-          {renderToolbar(true)}
+          {renderToolbar()}
           {renderHeader()}
           {renderTable('flex-1 overflow-auto')}
           {renderPagination(`${table.id}-fs`)}
