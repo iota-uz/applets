@@ -729,6 +729,14 @@ bi-chat-root [tabindex]:not([tabindex="-1"]):focus-visible {
   background-color: var(--bichat-color-bg-subtle);
 }
 
+/* Keep rendered formulas readable within chat bubbles. */
+.markdown-content math[display='block'] {
+  display: block;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25rem 0;
+}
+
 /* =============================================================================
    Focus Styles
    ============================================================================= */

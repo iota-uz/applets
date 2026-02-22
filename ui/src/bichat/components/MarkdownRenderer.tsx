@@ -13,8 +13,11 @@
 import { memo, lazy, Suspense, useMemo, Children, isValidElement, type ReactNode } from 'react'
 import ReactMarkdown, { Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
 import { processCitations } from '../utils/citationProcessor'
 import { parseChartDataFromJsonString } from '../utils/chartSpec'
+import { normalizeLatexDelimiters } from '../utils/markdownMath'
 import type { Citation } from '../types'
 import { TableWithExport } from './TableWithExport'
 import { ChartCard } from './ChartCard'
@@ -108,6 +111,7 @@ function MarkdownRenderer({
   const processed = useMemo(() => {
     return processCitations(content, citations)
   }, [content, citations])
+  const normalizedContent = useMemo(() => normalizeLatexDelimiters(processed.content), [processed.content])
 
   const components: Components = useMemo(
     () => ({
@@ -234,8 +238,12 @@ function MarkdownRenderer({
 
   return (
     <div className="markdown-content">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-        {processed.content}
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[[rehypeKatex, { strict: 'ignore', throwOnError: false, output: 'mathml' }]]}
+        components={components}
+      >
+        {normalizedContent}
       </ReactMarkdown>
     </div>
   )
