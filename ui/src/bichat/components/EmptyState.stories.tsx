@@ -1,8 +1,8 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { MagnifyingGlass, FolderOpen, ChatCircleDots } from '@phosphor-icons/react'
+import type { Meta, StoryObj } from '@storybook/react';
+import { MagnifyingGlass, FolderOpen, ChatCircleDots } from '@phosphor-icons/react';
 
-import { EmptyState } from './EmptyState'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { EmptyState } from './EmptyState';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof EmptyState> = {
   title: 'BiChat/Components/EmptyState',
@@ -14,9 +14,9 @@ const meta: Meta<typeof EmptyState> = {
       options: ['sm', 'md', 'lg'],
     },
   },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof EmptyState>
 
 export const Playground: Story = {
@@ -24,7 +24,7 @@ export const Playground: Story = {
     title: 'No results found',
     description: 'Try adjusting your search',
   },
-}
+};
 
 export const WithAction: Story = {
   args: {
@@ -37,7 +37,7 @@ export const WithAction: Story = {
       </button>
     ),
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -106,4 +106,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

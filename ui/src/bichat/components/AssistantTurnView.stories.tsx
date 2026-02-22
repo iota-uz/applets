@@ -1,11 +1,11 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { AssistantTurnView } from './AssistantTurnView'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
-import { makeAssistantTurn, makeConversationTurn } from '@sb-helpers/bichatFixtures'
-import { flowingMarkdown, veryLargeText } from '@sb-helpers/textFixtures'
-import { ChatSessionProvider } from '../context/ChatContext'
-import { MockChatDataSource } from '@sb-helpers/mockChatDataSource'
+import { AssistantTurnView } from './AssistantTurnView';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
+import { makeAssistantTurn, makeConversationTurn } from '@sb-helpers/bichatFixtures';
+import { flowingMarkdown, veryLargeText } from '@sb-helpers/textFixtures';
+import { ChatSessionProvider } from '../context/ChatContext';
+import { MockChatDataSource } from '@sb-helpers/mockChatDataSource';
 
 const meta: Meta<typeof AssistantTurnView> = {
   title: 'BiChat/Components/AssistantTurnView',
@@ -17,9 +17,9 @@ const meta: Meta<typeof AssistantTurnView> = {
       </ChatSessionProvider>
     ),
   ],
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof AssistantTurnView>
 
 export const Playground: Story = {
@@ -28,7 +28,7 @@ export const Playground: Story = {
       assistantTurn: makeAssistantTurn({ content: flowingMarkdown }),
     }),
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -68,4 +68,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

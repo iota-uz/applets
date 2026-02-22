@@ -1,5 +1,5 @@
-import { useAppletContext } from '../context/AppletContext'
-import type { PermissionsHook } from '../types'
+import { useAppletContext } from '../context/AppletContext';
+import type { PermissionsHook } from '../types';
 
 /**
  * usePermissions provides permission checking utilities.
@@ -17,19 +17,19 @@ import type { PermissionsHook } from '../types'
  * }
  */
 export function usePermissions(): PermissionsHook {
-  const { user } = useAppletContext()
+  const { user } = useAppletContext();
 
   const hasPermission = (permission: string): boolean => {
-    return user.permissions.includes(permission)
-  }
+    return user.permissions.includes(permission);
+  };
 
   const hasAnyPermission = (...permissions: string[]): boolean => {
-    return permissions.some(p => user.permissions.includes(p))
-  }
+    return permissions.some(p => user.permissions.includes(p));
+  };
 
   return {
     hasPermission,
     hasAnyPermission,
     permissions: user.permissions
-  }
+  };
 }

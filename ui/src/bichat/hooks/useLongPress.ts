@@ -88,7 +88,7 @@ export function useLongPress(options: LongPressOptions): LongPressResult {
 
   const handleMove = useCallback(
     (e: React.TouchEvent | React.MouseEvent) => {
-      if (!startPosRef.current || !isPressed) return;
+      if (!startPosRef.current || !isPressed) {return;}
 
       const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
       const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;

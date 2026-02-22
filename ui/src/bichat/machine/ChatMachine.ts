@@ -24,11 +24,12 @@ import type {
   SendMessageOptions,
   SessionDebugUsage,
   ActivityStep,
-} from '../types'
-import type { RateLimiter } from '../utils/RateLimiter'
-import { normalizeRPCError } from '../utils/errorDisplay'
-import { loadQueue, saveQueue } from '../utils/queueStorage'
-import { getSessionDebugUsage } from '../utils/debugTrace'
+} from '../types';
+import type { RateLimiter } from '../utils/RateLimiter';
+import { normalizeRPCError } from '../utils/errorDisplay';
+import { loadQueue, saveQueue } from '../utils/queueStorage';
+import { loadDebugMode, saveDebugMode } from '../utils/debugModeStorage';
+import { getSessionDebugUsage } from '../utils/debugTrace';
 import {
   ARTIFACT_TOOL_NAMES,
   createPendingTurn,
@@ -36,7 +37,7 @@ import {
   parseSlashCommand,
   readDebugLimitsFromGlobalContext,
   type ParsedSlashCommand,
-} from '../context/chatHelpers'
+} from '../context/chatHelpers';
 import type {
   ChatMachineConfig,
   ChatMachineState,
@@ -44,17 +45,17 @@ import type {
   MessagingSnapshot,
   InputSnapshot,
   LastSendAttempt,
-} from './types'
+} from './types';
 import {
   deriveSessionSnapshot,
   deriveMessagingSnapshot,
   deriveInputSnapshot,
   deriveDebugMode,
-} from './selectors'
+} from './selectors';
 import {
   applyTurnLifecycleForPendingQuestion,
   pendingQuestionFromInterrupt,
-} from './hitlLifecycle'
+} from './hitlLifecycle';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -62,7 +63,41 @@ import {
 
 type Listener = () => void
 
-const MAX_QUEUE_SIZE = 5
+const MAX_QUEUE_SIZE = 5;
+const RUN_MARKER_PREFIX = 'bichat.run.';
+/** Interval (ms) for polling stream status when another tab has an active generation. */
+const PASSIVE_POLL_INTERVAL_MS = 2000;
+
+function getRunMarkerKey(sessionId: string): string {
+  return `${RUN_MARKER_PREFIX}${sessionId}`;
+}
+
+function setRunMarker(sessionId: string, runId: string): void {
+  if (typeof window === 'undefined' || !sessionId || sessionId === 'new') {return;}
+  try {
+    window.sessionStorage.setItem(getRunMarkerKey(sessionId), runId);
+  } catch {
+    // ignore
+  }
+}
+
+function getRunMarker(sessionId: string): string | null {
+  if (typeof window === 'undefined' || !sessionId || sessionId === 'new') {return null;}
+  try {
+    return window.sessionStorage.getItem(getRunMarkerKey(sessionId));
+  } catch {
+    return null;
+  }
+}
+
+function clearRunMarker(sessionId: string): void {
+  if (typeof window === 'undefined' || !sessionId || sessionId === 'new') {return;}
+  try {
+    window.sessionStorage.removeItem(getRunMarkerKey(sessionId));
+  } catch {
+    // ignore
+  }
+}
 
 // ---------------------------------------------------------------------------
 // ChatMachine
@@ -70,64 +105,66 @@ const MAX_QUEUE_SIZE = 5
 
 export class ChatMachine {
   // ── Config ──────────────────────────────────────────────────────────────
-  private dataSource: ChatDataSource
-  private rateLimiter: RateLimiter
-  private onSessionCreated?: (sessionId: string) => void
+  private dataSource: ChatDataSource;
+  private rateLimiter: RateLimiter;
+  private onSessionCreated?: (sessionId: string) => void;
 
   // ── Internal state ──────────────────────────────────────────────────────
-  private state: ChatMachineState
+  private state: ChatMachineState;
 
   // ── Refs (mutable, no subscription) ─────────────────────────────────────
-  private abortController: AbortController | null = null
-  private lastSendAttempt: LastSendAttempt | null = null
+  private abortController: AbortController | null = null;
+  private lastSendAttempt: LastSendAttempt | null = null;
   /** Prevents fetchSession effect from clobbering state while stream is active. */
-  private sendingSessionId: string | null = null
-  private fetchCancelled = false
-  private disposed = false
+  private sendingSessionId: string | null = null;
+  private fetchCancelled = false;
+  private disposed = false;
   /** Memoized sessionDebugUsage — avoids unnecessary session re-renders during streaming. */
-  private lastSessionDebugUsage: SessionDebugUsage | null = null
+  private lastSessionDebugUsage: SessionDebugUsage | null = null;
+  /** Interval handle for passive polling when another tab has an active stream. */
+  private passivePollingId: ReturnType<typeof setInterval> | null = null;
 
   // ── Listeners ───────────────────────────────────────────────────────────
-  private sessionListeners = new Set<Listener>()
-  private messagingListeners = new Set<Listener>()
-  private inputListeners = new Set<Listener>()
+  private sessionListeners = new Set<Listener>();
+  private messagingListeners = new Set<Listener>();
+  private inputListeners = new Set<Listener>();
 
   // ── Snapshot caches (for useSyncExternalStore identity stability) ───────
-  private cachedSessionSnapshot: SessionSnapshot | null = null
-  private cachedMessagingSnapshot: MessagingSnapshot | null = null
-  private cachedInputSnapshot: InputSnapshot | null = null
-  private sessionSnapshotVersion = 0
-  private messagingSnapshotVersion = 0
-  private inputSnapshotVersion = 0
-  private lastSessionSnapshotVersion = -1
-  private lastMessagingSnapshotVersion = -1
-  private lastInputSnapshotVersion = -1
+  private cachedSessionSnapshot: SessionSnapshot | null = null;
+  private cachedMessagingSnapshot: MessagingSnapshot | null = null;
+  private cachedInputSnapshot: InputSnapshot | null = null;
+  private sessionSnapshotVersion = 0;
+  private messagingSnapshotVersion = 0;
+  private inputSnapshotVersion = 0;
+  private lastSessionSnapshotVersion = -1;
+  private lastMessagingSnapshotVersion = -1;
+  private lastInputSnapshotVersion = -1;
 
   // ── Bound method references (stable identity) ──────────────────────────
-  readonly setError: (error: string | null) => void
-  readonly retryFetchSession: () => void
-  readonly sendMessage: (content: string, attachments?: Attachment[]) => Promise<void>
-  readonly handleRegenerate: (turnId: string) => Promise<void>
-  readonly handleEdit: (turnId: string, newContent: string) => Promise<void>
-  readonly handleCopy: (text: string) => Promise<void>
-  readonly handleSubmitQuestionAnswers: (answers: QuestionAnswers) => void
-  readonly handleRejectPendingQuestion: () => Promise<void>
-  readonly retryLastMessage: () => Promise<void>
-  readonly clearStreamError: () => void
-  readonly cancel: () => void
-  readonly setCodeOutputs: (outputs: CodeOutput[]) => void
-  readonly setMessage: (message: string) => void
-  readonly setInputError: (error: string | null) => void
-  readonly handleSubmit: (e: { preventDefault: () => void }, attachments?: Attachment[]) => void
-  readonly handleUnqueue: () => { content: string; attachments: Attachment[] } | null
-  readonly enqueueMessage: (content: string, attachments: Attachment[]) => boolean
-  readonly removeQueueItem: (index: number) => void
-  readonly updateQueueItem: (index: number, content: string) => void
+  readonly setError: (error: string | null) => void;
+  readonly retryFetchSession: () => void;
+  readonly sendMessage: (content: string, attachments?: Attachment[]) => Promise<void>;
+  readonly handleRegenerate: (turnId: string) => Promise<void>;
+  readonly handleEdit: (turnId: string, newContent: string) => Promise<void>;
+  readonly handleCopy: (text: string) => Promise<void>;
+  readonly handleSubmitQuestionAnswers: (answers: QuestionAnswers) => void;
+  readonly handleRejectPendingQuestion: () => Promise<void>;
+  readonly retryLastMessage: () => Promise<void>;
+  readonly clearStreamError: () => void;
+  readonly cancel: () => void;
+  readonly setCodeOutputs: (outputs: CodeOutput[]) => void;
+  readonly setMessage: (message: string) => void;
+  readonly setInputError: (error: string | null) => void;
+  readonly handleSubmit: (e: { preventDefault: () => void }, attachments?: Attachment[]) => void;
+  readonly handleUnqueue: () => { content: string; attachments: Attachment[] } | null;
+  readonly enqueueMessage: (content: string, attachments: Attachment[]) => boolean;
+  readonly removeQueueItem: (index: number) => void;
+  readonly updateQueueItem: (index: number, content: string) => void;
 
   constructor(config: ChatMachineConfig) {
-    this.dataSource = config.dataSource
-    this.rateLimiter = config.rateLimiter
-    this.onSessionCreated = config.onSessionCreated
+    this.dataSource = config.dataSource;
+    this.rateLimiter = config.rateLimiter;
+    this.onSessionCreated = config.onSessionCreated;
 
     this.state = {
       session: {
@@ -152,34 +189,35 @@ export class ChatMachine {
         artifactsInvalidationTrigger: 0,
         thinkingContent: '',
         activeSteps: [],
+        generationInProgress: false,
       },
       input: {
         message: '',
         inputError: null,
         messageQueue: [],
       },
-    }
+    };
 
     // Bind all public methods once (stable references)
-    this.setError = this._setError.bind(this)
-    this.retryFetchSession = this._retryFetchSession.bind(this)
-    this.sendMessage = this._sendMessage.bind(this)
-    this.handleRegenerate = this._handleRegenerate.bind(this)
-    this.handleEdit = this._handleEdit.bind(this)
-    this.handleCopy = this._handleCopy.bind(this)
-    this.handleSubmitQuestionAnswers = this._handleSubmitQuestionAnswers.bind(this)
-    this.handleRejectPendingQuestion = this._handleRejectPendingQuestion.bind(this)
-    this.retryLastMessage = this._retryLastMessage.bind(this)
-    this.clearStreamError = this._clearStreamError.bind(this)
-    this.cancel = this._cancel.bind(this)
-    this.setCodeOutputs = this._setCodeOutputs.bind(this)
-    this.setMessage = this._setMessage.bind(this)
-    this.setInputError = this._setInputError.bind(this)
-    this.handleSubmit = this._handleSubmit.bind(this)
-    this.handleUnqueue = this._handleUnqueue.bind(this)
-    this.enqueueMessage = this._enqueueMessage.bind(this)
-    this.removeQueueItem = this._removeQueueItem.bind(this)
-    this.updateQueueItem = this._updateQueueItem.bind(this)
+    this.setError = this._setError.bind(this);
+    this.retryFetchSession = this._retryFetchSession.bind(this);
+    this.sendMessage = this._sendMessage.bind(this);
+    this.handleRegenerate = this._handleRegenerate.bind(this);
+    this.handleEdit = this._handleEdit.bind(this);
+    this.handleCopy = this._handleCopy.bind(this);
+    this.handleSubmitQuestionAnswers = this._handleSubmitQuestionAnswers.bind(this);
+    this.handleRejectPendingQuestion = this._handleRejectPendingQuestion.bind(this);
+    this.retryLastMessage = this._retryLastMessage.bind(this);
+    this.clearStreamError = this._clearStreamError.bind(this);
+    this.cancel = this._cancel.bind(this);
+    this.setCodeOutputs = this._setCodeOutputs.bind(this);
+    this.setMessage = this._setMessage.bind(this);
+    this.setInputError = this._setInputError.bind(this);
+    this.handleSubmit = this._handleSubmit.bind(this);
+    this.handleUnqueue = this._handleUnqueue.bind(this);
+    this.enqueueMessage = this._enqueueMessage.bind(this);
+    this.removeQueueItem = this._removeQueueItem.bind(this);
+    this.updateQueueItem = this._updateQueueItem.bind(this);
   }
 
   // =====================================================================
@@ -191,21 +229,22 @@ export class ChatMachine {
    * session, or resets state for 'new'/undefined.
    */
   setSessionId(id: string | undefined): void {
-    if (this.disposed) return
-    const prev = this.state.session.currentSessionId
-    if (id === prev) return
+    if (this.disposed) {return;}
+    const prev = this.state.session.currentSessionId;
+    if (id === prev) {return;}
 
-    this.state.session.currentSessionId = id
-    this._notifySession()
+    this.state.session.currentSessionId = id;
+    this._hydrateDebugModeForSession(id);
+    this._notifySession();
 
     // Reset queue for new session
     if (!id || id === 'new') {
-      this._updateInput({ messageQueue: [] })
+      this._updateInput({ messageQueue: [] });
     } else {
-      this._updateInput({ messageQueue: loadQueue(id) })
+      this._updateInput({ messageQueue: loadQueue(id) });
     }
 
-    this._fetchSessionIfNeeded()
+    this._fetchSessionIfNeeded();
   }
 
   /**
@@ -213,17 +252,18 @@ export class ChatMachine {
    * Called from the React provider's useEffect to keep the machine in sync.
    */
   updateConfig(config: Pick<ChatMachineConfig, 'dataSource' | 'onSessionCreated'>): void {
-    this.dataSource = config.dataSource
-    this.onSessionCreated = config.onSessionCreated
+    this.dataSource = config.dataSource;
+    this.onSessionCreated = config.onSessionCreated;
   }
 
   dispose(): void {
-    this.disposed = true
-    this.fetchCancelled = true
-    this.abortController?.abort()
-    this.sessionListeners.clear()
-    this.messagingListeners.clear()
-    this.inputListeners.clear()
+    this.disposed = true;
+    this.fetchCancelled = true;
+    this._stopPassivePolling();
+    this.abortController?.abort();
+    this.sessionListeners.clear();
+    this.messagingListeners.clear();
+    this.inputListeners.clear();
   }
 
   // =====================================================================
@@ -231,25 +271,25 @@ export class ChatMachine {
   // =====================================================================
 
   subscribeSession = (listener: Listener): (() => void) => {
-    this.sessionListeners.add(listener)
-    return () => { this.sessionListeners.delete(listener) }
-  }
+    this.sessionListeners.add(listener);
+    return () => { this.sessionListeners.delete(listener); };
+  };
 
   getSessionSnapshot = (): SessionSnapshot => {
     if (this.lastSessionSnapshotVersion !== this.sessionSnapshotVersion) {
       this.cachedSessionSnapshot = deriveSessionSnapshot(this.state, {
         setError: this.setError,
         retryFetchSession: this.retryFetchSession,
-      })
-      this.lastSessionSnapshotVersion = this.sessionSnapshotVersion
+      });
+      this.lastSessionSnapshotVersion = this.sessionSnapshotVersion;
     }
-    return this.cachedSessionSnapshot!
-  }
+    return this.cachedSessionSnapshot!;
+  };
 
   subscribeMessaging = (listener: Listener): (() => void) => {
-    this.messagingListeners.add(listener)
-    return () => { this.messagingListeners.delete(listener) }
-  }
+    this.messagingListeners.add(listener);
+    return () => { this.messagingListeners.delete(listener); };
+  };
 
   getMessagingSnapshot = (): MessagingSnapshot => {
     if (this.lastMessagingSnapshotVersion !== this.messagingSnapshotVersion) {
@@ -264,16 +304,16 @@ export class ChatMachine {
         clearStreamError: this.clearStreamError,
         cancel: this.cancel,
         setCodeOutputs: this.setCodeOutputs,
-      })
-      this.lastMessagingSnapshotVersion = this.messagingSnapshotVersion
+      });
+      this.lastMessagingSnapshotVersion = this.messagingSnapshotVersion;
     }
-    return this.cachedMessagingSnapshot!
-  }
+    return this.cachedMessagingSnapshot!;
+  };
 
   subscribeInput = (listener: Listener): (() => void) => {
-    this.inputListeners.add(listener)
-    return () => { this.inputListeners.delete(listener) }
-  }
+    this.inputListeners.add(listener);
+    return () => { this.inputListeners.delete(listener); };
+  };
 
   getInputSnapshot = (): InputSnapshot => {
     if (this.lastInputSnapshotVersion !== this.inputSnapshotVersion) {
@@ -285,63 +325,88 @@ export class ChatMachine {
         enqueueMessage: this.enqueueMessage,
         removeQueueItem: this.removeQueueItem,
         updateQueueItem: this.updateQueueItem,
-      })
-      this.lastInputSnapshotVersion = this.inputSnapshotVersion
+      });
+      this.lastInputSnapshotVersion = this.inputSnapshotVersion;
     }
-    return this.cachedInputSnapshot!
-  }
+    return this.cachedInputSnapshot!;
+  };
 
   // =====================================================================
   // Private — state updates + notification
   // =====================================================================
 
   private _updateSession(patch: Partial<typeof this.state.session>): void {
-    Object.assign(this.state.session, patch)
-    this._notifySession()
+    Object.assign(this.state.session, patch);
+    this._notifySession();
   }
 
   private _notifySession(): void {
-    this.sessionSnapshotVersion++
-    for (const fn of this.sessionListeners) fn()
+    this.sessionSnapshotVersion++;
+    for (const fn of this.sessionListeners) {fn();}
   }
 
   private _updateMessaging(patch: Partial<typeof this.state.messaging>): void {
-    Object.assign(this.state.messaging, patch)
-    this._notifyMessaging()
+    Object.assign(this.state.messaging, patch);
+    this._notifyMessaging();
     // sessionDebugUsage is derived from turns — only notify session listeners
     // when the derived usage actually changes (avoids re-renders during streaming).
     if ('turns' in patch) {
-      const newUsage = getSessionDebugUsage(this.state.messaging.turns)
+      const newUsage = getSessionDebugUsage(this.state.messaging.turns);
       if (!sessionDebugUsageEqual(this.lastSessionDebugUsage, newUsage)) {
-        this.lastSessionDebugUsage = newUsage
-        this._notifySession()
+        this.lastSessionDebugUsage = newUsage;
+        this._notifySession();
       }
     }
   }
 
   private _notifyMessaging(): void {
-    this.messagingSnapshotVersion++
-    for (const fn of this.messagingListeners) fn()
+    this.messagingSnapshotVersion++;
+    for (const fn of this.messagingListeners) {fn();}
   }
 
   private _updateInput(patch: Partial<typeof this.state.input>): void {
-    Object.assign(this.state.input, patch)
+    Object.assign(this.state.input, patch);
     // Only persist queue to sessionStorage when it actually changed
     if ('messageQueue' in patch) {
-      this._persistQueue()
+      this._persistQueue();
     }
-    this._notifyInput()
+    this._notifyInput();
   }
 
   private _notifyInput(): void {
-    this.inputSnapshotVersion++
-    for (const fn of this.inputListeners) fn()
+    this.inputSnapshotVersion++;
+    for (const fn of this.inputListeners) {fn();}
   }
 
   private _persistQueue(): void {
-    const sid = this.state.session.currentSessionId
-    if (!sid || sid === 'new') return
-    saveQueue(sid, this.state.input.messageQueue)
+    const sid = this.state.session.currentSessionId;
+    if (!sid || sid === 'new') {return;}
+    saveQueue(sid, this.state.input.messageQueue);
+  }
+
+  private _setDebugModeForSession(sessionId: string, enabled: boolean): void {
+    const nextDebugModeBySession = { ...this.state.session.debugModeBySession };
+    if (enabled) {
+      nextDebugModeBySession[sessionId] = true;
+    } else {
+      delete nextDebugModeBySession[sessionId];
+    }
+
+    this._updateSession({ debugModeBySession: nextDebugModeBySession });
+    saveDebugMode(sessionId, enabled);
+  }
+
+  private _hydrateDebugModeForSession(sessionId: string | undefined): void {
+    if (!sessionId || sessionId === 'new') {return;}
+    if (this.state.session.debugModeBySession[sessionId] === true) {return;}
+    if (!loadDebugMode(sessionId)) {return;}
+
+    this._updateSession({
+      debugModeBySession: {
+        ...this.state.session.debugModeBySession,
+        [sessionId]: true,
+      },
+    });
   }
 
   // =====================================================================
@@ -349,55 +414,56 @@ export class ChatMachine {
   // =====================================================================
 
   private _fetchSessionIfNeeded(): void {
-    const id = this.state.session.currentSessionId
+    const id = this.state.session.currentSessionId;
     if (!id || id === 'new') {
       this._updateSession({
         session: null,
         fetching: false,
         error: null,
         errorRetryable: false,
-      })
+      });
       this._updateMessaging({
         turns: [],
         pendingQuestion: null,
-      })
-      this._updateInput({ inputError: null })
-      return
+      });
+      this._updateInput({ inputError: null });
+      return;
     }
 
     // Skip while stream is managing this session
-    if (this.sendingSessionId === id) return
+    if (this.sendingSessionId === id) {return;}
 
-    this.fetchCancelled = false
-    this._updateSession({ fetching: true, error: null, errorRetryable: false })
-    this._updateInput({ inputError: null })
+    this.fetchCancelled = false;
+    this._updateSession({ fetching: true, error: null, errorRetryable: false });
+    this._updateInput({ inputError: null });
 
-    const fetchId = id
+    const fetchId = id;
     this.dataSource
       .fetchSession(fetchId)
       .then((result) => {
-        if (this.fetchCancelled || this.disposed) return
-        if (this.state.session.currentSessionId !== fetchId) return
-        if (this.sendingSessionId === fetchId) return
+        if (this.fetchCancelled || this.disposed) {return;}
+        if (this.state.session.currentSessionId !== fetchId) {return;}
+        if (this.sendingSessionId === fetchId) {return;}
 
         if (result) {
-          this._updateSession({ session: result.session, fetching: false })
-          this._setTurnsFromFetch(result.turns, result.pendingQuestion || null)
+          this._updateSession({ session: result.session, fetching: false });
+          this._setTurnsFromFetch(result.turns, result.pendingQuestion || null);
+          this._checkStreamStatusAndResumeOrPoll(fetchId);
         } else {
-          this._updateSession({ error: 'Session not found', fetching: false })
+          this._updateSession({ error: 'Session not found', fetching: false });
         }
       })
       .catch((err) => {
-        if (this.fetchCancelled || this.disposed) return
-        if (this.state.session.currentSessionId !== fetchId) return
-        if (this.sendingSessionId === fetchId) return
-        const normalized = normalizeRPCError(err, 'Failed to load session')
+        if (this.fetchCancelled || this.disposed) {return;}
+        if (this.state.session.currentSessionId !== fetchId) {return;}
+        if (this.sendingSessionId === fetchId) {return;}
+        const normalized = normalizeRPCError(err, 'Failed to load session');
         this._updateSession({
           error: normalized.userMessage,
           errorRetryable: normalized.retryable,
           fetching: false,
-        })
-      })
+        });
+      });
   }
 
   /**
@@ -410,34 +476,143 @@ export class ChatMachine {
     pendingQuestion?: PendingQuestion | null
   ): void {
     if (!Array.isArray(fetchedTurns)) {
-      console.warn('[ChatMachine] Ignoring malformed turns payload from fetchSession')
-      return
+      console.warn('[ChatMachine] Ignoring malformed turns payload from fetchSession');
+      return;
     }
-    const prev = this.state.messaging.turns
-    const hasPendingUserOnly = prev.length > 0 && !prev[prev.length - 1].assistantTurn
-    const patch: Partial<typeof this.state.messaging> = {}
+    const prev = this.state.messaging.turns;
+    const hasPendingUserOnly = prev.length > 0 && !prev[prev.length - 1].assistantTurn;
+    const patch: Partial<typeof this.state.messaging> = {};
     const effectivePendingQuestion =
       pendingQuestion === undefined
         ? this.state.messaging.pendingQuestion
-        : pendingQuestion
+        : pendingQuestion;
 
     if (pendingQuestion !== undefined) {
-      patch.pendingQuestion = pendingQuestion
+      patch.pendingQuestion = pendingQuestion;
     }
 
     if (hasPendingUserOnly && (!fetchedTurns || fetchedTurns.length === 0)) {
-      const lifecycleTurns = applyTurnLifecycleForPendingQuestion(prev, effectivePendingQuestion)
+      const lifecycleTurns = applyTurnLifecycleForPendingQuestion(prev, effectivePendingQuestion);
       if (lifecycleTurns !== prev) {
-        patch.turns = lifecycleTurns
+        patch.turns = lifecycleTurns;
       }
       if (Object.keys(patch).length > 0) {
-        this._updateMessaging(patch)
+        this._updateMessaging(patch);
       }
-      return // keep optimistic turn
+      return; // keep optimistic turn
     }
 
-    patch.turns = applyTurnLifecycleForPendingQuestion(fetchedTurns ?? prev, effectivePendingQuestion)
-    this._updateMessaging(patch)
+    patch.turns = applyTurnLifecycleForPendingQuestion(fetchedTurns ?? prev, effectivePendingQuestion);
+    this._updateMessaging(patch);
+  }
+
+  /**
+   * After fetch: if backend has an active stream, either resume (same-browser) or poll (passive).
+   */
+  private _checkStreamStatusAndResumeOrPoll(sessionId: string): void {
+    if (!this.dataSource.getStreamStatus || !this.dataSource.resumeStream) {return;}
+    this.dataSource
+      .getStreamStatus(sessionId)
+      .then((status) => {
+        if (this.fetchCancelled || this.disposed) {return;}
+        if (this.state.session.currentSessionId !== sessionId) {return;}
+        if (this.sendingSessionId === sessionId) {return;}
+        if (!status?.active || !status.runId) {
+          this._updateMessaging({ generationInProgress: false });
+          return;
+        }
+        const storedRunId = getRunMarker(sessionId);
+        if (storedRunId === status.runId) {
+          this._runResumeStream(sessionId, status.runId).catch(() => {
+            clearRunMarker(sessionId);
+            this._updateMessaging({ generationInProgress: false });
+          });
+        } else {
+          this._updateMessaging({ generationInProgress: true });
+          this._startPassivePolling(sessionId);
+        }
+      })
+      .catch(() => {
+        this._updateMessaging({ generationInProgress: false });
+      });
+  }
+
+  private _stopPassivePolling(): void {
+    if (this.passivePollingId) {
+      clearInterval(this.passivePollingId);
+      this.passivePollingId = null;
+    }
+  }
+
+  private _startPassivePolling(sessionId: string): void {
+    this._stopPassivePolling();
+    this.passivePollingId = setInterval(() => {
+      if (this.disposed || this.state.session.currentSessionId !== sessionId) {
+        this._stopPassivePolling();
+        return;
+      }
+      this.dataSource.getStreamStatus?.(sessionId).then((status) => {
+        if (!status?.active) {
+          this._stopPassivePolling();
+          this._updateMessaging({ generationInProgress: false });
+          this.dataSource.fetchSession(sessionId).then((result) => {
+            if (this.state.session.currentSessionId === sessionId && result) {
+              this._setTurnsFromFetch(result.turns, result.pendingQuestion ?? null);
+            }
+          }).catch((err) => {
+            console.error('[ChatMachine] fetchSession after stream inactive:', err);
+          });
+        }
+      }).catch((err) => {
+        console.error('[ChatMachine] getStreamStatus:', err);
+      });
+    }, PASSIVE_POLL_INTERVAL_MS);
+  }
+
+  private async _runResumeStream(sessionId: string, runId: string): Promise<void> {
+    if (this.sendingSessionId !== null) {return;}
+    this.sendingSessionId = sessionId;
+    this.abortController = new AbortController();
+    this._updateMessaging({ isStreaming: true });
+
+    try {
+      let accumulatedContent = '';
+      await this.dataSource.resumeStream!(
+        sessionId,
+        runId,
+        (chunk) => {
+          if (chunk.type === 'snapshot' && chunk.snapshot?.partialContent !== undefined) {
+            accumulatedContent = chunk.snapshot.partialContent;
+            this._updateMessaging({ streamingContent: accumulatedContent });
+          } else if ((chunk.type === 'content' || chunk.type === 'chunk') && chunk.content) {
+            accumulatedContent += chunk.content;
+            this._updateMessaging({ streamingContent: accumulatedContent });
+          } else if (chunk.type === 'thinking' && chunk.content) {
+            this._handleThinkingChunk(chunk.content);
+          } else if (chunk.type === 'tool_start' && chunk.tool) {
+            this._handleToolStart(chunk.tool);
+          } else if (chunk.type === 'tool_end' && chunk.tool) {
+            this._handleToolEnd(chunk.tool);
+          } else if (chunk.type === 'done' || chunk.type === 'error') {
+            // will sync below
+          }
+        },
+        this.abortController.signal
+      );
+      clearRunMarker(sessionId);
+      await this._syncSessionFromServer(sessionId, true);
+    } finally {
+      this.sendingSessionId = null;
+      this.abortController = null;
+      this._updateMessaging({
+        isStreaming: false,
+        loading: false,
+        streamingContent: '',
+        thinkingContent: '',
+        activeSteps: [],
+        generationInProgress: false,
+      });
+    }
   }
 
   // =====================================================================
@@ -448,155 +623,160 @@ export class ChatMachine {
     this._updateSession({
       error,
       errorRetryable: false,
-    })
+    });
   }
 
   private _retryFetchSession(): void {
-    this._fetchSessionIfNeeded()
+    this._fetchSessionIfNeeded();
   }
 
   private _clearStreamError(): void {
     this._updateMessaging({
       streamError: null,
       streamErrorRetryable: false,
-    })
+    });
   }
 
   private _notifySessionsUpdated(reason: string, sessionId?: string): void {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined') {return;}
     window.dispatchEvent(new CustomEvent('bichat:sessions-updated', {
       detail: { reason, sessionId },
-    }))
+    }));
   }
 
   private _cancel(): void {
     if (this.abortController) {
-      this.abortController.abort()
-      this.abortController = null
+      const sessionId = this.sendingSessionId ?? this.state.session.currentSessionId;
+      if (sessionId && sessionId !== 'new') {
+        clearRunMarker(sessionId);
+        if (this.dataSource.stopGeneration) {
+          this.dataSource.stopGeneration(sessionId).catch(() => {
+            // Non-fatal; local abort still stops the stream
+          });
+        }
+      }
+      this.abortController.abort();
+      this.abortController = null;
       this._updateMessaging({
         isStreaming: false,
         loading: false,
+        streamingContent: '',
         thinkingContent: '',
         activeSteps: [],
-      })
+      });
     }
   }
 
   private _setCodeOutputs(outputs: CodeOutput[]): void {
-    this._updateMessaging({ codeOutputs: outputs })
+    this._updateMessaging({ codeOutputs: outputs });
   }
 
   private _setMessage(message: string): void {
-    this._updateInput({ message })
+    this._updateInput({ message });
   }
 
   private _setInputError(error: string | null): void {
-    this._updateInput({ inputError: error })
+    this._updateInput({ inputError: error });
   }
 
   // ── Slash commands ──────────────────────────────────────────────────────
 
   private async _executeSlashCommand(command: ParsedSlashCommand): Promise<boolean> {
     if (command.hasArgs) {
-      this._updateInput({ inputError: 'BiChat.Slash.ErrorNoArguments' })
-      return true
+      this._updateInput({ inputError: 'BiChat.Slash.ErrorNoArguments' });
+      return true;
     }
 
-    this._updateSession({ error: null, errorRetryable: false })
-    this._updateInput({ inputError: null })
-    this._clearStreamError()
+    this._updateSession({ error: null, errorRetryable: false });
+    this._updateInput({ inputError: null });
+    this._clearStreamError();
 
     if (command.name === '/debug') {
-      const debugMode = deriveDebugMode(this.state)
-      const key = this.state.session.currentSessionId || 'new'
-      const nextDebugMode = !debugMode
-      this._updateSession({
-        debugModeBySession: {
-          ...this.state.session.debugModeBySession,
-          [key]: nextDebugMode,
-        },
-      })
+      const debugMode = deriveDebugMode(this.state);
+      const key = this.state.session.currentSessionId || 'new';
+      const nextDebugMode = !debugMode;
+      this._setDebugModeForSession(key, nextDebugMode);
 
       if (nextDebugMode && this.state.session.currentSessionId && this.state.session.currentSessionId !== 'new') {
         try {
-          const result = await this.dataSource.fetchSession(this.state.session.currentSessionId)
+          const result = await this.dataSource.fetchSession(this.state.session.currentSessionId);
           if (result) {
-            this._updateSession({ session: result.session })
-            this._setTurnsFromFetch(result.turns, result.pendingQuestion || null)
+            this._updateSession({ session: result.session });
+            this._setTurnsFromFetch(result.turns, result.pendingQuestion || null);
           }
         } catch (err) {
-          console.error('Failed to refresh session for debug mode:', err)
+          console.error('Failed to refresh session for debug mode:', err);
         }
       }
 
-      this._updateInput({ message: '' })
-      return true
+      this._updateInput({ message: '' });
+      return true;
     }
 
-    const curSessionId = this.state.session.currentSessionId
+    const curSessionId = this.state.session.currentSessionId;
     if (!curSessionId || curSessionId === 'new') {
-      this._updateInput({ inputError: 'BiChat.Slash.ErrorSessionRequired' })
-      return true
+      this._updateInput({ inputError: 'BiChat.Slash.ErrorSessionRequired' });
+      return true;
     }
 
     if (command.name === '/clear') {
-      this._updateInput({ message: '' })
-      this._updateMessaging({ loading: true, streamingContent: '' })
+      this._updateInput({ message: '' });
+      this._updateMessaging({ loading: true, streamingContent: '' });
 
       try {
-        await this.dataSource.clearSessionHistory(curSessionId)
-        const result = await this.dataSource.fetchSession(curSessionId)
+        await this.dataSource.clearSessionHistory(curSessionId);
+        const result = await this.dataSource.fetchSession(curSessionId);
         if (result) {
-          this._updateSession({ session: result.session })
-          this._setTurnsFromFetch(result.turns, result.pendingQuestion || null)
+          this._updateSession({ session: result.session });
+          this._setTurnsFromFetch(result.turns, result.pendingQuestion || null);
         } else {
-          this._setTurnsFromFetch([], null)
+          this._setTurnsFromFetch([], null);
         }
-        this._updateMessaging({ codeOutputs: [] })
+        this._updateMessaging({ codeOutputs: [] });
       } catch (err) {
-        const normalized = normalizeRPCError(err, 'Failed to clear session history')
-        this._updateInput({ inputError: normalized.userMessage })
+        const normalized = normalizeRPCError(err, 'Failed to clear session history');
+        this._updateInput({ inputError: normalized.userMessage });
       } finally {
-        this._updateMessaging({ loading: false, isStreaming: false })
+        this._updateMessaging({ loading: false, isStreaming: false });
       }
-      return true
+      return true;
     }
 
     if (command.name === '/compact') {
-      this._updateInput({ message: '' })
+      this._updateInput({ message: '' });
       this._updateMessaging({
         loading: true,
         isCompacting: true,
         streamingContent: '',
-      })
+      });
 
       try {
-        const compactResult = await this.dataSource.compactSessionHistory(curSessionId)
-        const summary = compactResult.summary || ''
+        const compactResult = await this.dataSource.compactSessionHistory(curSessionId);
+        const summary = compactResult.summary || '';
         this._updateMessaging({
           turns: applyTurnLifecycleForPendingQuestion([createCompactedSystemTurn(curSessionId, summary)], null),
           pendingQuestion: null,
-        })
+        });
 
-        const result = await this.dataSource.fetchSession(curSessionId)
+        const result = await this.dataSource.fetchSession(curSessionId);
         if (result) {
-          this._updateSession({ session: result.session })
-          this._setTurnsFromFetch(result.turns, result.pendingQuestion || null)
+          this._updateSession({ session: result.session });
+          this._setTurnsFromFetch(result.turns, result.pendingQuestion || null);
         } else {
-          this._setTurnsFromFetch([], null)
+          this._setTurnsFromFetch([], null);
         }
-        this._updateMessaging({ codeOutputs: [] })
+        this._updateMessaging({ codeOutputs: [] });
       } catch (err) {
-        const normalized = normalizeRPCError(err, 'Failed to compact session history')
-        this._updateInput({ inputError: normalized.userMessage })
+        const normalized = normalizeRPCError(err, 'Failed to compact session history');
+        this._updateInput({ inputError: normalized.userMessage });
       } finally {
-        this._updateMessaging({ isCompacting: false, loading: false, isStreaming: false })
+        this._updateMessaging({ isCompacting: false, loading: false, isStreaming: false });
       }
-      return true
+      return true;
     }
 
-    this._updateInput({ inputError: 'BiChat.Slash.ErrorUnknownCommand' })
-    return true
+    this._updateInput({ inputError: 'BiChat.Slash.ErrorUnknownCommand' });
+    return true;
   }
 
   private _insertOptimisticTurn(
@@ -605,57 +785,52 @@ export class ChatMachine {
     replaceFromMessageID?: string
   ): void {
     if (!replaceFromMessageID) {
-      this._updateMessaging({ turns: [...prevTurns, tempTurn] })
-      return
+      this._updateMessaging({ turns: [...prevTurns, tempTurn] });
+      return;
     }
 
-    const idx = prevTurns.findIndex((turn) => turn.userTurn.id === replaceFromMessageID)
+    const idx = prevTurns.findIndex((turn) => turn.userTurn.id === replaceFromMessageID);
     if (idx === -1) {
-      console.warn(`[ChatMachine] replaceFromMessageID "${replaceFromMessageID}" not found; appending as new turn`)
-      this._updateMessaging({ turns: [...prevTurns, tempTurn] })
-      return
+      console.warn(`[ChatMachine] replaceFromMessageID "${replaceFromMessageID}" not found; appending as new turn`);
+      this._updateMessaging({ turns: [...prevTurns, tempTurn] });
+      return;
     }
 
-    this._updateMessaging({ turns: [...prevTurns.slice(0, idx), tempTurn] })
+    this._updateMessaging({ turns: [...prevTurns.slice(0, idx), tempTurn] });
   }
 
   private async _resolveSendSession(
     currentSessionId: string | undefined,
     debugMode: boolean
   ): Promise<{ activeSessionId: string | undefined; shouldNavigateAfter: boolean }> {
-    let activeSessionId = currentSessionId
-    let shouldNavigateAfter = false
+    let activeSessionId = currentSessionId;
+    let shouldNavigateAfter = false;
 
     if (!activeSessionId || activeSessionId === 'new') {
-      const result = await this.dataSource.createSession()
+      const result = await this.dataSource.createSession();
       if (result) {
-        const createdSessionID = result.id
-        activeSessionId = createdSessionID
-        this._updateSession({ currentSessionId: createdSessionID })
+        const createdSessionID = result.id;
+        activeSessionId = createdSessionID;
+        this._updateSession({ currentSessionId: createdSessionID });
         if (debugMode) {
-          this._updateSession({
-            debugModeBySession: {
-              ...this.state.session.debugModeBySession,
-              [createdSessionID]: true,
-            },
-          })
+          this._setDebugModeForSession(createdSessionID, true);
         }
-        shouldNavigateAfter = true
+        shouldNavigateAfter = true;
       }
     }
 
-    return { activeSessionId, shouldNavigateAfter }
+    return { activeSessionId, shouldNavigateAfter };
   }
 
   private async _syncSessionFromServer(sessionId: string, allowEmptyTurns = false): Promise<void> {
-    const fetchResult = await this.dataSource.fetchSession(sessionId)
-    if (!fetchResult) return
+    const fetchResult = await this.dataSource.fetchSession(sessionId);
+    if (!fetchResult) {return;}
 
-    this._updateSession({ session: fetchResult.session })
+    this._updateSession({ session: fetchResult.session });
     this._setTurnsFromFetch(
       allowEmptyTurns ? fetchResult.turns ?? [] : fetchResult.turns,
       fetchResult.pendingQuestion || null
-    )
+    );
   }
 
   private async _runSendStream(params: {
@@ -665,7 +840,7 @@ export class ChatMachine {
     debugMode: boolean
     replaceFromMessageID?: string
     tempTurnId: string
-  }): Promise<{ createdSessionId?: string; sessionFetched: boolean }> {
+  }): Promise<{ createdSessionId?: string; sessionFetched: boolean; stopped?: boolean }> {
     const {
       activeSessionId,
       content,
@@ -673,12 +848,13 @@ export class ChatMachine {
       debugMode,
       replaceFromMessageID,
       tempTurnId,
-    } = params
+    } = params;
 
-    let accumulatedContent = ''
-    let createdSessionId: string | undefined
-    let sessionFetched = false
-    this._updateMessaging({ isStreaming: true })
+    let accumulatedContent = '';
+    let createdSessionId: string | undefined;
+    let sessionFetched = false;
+    let currentRunId: string | undefined;
+    this._updateMessaging({ isStreaming: true });
 
     for await (const chunk of this.dataSource.sendMessage(
       activeSessionId || 'new',
@@ -690,25 +866,32 @@ export class ChatMachine {
         replaceFromMessageID,
       }
     )) {
-      if (this.abortController?.signal.aborted) break
+      if (this.abortController?.signal.aborted) {break;}
+
+      if (chunk.type === 'stream_started' && chunk.runId) {
+        currentRunId = chunk.runId;
+        if (activeSessionId && activeSessionId !== 'new') {
+          setRunMarker(activeSessionId, chunk.runId);
+        }
+      }
 
       if ((chunk.type === 'chunk' || chunk.type === 'content') && chunk.content) {
-        accumulatedContent += chunk.content
-        this._updateMessaging({ streamingContent: accumulatedContent })
+        accumulatedContent += chunk.content;
+        this._updateMessaging({ streamingContent: accumulatedContent });
       } else if (chunk.type === 'thinking' && chunk.content) {
-        this._handleThinkingChunk(chunk.content)
+        this._handleThinkingChunk(chunk.content);
       } else if (chunk.type === 'tool_start' && chunk.tool) {
-        this._handleToolStart(chunk.tool)
+        this._handleToolStart(chunk.tool);
       } else if (chunk.type === 'tool_end' && chunk.tool) {
-        this._handleToolEnd(chunk.tool)
+        this._handleToolEnd(chunk.tool);
       } else if (chunk.type === 'error') {
-        throw new Error(chunk.error || 'Stream error')
+        throw new Error(chunk.error || 'Stream error');
       } else if (chunk.type === 'interrupt') {
         if (chunk.sessionId) {
-          createdSessionId = chunk.sessionId
+          createdSessionId = chunk.sessionId;
         }
 
-        const pendingFromInterrupt = pendingQuestionFromInterrupt(chunk.interrupt, tempTurnId)
+        const pendingFromInterrupt = pendingQuestionFromInterrupt(chunk.interrupt, tempTurnId);
         if (pendingFromInterrupt) {
           this._updateMessaging({
             pendingQuestion: pendingFromInterrupt,
@@ -716,33 +899,42 @@ export class ChatMachine {
               this.state.messaging.turns,
               pendingFromInterrupt
             ),
-          })
+          });
         }
 
         if (!sessionFetched) {
-          sessionFetched = true
-          const finalSessionId = createdSessionId || activeSessionId
+          sessionFetched = true;
+          const finalSessionId = createdSessionId || activeSessionId;
           if (finalSessionId && finalSessionId !== 'new') {
-            await this._syncSessionFromServer(finalSessionId)
+            await this._syncSessionFromServer(finalSessionId);
           }
         }
       } else if (chunk.type === 'done') {
         if (chunk.sessionId) {
-          createdSessionId = chunk.sessionId
+          createdSessionId = chunk.sessionId;
         }
         if (!sessionFetched) {
-          sessionFetched = true
-          const finalSessionId = createdSessionId || activeSessionId
+          sessionFetched = true;
+          const finalSessionId = createdSessionId || activeSessionId;
           if (finalSessionId && finalSessionId !== 'new') {
-            await this._syncSessionFromServer(finalSessionId)
+            await this._syncSessionFromServer(finalSessionId);
           }
         }
       } else if (chunk.type === 'user_message' && chunk.sessionId) {
-        createdSessionId = chunk.sessionId
+        createdSessionId = chunk.sessionId;
+        if (currentRunId && createdSessionId) {
+          setRunMarker(createdSessionId, currentRunId);
+        }
       }
     }
 
-    return { createdSessionId, sessionFetched }
+    const finalSessionId = createdSessionId || activeSessionId;
+    if (finalSessionId && finalSessionId !== 'new') {
+      clearRunMarker(finalSessionId);
+    }
+
+    const stopped = this.abortController?.signal.aborted ?? false;
+    return { createdSessionId, sessionFetched, stopped };
   }
 
   private async _ensureSessionSyncAfterStream(
@@ -750,54 +942,61 @@ export class ChatMachine {
     createdSessionId: string | undefined,
     sessionFetched: boolean
   ): Promise<void> {
-    if (sessionFetched) return
+    if (sessionFetched) {return;}
 
-    const finalSessionId = createdSessionId || activeSessionId
-    if (!finalSessionId || finalSessionId === 'new') return
+    const finalSessionId = createdSessionId || activeSessionId;
+    if (!finalSessionId || finalSessionId === 'new') {return;}
 
     try {
-      await this._syncSessionFromServer(finalSessionId, true)
+      await this._syncSessionFromServer(finalSessionId, true);
     } catch (fetchErr) {
-      console.error('Failed to fetch session after stream:', fetchErr)
+      console.error('Failed to fetch session after stream:', fetchErr);
     }
   }
 
   private _finalizeSuccessfulSend(targetSessionId: string | undefined, shouldNavigateAfter: boolean): void {
     if (targetSessionId && targetSessionId !== 'new') {
-      this._notifySessionsUpdated('message_sent', targetSessionId)
+      this._notifySessionsUpdated('message_sent', targetSessionId);
     }
     if (shouldNavigateAfter && targetSessionId && targetSessionId !== 'new') {
-      this._notifySessionsUpdated('session_created', targetSessionId)
+      this._notifySessionsUpdated('session_created', targetSessionId);
       // Prefer callback prop over deprecated data source method
       if (this.onSessionCreated) {
-        this.onSessionCreated(targetSessionId)
+        this.onSessionCreated(targetSessionId);
       } else {
-        this.dataSource.navigateToSession?.(targetSessionId)
+        this.dataSource.navigateToSession?.(targetSessionId);
       }
     }
-    this._clearStreamError()
-    this.lastSendAttempt = null
+    this._clearStreamError();
+    this.lastSendAttempt = null;
   }
 
   private _handleSendError(err: unknown, content: string, tempTurnId: string): boolean {
     if (err instanceof Error && err.name === 'AbortError') {
-      this._updateInput({ message: content })
-      this._clearStreamError()
-      return false
+      this._updateInput({ message: content });
+      this._clearStreamError();
+      this._updateMessaging({
+        turns: this.state.messaging.turns.filter((turn) => turn.id !== tempTurnId),
+      });
+      const sessionId = this.sendingSessionId ?? this.state.session.currentSessionId;
+      if (sessionId && sessionId !== 'new') {
+        this._syncSessionFromServer(sessionId, true).catch(() => {});
+      }
+      return false;
     }
 
     this._updateMessaging({
       turns: this.state.messaging.turns.filter((turn) => turn.id !== tempTurnId),
-    })
+    });
 
-    const normalized = normalizeRPCError(err, 'Failed to send message')
-    this._updateInput({ inputError: normalized.userMessage })
+    const normalized = normalizeRPCError(err, 'Failed to send message');
+    this._updateInput({ inputError: normalized.userMessage });
     this._updateMessaging({
       streamError: normalized.userMessage,
       streamErrorRetryable: normalized.retryable,
-    })
-    console.error('Send message error:', err)
-    return false
+    });
+    console.error('Send message error:', err);
+    return false;
   }
 
   // ── Send message ────────────────────────────────────────────────────────
@@ -806,7 +1005,7 @@ export class ChatMachine {
    * Public entry point (no options). Calls _sendMessageCore internally.
    */
   private async _sendMessage(content: string, attachments: Attachment[] = []): Promise<void> {
-    return this._sendMessageCore(content, attachments)
+    return this._sendMessageCore(content, attachments);
   }
 
   /**
@@ -817,7 +1016,7 @@ export class ChatMachine {
     attachments: Attachment[],
     options?: SendMessageOptions
   ): Promise<void> {
-    return this._sendMessageCore(content, attachments, options)
+    return this._sendMessageCore(content, attachments, options);
   }
 
   /**
@@ -829,63 +1028,64 @@ export class ChatMachine {
     attachments: Attachment[] = [],
     options?: SendMessageOptions
   ): Promise<void> {
-    if (this.disposed) return
-    if (!content.trim() || this.state.messaging.loading) return
+    if (this.disposed) {return;}
+    if (!content.trim() || this.state.messaging.loading) {return;}
 
-    const trimmedContent = content.trim()
+    const trimmedContent = content.trim();
     if (trimmedContent.startsWith('/')) {
-      const maybeCommand = parseSlashCommand(content)
+      const maybeCommand = parseSlashCommand(content);
       if (!maybeCommand) {
-        this._updateInput({ inputError: 'BiChat.Slash.ErrorUnknownCommand' })
-        return
+        this._updateInput({ inputError: 'BiChat.Slash.ErrorUnknownCommand' });
+        return;
       }
       if (attachments.length > 0) {
-        this._updateInput({ inputError: 'BiChat.Slash.ErrorNoAttachments' })
-        return
+        this._updateInput({ inputError: 'BiChat.Slash.ErrorNoAttachments' });
+        return;
       }
-      await this._executeSlashCommand(maybeCommand)
-      return
+      await this._executeSlashCommand(maybeCommand);
+      return;
     }
 
     if (!this.rateLimiter.canMakeRequest()) {
-      const timeUntilNext = this.rateLimiter.getTimeUntilNextRequest()
-      const seconds = Math.ceil(timeUntilNext / 1000)
+      const timeUntilNext = this.rateLimiter.getTimeUntilNextRequest();
+      const seconds = Math.ceil(timeUntilNext / 1000);
       this._updateInput({
         inputError: `Rate limit exceeded. Please wait ${seconds} seconds before sending another message.`,
-      })
-      return
+      });
+      return;
     }
 
-    this._updateInput({ message: '', inputError: null })
-    this._updateSession({ error: null, errorRetryable: false })
-    this._clearStreamError()
+    this._updateInput({ message: '', inputError: null });
+    this._updateSession({ error: null, errorRetryable: false });
+    this._clearStreamError();
     this._updateMessaging({
       loading: true,
       streamingContent: '',
-    })
+    });
 
-    this.abortController = new AbortController()
+    this.abortController = new AbortController();
 
-    const curSessionId = this.state.session.currentSessionId
-    const curDebugMode = deriveDebugMode(this.state)
-    const replaceFromMessageID = options?.replaceFromMessageID
-    const tempTurn = createPendingTurn(curSessionId || 'new', content, attachments)
-    this.lastSendAttempt = { content, attachments, options }
+    const curSessionId = this.state.session.currentSessionId;
+    const curDebugMode = deriveDebugMode(this.state);
+    const replaceFromMessageID = options?.replaceFromMessageID;
+    const tempTurn = createPendingTurn(curSessionId || 'new', content, attachments);
+    this.lastSendAttempt = { content, attachments, options };
 
-    const prevTurns = this.state.messaging.turns
-    this._insertOptimisticTurn(prevTurns, tempTurn, replaceFromMessageID)
+    const prevTurns = this.state.messaging.turns;
+    this._insertOptimisticTurn(prevTurns, tempTurn, replaceFromMessageID);
 
-    let shouldDrainQueue = true
+    let shouldDrainQueue = true;
 
     try {
-      const { activeSessionId, shouldNavigateAfter } = await this._resolveSendSession(curSessionId, curDebugMode)
+      const { activeSessionId, shouldNavigateAfter } = await this._resolveSendSession(curSessionId, curDebugMode);
 
       // Lock: prevent fetch-session from clobbering state
-      this.sendingSessionId = activeSessionId || null
+      this.sendingSessionId = activeSessionId || null;
 
       const {
         createdSessionId,
         sessionFetched,
+        stopped,
       } = await this._runSendStream({
         activeSessionId,
         content,
@@ -893,13 +1093,25 @@ export class ChatMachine {
         debugMode: curDebugMode,
         replaceFromMessageID,
         tempTurnId: tempTurn.id,
-      })
-      await this._ensureSessionSyncAfterStream(activeSessionId, createdSessionId, sessionFetched)
+      });
 
-      const targetSessionId = createdSessionId || activeSessionId
-      this._finalizeSuccessfulSend(targetSessionId, shouldNavigateAfter)
+      if (stopped) {
+        this._updateMessaging({
+          turns: this.state.messaging.turns.filter((turn) => turn.id !== tempTurn.id),
+        });
+        this._updateInput({ message: content });
+        this._clearStreamError();
+        const syncId = createdSessionId || activeSessionId;
+        if (syncId && syncId !== 'new') {
+          await this._syncSessionFromServer(syncId, true).catch(() => {});
+        }
+      } else {
+        await this._ensureSessionSyncAfterStream(activeSessionId, createdSessionId, sessionFetched);
+        const targetSessionId = createdSessionId || activeSessionId;
+        this._finalizeSuccessfulSend(targetSessionId, shouldNavigateAfter);
+      }
     } catch (err) {
-      shouldDrainQueue = this._handleSendError(err, content, tempTurn.id)
+      shouldDrainQueue = this._handleSendError(err, content, tempTurn.id);
     } finally {
       this._updateMessaging({
         loading: false,
@@ -907,20 +1119,20 @@ export class ChatMachine {
         isStreaming: false,
         thinkingContent: '',
         activeSteps: [],
-      })
-      this.abortController = null
-      this.sendingSessionId = null
+      });
+      this.abortController = null;
+      this.sendingSessionId = null;
 
       // Auto-drain queue on success
       if (shouldDrainQueue) {
-        const queue = this.state.input.messageQueue
+        const queue = this.state.input.messageQueue;
         if (queue.length > 0) {
-          const next = queue[0]
-          this._updateInput({ messageQueue: queue.slice(1) })
+          const next = queue[0];
+          this._updateInput({ messageQueue: queue.slice(1) });
           // Defer to avoid reentrant call
           setTimeout(() => {
-            this._sendMessageCore(next.content, next.attachments)
-          }, 0)
+            this._sendMessageCore(next.content, next.attachments);
+          }, 0);
         }
       }
     }
@@ -929,17 +1141,17 @@ export class ChatMachine {
   // ── Ephemeral activity trace helpers ─────────────────────────────────
 
   private _handleThinkingChunk(content: string): void {
-    const THINKING_BUFFER_LIMIT = 500
-    const prev = this.state.messaging.thinkingContent
-    let updated = prev + content
+    const THINKING_BUFFER_LIMIT = 500;
+    const prev = this.state.messaging.thinkingContent;
+    let updated = prev + content;
     if (updated.length > THINKING_BUFFER_LIMIT) {
-      updated = updated.slice(-THINKING_BUFFER_LIMIT)
+      updated = updated.slice(-THINKING_BUFFER_LIMIT);
     }
-    this._updateMessaging({ thinkingContent: updated })
+    this._updateMessaging({ thinkingContent: updated });
 
     // Upsert a "thinking" step if not already active
-    const steps = this.state.messaging.activeSteps
-    const existing = steps.find((s) => s.type === 'thinking' && s.status === 'active')
+    const steps = this.state.messaging.activeSteps;
+    const existing = steps.find((s) => s.type === 'thinking' && s.status === 'active');
     if (!existing) {
       const step: ActivityStep = {
         id: `thinking-${Date.now()}`,
@@ -947,8 +1159,8 @@ export class ChatMachine {
         toolName: 'thinking',
         status: 'active',
         startedAt: Date.now(),
-      }
-      this._updateMessaging({ activeSteps: [...steps, step] })
+      };
+      this._updateMessaging({ activeSteps: [...steps, step] });
     }
   }
 
@@ -958,9 +1170,9 @@ export class ChatMachine {
       s.type === 'thinking' && s.status === 'active'
         ? { ...s, status: 'completed' as const, completedAt: Date.now() }
         : s
-    )
+    );
 
-    const isAgentDelegation = tool.name === 'task'
+    const isAgentDelegation = tool.name === 'task';
     const step: ActivityStep = {
       id: tool.callId || `tool-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       type: isAgentDelegation ? 'agent_delegation' : 'tool',
@@ -969,30 +1181,30 @@ export class ChatMachine {
       agentName: tool.agentName,
       status: 'active',
       startedAt: Date.now(),
-    }
+    };
 
-    steps = [...steps, step]
-    this._updateMessaging({ activeSteps: steps })
+    steps = [...steps, step];
+    this._updateMessaging({ activeSteps: steps });
   }
 
   private _handleToolEnd(tool: { callId?: string; name: string; durationMs?: number; agentName?: string }): void {
-    const steps = [...this.state.messaging.activeSteps]
-    const idx = steps.findIndex((s) => s.status === 'active' && this._matchStep(s, tool))
+    const steps = [...this.state.messaging.activeSteps];
+    const idx = steps.findIndex((s) => s.status === 'active' && this._matchStep(s, tool));
     if (idx !== -1) {
       steps[idx] = {
         ...steps[idx],
         status: 'completed' as const,
         completedAt: Date.now(),
         durationMs: tool.durationMs,
-      }
+      };
     }
-    this._updateMessaging({ activeSteps: steps })
+    this._updateMessaging({ activeSteps: steps });
 
     // Artifact invalidation
     if (tool.name && ARTIFACT_TOOL_NAMES.has(tool.name)) {
       this._updateMessaging({
         artifactsInvalidationTrigger: this.state.messaging.artifactsInvalidationTrigger + 1,
-      })
+      });
     }
   }
 
@@ -1002,63 +1214,63 @@ export class ChatMachine {
     tool: { callId?: string; name: string; agentName?: string }
   ): boolean {
     // When the backend provides a callId, use it exclusively — no fallback.
-    if (tool.callId) return step.id === tool.callId
-    return step.toolName === tool.name && step.agentName === tool.agentName
+    if (tool.callId) {return step.id === tool.callId;}
+    return step.toolName === tool.name && step.agentName === tool.agentName;
   }
 
   // ── Retry ───────────────────────────────────────────────────────────────
 
   private async _retryLastMessage(): Promise<void> {
-    const lastAttempt = this.lastSendAttempt
-    if (!lastAttempt || this.state.messaging.loading) return
-    this._clearStreamError()
-    this._updateInput({ inputError: null })
-    await this._sendMessageDirect(lastAttempt.content, lastAttempt.attachments, lastAttempt.options)
+    const lastAttempt = this.lastSendAttempt;
+    if (!lastAttempt || this.state.messaging.loading) {return;}
+    this._clearStreamError();
+    this._updateInput({ inputError: null });
+    await this._sendMessageDirect(lastAttempt.content, lastAttempt.attachments, lastAttempt.options);
   }
 
   // ── Regenerate / Edit ───────────────────────────────────────────────────
 
   private async _handleRegenerate(turnId: string): Promise<void> {
-    const curSessionId = this.state.session.currentSessionId
-    if (!curSessionId || curSessionId === 'new') return
+    const curSessionId = this.state.session.currentSessionId;
+    if (!curSessionId || curSessionId === 'new') {return;}
 
-    const turn = this.state.messaging.turns.find((t) => t.id === turnId)
-    if (!turn) return
+    const turn = this.state.messaging.turns.find((t) => t.id === turnId);
+    if (!turn) {return;}
 
-    this._updateSession({ error: null, errorRetryable: false })
+    this._updateSession({ error: null, errorRetryable: false });
     // _sendMessageDirect delegates to _sendMessageCore which handles all errors internally
     await this._sendMessageDirect(turn.userTurn.content, turn.userTurn.attachments, {
       replaceFromMessageID: turn.userTurn.id,
-    })
+    });
   }
 
   private async _handleEdit(turnId: string, newContent: string): Promise<void> {
-    const curSessionId = this.state.session.currentSessionId
+    const curSessionId = this.state.session.currentSessionId;
     if (!curSessionId || curSessionId === 'new') {
-      this._updateInput({ message: newContent })
+      this._updateInput({ message: newContent });
       this._updateMessaging({
         turns: this.state.messaging.turns.filter((t) => t.id !== turnId),
-      })
-      return
+      });
+      return;
     }
 
-    const turn = this.state.messaging.turns.find((t) => t.id === turnId)
+    const turn = this.state.messaging.turns.find((t) => t.id === turnId);
     if (!turn) {
-      this._updateSession({ error: 'Failed to edit message', errorRetryable: false })
-      return
+      this._updateSession({ error: 'Failed to edit message', errorRetryable: false });
+      return;
     }
 
-    this._updateSession({ error: null, errorRetryable: false })
+    this._updateSession({ error: null, errorRetryable: false });
     // _sendMessageDirect delegates to _sendMessageCore which handles all errors internally
     await this._sendMessageDirect(newContent, turn.userTurn.attachments, {
       replaceFromMessageID: turn.userTurn.id,
-    })
+    });
   }
 
   private async _handleCopy(text: string): Promise<void> {
-    if (typeof navigator === 'undefined' || !navigator.clipboard) return
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {return;}
     try {
-      await navigator.clipboard.writeText(text)
+      await navigator.clipboard.writeText(text);
     } catch {
       // Clipboard write can fail if page doesn't have focus (Permissions Policy)
     }
@@ -1067,128 +1279,128 @@ export class ChatMachine {
   // ── HITL ────────────────────────────────────────────────────────────────
 
   private async _handleSubmitQuestionAnswers(answers: QuestionAnswers): Promise<void> {
-    const curSessionId = this.state.session.currentSessionId
-    const curPendingQuestion = this.state.messaging.pendingQuestion
-    if (!curSessionId || !curPendingQuestion) return
+    const curSessionId = this.state.session.currentSessionId;
+    const curPendingQuestion = this.state.messaging.pendingQuestion;
+    if (!curSessionId || !curPendingQuestion) {return;}
 
-    const previousTurns = this.state.messaging.turns
-    this._updateMessaging({ loading: true })
-    this._updateSession({ error: null, errorRetryable: false })
-    const previousPendingQuestion = curPendingQuestion
+    const previousTurns = this.state.messaging.turns;
+    this._updateMessaging({ loading: true });
+    this._updateSession({ error: null, errorRetryable: false });
+    const previousPendingQuestion = curPendingQuestion;
     this._updateMessaging({
       pendingQuestion: null,
       turns: applyTurnLifecycleForPendingQuestion(previousTurns, null),
-    })
+    });
 
     try {
       const result = await this.dataSource.submitQuestionAnswers(
         curSessionId,
         previousPendingQuestion.id,
         answers
-      )
-      if (this.disposed) return
+      );
+      if (this.disposed) {return;}
 
       if (result.success) {
         if (curSessionId !== 'new') {
           try {
-            const fetchResult = await this.dataSource.fetchSession(curSessionId)
-            if (this.disposed) return
+            const fetchResult = await this.dataSource.fetchSession(curSessionId);
+            if (this.disposed) {return;}
             if (fetchResult) {
-              this._updateSession({ session: fetchResult.session })
+              this._updateSession({ session: fetchResult.session });
               const hasMalformedRefresh =
                 previousTurns.length > 0 &&
                 Array.isArray(fetchResult.turns) &&
-                fetchResult.turns.length === 0
+                fetchResult.turns.length === 0;
 
               if (hasMalformedRefresh) {
                 console.warn('[ChatMachine] Preserving previous turns due to empty post-HITL refetch payload', {
                   sessionId: curSessionId,
                   previousTurnCount: previousTurns.length,
-                })
+                });
                 this._updateSession({
                   error: 'Failed to fully refresh session. Showing last known messages.',
                   errorRetryable: true,
-                })
+                });
                 this._updateMessaging({
                   pendingQuestion: fetchResult.pendingQuestion || null,
                   turns: applyTurnLifecycleForPendingQuestion(
                     previousTurns,
                     fetchResult.pendingQuestion || null
                   ),
-                })
+                });
               } else {
-                this._setTurnsFromFetch(fetchResult.turns, fetchResult.pendingQuestion || null)
+                this._setTurnsFromFetch(fetchResult.turns, fetchResult.pendingQuestion || null);
               }
             } else {
-              this._updateSession({ error: 'Failed to load updated session', errorRetryable: true })
+              this._updateSession({ error: 'Failed to load updated session', errorRetryable: true });
             }
           } catch (fetchErr) {
-            if (this.disposed) return
-            const normalized = normalizeRPCError(fetchErr, 'Failed to load updated session')
-            this._updateSession({ error: normalized.userMessage, errorRetryable: true })
+            if (this.disposed) {return;}
+            const normalized = normalizeRPCError(fetchErr, 'Failed to load updated session');
+            this._updateSession({ error: normalized.userMessage, errorRetryable: true });
           }
         }
       } else {
         this._updateMessaging({
           pendingQuestion: previousPendingQuestion,
           turns: applyTurnLifecycleForPendingQuestion(previousTurns, previousPendingQuestion),
-        })
-        this._updateSession({ error: result.error || 'Failed to submit answers', errorRetryable: false })
+        });
+        this._updateSession({ error: result.error || 'Failed to submit answers', errorRetryable: false });
       }
     } catch (err) {
-      if (this.disposed) return
+      if (this.disposed) {return;}
       this._updateMessaging({
         pendingQuestion: previousPendingQuestion,
         turns: applyTurnLifecycleForPendingQuestion(previousTurns, previousPendingQuestion),
-      })
-      const normalized = normalizeRPCError(err, 'Failed to submit answers')
-      this._updateSession({ error: normalized.userMessage, errorRetryable: normalized.retryable })
+      });
+      const normalized = normalizeRPCError(err, 'Failed to submit answers');
+      this._updateSession({ error: normalized.userMessage, errorRetryable: normalized.retryable });
     } finally {
       if (!this.disposed) {
-        this._updateMessaging({ loading: false })
+        this._updateMessaging({ loading: false });
       }
     }
   }
 
   private async _handleRejectPendingQuestion(): Promise<void> {
-    const curSessionId = this.state.session.currentSessionId
-    const curPendingQuestion = this.state.messaging.pendingQuestion
-    if (!curSessionId || !curPendingQuestion) return
+    const curSessionId = this.state.session.currentSessionId;
+    const curPendingQuestion = this.state.messaging.pendingQuestion;
+    if (!curSessionId || !curPendingQuestion) {return;}
 
     try {
-      const result = await this.dataSource.rejectPendingQuestion(curSessionId)
-      if (this.disposed) return
+      const result = await this.dataSource.rejectPendingQuestion(curSessionId);
+      if (this.disposed) {return;}
       if (result.success) {
         this._updateMessaging({
           pendingQuestion: null,
           turns: applyTurnLifecycleForPendingQuestion(this.state.messaging.turns, null),
-        })
+        });
         if (curSessionId !== 'new') {
-          const fetchResult = await this.dataSource.fetchSession(curSessionId)
-          if (this.disposed) return
+          const fetchResult = await this.dataSource.fetchSession(curSessionId);
+          if (this.disposed) {return;}
           if (fetchResult) {
-            this._updateSession({ session: fetchResult.session })
-            this._setTurnsFromFetch(fetchResult.turns, fetchResult.pendingQuestion || null)
+            this._updateSession({ session: fetchResult.session });
+            this._setTurnsFromFetch(fetchResult.turns, fetchResult.pendingQuestion || null);
           }
         }
       } else {
-        this._updateSession({ error: result.error || 'Failed to reject question', errorRetryable: false })
+        this._updateSession({ error: result.error || 'Failed to reject question', errorRetryable: false });
       }
     } catch (err) {
-      if (this.disposed) return
-      const normalized = normalizeRPCError(err, 'Failed to reject question')
-      this._updateSession({ error: normalized.userMessage, errorRetryable: normalized.retryable })
+      if (this.disposed) {return;}
+      const normalized = normalizeRPCError(err, 'Failed to reject question');
+      this._updateSession({ error: normalized.userMessage, errorRetryable: normalized.retryable });
     }
   }
 
   // ── Input / queue ───────────────────────────────────────────────────────
 
   private _handleSubmit(e: { preventDefault: () => void }, attachments: Attachment[] = []): void {
-    e.preventDefault()
-    const msg = this.state.input.message
-    if (!msg.trim() && attachments.length === 0) return
-    this._updateInput({ inputError: null })
-    this._clearStreamError()
+    e.preventDefault();
+    const msg = this.state.input.message;
+    if (!msg.trim() && attachments.length === 0) {return;}
+    this._updateInput({ inputError: null });
+    this._clearStreamError();
 
     const convertedAttachments: Attachment[] = attachments.map((att) => ({
       clientKey: att.clientKey || crypto.randomUUID(),
@@ -1200,44 +1412,44 @@ export class ChatMachine {
       base64Data: att.base64Data,
       url: att.url,
       preview: att.preview,
-    }))
+    }));
 
     // Queue if currently generating
     if (this.state.messaging.loading) {
-      const ok = this._enqueueMessage(msg.trim(), convertedAttachments)
+      const ok = this._enqueueMessage(msg.trim(), convertedAttachments);
       if (ok) {
-        this._updateInput({ message: '' })
+        this._updateInput({ message: '' });
       }
-      return
+      return;
     }
 
-    this._sendMessage(msg.trim(), convertedAttachments)
+    this._sendMessage(msg.trim(), convertedAttachments);
   }
 
   private _handleUnqueue(): { content: string; attachments: Attachment[] } | null {
-    const queue = this.state.input.messageQueue
-    if (queue.length === 0) return null
+    const queue = this.state.input.messageQueue;
+    if (queue.length === 0) {return null;}
 
-    const last = queue[queue.length - 1]
-    this._updateInput({ messageQueue: queue.slice(0, -1) })
-    return { content: last.content, attachments: last.attachments }
+    const last = queue[queue.length - 1];
+    this._updateInput({ messageQueue: queue.slice(0, -1) });
+    return { content: last.content, attachments: last.attachments };
   }
 
   private _enqueueMessage(content: string, attachments: Attachment[]): boolean {
     if (this.state.input.messageQueue.length >= MAX_QUEUE_SIZE) {
-      this._updateInput({ inputError: 'BiChat.Input.QueueFull' })
-      return false
+      this._updateInput({ inputError: 'BiChat.Input.QueueFull' });
+      return false;
     }
     this._updateInput({
       messageQueue: [...this.state.input.messageQueue, { content, attachments }],
-    })
-    return true
+    });
+    return true;
   }
 
   private _removeQueueItem(index: number): void {
     this._updateInput({
       messageQueue: this.state.input.messageQueue.filter((_, i) => i !== index),
-    })
+    });
   }
 
   private _updateQueueItem(index: number, content: string): void {
@@ -1245,7 +1457,7 @@ export class ChatMachine {
       messageQueue: this.state.input.messageQueue.map((item, i) =>
         i === index ? { ...item, content } : item
       ),
-    })
+    });
   }
 }
 
@@ -1257,7 +1469,7 @@ function sessionDebugUsageEqual(
   a: SessionDebugUsage | null,
   b: SessionDebugUsage
 ): boolean {
-  if (!a) return false
+  if (!a) {return false;}
   return (
     a.promptTokens === b.promptTokens &&
     a.completionTokens === b.completionTokens &&
@@ -1266,5 +1478,5 @@ function sessionDebugUsageEqual(
     a.latestPromptTokens === b.latestPromptTokens &&
     a.latestCompletionTokens === b.latestCompletionTokens &&
     a.latestTotalTokens === b.latestTotalTokens
-  )
+  );
 }

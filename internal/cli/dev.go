@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"sort"
 	"strings"
@@ -17,20 +18,28 @@ import (
 
 // NewDevCommand returns the `applet dev` subcommand.
 func NewDevCommand() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "dev",
 		Short: "Start development environment",
 		Long: `Start the development environment for the project.
 
 Starts project-level processes (e.g. air, templ, css) and all configured applets
 (Vite dev servers, SDK watchers, applet CSS).`,
-		Example: `  applet dev`,
-		Args:    cobra.NoArgs,
-		RunE:    runDev,
+		Example: `  applet dev
+  applet dev --rpc-watch`,
+		Args: cobra.NoArgs,
+		RunE: runDev,
 	}
+	cmd.Flags().Bool("rpc-watch", false, "Enable applet RPC codegen watch processes")
+	return cmd
 }
 
 func runDev(cmd *cobra.Command, args []string) error {
+	rpcWatch, err := cmd.Flags().GetBool("rpc-watch")
+	if err != nil {
+		return err
+	}
+
 	root, cfg, err := config.LoadFromCWD()
 	if err != nil {
 		return err
@@ -103,6 +112,7 @@ func runDev(cmd *cobra.Command, args []string) error {
 
 		processes = append(processes, result.Processes...)
 	}
+	processes = appendRPCWatchProcesses(processes, root, appletNames, rpcWatch, resolveAppletCommand())
 
 	// Determine restart target: first critical process
 	restartTarget := cfg.FirstCriticalProcess()
@@ -129,6 +139,35 @@ func runDev(cmd *cobra.Command, args []string) error {
 		return NewExitError(exitCode, nil)
 	}
 	return nil
+}
+
+func appendRPCWatchProcesses(processes []devrunner.ProcessSpec, root string, appletNames []string, enabled bool, appletCommand string) []devrunner.ProcessSpec {
+	if !enabled {
+		return processes
+	}
+	if strings.TrimSpace(appletCommand) == "" {
+		appletCommand = "applet"
+	}
+
+	for _, name := range appletNames {
+		processes = append(processes, devrunner.ProcessSpec{
+			Name:     fmt.Sprintf("rpc:%s", name),
+			Command:  appletCommand,
+			Args:     []string{"rpc", "watch", "--name", name},
+			Dir:      root,
+			Color:    devrunner.ColorCyan,
+			Critical: false,
+		})
+	}
+	return processes
+}
+
+func resolveAppletCommand() string {
+	executable, err := os.Executable()
+	if err != nil || strings.TrimSpace(executable) == "" {
+		return "applet"
+	}
+	return executable
 }
 
 func preflightProcesses(cfg *config.ProjectConfig) error {

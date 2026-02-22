@@ -10,7 +10,7 @@
  * 3. Return processed content with clean inline citation references
  */
 
-import type { Citation } from '../types'
+import type { Citation } from '../types';
 
 export interface ProcessedContent {
   /** Content with citation markers replaced by [1], [2], etc. */
@@ -42,19 +42,19 @@ export function processCitations(
 ): ProcessedContent {
   // If no citations, return content as-is
   if (!citations || citations.length === 0) {
-    return { content, citations: [] }
+    return { content, citations: [] };
   }
 
   // Sort citations by startIndex (descending) to process from end to start
   // This prevents index shifting issues when replacing text
-  const sortedCitations = [...citations].sort((a, b) => b.startIndex - a.startIndex)
+  const sortedCitations = [...citations].sort((a, b) => b.startIndex - a.startIndex);
 
-  let processedContent = content
-  const processedCitations: Array<Citation & { displayIndex: number }> = []
+  let processedContent = content;
+  const processedCitations: Array<Citation & { displayIndex: number }> = [];
 
   // Process each citation from end to start
   sortedCitations.forEach((citation, index) => {
-    const { startIndex, endIndex } = citation
+    const { startIndex, endIndex } = citation;
 
     // Validate indices
     if (startIndex < 0 || endIndex > processedContent.length || startIndex >= endIndex) {
@@ -62,27 +62,27 @@ export function processCitations(
         startIndex,
         endIndex,
         contentLength: processedContent.length,
-      })
-      return
+      });
+      return;
     }
 
     // Calculate display index (1-based, in original order)
-    const displayIndex = citations.length - index
+    const displayIndex = citations.length - index;
 
     // Replace the citation marker range with [N]
-    const before = processedContent.slice(0, startIndex)
-    const after = processedContent.slice(endIndex)
-    processedContent = `${before}[${displayIndex}]${after}`
+    const before = processedContent.slice(0, startIndex);
+    const after = processedContent.slice(endIndex);
+    processedContent = `${before}[${displayIndex}]${after}`;
 
     // Store citation with its display index
     processedCitations.unshift({
       ...citation,
       displayIndex,
-    })
-  })
+    });
+  });
 
   return {
     content: processedContent,
     citations: processedCitations,
-  }
+  };
 }

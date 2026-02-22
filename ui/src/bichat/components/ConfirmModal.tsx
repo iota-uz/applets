@@ -5,10 +5,10 @@
  * Uses @headlessui/react Dialog for accessible modal behavior.
  */
 
-import { memo } from 'react'
-import { Dialog, DialogBackdrop, DialogPanel, DialogTitle, Description } from '@headlessui/react'
-import { WarningCircle } from '@phosphor-icons/react'
-import { useTranslation } from '../hooks/useTranslation'
+import { memo } from 'react';
+import { Dialog, DialogBackdrop, DialogPanel, DialogTitle, Description } from '@headlessui/react';
+import { WarningCircle } from '@phosphor-icons/react';
+import { useTranslation } from '../hooks/useTranslation';
 
 export interface ConfirmModalProps {
   /** Whether the modal is open */
@@ -39,9 +39,9 @@ function ConfirmModalBase({
   cancelText,
   isDanger = false,
 }: ConfirmModalProps) {
-  const { t } = useTranslation()
-  const resolvedConfirmText = confirmText?.trim() ? confirmText : t('BiChat.Common.Confirm')
-  const resolvedCancelText = cancelText?.trim() ? cancelText : t('BiChat.Common.Cancel')
+  const { t } = useTranslation();
+  const resolvedConfirmText = confirmText?.trim() ? confirmText : t('BiChat.Common.Confirm');
+  const resolvedCancelText = cancelText?.trim() ? cancelText : t('BiChat.Common.Cancel');
   return (
     <Dialog open={isOpen} onClose={onCancel} className="relative z-40">
       {/* Backdrop */}
@@ -100,11 +100,11 @@ function ConfirmModalBase({
         </DialogPanel>
       </div>
     </Dialog>
-  )
+  );
 }
 
-const ConfirmModal = memo(ConfirmModalBase)
-ConfirmModal.displayName = 'ConfirmModal'
+const ConfirmModal = memo(ConfirmModalBase);
+ConfirmModal.displayName = 'ConfirmModal';
 
-export { ConfirmModal }
-export default ConfirmModal
+export { ConfirmModal };
+export default ConfirmModal;

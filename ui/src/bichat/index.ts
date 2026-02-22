@@ -4,37 +4,37 @@
  */
 
 // Import styles (will be bundled as style.css)
-import './styles.css'
+import './styles.css';
 
 // =============================================================================
 // Layer 4: Full Components
 // =============================================================================
 
-export { ChatSession } from './components/ChatSession'
-export { SessionArtifactsPanel } from './components/SessionArtifactsPanel'
-export { SessionArtifactList } from './components/SessionArtifactList'
-export { SessionArtifactPreview } from './components/SessionArtifactPreview'
-export { ChatHeader } from './components/ChatHeader'
-export { MessageList } from './components/MessageList'
-export { TurnBubble, type TurnBubbleProps, type TurnBubbleClassNames } from './components/TurnBubble'
-export { UserTurnView, type UserTurnViewProps } from './components/UserTurnView'
-export { AssistantTurnView, type AssistantTurnViewProps } from './components/AssistantTurnView'
-export { MarkdownRenderer } from './components/MarkdownRenderer'
-export { ChartCard } from './components/ChartCard'
-export { SourcesPanel } from './components/SourcesPanel'
-export { DownloadCard } from './components/DownloadCard'
-export { InlineQuestionForm } from './components/InlineQuestionForm'
-export { MessageInput, type MessageInputRef, type MessageInputProps } from './components/MessageInput'
-export { AttachmentGrid } from './components/AttachmentGrid'
-export { ImageModal } from './components/ImageModal'
-export { WelcomeContent } from './components/WelcomeContent'
-export { CodeOutputsPanel } from './components/CodeOutputsPanel'
-export { StreamingCursor } from './components/StreamingCursor'
-export { ScrollToBottomButton } from './components/ScrollToBottomButton'
-export { CompactionDoodle } from './components/CompactionDoodle'
-export { EmptyState, type EmptyStateProps } from './components/EmptyState'
-export { EditableText, type EditableTextProps, type EditableTextRef } from './components/EditableText'
-export { SearchInput, type SearchInputProps } from './components/SearchInput'
+export { ChatSession } from './components/ChatSession';
+export { SessionArtifactsPanel } from './components/SessionArtifactsPanel';
+export { SessionArtifactList } from './components/SessionArtifactList';
+export { SessionArtifactPreview } from './components/SessionArtifactPreview';
+export { ChatHeader } from './components/ChatHeader';
+export { MessageList } from './components/MessageList';
+export { TurnBubble, type TurnBubbleProps, type TurnBubbleClassNames } from './components/TurnBubble';
+export { UserTurnView, type UserTurnViewProps } from './components/UserTurnView';
+export { AssistantTurnView, type AssistantTurnViewProps } from './components/AssistantTurnView';
+export { MarkdownRenderer } from './components/MarkdownRenderer';
+export { ChartCard, type ChartCardHost } from './components/ChartCard';
+export { SourcesPanel } from './components/SourcesPanel';
+export { DownloadCard } from './components/DownloadCard';
+export { InlineQuestionForm } from './components/InlineQuestionForm';
+export { MessageInput, type MessageInputRef, type MessageInputProps } from './components/MessageInput';
+export { AttachmentGrid } from './components/AttachmentGrid';
+export { ImageModal } from './components/ImageModal';
+export { WelcomeContent } from './components/WelcomeContent';
+export { CodeOutputsPanel } from './components/CodeOutputsPanel';
+export { StreamingCursor } from './components/StreamingCursor';
+export { ScrollToBottomButton } from './components/ScrollToBottomButton';
+export { CompactionDoodle } from './components/CompactionDoodle';
+export { EmptyState, type EmptyStateProps } from './components/EmptyState';
+export { EditableText, type EditableTextProps, type EditableTextRef } from './components/EditableText';
+export { SearchInput, type SearchInputProps } from './components/SearchInput';
 export {
   Skeleton,
   SkeletonGroup,
@@ -44,14 +44,16 @@ export {
   ListItemSkeleton,
   type SkeletonProps,
   type SkeletonGroupProps,
-} from './components/Skeleton'
+} from './components/Skeleton';
 
 // Phase 2 components
-export { CodeBlock } from './components/CodeBlock'
-export { LoadingSpinner } from './components/LoadingSpinner'
-export { TableExportButton } from './components/TableExportButton'
-export { TableWithExport } from './components/TableWithExport'
-export { InteractiveTableCard } from './components/InteractiveTableCard'
+export { CodeBlock } from './components/CodeBlock';
+export { LoadingSpinner } from './components/LoadingSpinner';
+export { TableExportButton } from './components/TableExportButton';
+export { TableWithExport } from './components/TableWithExport';
+export { InteractiveTableCard, type TableCardHost } from './components/InteractiveTableCard';
+export { TabbedTableGroup, type TabbedTableGroupProps } from './components/TabbedTableGroup';
+export { TabbedChartGroup, type TabbedChartGroupProps } from './components/TabbedChartGroup';
 export {
   useDataTable,
   type UseDataTableReturn,
@@ -59,52 +61,52 @@ export {
   type ColumnMeta,
   type SortState,
   type ColumnStats,
-} from './hooks/useDataTable'
-export { type ColumnType, type FormattedCell } from './utils/columnTypes'
+} from './hooks/useDataTable';
+export { type ColumnType, type FormattedCell } from './utils/columnTypes';
 
 // Phase 5 generic components
-export { Toast, type ToastProps } from './components/Toast'
-export { ToastContainer } from './components/ToastContainer'
-export { ConfirmModal, type ConfirmModalProps } from './components/ConfirmModal'
-export { UserAvatar, type UserAvatarProps } from './components/UserAvatar'
-export { PermissionGuard, type PermissionGuardProps } from './components/PermissionGuard'
-export { ErrorBoundary, DefaultErrorContent } from './components/ErrorBoundary'
-export { TypingIndicator, type TypingIndicatorProps } from './components/TypingIndicator'
-export { ActivityTrace, type ActivityTraceProps } from './components/ActivityTrace'
+export { Toast, type ToastProps } from './components/Toast';
+export { ToastContainer } from './components/ToastContainer';
+export { ConfirmModal, type ConfirmModalProps } from './components/ConfirmModal';
+export { UserAvatar, type UserAvatarProps } from './components/UserAvatar';
+export { PermissionGuard, type PermissionGuardProps } from './components/PermissionGuard';
+export { ErrorBoundary, DefaultErrorContent } from './components/ErrorBoundary';
+export { TypingIndicator, type TypingIndicatorProps } from './components/TypingIndicator';
+export { ActivityTrace, type ActivityTraceProps } from './components/ActivityTrace';
 
 // Session management components
-export { default as Sidebar } from './components/Sidebar'
-export type { SidebarProps } from './components/Sidebar'
-export { default as SessionItem } from './components/SessionItem'
-export { default as ArchivedChatList } from './components/ArchivedChatList'
-export { default as AllChatsList } from './components/AllChatsList'
-export { UserFilter } from './components/UserFilter'
-export { default as DateGroupHeader } from './components/DateGroupHeader'
-export { default as SessionSkeleton } from './components/SessionSkeleton'
+export { default as Sidebar } from './components/Sidebar';
+export type { SidebarProps } from './components/Sidebar';
+export { default as SessionItem } from './components/SessionItem';
+export { default as ArchivedChatList } from './components/ArchivedChatList';
+export { default as AllChatsList } from './components/AllChatsList';
+export { UserFilter } from './components/UserFilter';
+export { default as DateGroupHeader } from './components/DateGroupHeader';
+export { default as SessionSkeleton } from './components/SessionSkeleton';
 
 // Layout component
-export { BiChatLayout, type BiChatLayoutProps, type SidebarDrawerProps } from './components/BiChatLayout'
+export { BiChatLayout, type BiChatLayoutProps, type SidebarDrawerProps } from './components/BiChatLayout';
 
 // Specialized message components
-export { SystemMessage } from './components/SystemMessage'
-export { DebugPanel, type DebugPanelProps } from './components/DebugPanel'
+export { SystemMessage } from './components/SystemMessage';
+export { DebugPanel, type DebugPanelProps } from './components/DebugPanel';
 
 // Generic UI components
-export { default as Alert } from './components/Alert'
-export { default as ArchiveBanner } from './components/ArchiveBanner'
-export { RetryActionArea } from './components/RetryActionArea'
-export { StreamError } from './components/StreamError'
-export { MessageActions } from './components/MessageActions'
-export { default as AttachmentPreview } from './components/AttachmentPreview'
-export { default as AttachmentUpload } from './components/AttachmentUpload'
-export { default as ScreenReaderAnnouncer } from './components/ScreenReaderAnnouncer'
-export { default as SkipLink } from './components/SkipLink'
-export { TouchContextMenu } from './components/TouchContextMenu'
+export { default as Alert } from './components/Alert';
+export { default as ArchiveBanner } from './components/ArchiveBanner';
+export { RetryActionArea } from './components/RetryActionArea';
+export { StreamError } from './components/StreamError';
+export { MessageActions } from './components/MessageActions';
+export { default as AttachmentPreview } from './components/AttachmentPreview';
+export { default as AttachmentUpload } from './components/AttachmentUpload';
+export { default as ScreenReaderAnnouncer } from './components/ScreenReaderAnnouncer';
+export { default as SkipLink } from './components/SkipLink';
+export { TouchContextMenu } from './components/TouchContextMenu';
 
 // Question form wizard
-export { default as QuestionForm } from './components/QuestionForm'
-export { default as QuestionStep } from './components/QuestionStep'
-export { default as ConfirmationStep } from './components/ConfirmationStep'
+export { default as QuestionForm } from './components/QuestionForm';
+export { default as QuestionStep } from './components/QuestionStep';
+export { default as ConfirmationStep } from './components/ConfirmationStep';
 
 // =============================================================================
 // Layer 3: Composites (Styled with Slots)
@@ -119,7 +121,7 @@ export {
   type UserMessageContentSlotProps,
   type UserMessageAttachmentsSlotProps,
   type UserMessageActionsSlotProps,
-} from './components/UserMessage'
+} from './components/UserMessage';
 
 export {
   AssistantMessage,
@@ -135,7 +137,7 @@ export {
   type AssistantMessageArtifactsSlotProps,
   type AssistantMessageActionsSlotProps,
   type AssistantMessageExplanationSlotProps,
-} from './components/AssistantMessage'
+} from './components/AssistantMessage';
 
 // =============================================================================
 // Layer 2: Primitives (Unstyled Compound Components)
@@ -143,117 +145,117 @@ export {
 
 // Primitives are exported from a separate entry point for tree-shaking
 // import { Turn, Avatar, Bubble, ActionButton } from '@iota-uz/sdk/bichat/primitives'
-export * from './primitives'
+export * from './primitives';
 
 // =============================================================================
 // Layer 1: Headless Hooks
 // =============================================================================
 
 // Existing hooks
-export { useStreaming } from './hooks/useStreaming'
-export { useTranslation } from './hooks/useTranslation'
-export { useModalLock } from './hooks/useModalLock'
-export { useFocusTrap } from './hooks/useFocusTrap'
-export { useToast, type ToastAction, type ToastItem, type ToastType, type UseToastReturn } from './hooks/useToast'
+export { useStreaming } from './hooks/useStreaming';
+export { useTranslation } from './hooks/useTranslation';
+export { useModalLock } from './hooks/useModalLock';
+export { useFocusTrap } from './hooks/useFocusTrap';
+export { useToast, type ToastAction, type ToastItem, type ToastType, type UseToastReturn } from './hooks/useToast';
 
 // New composability hooks
 export {
   useImageGallery,
   type UseImageGalleryOptions,
   type UseImageGalleryReturn,
-} from './hooks/useImageGallery'
+} from './hooks/useImageGallery';
 
 export {
   useAutoScroll,
   type UseAutoScrollOptions,
   type UseAutoScrollReturn,
-} from './hooks/useAutoScroll'
+} from './hooks/useAutoScroll';
 
 export {
   useMessageActions,
   type UseMessageActionsOptions,
   type UseMessageActionsReturn,
-} from './hooks/useMessageActions'
+} from './hooks/useMessageActions';
 
 export {
   useAttachments,
   type UseAttachmentsOptions,
   type UseAttachmentsReturn,
   type FileValidationError,
-} from './hooks/useAttachments'
+} from './hooks/useAttachments';
 
 export {
   useMarkdownCopy,
   type UseMarkdownCopyOptions,
   type UseMarkdownCopyReturn,
-} from './hooks/useMarkdownCopy'
+} from './hooks/useMarkdownCopy';
 
 // Session & interaction hooks
-export { useScrollToBottom } from './hooks/useScrollToBottom'
-export { useKeyboardShortcuts, type ShortcutConfig } from './hooks/useKeyboardShortcuts'
-export { useLongPress } from './hooks/useLongPress'
-export { useSidebarState, type UseSidebarStateReturn } from './hooks/useSidebarState'
+export { useScrollToBottom } from './hooks/useScrollToBottom';
+export { useKeyboardShortcuts, type ShortcutConfig } from './hooks/useKeyboardShortcuts';
+export { useLongPress } from './hooks/useLongPress';
+export { useSidebarState, type UseSidebarStateReturn } from './hooks/useSidebarState';
 
 // =============================================================================
 // Animations
 // =============================================================================
 
-export * from './animations'
+export * from './animations';
 
 // =============================================================================
 // Context
 // =============================================================================
 
-export { ChatSessionProvider, useChatSession, useChatMessaging, useOptionalChatMessaging, useChatInput, type ChatSessionProviderProps } from './context/ChatContext'
-export { IotaContextProvider, useIotaContext, hasPermission } from './context/IotaContext'
+export { ChatSessionProvider, useChatSession, useChatMessaging, useOptionalChatMessaging, useChatInput, type ChatSessionProviderProps } from './context/ChatContext';
+export { IotaContextProvider, useIotaContext, hasPermission } from './context/IotaContext';
 export {
   ConfigProvider,
   useConfig,
   useRequiredConfig,
-} from './config/ConfigContext'
+} from './config/ConfigContext';
 
 // =============================================================================
 // Theme
 // =============================================================================
 
-export { ThemeProvider, useTheme } from './theme/ThemeProvider'
-export { lightTheme, darkTheme } from './theme/themes'
+export { ThemeProvider, useTheme } from './theme/ThemeProvider';
+export { lightTheme, darkTheme } from './theme/themes';
 
 // =============================================================================
 // API Utilities
 // =============================================================================
 
-export { getCSRFToken, addCSRFHeader, createHeadersWithCSRF } from './api/csrf'
+export { getCSRFToken, addCSRFHeader, createHeadersWithCSRF } from './api/csrf';
 
 // =============================================================================
 // Data Sources
 // =============================================================================
 
-export { HttpDataSource, createHttpDataSource } from './data/HttpDataSource'
-export type { BichatRPC } from './data/rpc.generated'
+export { HttpDataSource, createHttpDataSource } from './data/HttpDataSource';
+export type { BichatRPC } from './data/rpc.generated';
 
 // =============================================================================
 // Machine (framework-agnostic state management)
 // =============================================================================
 
-export { ChatMachine, type ChatMachineConfig } from './machine'
+export { ChatMachine, type ChatMachineConfig } from './machine';
 
 // =============================================================================
 // SSE Parsing
 // =============================================================================
 
-export { parseBichatStream, parseBichatStreamEvents, parseSSEStream } from './utils/sseParser'
+export { parseBichatStream, parseBichatStreamEvents, parseSSEStream } from './utils/sseParser';
 
 // =============================================================================
 // Utilities
 // =============================================================================
 
-export { RateLimiter } from './utils/RateLimiter'
-export { getToolLabel } from './utils/toolLabels'
-export { groupSteps } from './utils/activitySteps'
-export * from './utils/fileUtils'
-export { groupSessionsByDate } from './utils/sessionGrouping'
-export { toErrorDisplay, isPermissionDeniedError, type RPCErrorDisplay } from './utils/errorDisplay'
+export { RateLimiter } from './utils/RateLimiter';
+export { getToolLabel } from './utils/toolLabels';
+export { groupSteps } from './utils/activitySteps';
+export * from './utils/fileUtils';
+export { groupSessionsByDate } from './utils/sessionGrouping';
+export { toErrorDisplay, isPermissionDeniedError, type RPCErrorDisplay } from './utils/errorDisplay';
 
 // =============================================================================
 // Types
@@ -304,9 +306,9 @@ export type {
   AssistantTurn,
   // Activity trace types
   ActivityStep,
-} from './types'
+} from './types';
 
-export type { Theme, ThemeColors, ThemeSpacing, ThemeBorderRadius } from './theme/types'
+export type { Theme, ThemeColors, ThemeSpacing, ThemeBorderRadius } from './theme/types';
 
 export type {
   UserContext,
@@ -314,17 +316,17 @@ export type {
   LocaleContext,
   AppConfig,
   IotaContext,
-} from './types/iota'
+} from './types/iota';
 
-export type { BiChatConfig } from './config/ConfigContext'
-export type { RateLimiterConfig } from './utils/RateLimiter'
-export type { HttpDataSourceConfig } from './data/HttpDataSource'
+export type { BiChatConfig } from './config/ConfigContext';
+export type { RateLimiterConfig } from './utils/RateLimiter';
+export type { HttpDataSourceConfig } from './data/HttpDataSource';
 
 // =============================================================================
 // Enums
 // =============================================================================
 
-export { MessageRole } from './types'
+export { MessageRole } from './types';
 
 // =============================================================================
 // CSS Variables Reference

@@ -18,21 +18,21 @@ import {
   useRef,
   useSyncExternalStore,
   type ReactNode,
-} from 'react'
+} from 'react';
 import type {
   ChatDataSource,
   ChatSessionStateValue,
   ChatMessagingStateValue,
   ChatInputStateValue,
-} from '../types'
-import { RateLimiter, type RateLimiterConfig } from '../utils/RateLimiter'
-import { ChatMachine } from '../machine/ChatMachine'
+} from '../types';
+import { RateLimiter, type RateLimiterConfig } from '../utils/RateLimiter';
+import { ChatMachine } from '../machine/ChatMachine';
 
 // ---------------------------------------------------------------------------
 // Internal context — holds the machine instance
 // ---------------------------------------------------------------------------
 
-const MachineCtx = createContext<ChatMachine | null>(null)
+const MachineCtx = createContext<ChatMachine | null>(null);
 
 // ---------------------------------------------------------------------------
 // Provider props
@@ -65,7 +65,7 @@ export interface ChatSessionProviderProps {
 const DEFAULT_RATE_LIMIT_CONFIG: RateLimiterConfig = {
   maxRequests: 20,
   windowMs: 60000,
-}
+};
 
 // ---------------------------------------------------------------------------
 // Provider
@@ -80,7 +80,7 @@ export function ChatSessionProvider({
   children,
 }: ChatSessionProviderProps) {
   // Create machine once (stable across re-renders)
-  const machineRef = useRef<ChatMachine | null>(null)
+  const machineRef = useRef<ChatMachine | null>(null);
   if (!machineRef.current) {
     machineRef.current = new ChatMachine({
       dataSource,
@@ -88,32 +88,32 @@ export function ChatSessionProvider({
         externalRateLimiter ||
         new RateLimiter(rateLimitConfig || DEFAULT_RATE_LIMIT_CONFIG),
       onSessionCreated,
-    })
+    });
   }
-  const machine = machineRef.current
+  const machine = machineRef.current;
 
   // Sync mutable config (dataSource, onSessionCreated) on every render
   useEffect(() => {
-    machine.updateConfig({ dataSource, onSessionCreated })
-  }, [machine, dataSource, onSessionCreated])
+    machine.updateConfig({ dataSource, onSessionCreated });
+  }, [machine, dataSource, onSessionCreated]);
 
   // Sync sessionId prop → machine
   useEffect(() => {
-    machine.setSessionId(sessionId)
-  }, [machine, sessionId])
+    machine.setSessionId(sessionId);
+  }, [machine, sessionId]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      machine.dispose()
-    }
-  }, [machine])
+      machine.dispose();
+    };
+  }, [machine]);
 
   return (
     <MachineCtx.Provider value={machine}>
       {children}
     </MachineCtx.Provider>
-  )
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -121,11 +121,11 @@ export function ChatSessionProvider({
 // ---------------------------------------------------------------------------
 
 function useMachine(): ChatMachine {
-  const machine = useContext(MachineCtx)
+  const machine = useContext(MachineCtx);
   if (!machine) {
-    throw new Error('Chat hooks must be used within ChatSessionProvider')
+    throw new Error('Chat hooks must be used within ChatSessionProvider');
   }
-  return machine
+  return machine;
 }
 
 // ---------------------------------------------------------------------------
@@ -133,44 +133,44 @@ function useMachine(): ChatMachine {
 // ---------------------------------------------------------------------------
 
 export function useChatSession(): ChatSessionStateValue {
-  const machine = useMachine()
+  const machine = useMachine();
   return useSyncExternalStore(
     machine.subscribeSession,
     machine.getSessionSnapshot,
     machine.getSessionSnapshot, // SSR fallback
-  )
+  );
 }
 
 export function useChatMessaging(): ChatMessagingStateValue {
-  const machine = useMachine()
+  const machine = useMachine();
   return useSyncExternalStore(
     machine.subscribeMessaging,
     machine.getMessagingSnapshot,
     machine.getMessagingSnapshot,
-  )
+  );
 }
 
 /** Returns messaging context or null when outside ChatSessionProvider. */
 export function useOptionalChatMessaging(): ChatMessagingStateValue | null {
-  const machine = useContext(MachineCtx)
+  const machine = useContext(MachineCtx);
   // Can't call useSyncExternalStore conditionally, so guard with machine presence
   const snapshot = useSyncExternalStore(
     machine ? machine.subscribeMessaging : noopSubscribe,
     machine ? machine.getMessagingSnapshot : nullSnapshot,
     machine ? machine.getMessagingSnapshot : nullSnapshot,
-  )
-  return machine ? snapshot : null
+  );
+  return machine ? snapshot : null;
 }
 
 export function useChatInput(): ChatInputStateValue {
-  const machine = useMachine()
+  const machine = useMachine();
   return useSyncExternalStore(
     machine.subscribeInput,
     machine.getInputSnapshot,
     machine.getInputSnapshot,
-  )
+  );
 }
 
 // Helpers for useOptionalChatMessaging (must call hooks unconditionally)
-function noopSubscribe(): () => void { return () => {} }
-function nullSnapshot(): null { return null }
+function noopSubscribe(): () => void { return () => {}; }
+function nullSnapshot(): null { return null; }

@@ -1,22 +1,22 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import { RetryActionArea } from './RetryActionArea'
+import { RetryActionArea } from './RetryActionArea';
 
 const meta: Meta<typeof RetryActionArea> = {
   title: 'BiChat/Components/RetryActionArea',
   component: RetryActionArea,
   parameters: { layout: 'centered' },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof RetryActionArea>
 
 export const Default: Story = {
   args: {
     onRetry: fn(),
   },
-}
+};
 
 export const InChatContext: Story = {
   render: () => (
@@ -27,4 +27,4 @@ export const InChatContext: Story = {
       <RetryActionArea onRetry={fn()} />
     </div>
   ),
-}
+};

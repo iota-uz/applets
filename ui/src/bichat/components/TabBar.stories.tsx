@@ -1,8 +1,8 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import { TabBar } from './TabBar'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { TabBar } from './TabBar';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof TabBar> = {
   title: 'BiChat/Components/TabBar',
@@ -15,21 +15,21 @@ const meta: Meta<typeof TabBar> = {
       </div>
     ),
   ],
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof TabBar>
 
 const threeTabs = [
   { id: 'my-chats', label: 'My Chats' },
   { id: 'all-chats', label: 'All Chats' },
   { id: 'archives', label: 'Archives' },
-]
+];
 
 const twoTabs = [
   { id: 'my-chats', label: 'My Chats' },
   { id: 'archives', label: 'Archives' },
-]
+];
 
 const sixTabs = [
   { id: 'my-chats', label: 'My Chats' },
@@ -38,7 +38,7 @@ const sixTabs = [
   { id: 'starred', label: 'Starred' },
   { id: 'shared', label: 'Shared' },
   { id: 'drafts', label: 'Drafts' },
-]
+];
 
 // ---------------------------------------------------------------------------
 // 1. Playground — interactive with 3 tabs
@@ -50,7 +50,7 @@ export const Playground: Story = {
     activeTab: 'my-chats',
     onTabChange: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 2. TwoTabs — minimal tab set
@@ -62,7 +62,7 @@ export const TwoTabs: Story = {
     activeTab: 'my-chats',
     onTabChange: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 3. ManyTabs — 6 tabs to test overflow
@@ -74,7 +74,7 @@ export const ManyTabs: Story = {
     activeTab: 'my-chats',
     onTabChange: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 4. Stress — ScenarioGrid covering tab counts
@@ -134,4 +134,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

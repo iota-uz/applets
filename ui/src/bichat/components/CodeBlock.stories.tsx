@@ -1,15 +1,15 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { CodeBlock } from './CodeBlock'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
-import { veryLargeText } from '@sb-helpers/textFixtures'
+import { CodeBlock } from './CodeBlock';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
+import { veryLargeText } from '@sb-helpers/textFixtures';
 
 const meta: Meta<typeof CodeBlock> = {
   title: 'BiChat/Components/CodeBlock',
   component: CodeBlock,
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof CodeBlock>
 
 const pyCode = `def calculate_revenue(orders):
@@ -18,14 +18,14 @@ const pyCode = `def calculate_revenue(orders):
     return total + tax
 
 # Example usage:
-print(calculate_revenue([Order(price=10, quantity=2)]))`
+print(calculate_revenue([Order(price=10, quantity=2)]))`;
 
 export const Playground: Story = {
   args: {
     language: 'python',
     value: pyCode,
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -54,4 +54,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

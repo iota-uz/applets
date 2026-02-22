@@ -1,10 +1,10 @@
-import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Paperclip, Plus } from '@phosphor-icons/react'
-import type { ChatDataSource, SessionArtifact } from '../types'
-import { useTranslation } from '../hooks/useTranslation'
-import { useOptionalChatMessaging } from '../context/ChatContext'
-import { SessionArtifactList } from './SessionArtifactList'
-import { SessionArtifactPreviewModal } from './SessionArtifactPreviewModal'
+import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Paperclip, Plus } from '@phosphor-icons/react';
+import type { ChatDataSource, SessionArtifact } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
+import { useOptionalChatMessaging } from '../context/ChatContext';
+import { SessionArtifactList } from './SessionArtifactList';
+import { SessionArtifactPreviewModal } from './SessionArtifactPreviewModal';
 
 interface SessionArtifactsPanelProps {
   dataSource: ChatDataSource
@@ -16,21 +16,21 @@ interface SessionArtifactsPanelProps {
   artifactsInvalidationTrigger?: number
 }
 
-const PAGE_SIZE = 50
+const PAGE_SIZE = 50;
 
 function mergeArtifacts(existing: SessionArtifact[], incoming: SessionArtifact[]): SessionArtifact[] {
-  const merged = [...existing]
-  const existingIds = new Set(existing.map((artifact) => artifact.id))
+  const merged = [...existing];
+  const existingIds = new Set(existing.map((artifact) => artifact.id));
 
   for (const artifact of incoming) {
     if (existingIds.has(artifact.id)) {
-      continue
+      continue;
     }
-    merged.push(artifact)
-    existingIds.add(artifact.id)
+    merged.push(artifact);
+    existingIds.add(artifact.id);
   }
 
-  return merged
+  return merged;
 }
 
 export function SessionArtifactsPanel({
@@ -41,141 +41,141 @@ export function SessionArtifactsPanel({
   className = '',
   artifactsInvalidationTrigger: artifactsInvalidationTriggerProp,
 }: SessionArtifactsPanelProps) {
-  const { t } = useTranslation()
-  const messaging = useOptionalChatMessaging()
+  const { t } = useTranslation();
+  const messaging = useOptionalChatMessaging();
   const artifactsInvalidationTrigger =
     typeof artifactsInvalidationTriggerProp === 'number'
       ? artifactsInvalidationTriggerProp
-      : messaging?.artifactsInvalidationTrigger ?? 0
+      : messaging?.artifactsInvalidationTrigger ?? 0;
 
-  const [fetching, setFetching] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [artifacts, setArtifacts] = useState<SessionArtifact[]>([])
-  const [previewArtifactID, setPreviewArtifactID] = useState<string | null>(null)
-  const [hasMore, setHasMore] = useState(false)
-  const [isDragging, setIsDragging] = useState(false)
-  const [dropSuccess, setDropSuccess] = useState(false)
+  const [fetching, setFetching] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [artifacts, setArtifacts] = useState<SessionArtifact[]>([]);
+  const [previewArtifactID, setPreviewArtifactID] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dropSuccess, setDropSuccess] = useState(false);
 
-  const requestSeq = useRef(0)
-  const hasLoadedRef = useRef(false)
-  const prevStreamingRef = useRef(isStreaming)
-  const artifactsRef = useRef<SessionArtifact[]>([])
-  const nextOffsetRef = useRef(0)
-  const dragDepthRef = useRef(0)
-  const dropSuccessTimerRef = useRef<number | null>(null)
+  const requestSeq = useRef(0);
+  const hasLoadedRef = useRef(false);
+  const prevStreamingRef = useRef(isStreaming);
+  const artifactsRef = useRef<SessionArtifact[]>([]);
+  const nextOffsetRef = useRef(0);
+  const dragDepthRef = useRef(0);
+  const dropSuccessTimerRef = useRef<number | null>(null);
 
-  const canFetchArtifacts = typeof dataSource.fetchSessionArtifacts === 'function'
-  const canDropFiles = allowDrop && typeof dataSource.uploadSessionArtifacts === 'function'
+  const canFetchArtifacts = typeof dataSource.fetchSessionArtifacts === 'function';
+  const canDropFiles = allowDrop && typeof dataSource.uploadSessionArtifacts === 'function';
 
-  const tRef = useRef(t)
-  tRef.current = t
+  const tRef = useRef(t);
+  tRef.current = t;
 
   const fetchArtifacts = useCallback(
     async (opts: { reset: boolean; manual: boolean }) => {
       if (!canFetchArtifacts || !dataSource.fetchSessionArtifacts) {
-        setFetching(false)
-        setRefreshing(false)
-        setLoadingMore(false)
-        setArtifacts([])
-        setError(null)
-        setHasMore(false)
-        nextOffsetRef.current = 0
-        return
+        setFetching(false);
+        setRefreshing(false);
+        setLoadingMore(false);
+        setArtifacts([]);
+        setError(null);
+        setHasMore(false);
+        nextOffsetRef.current = 0;
+        return;
       }
 
-      const requestID = ++requestSeq.current
-      const offset = opts.reset ? 0 : nextOffsetRef.current
+      const requestID = ++requestSeq.current;
+      const offset = opts.reset ? 0 : nextOffsetRef.current;
 
       if (!hasLoadedRef.current || opts.reset) {
         if (opts.manual && hasLoadedRef.current) {
-          setRefreshing(true)
+          setRefreshing(true);
         } else {
-          setFetching(true)
+          setFetching(true);
         }
       } else {
-        setLoadingMore(true)
+        setLoadingMore(true);
       }
-      setError(null)
+      setError(null);
 
       try {
         const response = await dataSource.fetchSessionArtifacts(sessionId, {
           limit: PAGE_SIZE,
           offset,
-        })
+        });
         if (requestID !== requestSeq.current) {
-          return
+          return;
         }
 
         const page = [...(response.artifacts || [])].sort(
           (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)
-        )
+        );
 
-        const nextList = opts.reset ? page : mergeArtifacts(artifactsRef.current, page)
+        const nextList = opts.reset ? page : mergeArtifacts(artifactsRef.current, page);
 
-        setArtifacts(nextList)
-        artifactsRef.current = nextList
-        hasLoadedRef.current = true
+        setArtifacts(nextList);
+        artifactsRef.current = nextList;
+        hasLoadedRef.current = true;
 
-        const resolvedHasMore = Boolean(response.hasMore)
+        const resolvedHasMore = Boolean(response.hasMore);
         const resolvedNextOffset =
           typeof response.nextOffset === 'number'
             ? response.nextOffset
-            : offset + page.length
+            : offset + page.length;
 
-        setHasMore(resolvedHasMore)
-        nextOffsetRef.current = resolvedNextOffset
+        setHasMore(resolvedHasMore);
+        nextOffsetRef.current = resolvedNextOffset;
       } catch (err) {
         if (requestID !== requestSeq.current) {
-          return
+          return;
         }
-        setError(err instanceof Error ? err.message : tRef.current('BiChat.Artifacts.FailedToLoad'))
+        setError(err instanceof Error ? err.message : tRef.current('BiChat.Artifacts.FailedToLoad'));
       } finally {
         if (requestID === requestSeq.current) {
-          setFetching(false)
-          setRefreshing(false)
-          setLoadingMore(false)
+          setFetching(false);
+          setRefreshing(false);
+          setLoadingMore(false);
         }
       }
     },
     [canFetchArtifacts, dataSource, sessionId]
-  )
+  );
 
   useEffect(() => {
-    hasLoadedRef.current = false
-    setFetching(true)
-    setRefreshing(false)
-    setLoadingMore(false)
-    setError(null)
-    setArtifacts([])
-    artifactsRef.current = []
-    setPreviewArtifactID(null)
-    setHasMore(false)
-    nextOffsetRef.current = 0
-    void fetchArtifacts({ reset: true, manual: false })
-  }, [fetchArtifacts, sessionId])
+    hasLoadedRef.current = false;
+    setFetching(true);
+    setRefreshing(false);
+    setLoadingMore(false);
+    setError(null);
+    setArtifacts([]);
+    artifactsRef.current = [];
+    setPreviewArtifactID(null);
+    setHasMore(false);
+    nextOffsetRef.current = 0;
+    void fetchArtifacts({ reset: true, manual: false });
+  }, [fetchArtifacts, sessionId]);
 
   useEffect(() => {
-    const wasStreaming = prevStreamingRef.current
+    const wasStreaming = prevStreamingRef.current;
     if (wasStreaming && !isStreaming) {
-      void fetchArtifacts({ reset: true, manual: false })
+      void fetchArtifacts({ reset: true, manual: false });
     }
-    prevStreamingRef.current = isStreaming
-  }, [fetchArtifacts, isStreaming])
+    prevStreamingRef.current = isStreaming;
+  }, [fetchArtifacts, isStreaming]);
 
   useEffect(() => {
     if (artifactsInvalidationTrigger > 0 && sessionId && canFetchArtifacts) {
-      void fetchArtifacts({ reset: true, manual: false })
+      void fetchArtifacts({ reset: true, manual: false });
     }
-  }, [artifactsInvalidationTrigger, sessionId, canFetchArtifacts, fetchArtifacts])
+  }, [artifactsInvalidationTrigger, sessionId, canFetchArtifacts, fetchArtifacts]);
 
-  const visibilityFetchRef = useRef(fetchArtifacts)
-  visibilityFetchRef.current = fetchArtifacts
-  const sessionIdRef = useRef(sessionId)
-  sessionIdRef.current = sessionId
-  const canFetchRef = useRef(canFetchArtifacts)
-  canFetchRef.current = canFetchArtifacts
+  const visibilityFetchRef = useRef(fetchArtifacts);
+  visibilityFetchRef.current = fetchArtifacts;
+  const sessionIdRef = useRef(sessionId);
+  sessionIdRef.current = sessionId;
+  const canFetchRef = useRef(canFetchArtifacts);
+  canFetchRef.current = canFetchArtifacts;
 
   useEffect(() => {
     const handler = () => {
@@ -184,162 +184,162 @@ export function SessionArtifactsPanel({
         sessionIdRef.current &&
         canFetchRef.current
       ) {
-        void visibilityFetchRef.current({ reset: true, manual: false })
+        void visibilityFetchRef.current({ reset: true, manual: false });
       }
-    }
-    document.addEventListener('visibilitychange', handler)
-    return () => document.removeEventListener('visibilitychange', handler)
-  }, [])
+    };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, []);
 
   const previewArtifact = useMemo(
     () => artifacts.find((artifact) => artifact.id === previewArtifactID) ?? null,
     [artifacts, previewArtifactID]
-  )
+  );
 
   const clearDropSuccessTimer = useCallback(() => {
-    if (dropSuccessTimerRef.current === null) return
-    window.clearTimeout(dropSuccessTimerRef.current)
-    dropSuccessTimerRef.current = null
-  }, [])
+    if (dropSuccessTimerRef.current === null) {return;}
+    window.clearTimeout(dropSuccessTimerRef.current);
+    dropSuccessTimerRef.current = null;
+  }, []);
 
   useEffect(() => {
     return () => {
-      clearDropSuccessTimer()
-    }
-  }, [clearDropSuccessTimer])
+      clearDropSuccessTimer();
+    };
+  }, [clearDropSuccessTimer]);
 
   const setDropSuccessState = useCallback(() => {
-    setDropSuccess(true)
-    clearDropSuccessTimer()
+    setDropSuccess(true);
+    clearDropSuccessTimer();
     dropSuccessTimerRef.current = window.setTimeout(() => {
-      setDropSuccess(false)
-      dropSuccessTimerRef.current = null
-    }, 1400)
-  }, [clearDropSuccessTimer])
+      setDropSuccess(false);
+      dropSuccessTimerRef.current = null;
+    }, 1400);
+  }, [clearDropSuccessTimer]);
 
   const hasDragFiles = useCallback((e: React.DragEvent): boolean => {
-    return Array.from(e.dataTransfer.types || []).includes('Files')
-  }, [])
+    return Array.from(e.dataTransfer.types || []).includes('Files');
+  }, []);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
-    if (!canDropFiles || !hasDragFiles(e)) return
-    e.preventDefault()
-    e.stopPropagation()
-    dragDepthRef.current += 1
-    setIsDragging(true)
-  }, [canDropFiles, hasDragFiles])
+    if (!canDropFiles || !hasDragFiles(e)) {return;}
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current += 1;
+    setIsDragging(true);
+  }, [canDropFiles, hasDragFiles]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    if (!canDropFiles || !hasDragFiles(e)) return
-    e.preventDefault()
-    e.stopPropagation()
-    e.dataTransfer.dropEffect = 'copy'
-  }, [canDropFiles, hasDragFiles])
+    if (!canDropFiles || !hasDragFiles(e)) {return;}
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+  }, [canDropFiles, hasDragFiles]);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
-    if (!canDropFiles || !hasDragFiles(e)) return
-    e.preventDefault()
-    e.stopPropagation()
-    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1)
+    if (!canDropFiles || !hasDragFiles(e)) {return;}
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
     if (dragDepthRef.current === 0) {
-      setIsDragging(false)
+      setIsDragging(false);
     }
-  }, [canDropFiles, hasDragFiles])
+  }, [canDropFiles, hasDragFiles]);
 
   const handleDrop = useCallback(async (e: React.DragEvent) => {
-    if (!canDropFiles || !dataSource.uploadSessionArtifacts || !hasDragFiles(e)) return
-    e.preventDefault()
-    e.stopPropagation()
-    dragDepthRef.current = 0
-    setIsDragging(false)
+    if (!canDropFiles || !dataSource.uploadSessionArtifacts || !hasDragFiles(e)) {return;}
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current = 0;
+    setIsDragging(false);
 
     const itemFiles = Array.from(e.dataTransfer.items || [])
       .filter((item) => item.kind === 'file')
       .map((item) => item.getAsFile())
-      .filter((file): file is File => file !== null)
-    const droppedFiles = itemFiles.length > 0 ? itemFiles : Array.from(e.dataTransfer.files || [])
+      .filter((file): file is File => file !== null);
+    const droppedFiles = itemFiles.length > 0 ? itemFiles : Array.from(e.dataTransfer.files || []);
 
-    if (droppedFiles.length === 0) return
+    if (droppedFiles.length === 0) {return;}
     try {
-      const result = await dataSource.uploadSessionArtifacts(sessionId, droppedFiles)
+      const result = await dataSource.uploadSessionArtifacts(sessionId, droppedFiles);
       if ((result.artifacts || []).length > 0) {
-        setDropSuccessState()
-        void fetchArtifacts({ reset: true, manual: false })
+        setDropSuccessState();
+        void fetchArtifacts({ reset: true, manual: false });
       }
-      setError(null)
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : tRef.current('BiChat.Artifacts.FailedToLoad'))
+      setError(err instanceof Error ? err.message : tRef.current('BiChat.Artifacts.FailedToLoad'));
     }
-  }, [canDropFiles, dataSource, fetchArtifacts, hasDragFiles, sessionId, setDropSuccessState])
+  }, [canDropFiles, dataSource, fetchArtifacts, hasDragFiles, sessionId, setDropSuccessState]);
 
-  const canRenameArtifacts = typeof dataSource.renameSessionArtifact === 'function'
-  const canDeleteArtifacts = typeof dataSource.deleteSessionArtifact === 'function'
+  const canRenameArtifacts = typeof dataSource.renameSessionArtifact === 'function';
+  const canDeleteArtifacts = typeof dataSource.deleteSessionArtifact === 'function';
 
   const handleRenameArtifact = useCallback(
     async (artifact: SessionArtifact, name: string) => {
       if (!dataSource.renameSessionArtifact) {
-        return
+        return;
       }
       const updatedArtifact = await dataSource.renameSessionArtifact(
         artifact.id,
         name,
         artifact.description || ''
-      )
+      );
       setArtifacts((prev) => {
-        const next = prev.map((item) => (item.id === updatedArtifact.id ? updatedArtifact : item))
-        artifactsRef.current = next
-        return next
-      })
+        const next = prev.map((item) => (item.id === updatedArtifact.id ? updatedArtifact : item));
+        artifactsRef.current = next;
+        return next;
+      });
     },
     [dataSource]
-  )
+  );
 
   const canDeleteArtifact = useCallback((artifact: SessionArtifact): boolean => {
-    return artifact.type === 'attachment' && !artifact.messageId
-  }, [])
+    return artifact.type === 'attachment' && !artifact.messageId;
+  }, []);
 
   const handleDeleteArtifact = useCallback(
     async (artifact: SessionArtifact) => {
       if (!dataSource.deleteSessionArtifact || !canDeleteArtifact(artifact)) {
-        return
+        return;
       }
-      await dataSource.deleteSessionArtifact(artifact.id)
+      await dataSource.deleteSessionArtifact(artifact.id);
       setArtifacts((prev) => {
-        const next = prev.filter((item) => item.id !== artifact.id)
-        artifactsRef.current = next
-        return next
-      })
-      setPreviewArtifactID((current) => (current === artifact.id ? null : current))
+        const next = prev.filter((item) => item.id !== artifact.id);
+        artifactsRef.current = next;
+        return next;
+      });
+      setPreviewArtifactID((current) => (current === artifact.id ? null : current));
     },
     [canDeleteArtifact, dataSource]
-  )
+  );
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAttachClick = useCallback(() => {
-    fileInputRef.current?.click()
-  }, [])
+    fileInputRef.current?.click();
+  }, []);
 
   const handleFileInputChange = useCallback(
     async (e: ChangeEvent<HTMLInputElement>) => {
-      if (!dataSource.uploadSessionArtifacts || !e.target.files?.length) return
-      const files = Array.from(e.target.files)
+      if (!dataSource.uploadSessionArtifacts || !e.target.files?.length) {return;}
+      const files = Array.from(e.target.files);
       try {
-        const result = await dataSource.uploadSessionArtifacts(sessionId, files)
+        const result = await dataSource.uploadSessionArtifacts(sessionId, files);
         if ((result.artifacts || []).length > 0) {
-          setDropSuccessState()
-          void fetchArtifacts({ reset: true, manual: false })
+          setDropSuccessState();
+          void fetchArtifacts({ reset: true, manual: false });
         }
-        setError(null)
+        setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : tRef.current('BiChat.Artifacts.FailedToLoad'))
+        setError(err instanceof Error ? err.message : tRef.current('BiChat.Artifacts.FailedToLoad'));
       } finally {
         // Reset input so same file can be re-selected
-        e.target.value = ''
+        e.target.value = '';
       }
     },
     [dataSource, fetchArtifacts, sessionId, setDropSuccessState]
-  )
+  );
 
   return (
     <aside
@@ -413,7 +413,7 @@ export function SessionArtifactsPanel({
             <button
               type="button"
               onClick={() => {
-                void fetchArtifacts({ reset: true, manual: true })
+                void fetchArtifacts({ reset: true, manual: true });
               }}
               className="cursor-pointer rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-900/40"
             >
@@ -437,7 +437,7 @@ export function SessionArtifactsPanel({
                 <button
                   type="button"
                   onClick={() => {
-                    void fetchArtifacts({ reset: false, manual: true })
+                    void fetchArtifacts({ reset: false, manual: true });
                   }}
                   disabled={loadingMore || refreshing || fetching}
                   className="cursor-pointer rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
@@ -460,5 +460,5 @@ export function SessionArtifactsPanel({
         onDelete={canDeleteArtifacts ? handleDeleteArtifact : undefined}
       />
     </aside>
-  )
+  );
 }

@@ -16,7 +16,7 @@ export function ScenarioGrid({
   className?: string
 }) {
   const gridCols =
-    columns === 1 ? 'grid-cols-1' : columns === 3 ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1 lg:grid-cols-2'
+    columns === 1 ? 'grid-cols-1' : columns === 3 ? 'grid-cols-1 lg:grid-cols-3' : 'grid-cols-1 lg:grid-cols-2';
 
   return (
     <div className={['grid gap-4', gridCols, className].filter(Boolean).join(' ')}>
@@ -35,6 +35,6 @@ export function ScenarioGrid({
         </section>
       ))}
     </div>
-  )
+  );
 }
 

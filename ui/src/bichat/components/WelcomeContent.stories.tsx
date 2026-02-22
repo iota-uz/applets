@@ -1,14 +1,14 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { WelcomeContent } from './WelcomeContent'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { WelcomeContent } from './WelcomeContent';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof WelcomeContent> = {
   title: 'BiChat/Components/WelcomeContent',
   component: WelcomeContent,
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof WelcomeContent>
 
 export const Playground: Story = {
@@ -16,7 +16,7 @@ export const Playground: Story = {
     title: 'Welcome to BiChat',
     description: 'Your intelligent business analytics assistant. Ask questions about your data, generate reports, or explore insights.',
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -48,4 +48,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

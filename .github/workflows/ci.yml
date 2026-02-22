@@ -77,3 +77,7 @@ jobs:
       - name: Build package
         working-directory: applets
         run: pnpm run build
+
+      - name: Build Storybook
+        working-directory: applets
+        run: pnpm run storybook:build

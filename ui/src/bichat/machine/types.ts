@@ -19,8 +19,8 @@ import type {
   DebugLimits,
   SendMessageOptions,
   QuestionAnswers,
-} from '../types'
-import type { RateLimiter } from '../utils/RateLimiter'
+} from '../types';
+import type { RateLimiter } from '../utils/RateLimiter';
 
 // ---------------------------------------------------------------------------
 // Machine configuration
@@ -61,6 +61,8 @@ export interface MessagingState {
   thinkingContent: string
   /** Ephemeral: ordered list of activity steps (thinking, tools, delegations). */
   activeSteps: ActivityStep[]
+  /** True when another tab/device has an active stream; show "generation in progress" and poll. */
+  generationInProgress: boolean
 }
 
 export interface InputState {
@@ -96,7 +98,7 @@ export interface SessionSnapshot {
   retryFetchSession: () => void
 }
 
-/** Mirrors ChatMessagingStateValue. */
+/** Superset of ChatMessagingStateValue used internally by the state machine; includes internal-only fields such as generationInProgress. */
 export interface MessagingSnapshot {
   turns: ConversationTurn[]
   streamingContent: string
@@ -111,7 +113,9 @@ export interface MessagingSnapshot {
   artifactsInvalidationTrigger: number
   thinkingContent: string
   activeSteps: ActivityStep[]
+  generationInProgress: boolean
   showActivityTrace: boolean
+  showTypingIndicator: boolean
   sendMessage: (content: string, attachments?: Attachment[]) => Promise<void>
   handleRegenerate?: (turnId: string) => Promise<void>
   handleEdit?: (turnId: string, newContent: string) => Promise<void>

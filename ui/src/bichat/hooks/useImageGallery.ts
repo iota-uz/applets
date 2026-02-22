@@ -3,8 +3,8 @@
  * Manages image modal/gallery state and navigation
  */
 
-import { useState, useCallback, useMemo } from 'react'
-import type { ImageAttachment } from '../types'
+import { useState, useCallback, useMemo } from 'react';
+import type { ImageAttachment } from '../types';
 
 export interface UseImageGalleryOptions {
   /** Initial images to display */
@@ -70,90 +70,90 @@ export interface UseImageGalleryReturn {
  * ```
  */
 export function useImageGallery(options: UseImageGalleryOptions = {}): UseImageGalleryReturn {
-  const { images: initialImages = [], wrap = false, onOpen, onClose, onNavigate } = options
+  const { images: initialImages = [], wrap = false, onOpen, onClose, onNavigate } = options;
 
-  const [isOpen, setIsOpen] = useState(false)
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [images, setImages] = useState<ImageAttachment[]>(initialImages)
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [images, setImages] = useState<ImageAttachment[]>(initialImages);
 
-  const currentImage = useMemo(() => images[currentIndex], [images, currentIndex])
+  const currentImage = useMemo(() => images[currentIndex], [images, currentIndex]);
 
   const hasPrev = useMemo(() => {
-    if (wrap) return images.length > 1
-    return currentIndex > 0
-  }, [currentIndex, images.length, wrap])
+    if (wrap) {return images.length > 1;}
+    return currentIndex > 0;
+  }, [currentIndex, images.length, wrap]);
 
   const hasNext = useMemo(() => {
-    if (wrap) return images.length > 1
-    return currentIndex < images.length - 1
-  }, [currentIndex, images.length, wrap])
+    if (wrap) {return images.length > 1;}
+    return currentIndex < images.length - 1;
+  }, [currentIndex, images.length, wrap]);
 
   const open = useCallback(
     (index: number, newImages?: ImageAttachment[]) => {
       if (newImages) {
-        setImages(newImages)
+        setImages(newImages);
       }
-      const targetImages = newImages || images
+      const targetImages = newImages || images;
       // Handle empty images array - don't compute negative index
       if (targetImages.length === 0) {
-        setCurrentIndex(0)
-        setIsOpen(true)
-        return
+        setCurrentIndex(0);
+        setIsOpen(true);
+        return;
       }
-      const safeIndex = Math.max(0, Math.min(index, targetImages.length - 1))
-      setCurrentIndex(safeIndex)
-      setIsOpen(true)
-      onOpen?.(safeIndex)
+      const safeIndex = Math.max(0, Math.min(index, targetImages.length - 1));
+      setCurrentIndex(safeIndex);
+      setIsOpen(true);
+      onOpen?.(safeIndex);
     },
     [images, onOpen]
-  )
+  );
 
   const close = useCallback(() => {
-    setIsOpen(false)
-    onClose?.()
-  }, [onClose])
+    setIsOpen(false);
+    onClose?.();
+  }, [onClose]);
 
   const prev = useCallback(() => {
-    if (images.length < 2) return
-    if (!hasPrev && !wrap) return
+    if (images.length < 2) {return;}
+    if (!hasPrev && !wrap) {return;}
 
     setCurrentIndex((current) => {
       const newIndex = wrap
         ? (current - 1 + images.length) % images.length
-        : Math.max(0, current - 1)
-      onNavigate?.(newIndex, 'prev')
-      return newIndex
-    })
-  }, [hasPrev, wrap, images.length, onNavigate])
+        : Math.max(0, current - 1);
+      onNavigate?.(newIndex, 'prev');
+      return newIndex;
+    });
+  }, [hasPrev, wrap, images.length, onNavigate]);
 
   const next = useCallback(() => {
-    if (images.length < 2) return
-    if (!hasNext && !wrap) return
+    if (images.length < 2) {return;}
+    if (!hasNext && !wrap) {return;}
 
     setCurrentIndex((current) => {
-      const newIndex = wrap ? (current + 1) % images.length : Math.min(images.length - 1, current + 1)
-      onNavigate?.(newIndex, 'next')
-      return newIndex
-    })
-  }, [hasNext, wrap, images.length, onNavigate])
+      const newIndex = wrap ? (current + 1) % images.length : Math.min(images.length - 1, current + 1);
+      onNavigate?.(newIndex, 'next');
+      return newIndex;
+    });
+  }, [hasNext, wrap, images.length, onNavigate]);
 
   const goTo = useCallback(
     (index: number) => {
-      const safeIndex = Math.max(0, Math.min(index, images.length - 1))
-      setCurrentIndex(safeIndex)
+      const safeIndex = Math.max(0, Math.min(index, images.length - 1));
+      setCurrentIndex(safeIndex);
     },
     [images.length]
-  )
+  );
 
   const setImagesHandler = useCallback((newImages: ImageAttachment[]) => {
-    setImages(newImages)
+    setImages(newImages);
     // Reset index if it's out of bounds (handle empty array case)
     if (newImages.length === 0) {
-      setCurrentIndex(0)
+      setCurrentIndex(0);
     } else {
-      setCurrentIndex((current) => Math.min(current, newImages.length - 1))
+      setCurrentIndex((current) => Math.min(current, newImages.length - 1));
     }
-  }, [])
+  }, []);
 
   return {
     isOpen,
@@ -168,5 +168,5 @@ export function useImageGallery(options: UseImageGalleryOptions = {}): UseImageG
     next,
     goTo,
     setImages: setImagesHandler,
-  }
+  };
 }

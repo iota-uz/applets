@@ -1,17 +1,17 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { StreamingCursor } from './StreamingCursor'
+import { StreamingCursor } from './StreamingCursor';
 
 const meta: Meta<typeof StreamingCursor> = {
   title: 'BiChat/Components/StreamingCursor',
   component: StreamingCursor,
   parameters: { layout: 'centered' },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof StreamingCursor>
 
-export const Default: Story = {}
+export const Default: Story = {};
 
 export const InParagraph: Story = {
   render: () => (
@@ -20,7 +20,7 @@ export const InParagraph: Story = {
       <StreamingCursor />
     </p>
   ),
-}
+};
 
 export const InHeading: Story = {
   render: () => (
@@ -29,4 +29,4 @@ export const InHeading: Story = {
       <StreamingCursor />
     </h2>
   ),
-}
+};

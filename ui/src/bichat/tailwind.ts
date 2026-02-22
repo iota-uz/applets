@@ -4,8 +4,8 @@
  * theme tokens stay consistent. Always import @iota-uz/sdk/bichat/styles.css
  * in your applet CSS for design tokens.
  */
-import path from 'node:path'
-import { createRequire } from 'node:module'
+import path from 'node:path';
+import { createRequire } from 'node:module';
 
 /** Tailwind v3 config preset type (minimal shape we extend). */
 export type TailwindPreset = {
@@ -78,7 +78,7 @@ export const bichatTailwindPreset: TailwindPreset = {
     },
   },
   plugins: [],
-}
+};
 
 /**
  * Returns absolute paths to SDK BiChat bundle files so Tailwind can scan them
@@ -86,20 +86,20 @@ export const bichatTailwindPreset: TailwindPreset = {
  * Resolves via @iota-uz/sdk/package.json when available so the package root is unambiguous.
  */
 export function bichatTailwindContent(): string[] {
-  const require = createRequire(import.meta.url)
-  let pkgDir: string
+  const require = createRequire(import.meta.url);
+  let pkgDir: string;
   try {
-    const pkgJsonPath = require.resolve('@iota-uz/sdk/package.json')
-    pkgDir = path.dirname(pkgJsonPath)
+    const pkgJsonPath = require.resolve('@iota-uz/sdk/package.json');
+    pkgDir = path.dirname(pkgJsonPath);
   } catch {
-    const entryPath = require.resolve('@iota-uz/sdk')
-    pkgDir = path.dirname(entryPath) // when "." resolves to dist/index.mjs, dirname is dist
+    const entryPath = require.resolve('@iota-uz/sdk');
+    pkgDir = path.dirname(entryPath); // when "." resolves to dist/index.mjs, dirname is dist
   }
   const distBichat = pkgDir.endsWith(path.sep + 'dist') || pkgDir.endsWith('/dist')
     ? path.join(pkgDir, 'bichat')
-    : path.join(pkgDir, 'dist', 'bichat')
+    : path.join(pkgDir, 'dist', 'bichat');
   return [
     path.join(distBichat, 'index.mjs'),
     path.join(distBichat, 'index.cjs'),
-  ]
+  ];
 }

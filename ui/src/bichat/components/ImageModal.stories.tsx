@@ -1,21 +1,21 @@
 import React, { useState } from 'react';
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { ImageModal } from './ImageModal'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
-import { makeImageAttachment } from '@sb-helpers/bichatFixtures'
-import { largeImageDataUrl, smallImageDataUrl } from '@sb-helpers/imageFixtures'
+import { ImageModal } from './ImageModal';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
+import { makeImageAttachment } from '@sb-helpers/bichatFixtures';
+import { largeImageDataUrl, smallImageDataUrl } from '@sb-helpers/imageFixtures';
 
 const meta: Meta<typeof ImageModal> = {
   title: 'BiChat/Components/ImageModal',
   component: ImageModal,
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof ImageModal>
 
 const ModalTrigger = ({ attachment, allAttachments, currentIndex }: Pick<React.ComponentProps<typeof ImageModal>, 'attachment' | 'allAttachments' | 'currentIndex'>) => {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(false);
   return (
     <div>
       <button onClick={() => setIsOpen(true)} className="px-4 py-2 bg-primary-600 text-white rounded">
@@ -29,14 +29,14 @@ const ModalTrigger = ({ attachment, allAttachments, currentIndex }: Pick<React.C
         currentIndex={currentIndex}
       />
     </div>
-  )
-}
+  );
+};
 
 export const Playground: Story = {
   render: () => (
     <ModalTrigger attachment={makeImageAttachment({ preview: smallImageDataUrl })} />
   ),
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -70,4 +70,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

@@ -8,8 +8,8 @@ import {
   useContext,
   forwardRef,
   type HTMLAttributes,
-} from 'react'
-import { Slot, type AsChildProps } from './Slot'
+} from 'react';
+import { Slot, type AsChildProps } from './Slot';
 
 /* -------------------------------------------------------------------------------------------------
  * TurnContext
@@ -20,14 +20,14 @@ interface TurnContextValue {
   turnId?: string
 }
 
-const TurnContext = createContext<TurnContextValue | undefined>(undefined)
+const TurnContext = createContext<TurnContextValue | undefined>(undefined);
 
 function useTurnContext() {
-  const context = useContext(TurnContext)
+  const context = useContext(TurnContext);
   if (!context) {
-    throw new Error('Turn components must be used within Turn.Root')
+    throw new Error('Turn components must be used within Turn.Root');
   }
-  return context
+  return context;
 }
 
 /* -------------------------------------------------------------------------------------------------
@@ -40,8 +40,8 @@ type TurnRootProps = AsChildProps<HTMLAttributes<HTMLDivElement>> & {
 }
 
 const TurnRoot = forwardRef<HTMLDivElement, TurnRootProps>((props, ref) => {
-  const { asChild, turnId, children, ...domProps } = props
-  const Comp = asChild ? Slot : 'div'
+  const { asChild, turnId, children, ...domProps } = props;
+  const Comp = asChild ? Slot : 'div';
 
   return (
     <TurnContext.Provider value={{ turnId }}>
@@ -49,10 +49,10 @@ const TurnRoot = forwardRef<HTMLDivElement, TurnRootProps>((props, ref) => {
         {children}
       </Comp>
     </TurnContext.Provider>
-  )
-})
+  );
+});
 
-TurnRoot.displayName = 'Turn.Root'
+TurnRoot.displayName = 'Turn.Root';
 
 /* -------------------------------------------------------------------------------------------------
  * Turn.User
@@ -61,17 +61,17 @@ TurnRoot.displayName = 'Turn.Root'
 type TurnUserProps = AsChildProps<HTMLAttributes<HTMLDivElement>>
 
 const TurnUser = forwardRef<HTMLDivElement, TurnUserProps>((props, ref) => {
-  const { asChild, children, ...domProps } = props
-  const Comp = asChild ? Slot : 'div'
+  const { asChild, children, ...domProps } = props;
+  const Comp = asChild ? Slot : 'div';
 
   return (
     <Comp ref={ref} data-turn-role="user" {...domProps}>
       {children}
     </Comp>
-  )
-})
+  );
+});
 
-TurnUser.displayName = 'Turn.User'
+TurnUser.displayName = 'Turn.User';
 
 /* -------------------------------------------------------------------------------------------------
  * Turn.Assistant
@@ -80,17 +80,17 @@ TurnUser.displayName = 'Turn.User'
 type TurnAssistantProps = AsChildProps<HTMLAttributes<HTMLDivElement>>
 
 const TurnAssistant = forwardRef<HTMLDivElement, TurnAssistantProps>((props, ref) => {
-  const { asChild, children, ...domProps } = props
-  const Comp = asChild ? Slot : 'div'
+  const { asChild, children, ...domProps } = props;
+  const Comp = asChild ? Slot : 'div';
 
   return (
     <Comp ref={ref} data-turn-role="assistant" {...domProps}>
       {children}
     </Comp>
-  )
-})
+  );
+});
 
-TurnAssistant.displayName = 'Turn.Assistant'
+TurnAssistant.displayName = 'Turn.Assistant';
 
 /* -------------------------------------------------------------------------------------------------
  * Turn.Timestamp
@@ -104,24 +104,24 @@ type TurnTimestampProps = AsChildProps<HTMLAttributes<HTMLTimeElement>> & {
 }
 
 const defaultFormatter = (date: Date) =>
-  date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+  date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 
 const TurnTimestamp = forwardRef<HTMLTimeElement, TurnTimestampProps>((props, ref) => {
-  const { asChild, date, formatter = defaultFormatter, children, ...domProps } = props
-  const Comp = asChild ? Slot : 'time'
+  const { asChild, date, formatter = defaultFormatter, children, ...domProps } = props;
+  const Comp = asChild ? Slot : 'time';
 
-  const dateObj = date ? (typeof date === 'string' ? new Date(date) : date) : null
-  const formattedTime = dateObj ? formatter(dateObj) : ''
-  const isoString = dateObj?.toISOString()
+  const dateObj = date ? (typeof date === 'string' ? new Date(date) : date) : null;
+  const formattedTime = dateObj ? formatter(dateObj) : '';
+  const isoString = dateObj?.toISOString();
 
   return (
     <Comp ref={ref} dateTime={isoString} {...domProps}>
       {children ?? formattedTime}
     </Comp>
-  )
-})
+  );
+});
 
-TurnTimestamp.displayName = 'Turn.Timestamp'
+TurnTimestamp.displayName = 'Turn.Timestamp';
 
 /* -------------------------------------------------------------------------------------------------
  * Turn.Actions
@@ -130,17 +130,17 @@ TurnTimestamp.displayName = 'Turn.Timestamp'
 type TurnActionsProps = AsChildProps<HTMLAttributes<HTMLDivElement>>
 
 const TurnActions = forwardRef<HTMLDivElement, TurnActionsProps>((props, ref) => {
-  const { asChild, children, ...domProps } = props
-  const Comp = asChild ? Slot : 'div'
+  const { asChild, children, ...domProps } = props;
+  const Comp = asChild ? Slot : 'div';
 
   return (
     <Comp ref={ref} role="group" aria-label="Message actions" {...domProps}>
       {children}
     </Comp>
-  )
-})
+  );
+});
 
-TurnActions.displayName = 'Turn.Actions'
+TurnActions.displayName = 'Turn.Actions';
 
 /* -------------------------------------------------------------------------------------------------
  * Exports
@@ -152,7 +152,7 @@ export const Turn = {
   Assistant: TurnAssistant,
   Timestamp: TurnTimestamp,
   Actions: TurnActions,
-}
+};
 
-export { useTurnContext }
-export type { TurnRootProps, TurnUserProps, TurnAssistantProps, TurnTimestampProps, TurnActionsProps }
+export { useTurnContext };
+export type { TurnRootProps, TurnUserProps, TurnAssistantProps, TurnTimestampProps, TurnActionsProps };

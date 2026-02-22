@@ -1,31 +1,31 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { PermissionGuard } from './PermissionGuard'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { PermissionGuard } from './PermissionGuard';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof PermissionGuard> = {
   title: 'BiChat/Components/PermissionGuard',
   component: PermissionGuard,
   parameters: { layout: 'centered' },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof PermissionGuard>
 
 const ProtectedContent = ({ label = 'Protected content is visible.' }: { label?: string }) => (
   <div className="p-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded border border-green-200 dark:border-green-800 text-sm">
     {label}
   </div>
-)
+);
 
 const DeniedFallback = ({ label = 'You do not have permission.' }: { label?: string }) => (
   <div className="p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded border border-red-200 dark:border-red-800 text-sm">
     {label}
   </div>
-)
+);
 
 /** Simulates a user with specific permissions */
-const makeChecker = (granted: string[]) => (p: string) => granted.includes(p)
+const makeChecker = (granted: string[]) => (p: string) => granted.includes(p);
 
 export const AllGranted: Story = {
   args: {
@@ -35,7 +35,7 @@ export const AllGranted: Story = {
     fallback: <DeniedFallback />,
     children: <ProtectedContent />,
   },
-}
+};
 
 export const AllDenied: Story = {
   args: {
@@ -45,7 +45,7 @@ export const AllDenied: Story = {
     fallback: <DeniedFallback />,
     children: <ProtectedContent />,
   },
-}
+};
 
 export const AnyModePartialMatch: Story = {
   args: {
@@ -55,7 +55,7 @@ export const AnyModePartialMatch: Story = {
     fallback: <DeniedFallback label="None of the required permissions granted." />,
     children: <ProtectedContent label="Visible because at least one permission matched (mode=any)." />,
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -143,4 +143,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

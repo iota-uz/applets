@@ -1,20 +1,20 @@
 import { useState } from 'react';
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { MessageInput } from './MessageInput'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
-import { largeText } from '@sb-helpers/textFixtures'
+import { MessageInput } from './MessageInput';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
+import { largeText } from '@sb-helpers/textFixtures';
 
 const meta: Meta<typeof MessageInput> = {
   title: 'BiChat/Components/MessageInput',
   component: MessageInput,
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof MessageInput>
 
 function PlaygroundStory(args: React.ComponentProps<typeof MessageInput>) {
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState('');
   return (
     <div className="max-w-2xl mx-auto p-4 border rounded bg-gray-50">
       <MessageInput
@@ -22,12 +22,12 @@ function PlaygroundStory(args: React.ComponentProps<typeof MessageInput>) {
         message={message}
         onMessageChange={setMessage}
         onSubmit={(_e, atts) => {
-          alert(`Submit: "${message}" with ${atts.length} images`)
-          setMessage('')
+          alert(`Submit: "${message}" with ${atts.length} images`);
+          setMessage('');
         }}
       />
     </div>
-  )
+  );
 }
 
 export const Playground: Story = {
@@ -35,7 +35,7 @@ export const Playground: Story = {
   args: {
     loading: false,
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -93,4 +93,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

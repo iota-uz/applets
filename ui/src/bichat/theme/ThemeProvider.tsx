@@ -3,15 +3,15 @@
  * Manages theme state and applies CSS variables to document root
  */
 
-import { createContext, useContext, useEffect, useMemo, ReactNode } from 'react'
-import { Theme } from './types'
-import { lightTheme, darkTheme } from './themes'
+import { createContext, useContext, useEffect, useMemo, ReactNode } from 'react';
+import { Theme } from './types';
+import { lightTheme, darkTheme } from './themes';
 
 interface ThemeContextValue {
   theme: Theme
 }
 
-const ThemeContext = createContext<ThemeContextValue | null>(null)
+const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export interface ThemeProviderProps {
   theme?: Theme | 'light' | 'dark' | 'system'
@@ -23,11 +23,11 @@ export interface ThemeProviderProps {
  */
 function getSystemTheme(): Theme {
   if (typeof window === 'undefined') {
-    return lightTheme
+    return lightTheme;
   }
 
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  return prefersDark ? darkTheme : lightTheme
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return prefersDark ? darkTheme : lightTheme;
 }
 
 /**
@@ -35,18 +35,18 @@ function getSystemTheme(): Theme {
  */
 function resolveTheme(themeProp: Theme | 'light' | 'dark' | 'system'): Theme {
   if (typeof themeProp === 'object') {
-    return themeProp
+    return themeProp;
   }
 
   switch (themeProp) {
     case 'light':
-      return lightTheme
+      return lightTheme;
     case 'dark':
-      return darkTheme
+      return darkTheme;
     case 'system':
-      return getSystemTheme()
+      return getSystemTheme();
     default:
-      return lightTheme
+      return lightTheme;
   }
 }
 
@@ -55,25 +55,25 @@ function resolveTheme(themeProp: Theme | 'light' | 'dark' | 'system'): Theme {
  */
 function applyThemeVariables(theme: Theme): void {
   if (typeof document === 'undefined') {
-    return
+    return;
   }
 
-  const root = document.documentElement
+  const root = document.documentElement;
 
   // Apply color variables
   Object.entries(theme.colors).forEach(([key, value]) => {
-    root.style.setProperty(`--bichat-${key}`, value)
-  })
+    root.style.setProperty(`--bichat-${key}`, value);
+  });
 
   // Apply spacing variables
   Object.entries(theme.spacing).forEach(([key, value]) => {
-    root.style.setProperty(`--bichat-spacing-${key}`, value)
-  })
+    root.style.setProperty(`--bichat-spacing-${key}`, value);
+  });
 
   // Apply border radius variables
   Object.entries(theme.borderRadius).forEach(([key, value]) => {
-    root.style.setProperty(`--bichat-radius-${key}`, value)
-  })
+    root.style.setProperty(`--bichat-radius-${key}`, value);
+  });
 }
 
 /**
@@ -81,48 +81,48 @@ function applyThemeVariables(theme: Theme): void {
  * Wraps the application and provides theme context
  */
 export function ThemeProvider({ theme = 'system', children }: ThemeProviderProps) {
-  const resolvedTheme = useMemo(() => resolveTheme(theme), [theme])
+  const resolvedTheme = useMemo(() => resolveTheme(theme), [theme]);
 
   useEffect(() => {
-    applyThemeVariables(resolvedTheme)
-  }, [resolvedTheme])
+    applyThemeVariables(resolvedTheme);
+  }, [resolvedTheme]);
 
   // Listen for system theme changes when using 'system'
   useEffect(() => {
     if (theme !== 'system') {
-      return
+      return;
     }
 
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
     const handleChange = () => {
-      const newTheme = getSystemTheme()
-      applyThemeVariables(newTheme)
-    }
+      const newTheme = getSystemTheme();
+      applyThemeVariables(newTheme);
+    };
 
-    mediaQuery.addEventListener('change', handleChange)
+    mediaQuery.addEventListener('change', handleChange);
 
     return () => {
-      mediaQuery.removeEventListener('change', handleChange)
-    }
-  }, [theme])
+      mediaQuery.removeEventListener('change', handleChange);
+    };
+  }, [theme]);
 
   const value: ThemeContextValue = {
     theme: resolvedTheme,
-  }
+  };
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 /**
  * Hook to access current theme
  */
 export function useTheme(): Theme {
-  const context = useContext(ThemeContext)
+  const context = useContext(ThemeContext);
 
   if (!context) {
-    throw new Error('useTheme must be used within ThemeProvider')
+    throw new Error('useTheme must be used within ThemeProvider');
   }
 
-  return context.theme
+  return context.theme;
 }

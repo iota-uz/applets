@@ -1,18 +1,18 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import AttachmentPreview from './AttachmentPreview'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
-import { makeImageAttachment } from '@sb-helpers/bichatFixtures'
-import { largeImageDataUrl } from '@sb-helpers/imageFixtures'
+import AttachmentPreview from './AttachmentPreview';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
+import { makeImageAttachment } from '@sb-helpers/bichatFixtures';
+import { largeImageDataUrl } from '@sb-helpers/imageFixtures';
 
 const meta: Meta<typeof AttachmentPreview> = {
   title: 'BiChat/Components/AttachmentPreview',
   component: AttachmentPreview,
   parameters: { layout: 'centered' },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof AttachmentPreview>
 
 export const Playground: Story = {
@@ -21,14 +21,14 @@ export const Playground: Story = {
     onRemove: fn(),
     onClick: fn(),
   },
-}
+};
 
 export const Readonly: Story = {
   args: {
     attachment: makeImageAttachment(),
     readonly: true,
   },
-}
+};
 
 export const Multiple: Story = {
   render: () => (
@@ -50,7 +50,7 @@ export const Multiple: Story = {
       />
     </div>
   ),
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -91,4 +91,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

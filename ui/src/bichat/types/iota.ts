@@ -8,7 +8,7 @@ import type {
   LocaleContext as AppletLocaleContext,
   TenantContext as AppletTenantContext,
   UserContext as AppletUserContext,
-} from '../../applet-core/types'
+} from '../../applet-core/types';
 
 export type UserContext = AppletUserContext
 export type TenantContext = AppletTenantContext

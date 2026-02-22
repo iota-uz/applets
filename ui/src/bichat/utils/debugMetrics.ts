@@ -1,11 +1,11 @@
-import type { DebugUsage } from '../types'
+import type { DebugUsage } from '../types';
 
 export function formatGenerationDuration(generationMs: number): string {
-  return generationMs > 1000 ? `${(generationMs / 1000).toFixed(2)}s` : `${generationMs}ms`
+  return generationMs > 1000 ? `${(generationMs / 1000).toFixed(2)}s` : `${generationMs}ms`;
 }
 
 export function formatDuration(durationMs: number): string {
-  return durationMs > 1000 ? `${(durationMs / 1000).toFixed(2)}s` : `${durationMs}ms`
+  return durationMs > 1000 ? `${(durationMs / 1000).toFixed(2)}s` : `${durationMs}ms`;
 }
 
 export function calculateCompletionTokensPerSecond(
@@ -13,10 +13,10 @@ export function calculateCompletionTokensPerSecond(
   generationMs?: number
 ): number | null {
   if (!usage || !generationMs || generationMs <= 0 || usage.completionTokens <= 0) {
-    return null
+    return null;
   }
 
-  return usage.completionTokens / (generationMs / 1000)
+  return usage.completionTokens / (generationMs / 1000);
 }
 
 export function calculateContextUsagePercent(
@@ -24,8 +24,8 @@ export function calculateContextUsagePercent(
   effectiveMaxTokens?: number
 ): number | null {
   if (!effectiveMaxTokens || effectiveMaxTokens <= 0 || promptTokens <= 0) {
-    return null
+    return null;
   }
 
-  return (promptTokens / effectiveMaxTokens) * 100
+  return (promptTokens / effectiveMaxTokens) * 100;
 }

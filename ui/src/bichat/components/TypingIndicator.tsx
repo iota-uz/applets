@@ -4,10 +4,10 @@
  * Verbs are configurable via props. When not provided, defaults are pulled from translations.
  */
 
-import { useState, useEffect, useMemo, memo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { verbTransitionVariants } from '../animations/variants'
-import { useTranslation } from '../hooks/useTranslation'
+import { useState, useEffect, useMemo, memo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { verbTransitionVariants } from '../animations/variants';
+import { useTranslation } from '../hooks/useTranslation';
 
 export interface TypingIndicatorProps {
   /** Custom thinking verbs to rotate through */
@@ -26,46 +26,46 @@ const THINKING_KEYS = [
   'BiChat.Thinking.Synthesizing',
   'BiChat.Thinking.Computing',
   'BiChat.Thinking.WorkingOnIt',
-]
+];
 
 // Check if user prefers reduced motion
 const prefersReducedMotion = () => {
-  if (typeof window === 'undefined') return false
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
+  if (typeof window === 'undefined') {return false;}
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+};
 
 // Random selector without immediate repeat
 const getRandomVerb = (verbs: string[], current: string): string => {
-  const available = verbs.filter((v) => v !== current)
+  const available = verbs.filter((v) => v !== current);
   if (available.length === 0) {
-    return current || verbs[0] || ''
+    return current || verbs[0] || '';
   }
-  return available[Math.floor(Math.random() * available.length)]
-}
+  return available[Math.floor(Math.random() * available.length)];
+};
 
 function TypingIndicator({
   verbs: verbsProp,
   rotationInterval = 3000,
   className = '',
 }: TypingIndicatorProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   const verbs = useMemo(() => {
-    if (verbsProp) return verbsProp
-    return THINKING_KEYS.map((key) => t(key))
-  }, [verbsProp, t])
+    if (verbsProp) {return verbsProp;}
+    return THINKING_KEYS.map((key) => t(key));
+  }, [verbsProp, t]);
 
-  const [verb, setVerb] = useState(() => verbs[Math.floor(Math.random() * verbs.length)])
+  const [verb, setVerb] = useState(() => verbs[Math.floor(Math.random() * verbs.length)]);
 
   useEffect(() => {
-    if (prefersReducedMotion()) return
+    if (prefersReducedMotion()) {return;}
 
     const interval = setInterval(() => {
-      setVerb((prev) => getRandomVerb(verbs, prev))
-    }, rotationInterval)
+      setVerb((prev) => getRandomVerb(verbs, prev));
+    }, rotationInterval);
 
-    return () => clearInterval(interval)
-  }, [verbs, rotationInterval])
+    return () => clearInterval(interval);
+  }, [verbs, rotationInterval]);
 
   return (
     <div
@@ -94,11 +94,11 @@ function TypingIndicator({
         </AnimatePresence>
       </div>
     </div>
-  )
+  );
 }
 
-const MemoizedTypingIndicator = memo(TypingIndicator)
-MemoizedTypingIndicator.displayName = 'TypingIndicator'
+const MemoizedTypingIndicator = memo(TypingIndicator);
+MemoizedTypingIndicator.displayName = 'TypingIndicator';
 
-export { MemoizedTypingIndicator as TypingIndicator }
-export default MemoizedTypingIndicator
+export { MemoizedTypingIndicator as TypingIndicator };
+export default MemoizedTypingIndicator;

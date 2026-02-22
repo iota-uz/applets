@@ -57,7 +57,7 @@ export interface AssistantTurn {
   explanation?: string
   citations: Citation[]
   toolCalls?: ToolCall[]
-  chartData?: ChartData
+  charts?: ChartData[]
   renderTables?: RenderTableData[]
   artifacts: Artifact[]
   codeOutputs: CodeOutput[]
@@ -185,6 +185,10 @@ export interface ChartData {
   colors?: string[]
   /** Chart height in pixels */
   height?: number
+  /** Optional original Apex options (used by richer renderers) */
+  options?: Record<string, unknown>
+  /** Optional logarithmic Y-axis hint */
+  logarithmic?: boolean
 }
 
 /**
@@ -325,12 +329,26 @@ export type StreamEvent =
   | { type: 'done'; sessionId?: string; generationMs?: number }
   | { type: 'error'; error: string }
 
+/** Partial state when resuming a stream after refresh */
+export interface StreamSnapshotPayload {
+  partialContent?: string
+  partialMetadata?: Record<string, unknown>
+}
+
+/** Active stream status for a session (from GET /stream/status) */
+export interface StreamStatus {
+  active: boolean
+  runId?: string
+  snapshot?: StreamSnapshotPayload
+  startedAt?: number
+}
+
 /**
  * @deprecated Use `StreamEvent` instead. `StreamChunk` is kept for backwards
  * compatibility but the flat all-optional shape is unsound.
  */
 export interface StreamChunk {
-  type: 'chunk' | 'content' | 'thinking' | 'tool_start' | 'tool_end' | 'usage' | 'done' | 'error' | 'user_message' | 'interrupt'
+  type: 'chunk' | 'content' | 'thinking' | 'tool_start' | 'tool_end' | 'usage' | 'done' | 'error' | 'user_message' | 'interrupt' | 'snapshot' | 'stream_started'
   content?: string
   error?: string
   sessionId?: string
@@ -339,6 +357,9 @@ export interface StreamChunk {
   interrupt?: StreamInterruptPayload
   generationMs?: number
   timestamp?: number
+  snapshot?: StreamSnapshotPayload
+  /** Set when type is 'stream_started'; client should store for refresh-safe resume */
+  runId?: string
 }
 
 export interface StreamInterruptPayload {
@@ -373,9 +394,73 @@ export interface StreamToolPayload {
 }
 
 export interface DebugTrace {
+  schemaVersion?: string
+  startedAt?: string
+  completedAt?: string
   generationMs?: number
   usage?: DebugUsage
   tools: StreamToolPayload[]
+  attempts?: DebugGeneration[]
+  spans?: DebugSpan[]
+  events?: DebugEvent[]
+  traceId?: string
+  traceUrl?: string
+  sessionId?: string
+  thinking?: string
+  observationReason?: string
+}
+
+export interface DebugGeneration {
+  id?: string
+  requestId?: string
+  model?: string
+  provider?: string
+  finishReason?: string
+  promptTokens?: number
+  completionTokens?: number
+  totalTokens?: number
+  cachedTokens?: number
+  cost?: number
+  latencyMs?: number
+  input?: string
+  output?: string
+  thinking?: string
+  observationReason?: string
+  startedAt?: string
+  completedAt?: string
+  toolCalls?: StreamToolPayload[]
+}
+
+export interface DebugSpan {
+  id?: string
+  parentId?: string
+  generationId?: string
+  name?: string
+  type?: string
+  status?: string
+  level?: string
+  callId?: string
+  toolName?: string
+  input?: string
+  output?: string
+  error?: string
+  durationMs?: number
+  startedAt?: string
+  completedAt?: string
+  attributes?: Record<string, unknown>
+}
+
+export interface DebugEvent {
+  id?: string
+  name?: string
+  type?: string
+  level?: string
+  message?: string
+  reason?: string
+  spanId?: string
+  generationId?: string
+  timestamp?: string
+  attributes?: Record<string, unknown>
 }
 
 export interface DebugLimits {
@@ -423,7 +508,7 @@ export interface SessionGroup {
 }
 
 // Re-export split interfaces for consumers that only need a subset
-export type { SessionStore, MessageTransport, ArtifactStore, AdminStore } from './data-source'
+export type { SessionStore, MessageTransport, ArtifactStore, AdminStore } from './data-source';
 
 /**
  * Full data source interface for BiChat.
@@ -481,6 +566,27 @@ export interface ChatDataSource {
     answers: QuestionAnswers
   ): Promise<{ success: boolean; error?: string }>
   rejectPendingQuestion(sessionId: string): Promise<{ success: boolean; error?: string }>
+  /**
+   * Stops the active stream for the given session. No partial assistant message is persisted.
+   * Optional for backward compatibility with data sources that do not support stop.
+   */
+  stopGeneration?(sessionId: string): Promise<void>
+  /**
+   * Returns active stream status for the session (for refresh-safe resume).
+   * Optional; if absent, no resume/passive flow is used.
+   */
+  getStreamStatus?(sessionId: string): Promise<StreamStatus | null>
+  /**
+   * Resumes an active stream: delivers snapshot then new chunks. Use when getStreamStatus
+   * reported active and the client has the same-browser run marker.
+   * Optional; if absent, resume is not supported.
+   */
+  resumeStream?(
+    sessionId: string,
+    runId: string,
+    onChunk: (chunk: StreamChunk) => void,
+    signal?: AbortSignal
+  ): Promise<void>
   /**
    * @deprecated Pass `onSessionCreated` to `ChatSessionProvider` instead.
    * This method couples navigation to the data source, causing component
@@ -555,6 +661,7 @@ export interface ChatMessagingStateValue {
   /** Ephemeral activity steps (tools, thinking, delegations), cleared on done. */
   activeSteps: ActivityStep[]
   showActivityTrace: boolean
+  showTypingIndicator: boolean
   sendMessage: (content: string, attachments?: Attachment[]) => Promise<void>
   handleRegenerate?: (turnId: string) => Promise<void>
   handleEdit?: (turnId: string, newContent: string) => Promise<void>

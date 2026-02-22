@@ -1,39 +1,41 @@
-import { useEffect, useMemo, useState } from 'react'
-import { ArrowSquareOut, DownloadSimple, FileText, SpinnerGap, WarningCircle } from '@phosphor-icons/react'
-import type { SessionArtifact } from '../types'
-import { parseChartDataFromSpec, isRecord } from '../utils/chartSpec'
-import { ChartCard } from './ChartCard'
-import { useTranslation } from '../hooks/useTranslation'
+import { useEffect, useMemo, useState } from 'react';
+import { ArrowSquareOut, DownloadSimple, FileText, SpinnerGap, WarningCircle } from '@phosphor-icons/react';
+import type { SessionArtifact } from '../types';
+import { parseChartDataFromSpec, isRecord } from '../utils/chartSpec';
+import { parseRenderTableDataFromMetadata } from '../utils/tableSpec';
+import { ChartCard } from './ChartCard';
+import { InteractiveTableCard } from './InteractiveTableCard';
+import { useTranslation } from '../hooks/useTranslation';
 import {
   getArtifactName,
   isImageArtifact,
   isPDFArtifact,
   isOfficeDocumentArtifact,
   isTextArtifact,
-} from '../utils/artifactHelpers'
+} from '../utils/artifactHelpers';
 
 interface SessionArtifactPreviewProps {
   artifact: SessionArtifact
 }
 
-const TEXT_PREVIEW_MAX_CHARS = 24000
+const TEXT_PREVIEW_MAX_CHARS = 24000;
 
 function parseChartDataFromArtifact(artifact: SessionArtifact) {
-  const metadata = artifact.metadata
+  const metadata = artifact.metadata;
   if (!metadata || !isRecord(metadata)) {
-    return null
+    return null;
   }
 
-  const spec = isRecord(metadata.spec) ? metadata.spec : metadata
+  const spec = isRecord(metadata.spec) ? metadata.spec : metadata;
   if (!isRecord(spec)) {
-    return null
+    return null;
   }
 
-  return parseChartDataFromSpec(spec, getArtifactName(artifact))
+  return parseChartDataFromSpec(spec, getArtifactName(artifact));
 }
 
 function isAbsoluteHTTPURL(url: string): boolean {
-  return /^https?:\/\//i.test(url)
+  return /^https?:\/\//i.test(url);
 }
 
 function WarningBox({ message }: { message: string }) {
@@ -42,13 +44,13 @@ function WarningBox({ message }: { message: string }) {
       <WarningCircle className="mt-0.5 h-4 w-4 shrink-0" weight="duotone" />
       <span className="leading-relaxed">{message}</span>
     </div>
-  )
+  );
 }
 
 function ArtifactActions({ url }: { url: string }) {
-  const { t } = useTranslation()
-  const openLabel = t('BiChat.Artifacts.OpenInNewTab')
-  const downloadLabel = t('BiChat.Artifacts.Download')
+  const { t } = useTranslation();
+  const openLabel = t('BiChat.Artifacts.OpenInNewTab');
+  const downloadLabel = t('BiChat.Artifacts.Download');
 
   return (
     <div className="flex items-center gap-2">
@@ -72,56 +74,56 @@ function ArtifactActions({ url }: { url: string }) {
         {downloadLabel}
       </a>
     </div>
-  )
+  );
 }
 
 function TextArtifactPreview({ artifact }: { artifact: SessionArtifact }) {
-  const { t } = useTranslation()
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [content, setContent] = useState('')
-  const [truncated, setTruncated] = useState(false)
+  const { t } = useTranslation();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [content, setContent] = useState('');
+  const [truncated, setTruncated] = useState(false);
 
   useEffect(() => {
     if (!artifact.url) {
-      setLoading(false)
-      setError(t('BiChat.Artifacts.TextPreviewFailed'))
-      return
+      setLoading(false);
+      setError(t('BiChat.Artifacts.TextPreviewFailed'));
+      return;
     }
 
-    const controller = new AbortController()
-    setLoading(true)
-    setError(null)
-    setContent('')
-    setTruncated(false)
+    const controller = new AbortController();
+    setLoading(true);
+    setError(null);
+    setContent('');
+    setTruncated(false);
 
     fetch(artifact.url, { signal: controller.signal, credentials: 'include' })
       .then(async (response) => {
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`)
+          throw new Error(`HTTP ${response.status}`);
         }
-        const text = await response.text()
+        const text = await response.text();
         if (text.length > TEXT_PREVIEW_MAX_CHARS) {
-          setContent(text.slice(0, TEXT_PREVIEW_MAX_CHARS))
-          setTruncated(true)
-          return
+          setContent(text.slice(0, TEXT_PREVIEW_MAX_CHARS));
+          setTruncated(true);
+          return;
         }
-        setContent(text)
+        setContent(text);
       })
       .catch((err) => {
         if (err instanceof Error && err.name === 'AbortError') {
-          return
+          return;
         }
-        setError(t('BiChat.Artifacts.TextPreviewFailed'))
+        setError(t('BiChat.Artifacts.TextPreviewFailed'));
       })
       .finally(() => {
-        setLoading(false)
-      })
+        setLoading(false);
+      });
 
     return () => {
-      controller.abort()
-    }
-  }, [artifact.url, t])
+      controller.abort();
+    };
+  }, [artifact.url, t]);
 
   if (loading) {
     return (
@@ -129,11 +131,11 @@ function TextArtifactPreview({ artifact }: { artifact: SessionArtifact }) {
         <SpinnerGap className="mr-2 h-4 w-4 animate-spin" />
         {t('BiChat.Artifacts.PreviewLoading')}
       </div>
-    )
+    );
   }
 
   if (error) {
-    return <WarningBox message={error} />
+    return <WarningBox message={error} />;
   }
 
   return (
@@ -145,31 +147,46 @@ function TextArtifactPreview({ artifact }: { artifact: SessionArtifact }) {
         <p className="text-xs text-gray-500 dark:text-gray-400">{t('BiChat.Artifacts.TextPreviewTruncated')}</p>
       )}
     </div>
-  )
+  );
 }
 
 export function SessionArtifactPreview({ artifact }: SessionArtifactPreviewProps) {
-  const { t } = useTranslation()
-  const artifactName = getArtifactName(artifact)
+  const { t } = useTranslation();
+  const artifactName = getArtifactName(artifact);
 
   const officeViewerURL = useMemo(() => {
     if (!artifact.url || !isAbsoluteHTTPURL(artifact.url)) {
-      return null
+      return null;
     }
-    return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(artifact.url)}`
-  }, [artifact.url])
+    return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(artifact.url)}`;
+  }, [artifact.url]);
 
   if (artifact.type === 'chart') {
-    const chartData = parseChartDataFromArtifact(artifact)
+    const chartData = parseChartDataFromArtifact(artifact);
     if (chartData) {
-      return <ChartCard chartData={chartData} />
+      return <ChartCard chartData={chartData} />;
     }
-    return <WarningBox message={t('BiChat.Artifacts.ChartUnavailable')} />
+    return <WarningBox message={t('BiChat.Artifacts.ChartUnavailable')} />;
+  }
+
+  if (artifact.type === 'table' && artifact.metadata && typeof artifact.metadata === 'object') {
+    const tableData = parseRenderTableDataFromMetadata(
+      artifact.metadata as Record<string, unknown>,
+      artifact.id
+    );
+    if (tableData) {
+      return (
+        <div className="rounded-xl border border-gray-200/80 bg-white dark:border-gray-700/60 dark:bg-gray-900/30">
+          <InteractiveTableCard table={tableData} />
+        </div>
+      );
+    }
+    return <WarningBox message={t('BiChat.Artifacts.PreviewUnavailable')} />;
   }
 
   if (isImageArtifact(artifact)) {
     if (!artifact.url) {
-      return <WarningBox message={t('BiChat.Artifacts.ImageUnavailable')} />
+      return <WarningBox message={t('BiChat.Artifacts.ImageUnavailable')} />;
     }
 
     return (
@@ -184,12 +201,12 @@ export function SessionArtifactPreview({ artifact }: SessionArtifactPreviewProps
         </div>
         <ArtifactActions url={artifact.url} />
       </div>
-    )
+    );
   }
 
   if (isPDFArtifact(artifact)) {
     if (!artifact.url) {
-      return <WarningBox message={t('BiChat.Artifacts.DownloadUnavailable')} />
+      return <WarningBox message={t('BiChat.Artifacts.DownloadUnavailable')} />;
     }
 
     return (
@@ -203,12 +220,12 @@ export function SessionArtifactPreview({ artifact }: SessionArtifactPreviewProps
         </div>
         <ArtifactActions url={artifact.url} />
       </div>
-    )
+    );
   }
 
   if (isOfficeDocumentArtifact(artifact)) {
     if (!artifact.url) {
-      return <WarningBox message={t('BiChat.Artifacts.DownloadUnavailable')} />
+      return <WarningBox message={t('BiChat.Artifacts.DownloadUnavailable')} />;
     }
 
     return (
@@ -226,7 +243,7 @@ export function SessionArtifactPreview({ artifact }: SessionArtifactPreviewProps
         )}
         <ArtifactActions url={artifact.url} />
       </div>
-    )
+    );
   }
 
   if (isTextArtifact(artifact)) {
@@ -235,7 +252,7 @@ export function SessionArtifactPreview({ artifact }: SessionArtifactPreviewProps
         <TextArtifactPreview artifact={artifact} />
         {artifact.url && <ArtifactActions url={artifact.url} />}
       </div>
-    )
+    );
   }
 
   if (artifact.url) {
@@ -248,8 +265,8 @@ export function SessionArtifactPreview({ artifact }: SessionArtifactPreviewProps
         </div>
         <ArtifactActions url={artifact.url} />
       </div>
-    )
+    );
   }
 
-  return <WarningBox message={t('BiChat.Artifacts.DownloadUnavailable')} />
+  return <WarningBox message={t('BiChat.Artifacts.DownloadUnavailable')} />;
 }

@@ -4,65 +4,68 @@
  * Generic: accepts any set of tabs via props
  */
 
-import { memo, useRef, useCallback } from 'react'
-import { motion } from 'framer-motion'
+import { memo, useId, useRef, useCallback } from 'react';
+import { motion } from 'framer-motion';
 
 interface TabBarProps {
   tabs: Array<{ id: string; label: string }>
   activeTab: string
   onTabChange: (tabId: string) => void
+  /** Tighter padding for space-constrained contexts like fullscreen overlays. */
+  compact?: boolean
 }
 
-function TabBar({ tabs, activeTab, onTabChange }: TabBarProps) {
-  const tablistRef = useRef<HTMLDivElement>(null)
+function TabBar({ tabs, activeTab, onTabChange, compact = false }: TabBarProps) {
+  const instanceId = useId();
+  const tablistRef = useRef<HTMLDivElement>(null);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
-      const currentIndex = tabs.findIndex((tab) => tab.id === activeTab)
-      if (currentIndex < 0) return
+      const currentIndex = tabs.findIndex((tab) => tab.id === activeTab);
+      if (currentIndex < 0) {return;}
 
-      let nextIndex: number | null = null
+      let nextIndex: number | null = null;
 
       switch (e.key) {
         case 'ArrowRight':
-          e.preventDefault()
-          nextIndex = (currentIndex + 1) % tabs.length
-          break
+          e.preventDefault();
+          nextIndex = (currentIndex + 1) % tabs.length;
+          break;
         case 'ArrowLeft':
-          e.preventDefault()
-          nextIndex = (currentIndex - 1 + tabs.length) % tabs.length
-          break
+          e.preventDefault();
+          nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+          break;
         case 'Home':
-          e.preventDefault()
-          nextIndex = 0
-          break
+          e.preventDefault();
+          nextIndex = 0;
+          break;
         case 'End':
-          e.preventDefault()
-          nextIndex = tabs.length - 1
-          break
+          e.preventDefault();
+          nextIndex = tabs.length - 1;
+          break;
       }
 
       if (nextIndex !== null) {
-        onTabChange(tabs[nextIndex].id)
+        onTabChange(tabs[nextIndex].id);
         // Focus the newly activated tab button
-        const tablist = tablistRef.current
+        const tablist = tablistRef.current;
         if (tablist) {
-          const buttons = tablist.querySelectorAll<HTMLElement>('[role="tab"]')
-          buttons[nextIndex]?.focus()
+          const buttons = tablist.querySelectorAll<HTMLElement>('[role="tab"]');
+          buttons[nextIndex]?.focus();
         }
       }
     },
     [tabs, activeTab, onTabChange]
-  )
+  );
 
   if (tabs.length === 0) {
-    return null
+    return null;
   }
 
   return (
     <div
       ref={tablistRef}
-      className="flex justify-center gap-1 px-4 pt-4 pb-2 border-b border-gray-200 dark:border-gray-700"
+      className={`flex justify-center gap-1 border-b border-gray-200 dark:border-gray-700 ${compact ? 'px-3 pt-2 pb-1' : 'px-4 pt-4 pb-2'}`}
       role="tablist"
       onKeyDown={handleKeyDown}
     >
@@ -73,10 +76,12 @@ function TabBar({ tabs, activeTab, onTabChange }: TabBarProps) {
           label={tab.label}
           isActive={activeTab === tab.id}
           onClick={() => onTabChange(tab.id)}
+          layoutId={instanceId + '-tab'}
+          compact={compact}
         />
       ))}
     </div>
-  )
+  );
 }
 
 interface TabButtonProps {
@@ -84,9 +89,11 @@ interface TabButtonProps {
   label: string
   isActive: boolean
   onClick: () => void
+  layoutId: string
+  compact?: boolean
 }
 
-function TabButton({ id, label, isActive, onClick }: TabButtonProps) {
+function TabButton({ id, label, isActive, onClick, layoutId, compact }: TabButtonProps) {
   return (
     <button
       id={id}
@@ -96,7 +103,8 @@ function TabButton({ id, label, isActive, onClick }: TabButtonProps) {
       tabIndex={isActive ? 0 : -1}
       onClick={onClick}
       className={`
-        cursor-pointer relative px-4 py-2 rounded-t-lg text-sm font-medium transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50
+        cursor-pointer relative rounded-t-lg font-medium transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50
+        ${compact ? 'px-3 py-1.5 text-xs' : 'px-4 py-2 text-sm'}
         ${
           isActive
             ? 'text-primary-700 dark:text-primary-400'
@@ -109,17 +117,17 @@ function TabButton({ id, label, isActive, onClick }: TabButtonProps) {
       {/* Active indicator */}
       {isActive && (
         <motion.div
-          layoutId="activeTab"
+          layoutId={layoutId}
           className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 dark:bg-primary-500"
           transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
         />
       )}
     </button>
-  )
+  );
 }
 
-const MemoizedTabBar = memo(TabBar)
-MemoizedTabBar.displayName = 'TabBar'
+const MemoizedTabBar = memo(TabBar);
+MemoizedTabBar.displayName = 'TabBar';
 
-export { MemoizedTabBar as TabBar }
-export default MemoizedTabBar
+export { MemoizedTabBar as TabBar };
+export default MemoizedTabBar;

@@ -4,21 +4,21 @@
  * Router-agnostic: uses callbacks for navigation instead of react-router-dom.
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { motion } from 'framer-motion'
-import { Archive, ArrowLeft } from '@phosphor-icons/react'
-import SessionItem from './SessionItem'
-import SearchInput from './SearchInput'
-import DateGroupHeader from './DateGroupHeader'
-import LoadingSpinner from './LoadingSpinner'
-import ConfirmModal from './ConfirmModal'
-import { EmptyState } from './EmptyState'
-import { ToastContainer } from './ToastContainer'
-import { useTranslation } from '../hooks/useTranslation'
-import { useToast, type UseToastReturn } from '../hooks/useToast'
-import { groupSessionsByDate } from '../utils/sessionGrouping'
-import { staggerContainerVariants } from '../animations/variants'
-import type { Session, ChatDataSource } from '../types'
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { Archive, ArrowLeft } from '@phosphor-icons/react';
+import SessionItem from './SessionItem';
+import SearchInput from './SearchInput';
+import DateGroupHeader from './DateGroupHeader';
+import LoadingSpinner from './LoadingSpinner';
+import ConfirmModal from './ConfirmModal';
+import { EmptyState } from './EmptyState';
+import { ToastContainer } from './ToastContainer';
+import { useTranslation } from '../hooks/useTranslation';
+import { useToast, type UseToastReturn } from '../hooks/useToast';
+import { groupSessionsByDate } from '../utils/sessionGrouping';
+import { staggerContainerVariants } from '../animations/variants';
+import type { Session, ChatDataSource } from '../types';
 
 export interface ArchivedChatListProps {
   dataSource: ChatDataSource
@@ -37,101 +37,101 @@ export default function ArchivedChatList({
   className = '',
   toast: toastFromProps,
 }: ArchivedChatListProps) {
-  const { t } = useTranslation()
-  const localToast = useToast()
-  const toast = toastFromProps ?? localToast
-  const shouldRenderToastContainer = !toastFromProps
+  const { t } = useTranslation();
+  const localToast = useToast();
+  const toast = toastFromProps ?? localToast;
+  const shouldRenderToastContainer = !toastFromProps;
 
   // Search state
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Session data
-  const [sessions, setSessions] = useState<Session[]>([])
-  const [loading, setLoading] = useState(true)
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Refresh key
-  const [refreshKey, setRefreshKey] = useState(0)
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Confirm modal state for restore action
-  const [showConfirm, setShowConfirm] = useState(false)
-  const [sessionToRestore, setSessionToRestore] = useState<string | null>(null)
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [sessionToRestore, setSessionToRestore] = useState<string | null>(null);
 
   // Fetch archived sessions
   const fetchSessions = useCallback(async () => {
     try {
-      setLoading(true)
+      setLoading(true);
       const result = await dataSource.listSessions({
         limit: 100,
         includeArchived: true,
-      })
-      setSessions(result.sessions.filter((s) => s.status === 'archived'))
+      });
+      setSessions(result.sessions.filter((s) => s.status === 'archived'));
     } catch (err) {
-      console.error('Failed to load archived sessions:', err)
+      console.error('Failed to load archived sessions:', err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [dataSource])
+  }, [dataSource]);
 
   useEffect(() => {
-    fetchSessions()
-  }, [fetchSessions, refreshKey])
+    fetchSessions();
+  }, [fetchSessions, refreshKey]);
 
   const handleRestoreRequest = (sessionId: string) => {
-    setSessionToRestore(sessionId)
-    setShowConfirm(true)
-  }
+    setSessionToRestore(sessionId);
+    setShowConfirm(true);
+  };
 
   const confirmRestore = async () => {
-    if (!sessionToRestore) return
+    if (!sessionToRestore) {return;}
 
     try {
-      const restoredSessionID = sessionToRestore
-      await dataSource.unarchiveSession(restoredSessionID)
+      const restoredSessionID = sessionToRestore;
+      await dataSource.unarchiveSession(restoredSessionID);
       window.dispatchEvent(new CustomEvent('bichat:sessions-updated', {
         detail: { reason: 'restored', sessionId: restoredSessionID },
-      }))
-      setRefreshKey((k) => k + 1)
-      toast.success(t('BiChat.Archived.ChatRestoredSuccessfully'))
+      }));
+      setRefreshKey((k) => k + 1);
+      toast.success(t('BiChat.Archived.ChatRestoredSuccessfully'));
     } catch (err) {
-      console.error('Failed to restore session:', err)
-      toast.error(t('BiChat.Archived.FailedToRestoreChat'))
+      console.error('Failed to restore session:', err);
+      toast.error(t('BiChat.Archived.FailedToRestoreChat'));
     } finally {
-      setShowConfirm(false)
-      setSessionToRestore(null)
+      setShowConfirm(false);
+      setSessionToRestore(null);
     }
-  }
+  };
 
   const handleRenameSession = async (sessionId: string, newTitle: string) => {
     try {
-      await dataSource.renameSession(sessionId, newTitle)
-      toast.success(t('BiChat.Sidebar.ChatRenamedSuccessfully'))
-      setRefreshKey((k) => k + 1)
+      await dataSource.renameSession(sessionId, newTitle);
+      toast.success(t('BiChat.Sidebar.ChatRenamedSuccessfully'));
+      setRefreshKey((k) => k + 1);
     } catch (err) {
-      console.error('Failed to update session title:', err)
-      toast.error(t('BiChat.Sidebar.FailedToRenameChat'))
+      console.error('Failed to update session title:', err);
+      toast.error(t('BiChat.Sidebar.FailedToRenameChat'));
     }
-  }
+  };
 
   // Filter by search query
   const filteredSessions = useMemo(() => {
-    if (!searchQuery.trim()) return sessions
-    const q = searchQuery.toLowerCase()
-    return sessions.filter((s) => s.title?.toLowerCase().includes(q))
-  }, [sessions, searchQuery])
+    if (!searchQuery.trim()) {return sessions;}
+    const q = searchQuery.toLowerCase();
+    return sessions.filter((s) => s.title?.toLowerCase().includes(q));
+  }, [sessions, searchQuery]);
 
   // Group sessions by date
   const sessionGroups = useMemo(() => {
-    const groups = groupSessionsByDate(filteredSessions, t)
+    const groups = groupSessionsByDate(filteredSessions, t);
     return Array.isArray(groups)
       ? groups.map((group) => ({
           ...group,
           sessions: Array.isArray(group.sessions) ? group.sessions : [],
         }))
-      : []
-  }, [filteredSessions, t])
+      : [];
+  }, [filteredSessions, t]);
 
-  const isEmpty = sessions.length === 0
-  const isEmptyAfterSearch = filteredSessions.length === 0 && !!searchQuery
+  const isEmpty = sessions.length === 0;
+  const isEmptyAfterSearch = filteredSessions.length === 0 && !!searchQuery;
 
   return (
     <div
@@ -248,8 +248,8 @@ export default function ArchivedChatList({
         isDanger={false}
         onConfirm={confirmRestore}
         onCancel={() => {
-          setShowConfirm(false)
-          setSessionToRestore(null)
+          setShowConfirm(false);
+          setSessionToRestore(null);
         }}
       />
 
@@ -258,5 +258,5 @@ export default function ArchivedChatList({
         <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
       )}
     </div>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-import type { InitialContext } from '../types'
+import type { InitialContext } from '../types';
 
 /**
  * useAppletContext provides direct access to the window global context.
@@ -11,11 +11,11 @@ import type { InitialContext } from '../types'
  * and testability. Use this hook only when provider setup is not possible.
  */
 export function useAppletContext<T = InitialContext>(windowKey: string): T {
-  const context = (window as unknown as Record<string, unknown>)[windowKey]
+  const context = (window as unknown as Record<string, unknown>)[windowKey];
 
   if (!context) {
-    throw new Error(`${windowKey} not found on window. Ensure backend context injection is working.`)
+    throw new Error(`${windowKey} not found on window. Ensure backend context injection is working.`);
   }
 
-  return context as T
+  return context as T;
 }

@@ -8,10 +8,10 @@
  * For more customization, use the AssistantMessage component directly with slots.
  */
 
-import { useChatSession, useChatMessaging } from '../context/ChatContext'
-import { AssistantMessage, type AssistantMessageSlots, type AssistantMessageClassNames } from './AssistantMessage'
-import { SystemMessage } from './SystemMessage'
-import type { ConversationTurn } from '../types'
+import { useChatSession, useChatMessaging } from '../context/ChatContext';
+import { AssistantMessage, type AssistantMessageSlots, type AssistantMessageClassNames } from './AssistantMessage';
+import { SystemMessage } from './SystemMessage';
+import type { ConversationTurn } from '../types';
 
 export interface AssistantTurnViewProps {
   /** The conversation turn containing the assistant response */
@@ -45,11 +45,11 @@ export function AssistantTurnView({
   hideTimestamp,
   allowRegenerate = true,
 }: AssistantTurnViewProps) {
-  const { debugMode } = useChatSession()
-  const { handleCopy, handleRegenerate, pendingQuestion, sendMessage, loading } = useChatMessaging()
+  const { debugMode, debugLimits } = useChatSession();
+  const { handleCopy, handleRegenerate, pendingQuestion, sendMessage, loading } = useChatMessaging();
 
-  const assistantTurn = turn.assistantTurn
-  if (!assistantTurn) return null
+  const assistantTurn = turn.assistantTurn;
+  if (!assistantTurn) {return null;}
 
   if (assistantTurn.role === 'system') {
     return (
@@ -60,7 +60,7 @@ export function AssistantTurnView({
         hideActions={hideActions}
         hideTimestamp={hideTimestamp}
       />
-    )
+    );
   }
 
   return (
@@ -80,8 +80,9 @@ export function AssistantTurnView({
       hideActions={hideActions}
       hideTimestamp={hideTimestamp}
       showDebug={debugMode}
+      debugLimits={debugLimits}
     />
-  )
+  );
 }
 
-export default AssistantTurnView
+export default AssistantTurnView;

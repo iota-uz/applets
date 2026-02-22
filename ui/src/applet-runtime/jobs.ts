@@ -1,4 +1,4 @@
-import { engine } from './engine'
+import { engine } from './engine';
 
 export type ScheduledJob = {
   id: string
@@ -16,24 +16,24 @@ export type ScheduledJob = {
 }
 
 function appletMethod(op: string): string {
-  const appletID = process.env.IOTA_APPLET_ID
+  const appletID = process.env.IOTA_APPLET_ID;
   if (!appletID || appletID.trim() === '') {
-    throw new Error('IOTA_APPLET_ID is required')
+    throw new Error('IOTA_APPLET_ID is required');
   }
-  return `${appletID}.jobs.${op}`
+  return `${appletID}.jobs.${op}`;
 }
 
 export const jobs = {
   enqueue(method: string, params?: unknown): Promise<ScheduledJob> {
-    return engine.call<ScheduledJob>(appletMethod('enqueue'), { method, params: params ?? {} })
+    return engine.call<ScheduledJob>(appletMethod('enqueue'), { method, params: params ?? {} });
   },
   schedule(cron: string, method: string, params?: unknown): Promise<ScheduledJob> {
-    return engine.call<ScheduledJob>(appletMethod('schedule'), { cron, method, params: params ?? {} })
+    return engine.call<ScheduledJob>(appletMethod('schedule'), { cron, method, params: params ?? {} });
   },
   list(): Promise<ScheduledJob[]> {
-    return engine.call<ScheduledJob[]>(appletMethod('list'), {})
+    return engine.call<ScheduledJob[]>(appletMethod('list'), {});
   },
   cancel(id: string): Promise<{ ok: boolean }> {
-    return engine.call<{ ok: boolean }>(appletMethod('cancel'), { id })
+    return engine.call<{ ok: boolean }>(appletMethod('cancel'), { id });
   },
-}
+};

@@ -1,9 +1,9 @@
-import { useState, memo } from 'react'
-import { Copy, ArrowClockwise, PencilSimple } from '@phosphor-icons/react'
-import { MessageRole } from '../types'
-import { useToast } from '../hooks/useToast'
-import { useTranslation } from '../hooks/useTranslation'
-import LoadingSpinner from './LoadingSpinner'
+import { useState, memo } from 'react';
+import { Copy, ArrowClockwise, PencilSimple } from '@phosphor-icons/react';
+import { MessageRole } from '../types';
+import { useToast } from '../hooks/useToast';
+import { useTranslation } from '../hooks/useTranslation';
+import LoadingSpinner from './LoadingSpinner';
 
 interface ActionableMessage {
   id: string
@@ -24,34 +24,34 @@ function MessageActions({
   onRegenerate,
   onEdit,
 }: MessageActionsProps) {
-  const [copying, setCopying] = useState(false)
-  const [regenerating, setRegenerating] = useState(false)
-  const toast = useToast()
-  const { t } = useTranslation()
+  const [copying, setCopying] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const toast = useToast();
+  const { t } = useTranslation();
 
-  const isUser = message.role === MessageRole.User
+  const isUser = message.role === MessageRole.User;
 
   const handleCopy = async () => {
-    setCopying(true)
+    setCopying(true);
     try {
-      await onCopy(message.content)
-      toast.success(t('BiChat.Message.CopiedToClipboard'))
+      await onCopy(message.content);
+      toast.success(t('BiChat.Message.CopiedToClipboard'));
     } catch {
-      toast.error(t('BiChat.Message.FailedToCopy'))
+      toast.error(t('BiChat.Message.FailedToCopy'));
     } finally {
-      setCopying(false)
+      setCopying(false);
     }
-  }
+  };
 
   const handleRegenerate = async () => {
-    if (!onRegenerate) return
-    setRegenerating(true)
+    if (!onRegenerate) {return;}
+    setRegenerating(true);
     try {
-      await onRegenerate(message.id)
+      await onRegenerate(message.id);
     } finally {
-      setRegenerating(false)
+      setRegenerating(false);
     }
-  }
+  };
 
   return (
     <div className="flex items-center gap-2">
@@ -99,9 +99,9 @@ function MessageActions({
         </button>
       )}
     </div>
-  )
+  );
 }
 
-export default memo(MessageActions)
-export { MessageActions }
-export type { ActionableMessage }
+export default memo(MessageActions);
+export { MessageActions };
+export type { ActionableMessage };

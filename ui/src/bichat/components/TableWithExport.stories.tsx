@@ -1,14 +1,14 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { TableWithExport } from './TableWithExport'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { TableWithExport } from './TableWithExport';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof TableWithExport> = {
   title: 'BiChat/Components/TableWithExport',
   component: TableWithExport,
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof TableWithExport>
 
 const ExampleTable = () => (
@@ -33,14 +33,14 @@ const ExampleTable = () => (
       </tr>
     </tbody>
   </>
-)
+);
 
 export const Playground: Story = {
   args: {
     children: <ExampleTable />,
     sendMessage: (msg) => alert(`Mock send: ${msg}`),
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -88,4 +88,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

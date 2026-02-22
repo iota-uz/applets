@@ -1,23 +1,23 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { AssistantMessage } from './AssistantMessage'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
-import { makeAssistantTurn } from '@sb-helpers/bichatFixtures'
-import { flowingMarkdown } from '@sb-helpers/textFixtures'
+import { AssistantMessage } from './AssistantMessage';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
+import { makeAssistantTurn } from '@sb-helpers/bichatFixtures';
+import { flowingMarkdown } from '@sb-helpers/textFixtures';
 
 const meta: Meta<typeof AssistantMessage> = {
   title: 'BiChat/Components/AssistantMessage',
   component: AssistantMessage,
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof AssistantMessage>
 
 export const Playground: Story = {
   args: {
     turn: makeAssistantTurn({ content: 'Hello! How can I assist you today?' }),
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -44,4 +44,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

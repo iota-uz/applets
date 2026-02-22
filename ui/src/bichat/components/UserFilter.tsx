@@ -4,12 +4,12 @@
  * Uses @headlessui/react Menu for accessible dropdown
  */
 
-import { memo } from 'react'
-import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
-import { CaretDown, X } from '@phosphor-icons/react'
-import { UserAvatar } from './UserAvatar'
-import { useTranslation } from '../hooks/useTranslation'
-import type { SessionUser } from '../types'
+import { memo } from 'react';
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
+import { CaretDown, X } from '@phosphor-icons/react';
+import { UserAvatar } from './UserAvatar';
+import { useTranslation } from '../hooks/useTranslation';
+import type { SessionUser } from '../types';
 
 interface UserFilterProps {
   users: SessionUser[]
@@ -19,7 +19,7 @@ interface UserFilterProps {
 }
 
 function UserFilter({ users, selectedUser, onUserChange, loading }: UserFilterProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   return (
     <div className="relative">
@@ -62,9 +62,9 @@ function UserFilter({ users, selectedUser, onUserChange, loading }: UserFilterPr
                 {selectedUser && (
                   <button
                     onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      onUserChange(null)
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onUserChange(null);
                     }}
                     className="cursor-pointer p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-smooth"
                     aria-label={t('BiChat.Common.Clear')}
@@ -171,11 +171,11 @@ function UserFilter({ users, selectedUser, onUserChange, loading }: UserFilterPr
         )}
       </Menu>
     </div>
-  )
+  );
 }
 
-const MemoizedUserFilter = memo(UserFilter)
-MemoizedUserFilter.displayName = 'UserFilter'
+const MemoizedUserFilter = memo(UserFilter);
+MemoizedUserFilter.displayName = 'UserFilter';
 
-export { MemoizedUserFilter as UserFilter }
-export default MemoizedUserFilter
+export { MemoizedUserFilter as UserFilter };
+export default MemoizedUserFilter;

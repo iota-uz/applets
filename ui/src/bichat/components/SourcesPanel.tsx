@@ -5,10 +5,10 @@
  * Expanded: card panel with source titles, excerpts, and domain badges.
  */
 
-import { useState, useCallback } from 'react'
-import { X } from '@phosphor-icons/react'
-import type { Citation } from '../types'
-import { useTranslation } from '../hooks/useTranslation'
+import { useState, useCallback } from 'react';
+import { X } from '@phosphor-icons/react';
+import type { Citation } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface SourcesPanelProps {
   citations: Citation[]
@@ -18,37 +18,37 @@ interface SourcesPanelProps {
 
 function extractDomain(url: string): string {
   try {
-    return new URL(url).hostname.replace(/^www\./, '')
+    return new URL(url).hostname.replace(/^www\./, '');
   } catch {
-    return ''
+    return '';
   }
 }
 
 const PALETTE = [
   '#c0392b', '#d35400', '#f39c12', '#27ae60',
   '#16a085', '#2980b9', '#8e44ad', '#d63384',
-]
+];
 
 function domainColor(domain: string): string {
-  let h = 0
-  for (let i = 0; i < domain.length; i++) h = domain.charCodeAt(i) + ((h << 5) - h)
-  return PALETTE[Math.abs(h) % PALETTE.length]
+  let h = 0;
+  for (let i = 0; i < domain.length; i++) {h = domain.charCodeAt(i) + ((h << 5) - h);}
+  return PALETTE[Math.abs(h) % PALETTE.length];
 }
 
 /* ── Component ───────────────────────────────────────────────────────────── */
 
 export function SourcesPanel({ citations }: SourcesPanelProps) {
-  const { t } = useTranslation()
-  const [isOpen, setIsOpen] = useState(false)
-  const open = useCallback(() => setIsOpen(true), [])
-  const close = useCallback(() => setIsOpen(false), [])
+  const { t } = useTranslation();
+  const [isOpen, setIsOpen] = useState(false);
+  const open = useCallback(() => setIsOpen(true), []);
+  const close = useCallback(() => setIsOpen(false), []);
 
-  if (!citations?.length) return null
+  if (!citations?.length) {return null;}
 
   const domains = [...new Set(
     citations.filter(c => c.url).map(c => extractDomain(c.url)).filter(Boolean),
-  )]
-  const previewDomains = domains.slice(0, 5)
+  )];
+  const previewDomains = domains.slice(0, 5);
 
   /* ── Collapsed pill ─────────────────────────────────────────────────── */
   if (!isOpen) {
@@ -83,7 +83,7 @@ export function SourcesPanel({ citations }: SourcesPanelProps) {
           </span>
         </button>
       </div>
-    )
+    );
   }
 
   /* ── Expanded panel ─────────────────────────────────────────────────── */
@@ -111,7 +111,7 @@ export function SourcesPanel({ citations }: SourcesPanelProps) {
       {/* Source list */}
       <div className="max-h-80 overflow-y-auto">
         {citations.map((citation, index) => {
-          const domain = citation.url ? extractDomain(citation.url) : ''
+          const domain = citation.url ? extractDomain(citation.url) : '';
 
           const cardContent = (
             <>
@@ -138,9 +138,9 @@ export function SourcesPanel({ citations }: SourcesPanelProps) {
                 </div>
               )}
             </>
-          )
+          );
 
-          const cardClass = 'block px-4 py-3 border-t border-gray-100 dark:border-gray-700/50'
+          const cardClass = 'block px-4 py-3 border-t border-gray-100 dark:border-gray-700/50';
 
           if (citation.url) {
             return (
@@ -154,16 +154,16 @@ export function SourcesPanel({ citations }: SourcesPanelProps) {
               >
                 {cardContent}
               </a>
-            )
+            );
           }
 
           return (
             <div key={citation.id} className={cardClass}>
               {cardContent}
             </div>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }

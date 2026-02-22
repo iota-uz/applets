@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect } from 'react';
 
 /**
  * Hook to prevent body scroll when modal is open
@@ -12,17 +12,17 @@ import { useEffect } from 'react'
  */
 export function useModalLock(isOpen: boolean) {
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen) {return;}
 
     // Store original scroll position
-    const originalOverflow = document.body.style.overflow
+    const originalOverflow = document.body.style.overflow;
 
     // Prevent scroll
-    document.body.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden';
 
     // Cleanup: restore scroll
     return () => {
-      document.body.style.overflow = originalOverflow
-    }
-  }, [isOpen])
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isOpen]);
 }

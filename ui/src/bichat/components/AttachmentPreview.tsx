@@ -4,11 +4,11 @@
  * Shows filename, size, remove button, and supports click-to-enlarge
  */
 
-import { memo, useState } from 'react'
-import { X } from '@phosphor-icons/react'
-import { ImageAttachment } from '../types'
-import { formatFileSize, createDataUrl } from '../utils/fileUtils'
-import { useTranslation } from '../hooks/useTranslation'
+import { memo, useState } from 'react';
+import { X } from '@phosphor-icons/react';
+import { ImageAttachment } from '../types';
+import { formatFileSize, createDataUrl } from '../utils/fileUtils';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface AttachmentPreviewProps {
   /** The attachment to display */
@@ -22,13 +22,13 @@ interface AttachmentPreviewProps {
 }
 
 const AttachmentPreview = memo<AttachmentPreviewProps>(({ attachment, onRemove, onClick, readonly = false }) => {
-  const { t } = useTranslation()
-  const [isImageLoaded, setIsImageLoaded] = useState(false)
-  const [imageError, setImageError] = useState(false)
+  const { t } = useTranslation();
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
-  const previewUrl = attachment.preview || createDataUrl(attachment.base64Data, attachment.mimeType)
-  const isClickable = onClick !== undefined && !readonly
-  const showRemoveButton = onRemove !== undefined && !readonly
+  const previewUrl = attachment.preview || createDataUrl(attachment.base64Data, attachment.mimeType);
+  const isClickable = onClick !== undefined && !readonly;
+  const showRemoveButton = onRemove !== undefined && !readonly;
 
   return (
     <div
@@ -50,8 +50,8 @@ const AttachmentPreview = memo<AttachmentPreviewProps>(({ attachment, onRemove, 
         isClickable
           ? (e) => {
               if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                onClick?.()
+                e.preventDefault();
+                onClick?.();
               }
             }
           : undefined
@@ -112,8 +112,8 @@ const AttachmentPreview = memo<AttachmentPreviewProps>(({ attachment, onRemove, 
         <button
           type="button"
           onClick={(e) => {
-            e.stopPropagation()
-            onRemove?.()
+            e.stopPropagation();
+            onRemove?.();
           }}
           className="absolute top-1 right-1 flex items-center justify-center bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white rounded-full transition-all duration-200 shadow-sm hover:shadow-md active:scale-90 w-6 h-6"
           aria-label={`Remove ${attachment.filename}`}
@@ -123,9 +123,9 @@ const AttachmentPreview = memo<AttachmentPreviewProps>(({ attachment, onRemove, 
         </button>
       )}
     </div>
-  )
-})
+  );
+});
 
-AttachmentPreview.displayName = 'AttachmentPreview'
+AttachmentPreview.displayName = 'AttachmentPreview';
 
-export default AttachmentPreview
+export default AttachmentPreview;

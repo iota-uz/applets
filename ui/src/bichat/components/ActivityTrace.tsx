@@ -9,20 +9,20 @@
  * All content is ephemeral — it disappears when the final answer arrives.
  */
 
-import { memo, useMemo, useState } from 'react'
-import { motion, AnimatePresence, MotionConfig } from 'framer-motion'
-import { CaretRight, XCircle } from '@phosphor-icons/react'
-import type { ActivityStep } from '../types'
-import { useTranslation } from '../hooks/useTranslation'
-import { getToolLabel } from '../utils/toolLabels'
-import { groupSteps } from '../utils/activitySteps'
+import { memo, useMemo, useState } from 'react';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
+import { CaretRight, XCircle } from '@phosphor-icons/react';
+import type { ActivityStep } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
+import { getToolLabel } from '../utils/toolLabels';
+import { groupSteps } from '../utils/activitySteps';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 function formatDuration(ms: number): string {
-  return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`
+  return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
 }
 
 // ---------------------------------------------------------------------------
@@ -47,13 +47,15 @@ function ActivityTraceInner({
   toolLabelPrefix,
   className = '',
 }: ActivityTraceProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   // Hooks must be called unconditionally (React rules of hooks)
-  const { topLevel, agentGroups } = useMemo(() => groupSteps(activeSteps), [activeSteps])
+  const { topLevel, agentGroups } = useMemo(() => groupSteps(activeSteps), [activeSteps]);
 
-  const hasContent = thinkingContent || activeSteps.length > 0
-  if (!hasContent) return null
+  const hasContent = thinkingContent || activeSteps.length > 0;
+  if (!hasContent) {return null;}
+
+  const hasActiveSteps = activeSteps.some((s) => s.status === 'active');
 
   return (
     <MotionConfig reducedMotion="user">
@@ -110,11 +112,20 @@ function ActivityTraceInner({
                 />
               ))}
             </AnimatePresence>
+
+            {/* Typing shimmer while tools are running */}
+            {hasActiveSteps && !thinkingContent && (
+              <div className="flex items-center gap-1.5 pt-0.5" aria-hidden="true">
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce motion-reduce:animate-none [animation-delay:0ms]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce motion-reduce:animate-none [animation-delay:150ms]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 animate-bounce motion-reduce:animate-none [animation-delay:300ms]" />
+              </div>
+            )}
           </div>
         </div>
       </div>
     </MotionConfig>
-  )
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -124,10 +135,10 @@ function ActivityTraceInner({
 function ThinkingBubble({ content }: { content: string }) {
   // Show last 2 lines of thinking, truncated
   const truncated = useMemo(() => {
-    const lines = content.trim().split('\n')
-    const last = lines.slice(-2).join('\n')
-    return last.length > 200 ? '…' + last.slice(-200) : last
-  }, [content])
+    const lines = content.trim().split('\n');
+    const last = lines.slice(-2).join('\n');
+    return last.length > 200 ? '…' + last.slice(-200) : last;
+  }, [content]);
 
   return (
     <div className="flex items-start gap-2 text-sm text-gray-500 dark:text-gray-400">
@@ -138,7 +149,7 @@ function ThinkingBubble({ content }: { content: string }) {
         </span>
       </div>
     </div>
-  )
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -158,11 +169,11 @@ function StepItem({ step, t, toolLabelPrefix }: StepItemProps) {
         ? t('BiChat.Thinking.Thinking')
         : getToolLabel(t, step.toolName, step.arguments, toolLabelPrefix),
     [step.type, step.toolName, step.arguments, t, toolLabelPrefix]
-  )
+  );
 
-  const isCompleted = step.status === 'completed'
-  const isFailed = step.status === 'failed'
-  const duration = step.durationMs != null ? formatDuration(step.durationMs) : null
+  const isCompleted = step.status === 'completed';
+  const isFailed = step.status === 'failed';
+  const duration = step.durationMs != null ? formatDuration(step.durationMs) : null;
 
   return (
     <motion.div
@@ -200,7 +211,7 @@ function StepItem({ step, t, toolLabelPrefix }: StepItemProps) {
         </motion.span>
       )}
     </motion.div>
-  )
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -215,8 +226,8 @@ interface AgentGroupProps {
 }
 
 function AgentGroup({ agentName, steps, t, toolLabelPrefix }: AgentGroupProps) {
-  const [collapsed, setCollapsed] = useState(false)
-  const completedCount = steps.filter((s) => s.status === 'completed').length
+  const [collapsed, setCollapsed] = useState(false);
+  const completedCount = steps.filter((s) => s.status === 'completed').length;
 
   return (
     <motion.div
@@ -255,7 +266,7 @@ function AgentGroup({ agentName, steps, t, toolLabelPrefix }: AgentGroupProps) {
         </AnimatePresence>
       )}
     </motion.div>
-  )
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -273,7 +284,7 @@ function StatusIndicator({ status }: { status: ActivityStep['status'] }) {
       >
         <XCircle size={14} weight="fill" className="text-red-500 dark:text-red-400" />
       </motion.div>
-    )
+    );
   }
 
   if (status === 'completed') {
@@ -294,7 +305,7 @@ function StatusIndicator({ status }: { status: ActivityStep['status'] }) {
           strokeLinejoin="round"
         />
       </motion.svg>
-    )
+    );
   }
 
   return (
@@ -302,12 +313,12 @@ function StatusIndicator({ status }: { status: ActivityStep['status'] }) {
       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-400 opacity-50 motion-reduce:animate-none" />
       <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-500" />
     </span>
-  )
+  );
 }
 
 // ---------------------------------------------------------------------------
 // Export
 // ---------------------------------------------------------------------------
 
-export const ActivityTrace = memo(ActivityTraceInner)
-ActivityTrace.displayName = 'ActivityTrace'
+export const ActivityTrace = memo(ActivityTraceInner);
+ActivityTrace.displayName = 'ActivityTrace';

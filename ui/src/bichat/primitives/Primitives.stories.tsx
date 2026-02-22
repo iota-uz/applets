@@ -1,19 +1,19 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { Avatar } from './Avatar'
-import { ActionButton } from './ActionButton'
-import { Bubble } from './Bubble'
-import { Turn } from './Turn'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
-import { largeImageDataUrl } from '@sb-helpers/imageFixtures'
-import { largeText, veryLargeText } from '@sb-helpers/textFixtures'
+import { Avatar } from './Avatar';
+import { ActionButton } from './ActionButton';
+import { Bubble } from './Bubble';
+import { Turn } from './Turn';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
+import { largeImageDataUrl } from '@sb-helpers/imageFixtures';
+import { largeText, veryLargeText } from '@sb-helpers/textFixtures';
 
 const meta: Meta = {
   title: 'BiChat/Primitives',
   parameters: { layout: 'centered' },
-}
+};
 
-export default meta
+export default meta;
 
 type Story = StoryObj
 
@@ -59,7 +59,7 @@ export const AvatarPrimitive: Story = {
       ]}
     />
   ),
-}
+};
 
 export const ActionButtonPrimitive: Story = {
   render: () => (
@@ -91,7 +91,7 @@ export const ActionButtonPrimitive: Story = {
       ]}
     />
   ),
-}
+};
 
 export const BubblePrimitive: Story = {
   render: () => (
@@ -134,7 +134,7 @@ export const BubblePrimitive: Story = {
       ]}
     />
   ),
-}
+};
 
 export const TurnPrimitive: Story = {
   render: () => (
@@ -173,4 +173,4 @@ export const TurnPrimitive: Story = {
       ]}
     />
   ),
-}
+};

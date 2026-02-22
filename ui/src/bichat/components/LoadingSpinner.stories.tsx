@@ -1,7 +1,7 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { LoadingSpinner } from './LoadingSpinner'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { LoadingSpinner } from './LoadingSpinner';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof LoadingSpinner> = {
   title: 'BiChat/Components/LoadingSpinner',
@@ -17,28 +17,28 @@ const meta: Meta<typeof LoadingSpinner> = {
       options: ['sm', 'md', 'lg'],
     },
   },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof LoadingSpinner>
 
 export const Playground: Story = {
   args: {
     variant: 'spinner',
   },
-}
+};
 
 export const WithMessage: Story = {
   args: {
     variant: 'spinner',
     message: 'Loading data...',
   },
-}
+};
 
 export const Stress: Story = {
   render: () => {
-    const variants = ['spinner', 'dots', 'pulse'] as const
-    const sizes = ['sm', 'md', 'lg'] as const
+    const variants = ['spinner', 'dots', 'pulse'] as const;
+    const sizes = ['sm', 'md', 'lg'] as const;
 
     return (
       <ScenarioGrid
@@ -54,6 +54,6 @@ export const Stress: Story = {
           }))
         )}
       />
-    )
+    );
   },
-}
+};

@@ -1,13 +1,13 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import Sidebar from './Sidebar'
-import { MockChatDataSource } from '@sb-helpers/mockChatDataSource'
-import { makeSessions } from '@sb-helpers/bichatFixtures'
-import { mobileViewport } from '@sb-helpers/viewportPresets'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import Sidebar from './Sidebar';
+import { MockChatDataSource } from '@sb-helpers/mockChatDataSource';
+import { makeSessions } from '@sb-helpers/bichatFixtures';
+import { mobileViewport } from '@sb-helpers/viewportPresets';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
-const sessions = makeSessions(8)
+const sessions = makeSessions(8);
 
 const meta: Meta<typeof Sidebar> = {
   title: 'BiChat/Components/Sidebar',
@@ -15,9 +15,9 @@ const meta: Meta<typeof Sidebar> = {
   parameters: {
     layout: 'fullscreen',
   },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof Sidebar>
 
 // ---------------------------------------------------------------------------
@@ -37,7 +37,7 @@ export const Playground: Story = {
       <Sidebar {...args} />
     </div>
   ),
-}
+};
 
 // ---------------------------------------------------------------------------
 // 2. WithAllChatsTab — showAllChatsTab=true showing org-wide chats
@@ -57,7 +57,7 @@ export const WithAllChatsTab: Story = {
       <Sidebar {...args} />
     </div>
   ),
-}
+};
 
 // ---------------------------------------------------------------------------
 // 3. Creating — creating=true showing the creating state
@@ -75,7 +75,7 @@ export const Creating: Story = {
       <Sidebar {...args} />
     </div>
   ),
-}
+};
 
 // ---------------------------------------------------------------------------
 // 4. Empty — no sessions, shows empty state
@@ -92,7 +92,7 @@ export const Empty: Story = {
       <Sidebar {...args} />
     </div>
   ),
-}
+};
 
 // ---------------------------------------------------------------------------
 // 5. MobileDrawer — isOpen=true with mobile viewport
@@ -113,7 +113,7 @@ export const MobileDrawer: Story = {
       <Sidebar {...args} />
     </div>
   ),
-}
+};
 
 // ---------------------------------------------------------------------------
 // 6. Stress — ScenarioGrid with multiple variants
@@ -121,7 +121,7 @@ export const MobileDrawer: Story = {
 
 export const Stress: Story = {
   render: () => {
-    const noop = () => {}
+    const noop = () => {};
     return (
       <ScenarioGrid
         columns={2}
@@ -186,6 +186,6 @@ export const Stress: Story = {
           },
         ]}
       />
-    )
+    );
   },
-}
+};

@@ -8,7 +8,7 @@ import {
   type ConversationTurn,
   type Attachment,
   type DebugLimits,
-} from '../types'
+} from '../types';
 
 /** Tool names that produce persisted artifacts; must match server ArtifactHandler. */
 export const ARTIFACT_TOOL_NAMES = new Set([
@@ -17,10 +17,10 @@ export const ARTIFACT_TOOL_NAMES = new Set([
   'export_query_to_excel',
   'export_data_to_excel',
   'export_to_pdf',
-])
+]);
 
 export function generateTempId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
 export function createPendingTurn(
@@ -28,7 +28,7 @@ export function createPendingTurn(
   content: string,
   attachments: Attachment[] = []
 ): ConversationTurn {
-  const now = new Date().toISOString()
+  const now = new Date().toISOString();
   return {
     id: generateTempId('turn'),
     sessionId,
@@ -39,11 +39,11 @@ export function createPendingTurn(
       createdAt: now,
     },
     createdAt: now,
-  }
+  };
 }
 
 export function createCompactedSystemTurn(sessionId: string, summary: string): ConversationTurn {
-  const now = new Date().toISOString()
+  const now = new Date().toISOString();
   return {
     id: generateTempId('turn'),
     sessionId,
@@ -64,7 +64,7 @@ export function createCompactedSystemTurn(sessionId: string, summary: string): C
       createdAt: now,
     },
     createdAt: now,
-  }
+  };
 }
 
 export type SlashCommandName = '/clear' | '/debug' | '/compact'
@@ -75,31 +75,31 @@ export interface ParsedSlashCommand {
 }
 
 export function parseSlashCommand(input: string): ParsedSlashCommand | null {
-  const trimmed = input.trim()
-  if (!trimmed.startsWith('/')) return null
+  const trimmed = input.trim();
+  if (!trimmed.startsWith('/')) {return null;}
 
-  const parts = trimmed.split(/\s+/).filter(Boolean)
-  if (parts.length === 0) return null
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) {return null;}
 
-  const candidate = parts[0].toLowerCase()
+  const candidate = parts[0].toLowerCase();
   if (candidate !== '/clear' && candidate !== '/debug' && candidate !== '/compact') {
-    return null
+    return null;
   }
 
   return {
     name: candidate,
     hasArgs: parts.length > 1,
-  }
+  };
 }
 
 export function readDebugLimitsFromGlobalContext(): DebugLimits | null {
   if (typeof window === 'undefined') {
-    return null
+    return null;
   }
 
-  const limits = window.__APPLET_CONTEXT__?.extensions?.debug?.limits
+  const limits = window.__APPLET_CONTEXT__?.extensions?.debug?.limits;
   if (!limits) {
-    return null
+    return null;
   }
 
   const {
@@ -107,7 +107,7 @@ export function readDebugLimitsFromGlobalContext(): DebugLimits | null {
     modelMaxTokens,
     effectiveMaxTokens,
     completionReserveTokens,
-  } = limits
+  } = limits;
 
   if (
     typeof policyMaxTokens !== 'number' ||
@@ -115,7 +115,7 @@ export function readDebugLimitsFromGlobalContext(): DebugLimits | null {
     typeof effectiveMaxTokens !== 'number' ||
     typeof completionReserveTokens !== 'number'
   ) {
-    return null
+    return null;
   }
 
   return {
@@ -123,5 +123,5 @@ export function readDebugLimitsFromGlobalContext(): DebugLimits | null {
     modelMaxTokens,
     effectiveMaxTokens,
     completionReserveTokens,
-  }
+  };
 }

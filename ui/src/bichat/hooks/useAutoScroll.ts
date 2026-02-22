@@ -3,7 +3,7 @@
  * Manages auto-scroll behavior for chat containers
  */
 
-import { useRef, useState, useCallback, useEffect } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react';
 
 export interface UseAutoScrollOptions {
   /** Threshold in pixels from bottom to consider "at bottom" (default: 100) */
@@ -50,68 +50,68 @@ export interface UseAutoScrollReturn {
  * ```
  */
 export function useAutoScroll(options: UseAutoScrollOptions = {}): UseAutoScrollReturn {
-  const { threshold = 100, smooth = true, onScroll } = options
+  const { threshold = 100, smooth = true, onScroll } = options;
 
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [isAtBottom, setIsAtBottom] = useState(true)
-  const [shouldAutoScroll, setShouldAutoScroll] = useState(true)
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
   const checkIsAtBottom = useCallback(
     (container: HTMLElement): boolean => {
-      const { scrollTop, scrollHeight, clientHeight } = container
-      return scrollHeight - scrollTop - clientHeight <= threshold
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      return scrollHeight - scrollTop - clientHeight <= threshold;
     },
     [threshold]
-  )
+  );
 
   const handleScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
-      const container = e.currentTarget
-      const atBottom = checkIsAtBottom(container)
-      setIsAtBottom(atBottom)
-      setShouldAutoScroll(atBottom)
-      onScroll?.(atBottom)
+      const container = e.currentTarget;
+      const atBottom = checkIsAtBottom(container);
+      setIsAtBottom(atBottom);
+      setShouldAutoScroll(atBottom);
+      onScroll?.(atBottom);
     },
     [checkIsAtBottom, onScroll]
-  )
+  );
 
   const scrollToBottom = useCallback(
     (useSmooth?: boolean) => {
-      const container = containerRef.current
-      if (!container) return
+      const container = containerRef.current;
+      if (!container) {return;}
 
-      const shouldSmooth = useSmooth ?? smooth
+      const shouldSmooth = useSmooth ?? smooth;
       container.scrollTo({
         top: container.scrollHeight,
         behavior: shouldSmooth ? 'smooth' : 'auto',
-      })
-      setIsAtBottom(true)
-      setShouldAutoScroll(true)
+      });
+      setIsAtBottom(true);
+      setShouldAutoScroll(true);
     },
     [smooth]
-  )
+  );
 
   const setAutoScroll = useCallback((enabled: boolean) => {
-    setShouldAutoScroll(enabled)
+    setShouldAutoScroll(enabled);
     if (enabled) {
       // Scroll to bottom immediately when enabling
-      const container = containerRef.current
+      const container = containerRef.current;
       if (container) {
         container.scrollTo({
           top: container.scrollHeight,
           behavior: 'auto',
-        })
-        setIsAtBottom(true)
+        });
+        setIsAtBottom(true);
       }
     }
-  }, [])
+  }, []);
 
   // Auto-scroll when content changes (using MutationObserver)
   useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
+    const container = containerRef.current;
+    if (!container) {return;}
 
-    let rafId: number | null = null
+    let rafId: number | null = null;
     const observer = new MutationObserver(() => {
       if (shouldAutoScroll) {
         if (rafId === null) {
@@ -119,26 +119,26 @@ export function useAutoScroll(options: UseAutoScrollOptions = {}): UseAutoScroll
             container.scrollTo({
               top: container.scrollHeight,
               behavior: 'instant',
-            })
-            rafId = null
-          })
+            });
+            rafId = null;
+          });
         }
       }
-    })
+    });
 
     observer.observe(container, {
       childList: true,
       subtree: true,
       characterData: true,
-    })
+    });
 
     return () => {
-      observer.disconnect()
+      observer.disconnect();
       if (rafId !== null) {
-        cancelAnimationFrame(rafId)
+        cancelAnimationFrame(rafId);
       }
-    }
-  }, [shouldAutoScroll])
+    };
+  }, [shouldAutoScroll]);
 
   return {
     containerRef,
@@ -147,5 +147,5 @@ export function useAutoScroll(options: UseAutoScrollOptions = {}): UseAutoScroll
     scrollToBottom,
     setAutoScroll,
     handleScroll,
-  }
+  };
 }

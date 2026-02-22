@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react'
-import { CaretDown, Check, Copy, ClockCounterClockwise } from '@phosphor-icons/react'
-import { formatRelativeTime } from '../utils/dateFormatting'
-import { useTranslation } from '../hooks/useTranslation'
+import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
+import { CaretDown, Check, Copy, ClockCounterClockwise } from '@phosphor-icons/react';
+import { formatRelativeTime } from '../utils/dateFormatting';
+import { useTranslation } from '../hooks/useTranslation';
 
 const MarkdownRenderer = lazy(() =>
   import('./MarkdownRenderer').then((module) => ({ default: module.MarkdownRenderer }))
-)
+);
 
-const COPY_FEEDBACK_MS = 2000
-const COLLAPSED_HEIGHT = 160
+const COPY_FEEDBACK_MS = 2000;
+const COLLAPSED_HEIGHT = 160;
 
 interface SystemMessageProps {
   content: string
@@ -25,71 +25,71 @@ export function SystemMessage({
   hideActions = false,
   hideTimestamp = false,
 }: SystemMessageProps) {
-  const { t } = useTranslation()
-  const [isCopied, setIsCopied] = useState(false)
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [isExpandable, setIsExpandable] = useState(false)
-  const [contentHeight, setContentHeight] = useState<number | undefined>(undefined)
-  const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const contentRef = useRef<HTMLDivElement | null>(null)
+  const { t } = useTranslation();
+  const [isCopied, setIsCopied] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpandable, setIsExpandable] = useState(false);
+  const [contentHeight, setContentHeight] = useState<number | undefined>(undefined);
+  const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     return () => {
       if (copyFeedbackTimeoutRef.current) {
-        clearTimeout(copyFeedbackTimeoutRef.current)
-        copyFeedbackTimeoutRef.current = null
+        clearTimeout(copyFeedbackTimeoutRef.current);
+        copyFeedbackTimeoutRef.current = null;
       }
-    }
-  }, [])
+    };
+  }, []);
 
   useEffect(() => {
-    const node = contentRef.current
-    if (!node) return
+    const node = contentRef.current;
+    if (!node) {return;}
 
     const measure = () => {
-      const scrollH = node.scrollHeight
-      setContentHeight(scrollH)
+      const scrollH = node.scrollHeight;
+      setContentHeight(scrollH);
       if (!isExpanded) {
-        setIsExpandable(scrollH > COLLAPSED_HEIGHT + 1)
+        setIsExpandable(scrollH > COLLAPSED_HEIGHT + 1);
       }
-    }
+    };
 
-    measure()
+    measure();
 
     if (typeof ResizeObserver !== 'undefined') {
-      const observer = new ResizeObserver(measure)
-      observer.observe(node)
-      return () => observer.disconnect()
+      const observer = new ResizeObserver(measure);
+      observer.observe(node);
+      return () => observer.disconnect();
     }
 
-    window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
-  }, [content, isExpanded])
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [content, isExpanded]);
 
   const handleCopyClick = useCallback(async () => {
     try {
       if (onCopy) {
-        await onCopy(content)
+        await onCopy(content);
       } else {
-        await navigator.clipboard.writeText(content)
+        await navigator.clipboard.writeText(content);
       }
 
-      setIsCopied(true)
+      setIsCopied(true);
       if (copyFeedbackTimeoutRef.current) {
-        clearTimeout(copyFeedbackTimeoutRef.current)
+        clearTimeout(copyFeedbackTimeoutRef.current);
       }
       copyFeedbackTimeoutRef.current = setTimeout(() => {
-        setIsCopied(false)
-        copyFeedbackTimeoutRef.current = null
-      }, COPY_FEEDBACK_MS)
+        setIsCopied(false);
+        copyFeedbackTimeoutRef.current = null;
+      }, COPY_FEEDBACK_MS);
     } catch {
-      setIsCopied(false)
+      setIsCopied(false);
     }
-  }, [content, onCopy])
+  }, [content, onCopy]);
 
-  const timestamp = formatRelativeTime(createdAt, t)
+  const timestamp = formatRelativeTime(createdAt, t);
 
-  const resolvedHeight = isExpanded ? contentHeight : COLLAPSED_HEIGHT
+  const resolvedHeight = isExpanded ? contentHeight : COLLAPSED_HEIGHT;
 
   return (
     <div className="flex justify-center">
@@ -186,7 +186,7 @@ export function SystemMessage({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default SystemMessage
+export default SystemMessage;

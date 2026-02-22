@@ -2,8 +2,8 @@
  * Applet Frontend Kit: Vite config helpers for applets running behind a base path
  * with dev proxy and optional local SDK aliasing.
  */
-import type { UserConfig } from 'vite'
-import path from 'node:path'
+import type { UserConfig } from 'vite';
+import path from 'node:path';
 
 export type AppletViteOptions = {
   /** Applet base path (e.g. "/admin/ali/chat" or "/bi-chat"). */
@@ -18,24 +18,24 @@ export type AppletViteOptions = {
   extend?: UserConfig
 }
 
-const DEFAULT_DEDUPE = ['react', 'react-dom', 'react-router-dom', 'react-is']
+const DEFAULT_DEDUPE = ['react', 'react-dom', 'react-router-dom', 'react-is'];
 
 /**
  * Returns base URL for assets (with trailing slash). Uses APPLET_ASSETS_BASE env if set, otherwise derives from basePath.
  */
 export function getAppletAssetsBase(basePath: string): string {
-  const base = process.env.APPLET_ASSETS_BASE ?? basePath + '/assets/'
-  return base.endsWith('/') ? base : base + '/'
+  const base = process.env.APPLET_ASSETS_BASE ?? basePath + '/assets/';
+  return base.endsWith('/') ? base : base + '/';
 }
 
 /**
  * Returns dev server port from APPLET_VITE_PORT env, or the given default.
  */
 export function getAppletVitePort(defaultPort = 5173): number {
-  const p = process.env.APPLET_VITE_PORT
-  if (p === undefined || p === '') return defaultPort
-  const n = Number(p)
-  return Number.isFinite(n) ? n : defaultPort
+  const p = process.env.APPLET_VITE_PORT;
+  if (p === undefined || p === '') {return defaultPort;}
+  const n = Number(p);
+  return Number.isFinite(n) ? n : defaultPort;
 }
 
 /**
@@ -48,8 +48,8 @@ export function getAppletVitePort(defaultPort = 5173): number {
  * To fully override the base config, spread first: `defineConfig({ ...createAppletViteConfig(opts), ...yourOverrides })`.
  */
 export function createAppletViteConfig(opts: AppletViteOptions): UserConfig {
-  const base = getAppletAssetsBase(opts.basePath)
-  const port = getAppletVitePort(5173)
+  const base = getAppletAssetsBase(opts.basePath);
+  const port = getAppletVitePort(5173);
   const config: UserConfig = {
     base,
     resolve: {
@@ -67,11 +67,11 @@ export function createAppletViteConfig(opts: AppletViteOptions): UserConfig {
         backendUrl: opts.backendUrl,
       }),
     },
-  }
+  };
   if (opts.extend) {
-    return mergeConfig(config, opts.extend)
+    return mergeConfig(config, opts.extend);
   }
-  return config
+  return config;
 }
 
 /**
@@ -83,12 +83,12 @@ export function createAppletBackendProxy(opts: {
   basePath: string
   backendUrl: string
 }): Record<string, string> {
-  const base = opts.basePath.replace(/\/+$/, '')
-  const target = opts.backendUrl.replace(/\/+$/, '')
+  const base = opts.basePath.replace(/\/+$/, '');
+  const target = opts.backendUrl.replace(/\/+$/, '');
   return {
     [base + '/rpc']: target,
     [base + '/stream']: target,
-  }
+  };
 }
 
 /**
@@ -99,14 +99,14 @@ export function createLocalSdkAliases(opts?: {
   enabled?: boolean
   sdkDistDir?: string
 }): Array<{ find: string | RegExp; replacement: string }> {
-  const enabled = opts?.enabled ?? Boolean(opts?.sdkDistDir ?? process.env.IOTA_SDK_DIST)
-  const dir = opts?.sdkDistDir ?? process.env.IOTA_SDK_DIST
-  if (!enabled || !dir) return []
-  const sdkDist = path.resolve(dir)
+  const enabled = opts?.enabled ?? Boolean(opts?.sdkDistDir ?? process.env.IOTA_SDK_DIST);
+  const dir = opts?.sdkDistDir ?? process.env.IOTA_SDK_DIST;
+  if (!enabled || !dir) {return [];}
+  const sdkDist = path.resolve(dir);
   return [
     { find: /^@iota-uz\/sdk\/bichat$/, replacement: path.join(sdkDist, 'bichat/index.mjs') },
     { find: /^@iota-uz\/sdk$/, replacement: path.join(sdkDist, 'index.mjs') },
-  ]
+  ];
 }
 
 /**
@@ -116,36 +116,36 @@ export function createLocalSdkAliases(opts?: {
  * actually arrays (concat); otherwise leave Record/object as-is and prefer b's value then a's.
  */
 function mergeConfig(a: UserConfig, b: UserConfig): UserConfig {
-  const aResolve = a.resolve
-  const bResolve = b.resolve
-  const aServer = a.server
-  const bServer = b.server
-  const aPlugins = a.plugins
-  const bPlugins = b.plugins
+  const aResolve = a.resolve;
+  const bResolve = b.resolve;
+  const aServer = a.server;
+  const bServer = b.server;
+  const aPlugins = a.plugins;
+  const bPlugins = b.plugins;
 
-  const merged: UserConfig = { ...a, ...b }
+  const merged: UserConfig = { ...a, ...b };
 
   if (bResolve) {
-    const aAlias = aResolve?.alias
-    const bAlias = bResolve.alias
-    const aIsArray = Array.isArray(aAlias)
-    const bIsArray = Array.isArray(bAlias)
+    const aAlias = aResolve?.alias;
+    const bAlias = bResolve.alias;
+    const aIsArray = Array.isArray(aAlias);
+    const bIsArray = Array.isArray(bAlias);
     const alias =
       aIsArray && bIsArray
         ? [...(aAlias as Array<{ find: string | RegExp; replacement: string }>), ...(bAlias as Array<{ find: string | RegExp; replacement: string }>)]
-        : (bAlias !== undefined ? bAlias : aResolve?.alias)
+        : (bAlias !== undefined ? bAlias : aResolve?.alias);
     merged.resolve = {
       ...aResolve,
       ...bResolve,
       alias,
       dedupe: bResolve.dedupe ?? merged.resolve?.dedupe ?? aResolve?.dedupe,
-    }
+    };
   }
   if (bServer) {
-    merged.server = { ...aServer, ...bServer }
+    merged.server = { ...aServer, ...bServer };
   }
   if (bPlugins) {
-    merged.plugins = [...(aPlugins ?? []), ...bPlugins]
+    merged.plugins = [...(aPlugins ?? []), ...bPlugins];
   }
-  return merged
+  return merged;
 }

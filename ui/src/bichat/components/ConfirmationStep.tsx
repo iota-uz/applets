@@ -4,8 +4,8 @@
  * Supports both predefined options and custom "Other" text
  */
 
-import { type Question, type QuestionAnswers } from '../types'
-import { useTranslation } from '../hooks/useTranslation'
+import { type Question, type QuestionAnswers } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface ConfirmationStepProps {
   questions: Question[]
@@ -16,7 +16,7 @@ export default function ConfirmationStep({
   questions,
   answers,
 }: ConfirmationStepProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   return (
     <div className="space-y-6">
@@ -33,11 +33,11 @@ export default function ConfirmationStep({
       {/* Questions Summary */}
       <div className="space-y-4">
         {questions.map((question) => {
-          const answerData = answers[question.id] || { options: [] }
-          const selectedOptions = answerData.options || []
-          const customText = answerData.customText
+          const answerData = answers[question.id] || { options: [] };
+          const selectedOptions = answerData.options || [];
+          const customText = answerData.customText;
 
-          const hasAnswer = selectedOptions.length > 0 || !!customText
+          const hasAnswer = selectedOptions.length > 0 || !!customText;
 
           return (
             <div
@@ -76,9 +76,9 @@ export default function ConfirmationStep({
                 </p>
               )}
             </div>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }

@@ -13,14 +13,14 @@
 export const mobileViewport = {
   viewport: { defaultViewport: 'mobile' },
   layout: 'fullscreen' as const,
-}
+};
 
 export const tabletViewport = {
   viewport: { defaultViewport: 'tablet' },
   layout: 'fullscreen' as const,
-}
+};
 
 export const desktopViewport = {
   viewport: { defaultViewport: 'desktop' },
   layout: 'fullscreen' as const,
-}
+};

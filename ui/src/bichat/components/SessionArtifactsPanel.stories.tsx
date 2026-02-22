@@ -1,8 +1,8 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { SessionArtifactsPanel } from './SessionArtifactsPanel'
-import { MockChatDataSource } from '@sb-helpers/mockChatDataSource'
-import type { ChatDataSource, SessionArtifact } from '../types'
+import { SessionArtifactsPanel } from './SessionArtifactsPanel';
+import { MockChatDataSource } from '@sb-helpers/mockChatDataSource';
+import type { ChatDataSource, SessionArtifact } from '../types';
 
 const meta: Meta<typeof SessionArtifactsPanel> = {
   title: 'BiChat/Components/SessionArtifactsPanel',
@@ -15,12 +15,12 @@ const meta: Meta<typeof SessionArtifactsPanel> = {
       </div>
     ),
   ],
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof SessionArtifactsPanel>
 
-const now = new Date().toISOString()
+const now = new Date().toISOString();
 
 const mockArtifacts: SessionArtifact[] = [
   {
@@ -51,10 +51,10 @@ const mockArtifacts: SessionArtifact[] = [
     sizeBytes: 2048,
     createdAt: now,
   },
-]
+];
 
 function makeDataSourceWithArtifacts(artifacts: SessionArtifact[]): ChatDataSource {
-  const base = new MockChatDataSource()
+  const base = new MockChatDataSource();
   return {
     ...base,
     createSession: base.createSession.bind(base),
@@ -76,11 +76,11 @@ function makeDataSourceWithArtifacts(artifacts: SessionArtifact[]): ChatDataSour
       artifacts,
       hasMore: false,
     }),
-  }
+  };
 }
 
 function makeLoadingDataSource(): ChatDataSource {
-  const base = new MockChatDataSource()
+  const base = new MockChatDataSource();
   return {
     ...base,
     createSession: base.createSession.bind(base),
@@ -99,7 +99,7 @@ function makeLoadingDataSource(): ChatDataSource {
     renameSession: base.renameSession.bind(base),
     regenerateSessionTitle: base.regenerateSessionTitle.bind(base),
     fetchSessionArtifacts: () => new Promise(() => {}), // never resolves
-  }
+  };
 }
 
 export const Playground: Story = {
@@ -109,7 +109,7 @@ export const Playground: Story = {
     isStreaming: false,
     artifactsInvalidationTrigger: 0,
   },
-}
+};
 
 export const Empty: Story = {
   args: {
@@ -118,7 +118,7 @@ export const Empty: Story = {
     isStreaming: false,
     artifactsInvalidationTrigger: 0,
   },
-}
+};
 
 export const Loading: Story = {
   args: {
@@ -127,4 +127,4 @@ export const Loading: Story = {
     isStreaming: false,
     artifactsInvalidationTrigger: 0,
   },
-}
+};

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useAppletContext } from '../applet-core/context/AppletContext'
-import { useAppletRuntime } from '../applet-core/hooks/useAppletRuntime'
+import { useEffect, useMemo, useState } from 'react';
+import { useAppletContext } from '../applet-core/context/AppletContext';
+import { useAppletRuntime } from '../applet-core/hooks/useAppletRuntime';
 
 type RPCEvent = {
   id: string
@@ -11,20 +11,20 @@ type RPCEvent = {
 }
 
 export function AppletDevtoolsOverlay() {
-  const ctx = useAppletContext()
-  const runtime = useAppletRuntime()
-  const [rpcEvents, setRPCEvents] = useState<RPCEvent[]>([])
+  const ctx = useAppletContext();
+  const runtime = useAppletRuntime();
+  const [rpcEvents, setRPCEvents] = useState<RPCEvent[]>([]);
 
   useEffect(() => {
     const onEvent = (e: Event) => {
-      if (!(e instanceof CustomEvent)) return
-      const detail = (e as CustomEvent<RPCEvent>).detail
-      if (!detail) return
-      setRPCEvents((prev) => [detail, ...prev].slice(0, 50))
-    }
-    window.addEventListener('iota:applet-rpc', onEvent as EventListener)
-    return () => window.removeEventListener('iota:applet-rpc', onEvent as EventListener)
-  }, [])
+      if (!(e instanceof CustomEvent)) {return;}
+      const detail = (e as CustomEvent<RPCEvent>).detail;
+      if (!detail) {return;}
+      setRPCEvents((prev) => [detail, ...prev].slice(0, 50));
+    };
+    window.addEventListener('iota:applet-rpc', onEvent as EventListener);
+    return () => window.removeEventListener('iota:applet-rpc', onEvent as EventListener);
+  }, []);
 
   const summary = useMemo(() => {
     return {
@@ -35,8 +35,8 @@ export function AppletDevtoolsOverlay() {
       route: ctx.route,
       user: { id: ctx.user.id, email: ctx.user.email },
       tenant: ctx.tenant,
-    }
-  }, [ctx.route, ctx.tenant, ctx.user.email, ctx.user.id, runtime.assetsBasePath, runtime.basePath, runtime.rpcEndpoint, runtime.shellMode])
+    };
+  }, [ctx.route, ctx.tenant, ctx.user.email, ctx.user.id, runtime.assetsBasePath, runtime.basePath, runtime.rpcEndpoint, runtime.shellMode]);
 
   return (
     <div
@@ -93,7 +93,7 @@ export function AppletDevtoolsOverlay() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 function serializeError(err: unknown): unknown {
@@ -101,13 +101,13 @@ function serializeError(err: unknown): unknown {
     const out: Record<string, unknown> = {
       name: err.name,
       message: err.message,
-    }
-    if (err.stack) out.stack = err.stack
-    const errRecord = err as unknown as Record<string, unknown>
-    if ('code' in err && typeof errRecord.code === 'string') out.code = errRecord.code
-    if ('details' in err) out.details = errRecord.details
-    if ('cause' in err) out.cause = errRecord.cause
-    return out
+    };
+    if (err.stack) {out.stack = err.stack;}
+    const errRecord = err as unknown as Record<string, unknown>;
+    if ('code' in err && typeof errRecord.code === 'string') {out.code = errRecord.code;}
+    if ('details' in err) {out.details = errRecord.details;}
+    if ('cause' in err) {out.cause = errRecord.cause;}
+    return out;
   }
-  return err
+  return err;
 }

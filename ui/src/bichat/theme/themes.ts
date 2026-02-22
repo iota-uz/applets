@@ -2,7 +2,7 @@
  * Predefined theme configurations
  */
 
-import { Theme } from './types'
+import { Theme } from './types';
 
 export const lightTheme: Theme = {
   name: 'light',
@@ -35,7 +35,7 @@ export const lightTheme: Theme = {
     lg: '0.75rem',
     full: '9999px',
   },
-}
+};
 
 export const darkTheme: Theme = {
   name: 'dark',
@@ -68,4 +68,4 @@ export const darkTheme: Theme = {
     lg: '0.75rem',
     full: '9999px',
   },
-}
+};

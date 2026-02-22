@@ -14,14 +14,14 @@ import type {
   SessionUser,
   UserTurn,
   ImageAttachment,
-} from '../../src/bichat/types'
-import { MessageRole } from '../../src/bichat/types'
+} from '../../src/bichat/types';
+import { MessageRole } from '../../src/bichat/types';
 
-import { base64FromDataUrl, largeImageDataUrl, smallImageDataUrl } from './imageFixtures'
-import { flowingMarkdown, largeText, veryLargeText } from './textFixtures'
+import { base64FromDataUrl, largeImageDataUrl, smallImageDataUrl } from './imageFixtures';
+import { flowingMarkdown, largeText, veryLargeText } from './textFixtures';
 
 function isoNow(offsetMs = 0) {
-  return new Date(Date.now() + offsetMs).toISOString()
+  return new Date(Date.now() + offsetMs).toISOString();
 }
 
 export function makeSession(partial?: Partial<Session>): Session {
@@ -32,7 +32,7 @@ export function makeSession(partial?: Partial<Session>): Session {
     pinned: partial?.pinned ?? false,
     createdAt: partial?.createdAt ?? isoNow(-1000 * 60 * 60),
     updatedAt: partial?.updatedAt ?? isoNow(-1000 * 60 * 5),
-  }
+  };
 }
 
 export function makeCitation(partial?: Partial<Citation>): Citation {
@@ -44,7 +44,7 @@ export function makeCitation(partial?: Partial<Citation>): Citation {
     startIndex: partial?.startIndex ?? 0,
     endIndex: partial?.endIndex ?? 10,
     excerpt: partial?.excerpt,
-  }
+  };
 }
 
 export function makeChartData(overrides?: Partial<ChartData>): ChartData {
@@ -62,7 +62,7 @@ export function makeChartData(overrides?: Partial<ChartData>): ChartData {
       ],
     colors: overrides?.colors,
     height: overrides?.height,
-  }
+  };
 }
 
 export function makeCodeOutputs(): CodeOutput[] {
@@ -81,7 +81,7 @@ export function makeCodeOutputs(): CodeOutput[] {
       mimeType: 'image/png',
       sizeBytes: 42_000,
     },
-  ]
+  ];
 }
 
 export function makeArtifacts(): Artifact[] {
@@ -101,7 +101,7 @@ export function makeArtifacts(): Artifact[] {
       sizeReadable: '2.1 MB',
       description: 'Generated report',
     },
-  ]
+  ];
 }
 
 export function makeAttachment(partial?: Partial<Attachment>): Attachment {
@@ -112,11 +112,11 @@ export function makeAttachment(partial?: Partial<Attachment>): Attachment {
     mimeType: partial?.mimeType ?? 'image/svg+xml',
     sizeBytes: partial?.sizeBytes ?? 12345,
     base64Data: partial?.base64Data,
-  }
+  };
 }
 
 export function makeImageAttachment(partial?: Partial<ImageAttachment>): ImageAttachment {
-  const preview = partial?.preview ?? smallImageDataUrl
+  const preview = partial?.preview ?? smallImageDataUrl;
   return {
     clientKey: partial?.clientKey ?? crypto.randomUUID(),
     id: partial?.id,
@@ -125,45 +125,45 @@ export function makeImageAttachment(partial?: Partial<ImageAttachment>): ImageAt
     sizeBytes: partial?.sizeBytes ?? 12345,
     base64Data: partial?.base64Data ?? base64FromDataUrl(preview),
     preview,
-  }
+  };
 }
 
 export function makeUserTurn(partial?: Partial<UserTurn>): UserTurn {
-  const now = isoNow(-1000 * 60 * 3)
+  const now = isoNow(-1000 * 60 * 3);
   return {
     id: partial?.id ?? `user-${Math.random().toString(36).slice(2)}`,
     content: partial?.content ?? 'Show me the revenue breakdown by region for the last quarter.',
     attachments: partial?.attachments ?? [],
     createdAt: partial?.createdAt ?? now,
-  }
+  };
 }
 
 export function makeAssistantTurn(partial?: Partial<AssistantTurn>): AssistantTurn {
-  const now = isoNow(-1000 * 60 * 2)
+  const now = isoNow(-1000 * 60 * 2);
   return {
     id: partial?.id ?? `asst-${Math.random().toString(36).slice(2)}`,
     role: partial?.role ?? MessageRole.Assistant,
     content: partial?.content ?? flowingMarkdown,
     explanation: partial?.explanation,
     citations: partial?.citations ?? [makeCitation(), makeCitation({ title: 'Internal dashboard', url: '#' })],
-    chartData: partial?.chartData,
+    charts: partial?.charts,
     artifacts: partial?.artifacts ?? [],
     codeOutputs: partial?.codeOutputs ?? [],
     lifecycle: partial?.lifecycle ?? 'complete',
     createdAt: partial?.createdAt ?? now,
-  }
+  };
 }
 
 export function makeConversationTurn(partial?: Partial<ConversationTurn>): ConversationTurn {
-  const now = isoNow(-1000 * 60 * 4)
-  const sessionId = partial?.sessionId ?? 'session-1'
+  const now = isoNow(-1000 * 60 * 4);
+  const sessionId = partial?.sessionId ?? 'session-1';
   return {
     id: partial?.id ?? `turn-${Math.random().toString(36).slice(2)}`,
     sessionId,
     userTurn: partial?.userTurn ?? makeUserTurn(),
     assistantTurn: partial?.assistantTurn,
     createdAt: partial?.createdAt ?? now,
-  }
+  };
 }
 
 export function makePendingQuestion(partial?: Partial<PendingQuestion>): PendingQuestion {
@@ -177,13 +177,13 @@ export function makePendingQuestion(partial?: Partial<PendingQuestion>): Pending
       { id: 'o-2', label: 'APAC', value: 'APAC' },
       { id: 'o-3', label: 'AMER', value: 'AMER' },
     ],
-  }
+  };
   return {
     id: partial?.id ?? 'pending-1',
     turnId: partial?.turnId ?? 'turn-1',
     questions: partial?.questions ?? [q],
     status: partial?.status ?? 'PENDING',
-  }
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -191,7 +191,7 @@ export function makePendingQuestion(partial?: Partial<PendingQuestion>): Pending
 // ---------------------------------------------------------------------------
 
 export function makeActivityStep(partial?: Partial<ActivityStep>): ActivityStep {
-  const now = Date.now()
+  const now = Date.now();
   return {
     id: partial?.id ?? `step-${Math.random().toString(36).slice(2)}`,
     type: partial?.type ?? 'tool',
@@ -202,11 +202,11 @@ export function makeActivityStep(partial?: Partial<ActivityStep>): ActivityStep 
     startedAt: partial?.startedAt ?? now,
     completedAt: partial?.completedAt,
     durationMs: partial?.durationMs,
-  }
+  };
 }
 
 export function makeActivitySteps(): ActivityStep[] {
-  const now = Date.now()
+  const now = Date.now();
   return [
     makeActivityStep({
       id: 'step-1',
@@ -234,11 +234,11 @@ export function makeActivitySteps(): ActivityStep[] {
       status: 'active',
       startedAt: now - 500,
     }),
-  ]
+  ];
 }
 
 export function makeAgentActivitySteps(): ActivityStep[] {
-  const now = Date.now()
+  const now = Date.now();
   return [
     makeActivityStep({
       id: 'step-4',
@@ -259,7 +259,7 @@ export function makeAgentActivitySteps(): ActivityStep[] {
       status: 'active',
       startedAt: now - 300,
     }),
-  ]
+  ];
 }
 
 // ---------------------------------------------------------------------------
@@ -286,7 +286,7 @@ export function makeRenderTableData(partial?: Partial<RenderTableData>): RenderT
     truncated: partial?.truncated ?? false,
     export: partial?.export,
     exportPrompt: partial?.exportPrompt,
-  }
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -299,7 +299,7 @@ export function makeSessionUser(partial?: Partial<SessionUser>): SessionUser {
     firstName: partial?.firstName ?? 'Story',
     lastName: partial?.lastName ?? 'Book',
     initials: partial?.initials ?? 'SB',
-  }
+  };
 }
 
 export function makeSessions(count = 8): Session[] {
@@ -314,17 +314,17 @@ export function makeSessions(count = 8): Session[] {
     'User retention analysis',
     'Supply chain optimization',
     'Sales pipeline review',
-  ]
+  ];
   return Array.from({ length: count }).map((_, i) => {
-    const dayOffset = i * 24 * 60 * 60 * 1000
+    const dayOffset = i * 24 * 60 * 60 * 1000;
     return makeSession({
       id: `session-${i + 1}`,
       title: titles[i % titles.length],
       pinned: i < 2,
       createdAt: isoNow(-dayOffset - 3600000),
       updatedAt: isoNow(-dayOffset),
-    })
-  })
+    });
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -336,17 +336,17 @@ export const turnsShort: ConversationTurn[] = [
     id: 'turn-1',
     assistantTurn: makeAssistantTurn({
       content: largeText,
-      chartData: makeChartData(),
+      charts: [makeChartData()],
       artifacts: makeArtifacts(),
       codeOutputs: makeCodeOutputs(),
     }),
   }),
-]
+];
 
 export const turnsLong: ConversationTurn[] = Array.from({ length: 24 }).map((_, i) => {
-  const hasChart = i % 6 === 0
-  const hasArtifacts = i % 8 === 0
-  const hasCode = i % 7 === 0
+  const hasChart = i % 6 === 0;
+  const hasArtifacts = i % 8 === 0;
+  const hasCode = i % 7 === 0;
   return makeConversationTurn({
     id: `turn-${i + 1}`,
     createdAt: isoNow(-1000 * 60 * (60 - i)),
@@ -369,9 +369,9 @@ export const turnsLong: ConversationTurn[] = Array.from({ length: 24 }).map((_, 
       id: `asst-${i + 1}`,
       createdAt: isoNow(-1000 * 60 * (60 - i) + 1000 * 10),
       content: i % 3 === 0 ? flowingMarkdown : largeText,
-      chartData: hasChart ? makeChartData({ title: `Chart ${i + 1}` }) : undefined,
+      charts: hasChart ? [makeChartData({ title: `Chart ${i + 1}` })] : undefined,
       artifacts: hasArtifacts ? makeArtifacts() : [],
       codeOutputs: hasCode ? makeCodeOutputs() : [],
     }),
-  })
-})
+  });
+});

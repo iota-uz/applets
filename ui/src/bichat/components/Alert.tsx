@@ -3,11 +3,11 @@
  * Standardized error/success/warning/info messages with retry capability
  */
 
-import { memo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X, Warning, CheckCircle, Info, XCircle } from '@phosphor-icons/react'
-import { errorMessageVariants } from '../animations/variants'
-import { useTranslation } from '../hooks/useTranslation'
+import { memo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Warning, CheckCircle, Info, XCircle } from '@phosphor-icons/react';
+import { errorMessageVariants } from '../animations/variants';
+import { useTranslation } from '../hooks/useTranslation';
 
 export type AlertVariant = 'error' | 'success' | 'warning' | 'info'
 
@@ -58,7 +58,7 @@ const variantStyles = {
     retryButton: 'bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800 text-white',
     Icon: Info,
   },
-}
+};
 
 function Alert({
   variant = 'info',
@@ -69,9 +69,9 @@ function Alert({
   show = true,
   dismissible = true,
 }: AlertProps) {
-  const { t } = useTranslation()
-  const styles = variantStyles[variant]
-  const IconComponent = styles.Icon
+  const { t } = useTranslation();
+  const styles = variantStyles[variant];
+  const IconComponent = styles.Icon;
 
   return (
     <AnimatePresence>
@@ -121,7 +121,7 @@ function Alert({
         </motion.div>
       )}
     </AnimatePresence>
-  )
+  );
 }
 
-export default memo(Alert)
+export default memo(Alert);

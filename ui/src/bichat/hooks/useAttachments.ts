@@ -3,9 +3,9 @@
  * Manages file upload state, validation, and preview
  */
 
-import { useState, useCallback, useMemo, useRef } from 'react'
-import type { Attachment } from '../types'
-import { convertToBase64, createDataUrl, validateAttachmentFile } from '../utils/fileUtils'
+import { useState, useCallback, useMemo, useRef } from 'react';
+import type { Attachment } from '../types';
+import { convertToBase64, createDataUrl, validateAttachmentFile } from '../utils/fileUtils';
 
 export interface FileValidationError {
   file: File
@@ -53,9 +53,9 @@ export interface UseAttachmentsReturn {
   setFiles: (files: Attachment[]) => void
 }
 
-const DEFAULT_MAX_FILES = 10
-const DEFAULT_MAX_FILE_SIZE = 20 * 1024 * 1024 // 20MB
-const DEFAULT_ALLOWED_TYPES: string[] = []
+const DEFAULT_MAX_FILES = 10;
+const DEFAULT_MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+const DEFAULT_ALLOWED_TYPES: string[] = [];
 
 /**
  * Hook for managing file attachments
@@ -97,15 +97,15 @@ export function useAttachments(options: UseAttachmentsOptions = {}): UseAttachme
     onAdd,
     onRemove,
     onError,
-  } = options
+  } = options;
 
-  const [files, setFiles] = useState<Attachment[]>([])
-  const [errors, setErrors] = useState<FileValidationError[]>([])
-  const [isProcessing, setIsProcessing] = useState(false)
-  const removedRef = useRef<Attachment | null>(null)
+  const [files, setFiles] = useState<Attachment[]>([]);
+  const [errors, setErrors] = useState<FileValidationError[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const removedRef = useRef<Attachment | null>(null);
 
-  const isMaxReached = useMemo(() => files.length >= maxFiles, [files.length, maxFiles])
-  const remainingSlots = useMemo(() => Math.max(0, maxFiles - files.length), [files.length, maxFiles])
+  const isMaxReached = useMemo(() => files.length >= maxFiles, [files.length, maxFiles]);
+  const remainingSlots = useMemo(() => Math.max(0, maxFiles - files.length), [files.length, maxFiles]);
 
   const validateFile = useCallback(
     (file: File, currentCount: number): FileValidationError | null => {
@@ -115,7 +115,7 @@ export function useAttachments(options: UseAttachmentsOptions = {}): UseAttachme
           file,
           reason: 'count',
           message: `Maximum ${maxFiles} files allowed`,
-        }
+        };
       }
 
       if (allowedTypes.length > 0) {
@@ -124,74 +124,74 @@ export function useAttachments(options: UseAttachmentsOptions = {}): UseAttachme
             file,
             reason: 'type',
             message: `File type "${file.type || 'unknown'}" not allowed`,
-          }
+          };
         }
         if (file.size > maxFileSize) {
-          const maxSizeMB = (maxFileSize / (1024 * 1024)).toFixed(1)
+          const maxSizeMB = (maxFileSize / (1024 * 1024)).toFixed(1);
           return {
             file,
             reason: 'size',
             message: `File "${file.name}" exceeds ${maxSizeMB}MB limit`,
-          }
+          };
         }
       } else {
         try {
-          validateAttachmentFile(file, maxFileSize)
+          validateAttachmentFile(file, maxFileSize);
         } catch (err) {
-          const message = err instanceof Error ? err.message : `File "${file.name}" is not allowed`
-          const reason: FileValidationError['reason'] = message.includes('large') ? 'size' : 'type'
+          const message = err instanceof Error ? err.message : `File "${file.name}" is not allowed`;
+          const reason: FileValidationError['reason'] = message.includes('large') ? 'size' : 'type';
           return {
             file,
             reason,
             message,
-          }
+          };
         }
       }
 
       // Custom validation
       if (validate) {
-        const customError = validate(file)
+        const customError = validate(file);
         if (customError) {
           return {
             file,
             reason: 'custom',
             message: customError,
-          }
+          };
         }
       }
 
-      return null
+      return null;
     },
     [maxFiles, maxFileSize, allowedTypes, validate]
-  )
+  );
 
   const add = useCallback(
     async (newFiles: FileList | File[]) => {
       if (isProcessing) {
-        const fileArray = Array.from(newFiles)
+        const fileArray = Array.from(newFiles);
         if (fileArray.length > 0) {
           const processingErrors = fileArray.map((file) => ({
             file,
             reason: 'custom' as const,
             message: 'Please wait for the current files to finish processing.',
-          }))
-          setErrors(processingErrors)
-          onError?.(processingErrors)
+          }));
+          setErrors(processingErrors);
+          onError?.(processingErrors);
         }
-        return
+        return;
       }
 
-      setIsProcessing(true)
-      const fileArray = Array.from(newFiles)
-      const validationErrors: FileValidationError[] = []
-      const validFiles: Attachment[] = []
-      let currentCount = files.length
+      setIsProcessing(true);
+      const fileArray = Array.from(newFiles);
+      const validationErrors: FileValidationError[] = [];
+      const validFiles: Attachment[] = [];
+      let currentCount = files.length;
 
       for (const file of fileArray) {
-        const error = validateFile(file, currentCount)
+        const error = validateFile(file, currentCount);
         if (error) {
-          validationErrors.push(error)
-          continue
+          validationErrors.push(error);
+          continue;
         }
 
         // Create attachment object
@@ -200,68 +200,68 @@ export function useAttachments(options: UseAttachmentsOptions = {}): UseAttachme
           filename: file.name,
           mimeType: file.type,
           sizeBytes: file.size,
-        }
+        };
 
         try {
-          const base64Data = await convertToBase64(file)
-          attachment.base64Data = base64Data
+          const base64Data = await convertToBase64(file);
+          attachment.base64Data = base64Data;
           if (file.type.startsWith('image/')) {
-            attachment.preview = createDataUrl(base64Data, file.type)
+            attachment.preview = createDataUrl(base64Data, file.type);
           }
         } catch {
           // Continue without content if conversion fails.
         }
 
-        validFiles.push(attachment)
-        currentCount++
+        validFiles.push(attachment);
+        currentCount++;
       }
 
       if (validationErrors.length > 0) {
-        setErrors(validationErrors)
-        onError?.(validationErrors)
+        setErrors(validationErrors);
+        onError?.(validationErrors);
       }
 
       if (validFiles.length > 0) {
-        setFiles((prev) => [...prev, ...validFiles])
-        onAdd?.(validFiles)
+        setFiles((prev) => [...prev, ...validFiles]);
+        onAdd?.(validFiles);
       }
 
-      setIsProcessing(false)
+      setIsProcessing(false);
     },
     [files.length, validateFile, onAdd, onError, isProcessing]
-  )
+  );
 
   const remove = useCallback(
     (fileOrId: Attachment | string) => {
-      const id = typeof fileOrId === 'string' ? fileOrId : fileOrId.id
+      const id = typeof fileOrId === 'string' ? fileOrId : fileOrId.id;
       setFiles((prev) => {
-        const removed = prev.find((f) => f.id === id) ?? null
-        const next = prev.filter((f) => f.id !== id)
-        removedRef.current = removed
-        return next
-      })
+        const removed = prev.find((f) => f.id === id) ?? null;
+        const next = prev.filter((f) => f.id !== id);
+        removedRef.current = removed;
+        return next;
+      });
 
-      const removed = removedRef.current
+      const removed = removedRef.current;
       if (removed) {
-        onRemove?.(removed)
-        removedRef.current = null
+        onRemove?.(removed);
+        removedRef.current = null;
       }
     },
     [onRemove]
-  )
+  );
 
   const clear = useCallback(() => {
-    setFiles([])
-    setErrors([])
-  }, [])
+    setFiles([]);
+    setErrors([]);
+  }, []);
 
   const clearErrors = useCallback(() => {
-    setErrors([])
-  }, [])
+    setErrors([]);
+  }, []);
 
   const setFilesHandler = useCallback((newFiles: Attachment[]) => {
-    setFiles(newFiles)
-  }, [])
+    setFiles(newFiles);
+  }, []);
 
   return {
     files,
@@ -274,5 +274,5 @@ export function useAttachments(options: UseAttachmentsOptions = {}): UseAttachme
     clear,
     clearErrors,
     setFiles: setFilesHandler,
-  }
+  };
 }

@@ -3,16 +3,16 @@
  * for Shadow DOM injection (defineReactAppletElement({ styles })).
  * Can compile CSS via Tailwind CLI in the plugin or fall back to reading a prebuilt file.
  */
-import type { Plugin } from 'vite'
-import { spawnSync } from 'node:child_process'
-import crypto from 'node:crypto'
-import fs from 'node:fs'
-import { createRequire } from 'node:module'
-import os from 'node:os'
-import path from 'node:path'
+import type { Plugin } from 'vite';
+import { spawnSync } from 'node:child_process';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import { createRequire } from 'node:module';
+import os from 'node:os';
+import path from 'node:path';
 
-export const VIRTUAL_APPLET_STYLES_ID = 'virtual:applet-styles'
-const RESOLVED_ID = '\0' + VIRTUAL_APPLET_STYLES_ID
+export const VIRTUAL_APPLET_STYLES_ID = 'virtual:applet-styles';
+const RESOLVED_ID = '\0' + VIRTUAL_APPLET_STYLES_ID;
 
 export type AppletStylesVirtualModuleOptions = {
   /**
@@ -44,17 +44,17 @@ export type AppletStylesVirtualModuleOptions = {
  */
 function resolvePrependPath(specifierOrPath: string, root: string): string | null {
   if (path.isAbsolute(specifierOrPath)) {
-    return specifierOrPath
+    return specifierOrPath;
   }
   if (!specifierOrPath.startsWith('.') && !specifierOrPath.startsWith('/')) {
     try {
-      const req = createRequire(path.join(root, 'package.json'))
-      return req.resolve(specifierOrPath)
+      const req = createRequire(path.join(root, 'package.json'));
+      return req.resolve(specifierOrPath);
     } catch {
-      return null
+      return null;
     }
   }
-  return path.join(root, specifierOrPath)
+  return path.join(root, specifierOrPath);
 }
 
 /**
@@ -64,60 +64,60 @@ function resolvePrependPath(specifierOrPath: string, root: string): string | nul
 export function createAppletStylesVirtualModulePlugin(
   options: AppletStylesVirtualModuleOptions = {}
 ): Plugin {
-  const inputCss = options.inputCss ?? 'src/index.css'
-  const outputCssPath = options.outputCssPath ?? 'dist/style.css'
-  const tailwindConfigPath = options.tailwindConfigPath
-  const prependCss = options.prependCss ?? []
-  let root = process.cwd()
+  const inputCss = options.inputCss ?? 'src/index.css';
+  const outputCssPath = options.outputCssPath ?? 'dist/style.css';
+  const tailwindConfigPath = options.tailwindConfigPath;
+  const prependCss = options.prependCss ?? [];
+  let root = process.cwd();
 
   return {
     name: 'applet-styles-virtual-module',
     configResolved(config) {
-      root = config.root
+      root = config.root;
     },
     resolveId(id: string) {
-      if (id === VIRTUAL_APPLET_STYLES_ID) return RESOLVED_ID
-      return null
+      if (id === VIRTUAL_APPLET_STYLES_ID) {return RESOLVED_ID;}
+      return null;
     },
     load(id: string) {
-      if (id !== RESOLVED_ID) return null
+      if (id !== RESOLVED_ID) {return null;}
 
-      const parts: string[] = []
+      const parts: string[] = [];
 
       for (const p of prependCss) {
-        const full = resolvePrependPath(p, root)
+        const full = resolvePrependPath(p, root);
         if (full) {
           try {
-            parts.push(fs.readFileSync(full, 'utf-8'))
+            parts.push(fs.readFileSync(full, 'utf-8'));
           } catch {
             // Prepend file missing (e.g. optional SDK styles); skip
           }
         }
       }
 
-      const inputPath = path.join(root, inputCss)
-      let mainCss: string | null = null
+      const inputPath = path.join(root, inputCss);
+      let mainCss: string | null = null;
 
       // Try Tailwind CLI if input file exists. spawnSync blocks the event loop; for parallel builds consider a random suffix (e.g. crypto.randomUUID()).
       if (fs.existsSync(inputPath)) {
-        const tmpFile = path.join(os.tmpdir(), `applet-styles-${Date.now()}-${crypto.randomUUID()}.css`)
-        const args = ['-i', inputPath, '-o', tmpFile]
+        const tmpFile = path.join(os.tmpdir(), `applet-styles-${Date.now()}-${crypto.randomUUID()}.css`);
+        const args = ['-i', inputPath, '-o', tmpFile];
         if (tailwindConfigPath) {
-          const configPath = path.join(root, tailwindConfigPath)
+          const configPath = path.join(root, tailwindConfigPath);
           if (fs.existsSync(configPath)) {
-            args.push('-c', configPath)
+            args.push('-c', configPath);
           }
         }
         // Use platform-specific executable and no shell so args (paths with spaces) are passed safely on Windows.
-        const pnpmCmd = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+        const pnpmCmd = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
         const result = spawnSync(pnpmCmd, ['exec', 'tailwindcss', ...args], {
           cwd: root,
           stdio: 'pipe',
-        })
+        });
         if (result.status === 0 && fs.existsSync(tmpFile)) {
-          mainCss = fs.readFileSync(tmpFile, 'utf-8')
+          mainCss = fs.readFileSync(tmpFile, 'utf-8');
           try {
-            fs.unlinkSync(tmpFile)
+            fs.unlinkSync(tmpFile);
           } catch {
             /* ignore */
           }
@@ -125,24 +125,24 @@ export function createAppletStylesVirtualModulePlugin(
       }
 
       if (mainCss === null) {
-        const fallbackPath = path.isAbsolute(outputCssPath) ? outputCssPath : path.join(root, outputCssPath)
+        const fallbackPath = path.isAbsolute(outputCssPath) ? outputCssPath : path.join(root, outputCssPath);
         try {
-          mainCss = fs.readFileSync(fallbackPath, 'utf-8')
+          mainCss = fs.readFileSync(fallbackPath, 'utf-8');
         } catch {
           if (process.env.NODE_ENV !== 'production') {
             console.warn(
               `[applet-styles] Could not compile via Tailwind CLI and ${fallbackPath} not found; export empty string. Install tailwindcss in the project or build CSS first.`
-            )
+            );
           }
-          mainCss = ''
+          mainCss = '';
         }
       }
 
-      parts.push(mainCss)
-      const css = parts.join('\n')
-      return `export default ${JSON.stringify(css)}`
+      parts.push(mainCss);
+      const css = parts.join('\n');
+      return `export default ${JSON.stringify(css)}`;
     },
-  }
+  };
 }
 
 /**
@@ -157,5 +157,5 @@ export function createBichatStylesPlugin(
     inputCss: options.inputCss ?? 'src/index.css',
     outputCssPath: options.outputCssPath ?? 'dist/style.css',
     prependCss: ['@iota-uz/sdk/bichat/styles.css'],
-  })
+  });
 }

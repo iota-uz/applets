@@ -1,4 +1,4 @@
-import { engine } from './engine'
+import { engine } from './engine';
 
 export type DBConstraint = {
   field: string
@@ -48,31 +48,31 @@ export type DBClient = {
 
 export function createDB(caller: DBCaller): DBClient {
   class QueryIndexBuilder implements DBQueryIndex {
-    private constraint?: DBConstraint
+    private constraint?: DBConstraint;
 
     eq(field: string, value: unknown): QueryIndexBuilder {
-      this.constraint = { field, op: 'eq', value }
-      return this
+      this.constraint = { field, op: 'eq', value };
+      return this;
     }
 
     build(name: string): DBIndexConstraint | undefined {
       if (!this.constraint) {
-        return undefined
+        return undefined;
       }
-      return { name, ...this.constraint }
+      return { name, ...this.constraint };
     }
   }
 
   class QueryFilterBuilder implements DBQueryFilter {
-    private constraints: DBConstraint[] = []
+    private constraints: DBConstraint[] = [];
 
     eq(field: string, value: unknown): QueryFilterBuilder {
-      this.constraints.push({ field, op: 'eq', value })
-      return this
+      this.constraints.push({ field, op: 'eq', value });
+      return this;
     }
 
     build(): DBConstraint[] {
-      return this.constraints
+      return this.constraints;
     }
   }
 
@@ -83,79 +83,79 @@ export function createDB(caller: DBCaller): DBClient {
     ) {}
 
     withIndex(name: string, build: (q: DBQueryIndex) => DBQueryIndex | void): RuntimeQueryBuilder<T> {
-      const index = new QueryIndexBuilder()
-      build(index)
+      const index = new QueryIndexBuilder();
+      build(index);
       return new RuntimeQueryBuilder<T>(this.table, {
         ...this.options,
         index: index.build(name),
-      })
+      });
     }
 
     filter(build: (q: DBQueryFilter) => DBQueryFilter | void): RuntimeQueryBuilder<T> {
-      const filter = new QueryFilterBuilder()
-      build(filter)
+      const filter = new QueryFilterBuilder();
+      build(filter);
       return new RuntimeQueryBuilder<T>(this.table, {
         ...this.options,
         filters: [...(this.options.filters ?? []), ...filter.build()],
-      })
+      });
     }
 
     order(direction: 'asc' | 'desc'): RuntimeQueryBuilder<T> {
       return new RuntimeQueryBuilder<T>(this.table, {
         ...this.options,
         order: direction,
-      })
+      });
     }
 
     take(limit: number): RuntimeQueryBuilder<T> {
       return new RuntimeQueryBuilder<T>(this.table, {
         ...this.options,
         take: limit,
-      })
+      });
     }
 
     collect(): Promise<T[]> {
-      return caller<T[]>('query', { table: this.table, query: this.options })
+      return caller<T[]>('query', { table: this.table, query: this.options });
     }
 
     async first(): Promise<T | null> {
-      const rows = await this.take(1).collect()
-      return rows[0] ?? null
+      const rows = await this.take(1).collect();
+      return rows[0] ?? null;
     }
   }
 
   const client: DBClient = {
     get<T = unknown>(id: string): Promise<T | null> {
-      return caller<T | null>('get', { id })
+      return caller<T | null>('get', { id });
     },
     query<T = unknown>(table: string): RuntimeQueryBuilder<T> {
-      return new RuntimeQueryBuilder<T>(table)
+      return new RuntimeQueryBuilder<T>(table);
     },
     queryRaw<T = unknown>(table: string, query?: DBQueryOptions): Promise<T[]> {
-      return caller<T[]>('query', { table, query: query ?? {} })
+      return caller<T[]>('query', { table, query: query ?? {} });
     },
     insert<T = unknown>(table: string, value: unknown): Promise<T> {
-      return caller<T>('insert', { table, value })
+      return caller<T>('insert', { table, value });
     },
     patch<T = unknown>(id: string, value: unknown): Promise<T> {
-      return caller<T>('patch', { id, value })
+      return caller<T>('patch', { id, value });
     },
     replace<T = unknown>(id: string, value: unknown): Promise<T> {
-      return caller<T>('replace', { id, value })
+      return caller<T>('replace', { id, value });
     },
     delete(id: string): Promise<boolean> {
-      return caller<boolean>('delete', { id })
+      return caller<boolean>('delete', { id });
     },
-  }
-  return client
+  };
+  return client;
 }
 
-export const db = createDB((op, params) => engine.call(appletMethod(op), params))
+export const db = createDB((op, params) => engine.call(appletMethod(op), params));
 
 function appletMethod(op: string): string {
-  const appletID = process.env.IOTA_APPLET_ID
+  const appletID = process.env.IOTA_APPLET_ID;
   if (!appletID || appletID.trim() === '') {
-    throw new Error('IOTA_APPLET_ID is required')
+    throw new Error('IOTA_APPLET_ID is required');
   }
-  return `${appletID}.db.${op}`
+  return `${appletID}.db.${op}`;
 }

@@ -5,9 +5,9 @@
  * Can be triggered programmatically via ref.startEditing()
  */
 
-import { useState, useRef, useEffect, useImperativeHandle, forwardRef, memo } from 'react'
-import { CircleNotch } from '@phosphor-icons/react'
-import { useTranslation } from '../hooks/useTranslation'
+import { useState, useRef, useEffect, useImperativeHandle, forwardRef, memo } from 'react';
+import { CircleNotch } from '@phosphor-icons/react';
+import { useTranslation } from '../hooks/useTranslation';
 
 export interface EditableTextProps {
   /** Current text value */
@@ -39,7 +39,7 @@ const sizeClasses = {
   sm: 'text-sm',
   md: 'text-base',
   lg: 'text-lg',
-}
+};
 
 const EditableText = forwardRef<EditableTextRef, EditableTextProps>(
   (
@@ -55,88 +55,88 @@ const EditableText = forwardRef<EditableTextRef, EditableTextProps>(
     },
     ref
   ) => {
-    const { t } = useTranslation()
-    const resolvedPlaceholder = placeholder ?? t('BiChat.Common.Untitled')
-    const [isEditing, setIsEditing] = useState(false)
-    const [editValue, setEditValue] = useState(value)
-    const inputRef = useRef<HTMLInputElement>(null)
+    const { t } = useTranslation();
+    const resolvedPlaceholder = placeholder ?? t('BiChat.Common.Untitled');
+    const [isEditing, setIsEditing] = useState(false);
+    const [editValue, setEditValue] = useState(value);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     // Expose methods via ref
     useImperativeHandle(ref, () => ({
       startEditing: () => {
-        setIsEditing(true)
+        setIsEditing(true);
       },
       cancelEditing: () => {
-        setEditValue(value)
-        setIsEditing(false)
+        setEditValue(value);
+        setIsEditing(false);
       },
-    }))
+    }));
 
     // Update edit value when value prop changes
     useEffect(() => {
-      setEditValue(value)
-    }, [value])
+      setEditValue(value);
+    }, [value]);
 
     // Auto-focus and select when entering edit mode
     useEffect(() => {
       if (isEditing && inputRef.current) {
-        inputRef.current.focus()
-        inputRef.current.select()
+        inputRef.current.focus();
+        inputRef.current.select();
       }
-    }, [isEditing])
+    }, [isEditing]);
 
     const handleSave = () => {
-      const trimmed = editValue.trim()
+      const trimmed = editValue.trim();
 
       // Don't save if empty - revert to original
       if (!trimmed) {
-        setEditValue(value)
-        setIsEditing(false)
-        return
+        setEditValue(value);
+        setIsEditing(false);
+        return;
       }
 
       // Only call onSave if value actually changed
       if (trimmed !== value) {
-        onSave(trimmed)
+        onSave(trimmed);
       }
 
-      setIsEditing(false)
-    }
+      setIsEditing(false);
+    };
 
     const handleCancel = () => {
-      setEditValue(value)
-      setIsEditing(false)
-    }
+      setEditValue(value);
+      setIsEditing(false);
+    };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      e.stopPropagation()
+      e.stopPropagation();
 
       if (e.key === 'Enter') {
-        e.preventDefault()
-        handleSave()
+        e.preventDefault();
+        handleSave();
       } else if (e.key === 'Escape') {
-        e.preventDefault()
-        handleCancel()
+        e.preventDefault();
+        handleCancel();
       }
-    }
+    };
 
     const handleDoubleClick = () => {
-      setIsEditing(true)
-    }
+      setIsEditing(true);
+    };
 
     const handleBlur = () => {
-      handleSave()
-    }
+      handleSave();
+    };
 
-    const sizeClass = sizeClasses[size]
+    const sizeClass = sizeClasses[size];
 
     if (isEditing) {
       return (
         <div
           className="flex items-center gap-2 flex-1"
           onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
+            e.preventDefault();
+            e.stopPropagation();
           }}
           onPointerDown={(e) => e.stopPropagation()}
         >
@@ -156,10 +156,10 @@ const EditableText = forwardRef<EditableTextRef, EditableTextProps>(
             aria-label={t('BiChat.EditableText.AriaLabel')}
           />
         </div>
-      )
+      );
     }
 
-    const displayValue = value || resolvedPlaceholder
+    const displayValue = value || resolvedPlaceholder;
 
     return (
       <span
@@ -170,8 +170,8 @@ const EditableText = forwardRef<EditableTextRef, EditableTextProps>(
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            handleDoubleClick()
+            e.preventDefault();
+            handleDoubleClick();
           }
         }}
       >
@@ -186,13 +186,13 @@ const EditableText = forwardRef<EditableTextRef, EditableTextProps>(
           </span>
         )}
       </span>
-    )
+    );
   }
-)
+);
 
-EditableText.displayName = 'EditableText'
+EditableText.displayName = 'EditableText';
 
-const MemoizedEditableText = memo(EditableText)
+const MemoizedEditableText = memo(EditableText);
 
-export { MemoizedEditableText as EditableText }
-export default MemoizedEditableText
+export { MemoizedEditableText as EditableText };
+export default MemoizedEditableText;

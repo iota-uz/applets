@@ -1,14 +1,14 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { ChartCard } from './ChartCard'
-import { makeChartData } from '@sb-helpers/bichatFixtures'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import type { Meta, StoryObj } from '@storybook/react';
+import { ChartCard } from './ChartCard';
+import { makeChartData } from '@sb-helpers/bichatFixtures';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof ChartCard> = {
   title: 'BiChat/Components/ChartCard',
   component: ChartCard,
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof ChartCard>
 
 export const Playground: Story = {
@@ -18,7 +18,7 @@ export const Playground: Story = {
       title: 'Revenue Trends',
     },
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -60,4 +60,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

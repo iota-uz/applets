@@ -23,6 +23,7 @@ Requires .applets/config.toml at the project root.`,
   applet check
   applet rpc gen --name bichat
   applet rpc check --name bichat
+  applet rpc watch --name bichat
   applet deps check
   applet schema export --name bichat
   applet secrets set --name bichat --key OPENAI_API_KEY --value ...

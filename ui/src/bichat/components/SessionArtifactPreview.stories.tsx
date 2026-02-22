@@ -1,7 +1,7 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { SessionArtifactPreview } from './SessionArtifactPreview'
-import type { SessionArtifact } from '../types'
+import { SessionArtifactPreview } from './SessionArtifactPreview';
+import type { SessionArtifact } from '../types';
 
 const meta: Meta<typeof SessionArtifactPreview> = {
   title: 'BiChat/Components/SessionArtifactPreview',
@@ -14,12 +14,12 @@ const meta: Meta<typeof SessionArtifactPreview> = {
       </div>
     ),
   ],
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof SessionArtifactPreview>
 
-const now = new Date().toISOString()
+const now = new Date().toISOString();
 
 const imageArtifact: SessionArtifact = {
   id: 'art-img',
@@ -30,7 +30,7 @@ const imageArtifact: SessionArtifact = {
   url: 'https://placehold.co/600x400/e2e8f0/64748b?text=Preview+Image',
   sizeBytes: 128000,
   createdAt: now,
-}
+};
 
 const excelArtifact: SessionArtifact = {
   id: 'art-xlsx',
@@ -41,7 +41,7 @@ const excelArtifact: SessionArtifact = {
   url: 'https://example.com/files/quarterly_report.xlsx',
   sizeBytes: 184320,
   createdAt: now,
-}
+};
 
 const pdfArtifact: SessionArtifact = {
   id: 'art-pdf',
@@ -52,22 +52,22 @@ const pdfArtifact: SessionArtifact = {
   url: 'https://example.com/files/annual_report.pdf',
   sizeBytes: 2200000,
   createdAt: now,
-}
+};
 
 export const Playground: Story = {
   args: {
     artifact: imageArtifact,
   },
-}
+};
 
 export const Excel: Story = {
   args: {
     artifact: excelArtifact,
   },
-}
+};
 
 export const PDF: Story = {
   args: {
     artifact: pdfArtifact,
   },
-}
+};

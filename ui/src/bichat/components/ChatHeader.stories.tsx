@@ -1,14 +1,14 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { ChatHeader } from './ChatHeader'
-import { makeSession } from '@sb-helpers/bichatFixtures'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import type { Meta, StoryObj } from '@storybook/react';
+import { ChatHeader } from './ChatHeader';
+import { makeSession } from '@sb-helpers/bichatFixtures';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof ChatHeader> = {
   title: 'BiChat/Components/ChatHeader',
   component: ChatHeader,
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof ChatHeader>
 
 export const Playground: Story = {
@@ -16,7 +16,7 @@ export const Playground: Story = {
     session: makeSession({ title: 'Current Analysis' }),
     onBack: () => alert('Back clicked'),
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -58,4 +58,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

@@ -1,8 +1,8 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import { MessageQueueList } from './MessageQueueList'
-import type { QueuedMessage } from '../types'
+import { MessageQueueList } from './MessageQueueList';
+import type { QueuedMessage } from '../types';
 
 const meta: Meta<typeof MessageQueueList> = {
   title: 'BiChat/Components/MessageQueueList',
@@ -15,9 +15,9 @@ const meta: Meta<typeof MessageQueueList> = {
       </div>
     ),
   ],
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof MessageQueueList>
 
 const queuedMessages: QueuedMessage[] = [
@@ -34,7 +34,7 @@ const queuedMessages: QueuedMessage[] = [
       },
     ],
   },
-]
+];
 
 export const Playground: Story = {
   args: {
@@ -42,7 +42,7 @@ export const Playground: Story = {
     onRemove: fn(),
     onUpdate: fn(),
   },
-}
+};
 
 export const SingleMessage: Story = {
   args: {
@@ -50,7 +50,7 @@ export const SingleMessage: Story = {
     onRemove: fn(),
     onUpdate: fn(),
   },
-}
+};
 
 export const Empty: Story = {
   args: {
@@ -58,4 +58,4 @@ export const Empty: Story = {
     onRemove: fn(),
     onUpdate: fn(),
   },
-}
+};

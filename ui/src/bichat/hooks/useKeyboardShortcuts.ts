@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect } from 'react';
 
 export interface ShortcutConfig {
   key: string
@@ -27,7 +27,7 @@ export function useKeyboardShortcuts(shortcuts: ShortcutConfig[]) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore if user is typing in input/textarea/contenteditable
-      const target = e.target as HTMLElement
+      const target = e.target as HTMLElement;
       if (
         target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement ||
@@ -37,35 +37,35 @@ export function useKeyboardShortcuts(shortcuts: ShortcutConfig[]) {
         const allowInInput = shortcuts.find(s =>
           s.key.toLowerCase() === e.key.toLowerCase() &&
           s.key.toLowerCase() === 'escape'
-        )
+        );
         if (!allowInInput) {
-          return
+          return;
         }
       }
 
       // Find matching shortcut
       const matchingShortcut = shortcuts.find((s) => {
-        const keyMatches = e.key.toLowerCase() === s.key.toLowerCase()
+        const keyMatches = e.key.toLowerCase() === s.key.toLowerCase();
         const modMatches = s.meta
           ? e.metaKey && !e.ctrlKey
           : s.ctrl
             ? e.ctrlKey || e.metaKey
-            : !e.ctrlKey && !e.metaKey
-        const shiftMatches = s.shift ? e.shiftKey : !e.shiftKey
-        const altMatches = s.alt ? e.altKey : !e.altKey
+            : !e.ctrlKey && !e.metaKey;
+        const shiftMatches = s.shift ? e.shiftKey : !e.shiftKey;
+        const altMatches = s.alt ? e.altKey : !e.altKey;
 
-        return keyMatches && modMatches && shiftMatches && altMatches
-      })
+        return keyMatches && modMatches && shiftMatches && altMatches;
+      });
 
       if (matchingShortcut) {
         if (matchingShortcut.preventDefault !== false) {
-          e.preventDefault()
+          e.preventDefault();
         }
-        matchingShortcut.callback()
+        matchingShortcut.callback();
       }
-    }
+    };
 
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [shortcuts])
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [shortcuts]);
 }

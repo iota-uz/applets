@@ -1,25 +1,25 @@
-import { memo, useCallback, useEffect, useRef, useState } from 'react'
-import { MagnifyingGlass, X } from '@phosphor-icons/react'
-import type { RenderTableData } from '../types'
-import { useTranslation } from '../hooks/useTranslation'
-import { useToast } from '../hooks/useToast'
-import { useDataTable, type DataTableOptions } from '../hooks/useDataTable'
-import { TableExportButton } from './TableExportButton'
-import { DataTableHeader } from './DataTableHeader'
-import { DataTableCell } from './DataTableCell'
-import { DataTableToolbar } from './DataTableToolbar'
-import { DataTableFooter } from './DataTableFooter'
+import { memo, useCallback, useState } from 'react';
+import { MagnifyingGlass } from '@phosphor-icons/react';
+import type { RenderTableData } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
+import { useDataTable, type DataTableOptions } from '../hooks/useDataTable';
+import { TableExportButton } from './TableExportButton';
+import { DataTableHeader } from './DataTableHeader';
+import { DataTableCell } from './DataTableCell';
+import { DataTableToolbar } from './DataTableToolbar';
+import { DataTableFooter } from './DataTableFooter';
+import { FullscreenOverlay } from './FullscreenOverlay';
 
 function getPageNumbers(current: number, total: number): (number | 'ellipsis')[] {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
-  const pages: (number | 'ellipsis')[] = [1]
-  const left = Math.max(2, current - 1)
-  const right = Math.min(total - 1, current + 1)
-  if (left > 2) pages.push('ellipsis')
-  for (let i = left; i <= right; i++) pages.push(i)
-  if (right < total - 1) pages.push('ellipsis')
-  pages.push(total)
-  return pages
+  if (total <= 7) {return Array.from({ length: total }, (_, i) => i + 1);}
+  const pages: (number | 'ellipsis')[] = [1];
+  const left = Math.max(2, current - 1);
+  const right = Math.min(total - 1, current + 1);
+  if (left > 2) {pages.push('ellipsis');}
+  for (let i = left; i <= right; i++) {pages.push(i);}
+  if (right < total - 1) {pages.push('ellipsis');}
+  pages.push(total);
+  return pages;
 }
 
 function PaginationButton({
@@ -50,71 +50,13 @@ function PaginationButton({
     >
       {children}
     </button>
-  )
+  );
 }
 
-/**
- * Shadow-DOM-safe fullscreen overlay. Headless UI Dialog portals to document.body
- * which escapes the shadow DOM boundary and loses Tailwind styles.
- * This component stays inline within the shadow tree.
- */
-function FullscreenOverlay({
-  title,
-  onClose,
-  closeLabel,
-  children,
-}: {
-  title: string
-  onClose: () => void
-  closeLabel: string
-  children: React.ReactNode
-}) {
-  const panelRef = useRef<HTMLDivElement>(null)
-  const onCloseRef = useRef(onClose)
-  onCloseRef.current = onClose
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation()
-        onCloseRef.current()
-      }
-    }
-    document.addEventListener('keydown', onKeyDown)
-    panelRef.current?.focus()
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [])
-
-  return (
-    <div className="fixed inset-0" style={{ zIndex: 99999 }}>
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden
-      />
-      {/* Panel */}
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        tabIndex={-1}
-        className="absolute inset-4 flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl outline-none dark:border-gray-700 dark:bg-gray-900"
-      >
-        <span className="sr-only">{title}</span>
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-3 top-3 z-10 cursor-pointer rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-          aria-label={closeLabel}
-        >
-          <X size={18} weight="bold" />
-        </button>
-        {children}
-      </div>
-    </div>
-  )
+/** External container control. When provided, the card runs in embedded mode. */
+export interface TableCardHost {
+  onToggleFullscreen: () => void
+  isFullscreen: boolean
 }
 
 interface InteractiveTableCardProps {
@@ -122,6 +64,8 @@ interface InteractiveTableCardProps {
   onSendMessage?: (content: string) => void
   sendDisabled?: boolean
   options?: DataTableOptions
+  /** When provided, the card runs in embedded mode — strips outer chrome, hides header, delegates fullscreen to the host. */
+  host?: TableCardHost
 }
 
 export const InteractiveTableCard = memo(function InteractiveTableCard({
@@ -129,85 +73,87 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
   onSendMessage,
   sendDisabled = false,
   options,
+  host,
 }: InteractiveTableCardProps) {
-  const { t } = useTranslation()
-  const toast = useToast()
+  const { t } = useTranslation();
+  const dt = useDataTable(table, options);
 
-  const dt = useDataTable(table, options)
-
-  const canExportViaPrompt = !!onSendMessage && !!table.exportPrompt
-  const exportDisabled = sendDisabled || (!table.export?.url && !canExportViaPrompt)
+  const canExportViaPrompt = !!onSendMessage && !!table.exportPrompt;
+  const exportDisabled = sendDisabled || (!table.export?.url && !canExportViaPrompt);
 
   const handleExport = useCallback(() => {
     if (table.export?.url) {
       try {
-        const parsed = new URL(table.export.url, window.location.origin)
+        const parsed = new URL(table.export.url, window.location.origin);
         if (!['http:', 'https:', 'blob:'].includes(parsed.protocol)) {
-          console.warn('[InteractiveTableCard] Blocked export URL with unsafe protocol:', parsed.protocol)
-          return
+          console.warn('[InteractiveTableCard] Blocked export URL with unsafe protocol:', parsed.protocol);
+          return;
         }
       } catch {
-        console.warn('[InteractiveTableCard] Blocked malformed export URL')
-        return
+        console.warn('[InteractiveTableCard] Blocked malformed export URL');
+        return;
       }
-      const link = document.createElement('a')
-      link.href = table.export.url
-      link.download = table.export.filename || 'table_export.xlsx'
-      link.rel = 'noopener noreferrer'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      return
+      const link = document.createElement('a');
+      link.href = table.export.url;
+      link.download = table.export.filename || 'table_export.xlsx';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
     }
 
     if (canExportViaPrompt && table.exportPrompt) {
-      onSendMessage?.(table.exportPrompt)
+      onSendMessage?.(table.exportPrompt);
     }
-  }, [canExportViaPrompt, onSendMessage, table.export, table.exportPrompt])
+  }, [canExportViaPrompt, onSendMessage, table.export, table.exportPrompt]);
 
   const handleCellCopy = useCallback(
     (text: string) => {
-      navigator.clipboard
-        .writeText(text)
-        .then(() => toast.success(t('BiChat.Message.CopiedToClipboard')))
-        .catch(() => toast.error(t('BiChat.Message.FailedToCopy')))
+      navigator.clipboard.writeText(text).catch(() => {
+        /* clipboard API unavailable */
+      });
     },
-    [toast, t],
-  )
+    [],
+  );
 
   const handleCopyTable = useCallback(() => {
-    const tsv = dt.getTableAsTSV()
-    navigator.clipboard
-      .writeText(tsv)
-      .then(() => toast.success(t('BiChat.DataTable.TableCopied')))
-      .catch(() => toast.error(t('BiChat.Message.FailedToCopy')))
-  }, [dt, toast, t])
+    const tsv = dt.getTableAsTSV();
+    navigator.clipboard.writeText(tsv).catch(() => {
+      /* clipboard API unavailable */
+    });
+  }, [dt]);
 
-  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [internalFullscreen, setInternalFullscreen] = useState(false);
+  const isFullscreen = host ? host.isFullscreen : internalFullscreen;
+  const toggleFullscreen = host ? host.onToggleFullscreen : () => setInternalFullscreen((v) => !v);
 
-  const hasHiddenColumns = dt.columns.some((c) => !c.visible)
-  const from = dt.totalFilteredRows === 0 ? 0 : (dt.page - 1) * dt.pageSize + 1
-  const to = Math.min(dt.page * dt.pageSize, dt.totalFilteredRows)
+  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
 
-  const renderToolbar = (fullscreen: boolean) => (
+  const rowBg = (rowIndex: number): string =>
+    hoveredRow === rowIndex
+      ? 'bg-gray-100 dark:bg-gray-800/40'
+      : rowIndex % 2 === 1 ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-900';
+
+  const hasHiddenColumns = dt.columns.some((c) => !c.visible);
+  const from = dt.totalFilteredRows === 0 ? 0 : (dt.page - 1) * dt.pageSize + 1;
+  const to = Math.min(dt.page * dt.pageSize, dt.totalFilteredRows);
+
+  const renderToolbar = () => (
     <DataTableToolbar
       columns={dt.columns}
       searchQuery={dt.searchQuery}
       onSearchChange={dt.setSearchQuery}
-      showStats={dt.showStats}
-      onToggleStats={dt.setShowStats}
       onToggleColumnVisibility={dt.toggleColumnVisibility}
       onResetColumnVisibility={dt.resetColumnVisibility}
-      onSendMessage={onSendMessage}
-      sendDisabled={sendDisabled}
       hasHiddenColumns={hasHiddenColumns}
       sort={dt.sort}
       onClearSort={dt.clearSort}
       onCopyTable={handleCopyTable}
-      isFullscreen={fullscreen}
-      onToggleFullscreen={() => setIsFullscreen((v) => !v)}
+      isFullscreen={isFullscreen}
+      onToggleFullscreen={toggleFullscreen}
     />
-  )
+  );
 
   const renderHeader = () => (
     <header className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 px-3 py-2 dark:border-gray-700">
@@ -235,7 +181,7 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
         disabledTooltip={sendDisabled ? t('BiChat.Table.PleaseWait') : t('BiChat.Table.ExportUnavailable')}
       />
     </header>
-  )
+  );
 
   const renderTable = (scrollClass: string) => (
     <div className={scrollClass}>
@@ -255,11 +201,11 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
           {dt.pageRows.map((row, rowIndex) => (
             <tr
               key={`${table.id}-row-${rowIndex}`}
-              className={`border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/40 ${
-                rowIndex % 2 === 1 ? 'bg-gray-50/50 dark:bg-gray-800/20' : ''
-              }`}
+              className={`border-b border-gray-100 dark:border-gray-800 ${rowBg(rowIndex)}`}
+              onMouseEnter={() => setHoveredRow(rowIndex)}
+              onMouseLeave={() => setHoveredRow(null)}
             >
-              <td className={`sticky left-0 z-[2] w-10 px-2 py-2 text-right text-xs tabular-nums text-gray-400 dark:text-gray-500 select-none ${rowIndex % 2 === 1 ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-900'}`}>
+              <td className={`sticky left-0 z-[2] w-10 px-2 py-2 text-right text-xs tabular-nums text-gray-400 dark:text-gray-500 select-none ${rowBg(rowIndex)}`}>
                 {(dt.page - 1) * dt.pageSize + rowIndex + 1}
               </td>
               {dt.visibleColumns.map((col, colIdx) => (
@@ -269,7 +215,7 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
                   alignment={dt.getCellAlignment(col.index)}
                   onCopy={handleCellCopy}
                   isSticky={colIdx === 0}
-                  stickyClassName={`sticky left-[2.5rem] z-[1] ${rowIndex % 2 === 1 ? 'bg-gray-50 dark:bg-gray-900' : 'bg-white dark:bg-gray-900'}`}
+                  stickyClassName={`sticky left-[2.5rem] z-[1] ${rowBg(rowIndex)}`}
                 />
               ))}
             </tr>
@@ -303,16 +249,14 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
             </tr>
           )}
         </tbody>
-        {dt.showStats && (
-          <DataTableFooter
-            visibleColumns={dt.visibleColumns}
-            stats={dt.columnStats}
-            showRowNumbers
-          />
-        )}
+        <DataTableFooter
+          visibleColumns={dt.visibleColumns}
+          stats={dt.columnStats}
+          showRowNumbers
+        />
       </table>
     </div>
-  )
+  );
 
   const renderPagination = (idPrefix: string) => (
     <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 px-3 py-2 dark:border-gray-700">
@@ -388,32 +332,39 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
         </PaginationButton>
       </nav>
     </footer>
-  )
+  );
 
   const renderTruncationNotice = () =>
     table.truncated ? (
       <p className="border-t border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-700/60 dark:bg-amber-900/20 dark:text-amber-300">
         {t('BiChat.Table.TruncatedNotice')}
       </p>
-    ) : null
+    ) : null;
+
+  const fillHeight = host?.isFullscreen ?? false;
+
+  const sectionClassName = host
+    ? `w-full min-w-0 overflow-hidden${fillHeight ? ' flex flex-col flex-1' : ''}`
+    : 'w-full min-w-0 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/40 overflow-hidden';
 
   return (
     <>
-      <section className="w-full min-w-0 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/40 overflow-hidden">
-        {renderToolbar(false)}
-        {renderHeader()}
-        {renderTable('max-h-[420px] overflow-auto')}
+      <section className={sectionClassName}>
+        {renderToolbar()}
+        {!host && renderHeader()}
+        {renderTable(fillHeight ? 'flex-1 overflow-auto' : 'max-h-[420px] overflow-auto')}
         {renderPagination(table.id)}
         {renderTruncationNotice()}
       </section>
 
-      {isFullscreen && (
+      {/* Standalone fullscreen — only when not hosted */}
+      {!host && isFullscreen && (
         <FullscreenOverlay
           title={table.title || t('BiChat.Table.QueryResults')}
-          onClose={() => setIsFullscreen(false)}
+          onClose={() => setInternalFullscreen(false)}
           closeLabel={t('BiChat.DataTable.Collapse')}
         >
-          {renderToolbar(true)}
+          {renderToolbar()}
           {renderHeader()}
           {renderTable('flex-1 overflow-auto')}
           {renderPagination(`${table.id}-fs`)}
@@ -421,5 +372,5 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
         </FullscreenOverlay>
       )}
     </>
-  )
-})
+  );
+});

@@ -1,24 +1,24 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import type { ReactNode } from 'react'
+import type { Meta, StoryObj } from '@storybook/react';
+import type { ReactNode } from 'react';
 
-import { DebugPanel } from './DebugPanel'
-import type { DebugTrace } from '../types'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { DebugPanel } from './DebugPanel';
+import type { DebugTrace } from '../types';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof DebugPanel> = {
   title: 'BiChat/Components/DebugPanel',
   component: DebugPanel,
   parameters: { layout: 'centered' },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof DebugPanel>
 
 const Wrapper = ({ children }: { children: ReactNode }) => (
   <div className="w-[480px] bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
     {children}
   </div>
-)
+);
 
 const fullTrace: DebugTrace = {
   generationMs: 2340,
@@ -51,7 +51,7 @@ const fullTrace: DebugTrace = {
       durationMs: 560,
     },
   ],
-}
+};
 
 const metricsOnlyTrace: DebugTrace = {
   generationMs: 890,
@@ -62,7 +62,7 @@ const metricsOnlyTrace: DebugTrace = {
     cachedTokens: 0,
   },
   tools: [],
-}
+};
 
 const highVolumeTrace: DebugTrace = {
   generationMs: 18_500,
@@ -79,7 +79,7 @@ const highVolumeTrace: DebugTrace = {
     { callId: 'c4', name: 'generate_report', arguments: '{"format":"xlsx"}' },
     { callId: 'c5', name: 'send_notification', arguments: '{}', error: 'SMTP connection refused', durationMs: 5020 },
   ],
-}
+};
 
 const allErrorsTrace: DebugTrace = {
   generationMs: 340,
@@ -93,7 +93,7 @@ const allErrorsTrace: DebugTrace = {
     { callId: 'e1', name: 'fetch_user', arguments: '{"id":99}', error: 'User not found (404)', durationMs: 80 },
     { callId: 'e2', name: 'update_record', arguments: '{"id":1}', error: 'Permission denied: insufficient role', durationMs: 15 },
   ],
-}
+};
 
 export const Playground: Story = {
   args: { trace: fullTrace },
@@ -102,7 +102,7 @@ export const Playground: Story = {
       <DebugPanel trace={args.trace} />
     </Wrapper>
   ),
-}
+};
 
 export const MetricsOnly: Story = {
   render: () => (
@@ -110,7 +110,7 @@ export const MetricsOnly: Story = {
       <DebugPanel trace={metricsOnlyTrace} />
     </Wrapper>
   ),
-}
+};
 
 export const HighVolume: Story = {
   render: () => (
@@ -118,7 +118,7 @@ export const HighVolume: Story = {
       <DebugPanel trace={highVolumeTrace} />
     </Wrapper>
   ),
-}
+};
 
 export const AllToolErrors: Story = {
   render: () => (
@@ -126,7 +126,7 @@ export const AllToolErrors: Story = {
       <DebugPanel trace={allErrorsTrace} />
     </Wrapper>
   ),
-}
+};
 
 export const Empty: Story = {
   render: () => (
@@ -134,13 +134,13 @@ export const Empty: Story = {
       <DebugPanel trace={undefined} />
     </Wrapper>
   ),
-}
+};
 
 const pendingToolTrace: DebugTrace = {
   generationMs: undefined,
   usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, cachedTokens: 0 },
   tools: [{ callId: 'p1', name: 'long_running_analysis', arguments: '{"dataset":"full"}' }],
-}
+};
 
 export const PendingTool: Story = {
   render: () => (
@@ -148,7 +148,7 @@ export const PendingTool: Story = {
       <DebugPanel trace={pendingToolTrace} />
     </Wrapper>
   ),
-}
+};
 
 export const Stress: Story = {
   parameters: { layout: 'fullscreen' },
@@ -207,4 +207,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

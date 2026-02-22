@@ -3,7 +3,7 @@
  * Provides copy, regenerate, and edit functionality for messages
  */
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 export interface UseMessageActionsOptions {
   /** Callback when copy succeeds */
@@ -56,85 +56,85 @@ export interface UseMessageActionsReturn {
  * ```
  */
 export function useMessageActions(options: UseMessageActionsOptions = {}): UseMessageActionsReturn {
-  const { onCopy, onCopyError, onRegenerate, onEdit, copiedDuration = 2000 } = options
+  const { onCopy, onCopyError, onRegenerate, onEdit, copiedDuration = 2000 } = options;
 
-  const [isCopied, setIsCopied] = useState(false)
-  const [isRegenerating, setIsRegenerating] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
+  const [isCopied, setIsCopied] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
-  const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {
       if (copiedTimeoutRef.current) {
-        clearTimeout(copiedTimeoutRef.current)
-        copiedTimeoutRef.current = null
+        clearTimeout(copiedTimeoutRef.current);
+        copiedTimeoutRef.current = null;
       }
-    }
-  }, [])
+    };
+  }, []);
 
   const copy = useCallback(
     async (content: string) => {
       try {
-        await navigator.clipboard.writeText(content)
-        setIsCopied(true)
-        onCopy?.(content)
+        await navigator.clipboard.writeText(content);
+        setIsCopied(true);
+        onCopy?.(content);
 
         // Clear existing timeout
         if (copiedTimeoutRef.current) {
-          clearTimeout(copiedTimeoutRef.current)
+          clearTimeout(copiedTimeoutRef.current);
         }
 
         // Reset copied state after duration
         copiedTimeoutRef.current = setTimeout(() => {
-          setIsCopied(false)
-          copiedTimeoutRef.current = null
-        }, copiedDuration)
+          setIsCopied(false);
+          copiedTimeoutRef.current = null;
+        }, copiedDuration);
       } catch (error) {
-        const err = error instanceof Error ? error : new Error('Failed to copy')
-        onCopyError?.(err)
-        throw err
+        const err = error instanceof Error ? error : new Error('Failed to copy');
+        onCopyError?.(err);
+        throw err;
       }
     },
     [onCopy, onCopyError, copiedDuration]
-  )
+  );
 
   const regenerate = useCallback(async () => {
-    if (!onRegenerate) return
-    if (isRegenerating) return
+    if (!onRegenerate) {return;}
+    if (isRegenerating) {return;}
 
-    setIsRegenerating(true)
+    setIsRegenerating(true);
     try {
-      await onRegenerate()
+      await onRegenerate();
     } finally {
-      setIsRegenerating(false)
+      setIsRegenerating(false);
     }
-  }, [onRegenerate, isRegenerating])
+  }, [onRegenerate, isRegenerating]);
 
   const edit = useCallback(
     async (content: string) => {
-      if (!onEdit) return
-      if (isEditing) return
+      if (!onEdit) {return;}
+      if (isEditing) {return;}
 
-      setIsEditing(true)
+      setIsEditing(true);
       try {
-        await onEdit(content)
+        await onEdit(content);
       } finally {
-        setIsEditing(false)
+        setIsEditing(false);
       }
     },
     [onEdit, isEditing]
-  )
+  );
 
   const reset = useCallback(() => {
-    setIsCopied(false)
-    setIsRegenerating(false)
-    setIsEditing(false)
+    setIsCopied(false);
+    setIsRegenerating(false);
+    setIsEditing(false);
     if (copiedTimeoutRef.current) {
-      clearTimeout(copiedTimeoutRef.current)
-      copiedTimeoutRef.current = null
+      clearTimeout(copiedTimeoutRef.current);
+      copiedTimeoutRef.current = null;
     }
-  }, [])
+  }, []);
 
   return {
     isCopied,
@@ -144,5 +144,5 @@ export function useMessageActions(options: UseMessageActionsOptions = {}): UseMe
     regenerate,
     edit,
     reset,
-  }
+  };
 }

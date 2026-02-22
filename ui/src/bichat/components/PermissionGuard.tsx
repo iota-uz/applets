@@ -27,7 +27,7 @@
  * </PermissionGuard>
  */
 
-import type { ReactNode } from 'react'
+import type { ReactNode } from 'react';
 
 export interface PermissionGuardProps {
   /** Permission names to check */
@@ -55,16 +55,16 @@ export function PermissionGuard({
 }: PermissionGuardProps) {
   // Handle empty permissions array (no permissions required, always render)
   if (permissions.length === 0) {
-    return <>{children}</>
+    return <>{children}</>;
   }
 
   // Check permissions based on mode
   const permitted =
     mode === 'all'
       ? permissions.every((p) => hasPermission(p))
-      : permissions.some((p) => hasPermission(p))
+      : permissions.some((p) => hasPermission(p));
 
-  return permitted ? <>{children}</> : <>{fallback}</>
+  return permitted ? <>{children}</> : <>{fallback}</>;
 }
 
-export default PermissionGuard
+export default PermissionGuard;

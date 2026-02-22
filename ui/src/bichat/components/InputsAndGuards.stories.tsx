@@ -1,20 +1,20 @@
-import { useState } from 'react'
-import type { Meta, StoryObj } from '@storybook/react'
+import { useState } from 'react';
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { SearchInput } from './SearchInput'
-import { EditableText } from './EditableText'
-import { UserAvatar } from './UserAvatar'
-import { PermissionGuard } from './PermissionGuard'
-import { ErrorBoundary } from './ErrorBoundary'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
-import { largeText } from '@sb-helpers/textFixtures'
+import { SearchInput } from './SearchInput';
+import { EditableText } from './EditableText';
+import { UserAvatar } from './UserAvatar';
+import { PermissionGuard } from './PermissionGuard';
+import { ErrorBoundary } from './ErrorBoundary';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
+import { largeText } from '@sb-helpers/textFixtures';
 
 const meta: Meta = {
   title: 'BiChat/InputsAndGuards',
   parameters: { layout: 'centered' },
-}
+};
 
-export default meta
+export default meta;
 
 type Story = StoryObj
 
@@ -22,21 +22,21 @@ const Content = ({ label }: { label: string }) => (
   <div className="p-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded border border-green-200">
     Visible: {label}
   </div>
-)
+);
 
 const Fallback = () => (
   <div className="p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded border border-red-200">
     Access Denied
   </div>
-)
+);
 
 const BuggyComponent = ({ message = 'Crash!' }: { message?: string }) => {
-  throw new Error(message)
-}
+  throw new Error(message);
+};
 
 export const SearchInputDemo: Story = {
   render: function SearchInputStory() {
-    const [value, setValue] = useState('')
+    const [value, setValue] = useState('');
     return (
       <ScenarioGrid
         scenarios={[
@@ -69,14 +69,14 @@ export const SearchInputDemo: Story = {
           },
         ]}
       />
-    )
+    );
   },
-}
+};
 
 export const EditableTextDemo: Story = {
   render: function EditableTextStory() {
-    const [v1, setV1] = useState('Double click to edit')
-    const [v2, setV2] = useState('')
+    const [v1, setV1] = useState('Double click to edit');
+    const [v2, setV2] = useState('');
     return (
       <ScenarioGrid
         scenarios={[
@@ -109,9 +109,9 @@ export const EditableTextDemo: Story = {
           },
         ]}
       />
-    )
+    );
   },
-}
+};
 
 export const UserAvatarDemo: Story = {
   render: () => (
@@ -140,7 +140,7 @@ export const UserAvatarDemo: Story = {
       ]}
     />
   ),
-}
+};
 
 export const PermissionGuardDemo: Story = {
   render: () => (
@@ -198,7 +198,7 @@ export const PermissionGuardDemo: Story = {
       ]}
     />
   ),
-}
+};
 
 export const ErrorBoundaryDemo: Story = {
   render: () => (
@@ -232,4 +232,4 @@ export const ErrorBoundaryDemo: Story = {
       ]}
     />
   ),
-}
+};

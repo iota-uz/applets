@@ -1,10 +1,10 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import { InlineQuestionForm } from './InlineQuestionForm'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
-import { makePendingQuestion } from '@sb-helpers/bichatFixtures'
-import { ChatSessionProvider } from '../context/ChatContext'
-import { MockChatDataSource } from '@sb-helpers/mockChatDataSource'
+import { InlineQuestionForm } from './InlineQuestionForm';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
+import { makePendingQuestion } from '@sb-helpers/bichatFixtures';
+import { ChatSessionProvider } from '../context/ChatContext';
+import { MockChatDataSource } from '@sb-helpers/mockChatDataSource';
 
 const meta: Meta<typeof InlineQuestionForm> = {
   title: 'BiChat/Components/InlineQuestionForm',
@@ -18,16 +18,16 @@ const meta: Meta<typeof InlineQuestionForm> = {
       </ChatSessionProvider>
     ),
   ],
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof InlineQuestionForm>
 
 export const Playground: Story = {
   args: {
     pendingQuestion: makePendingQuestion(),
   },
-}
+};
 
 /**
  * Multi-step wizard: 4 questions mixing single/multi-choice with realistic
@@ -85,7 +85,7 @@ export const MultiStepWizard: Story = {
       ],
     }),
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -155,4 +155,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

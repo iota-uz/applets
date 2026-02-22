@@ -1,7 +1,7 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import ConfirmationStep from './ConfirmationStep'
-import type { Question, QuestionAnswers } from '../types'
+import ConfirmationStep from './ConfirmationStep';
+import type { Question, QuestionAnswers } from '../types';
 
 const meta: Meta<typeof ConfirmationStep> = {
   title: 'BiChat/Components/ConfirmationStep',
@@ -14,9 +14,9 @@ const meta: Meta<typeof ConfirmationStep> = {
       </div>
     ),
   ],
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof ConfirmationStep>
 
 const singleQuestion: Question = {
@@ -29,11 +29,11 @@ const singleQuestion: Question = {
     { id: 'o-margin', label: 'Gross Margin', value: 'margin' },
     { id: 'o-orders', label: 'Order Count', value: 'orders' },
   ],
-}
+};
 
 const singleAnswers: QuestionAnswers = {
   'q-metric': { options: ['Revenue'] },
-}
+};
 
 const multipleQuestions: Question[] = [
   {
@@ -67,24 +67,24 @@ const multipleQuestions: Question[] = [
       { id: 'o-table', label: 'Include data table', value: 'table' },
     ],
   },
-]
+];
 
 const multipleAnswers: QuestionAnswers = {
   'q-region': { options: ['EMEA', 'APAC'] },
   'q-metric': { options: ['Revenue'], customText: 'Focus on year-over-year growth' },
   'q-format': { options: ['Include charts', 'Include data table'] },
-}
+};
 
 export const Playground: Story = {
   args: {
     questions: [singleQuestion],
     answers: singleAnswers,
   },
-}
+};
 
 export const MultipleQuestions: Story = {
   args: {
     questions: multipleQuestions,
     answers: multipleAnswers,
   },
-}
+};

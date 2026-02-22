@@ -10,21 +10,21 @@
  * - GFM (GitHub Flavored Markdown) support
  */
 
-import { memo, lazy, Suspense, useMemo, Children, isValidElement, type ReactNode } from 'react'
-import ReactMarkdown, { Components } from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import remarkMath from 'remark-math'
-import rehypeKatex from 'rehype-katex'
-import { processCitations } from '../utils/citationProcessor'
-import { parseChartDataFromJsonString } from '../utils/chartSpec'
-import { normalizeLatexDelimiters } from '../utils/markdownMath'
-import type { Citation } from '../types'
-import { TableWithExport } from './TableWithExport'
-import { ChartCard } from './ChartCard'
-import { useTranslation } from '../hooks/useTranslation'
+import { memo, lazy, Suspense, useMemo, Children, isValidElement, type ReactNode } from 'react';
+import ReactMarkdown, { Components } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import { processCitations } from '../utils/citationProcessor';
+import { parseChartDataFromJsonString } from '../utils/chartSpec';
+import { normalizeLatexDelimiters } from '../utils/markdownMath';
+import type { Citation } from '../types';
+import { TableWithExport } from './TableWithExport';
+import { ChartCard } from './ChartCard';
+import { useTranslation } from '../hooks/useTranslation';
 
 // Lazy load CodeBlock for bundle optimization
-const CodeBlock = lazy(() => import('./CodeBlock').then((module) => ({ default: module.CodeBlock })))
+const CodeBlock = lazy(() => import('./CodeBlock').then((module) => ({ default: module.CodeBlock })));
 
 interface MarkdownRendererProps {
   /** Markdown content to render */
@@ -73,25 +73,25 @@ const INLINE_TAGS = new Set([
   'sub',
   'sup',
   'u',
-])
+]);
 
 function hasBlockChildren(children: ReactNode): boolean {
   return Children.toArray(children).some((child) => {
     if (!isValidElement(child)) {
-      return false
+      return false;
     }
 
     if (typeof child.type === 'string') {
       if (!INLINE_TAGS.has(child.type)) {
-        return true
+        return true;
       }
 
-      return hasBlockChildren((child.props as { children?: ReactNode }).children)
+      return hasBlockChildren((child.props as { children?: ReactNode }).children);
     }
 
     // Non-DOM React components can render block nodes (e.g. lazy CodeBlock).
-    return true
-  })
+    return true;
+  });
 }
 
 function MarkdownRenderer({
@@ -103,56 +103,56 @@ function MarkdownRenderer({
   copiedLabel,
   exportLabel,
 }: MarkdownRendererProps) {
-  const { t } = useTranslation()
-  const resolvedCopyLabel = copyLabel ?? t('BiChat.Message.Copy')
-  const resolvedCopiedLabel = copiedLabel ?? t('BiChat.Message.Copied')
-  const resolvedExportLabel = exportLabel ?? t('BiChat.Export')
+  const { t } = useTranslation();
+  const resolvedCopyLabel = copyLabel ?? t('BiChat.Message.Copy');
+  const resolvedCopiedLabel = copiedLabel ?? t('BiChat.Message.Copied');
+  const resolvedExportLabel = exportLabel ?? t('BiChat.Export');
   // Process citations to replace raw markers with [1], [2], etc.
   const processed = useMemo(() => {
-    return processCitations(content, citations)
-  }, [content, citations])
-  const normalizedContent = useMemo(() => normalizeLatexDelimiters(processed.content), [processed.content])
+    return processCitations(content, citations);
+  }, [content, citations]);
+  const normalizedContent = useMemo(() => normalizeLatexDelimiters(processed.content), [processed.content]);
 
   const components: Components = useMemo(
     () => ({
       // Remove <pre> wrapper for code blocks - CodeBlock provides its own container
       pre: ({ children }) => <>{children}</>,
       code({ inline, className, children, node }: CodeProps) {
-        const match = /language-(\w+)/.exec(className || '')
-        const language = match ? match[1] : ''
-        const value = String(children).replace(/\n$/, '')
+        const match = /language-(\w+)/.exec(className || '');
+        const language = match ? match[1] : '';
+        const value = String(children).replace(/\n$/, '');
 
         // Some react-markdown versions may omit `inline`.
         // In that case, infer inline code conservatively from content shape.
-        const hasLineBreak = value.includes('\n')
-        const startLine = node?.position?.start?.line
-        const endLine = node?.position?.end?.line
-        const spansSingleLine = startLine !== undefined && endLine !== undefined && startLine === endLine
-        const inferredInline = !className && !hasLineBreak && (spansSingleLine || startLine === undefined || endLine === undefined)
-        const isInline = inline === true || (inline !== false && inferredInline)
+        const hasLineBreak = value.includes('\n');
+        const startLine = node?.position?.start?.line;
+        const endLine = node?.position?.end?.line;
+        const spansSingleLine = startLine !== undefined && endLine !== undefined && startLine === endLine;
+        const inferredInline = !className && !hasLineBreak && (spansSingleLine || startLine === undefined || endLine === undefined);
+        const isInline = inline === true || (inline !== false && inferredInline);
 
         if (isInline) {
           return (
             <code className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded text-sm font-mono">
               {value}
             </code>
-          )
+          );
         }
 
-        const lang = language.toLowerCase()
+        const lang = language.toLowerCase();
         const chartData =
           lang === 'chart'
             ? parseChartDataFromJsonString(value, 'Chart')
             : lang === 'json' && value.includes('"chartType"')
               ? parseChartDataFromJsonString(value, 'Chart')
-              : null
+              : null;
 
         if (chartData) {
           return (
             <div className="my-4">
               <ChartCard chartData={chartData} />
             </div>
-          )
+          );
         }
 
         // Block code - rendered outside of <p> context due to pre handler above
@@ -172,14 +172,14 @@ function MarkdownRenderer({
               copiedLabel={resolvedCopiedLabel}
             />
           </Suspense>
-        )
+        );
       },
       p: ({ children }) => {
         if (hasBlockChildren(children)) {
-          return <div className="markdown-p my-2">{children}</div>
+          return <div className="markdown-p my-2">{children}</div>;
         }
 
-        return <p className="markdown-p my-2">{children}</p>
+        return <p className="markdown-p my-2">{children}</p>;
       },
       a: ({ href, children }) => (
         <a
@@ -234,7 +234,7 @@ function MarkdownRenderer({
       em: ({ children }) => <em className="markdown-em italic">{children}</em>,
     }),
     [resolvedCopyLabel, resolvedCopiedLabel, resolvedExportLabel, sendMessage, sendDisabled],
-  )
+  );
 
   return (
     <div className="markdown-content">
@@ -246,11 +246,11 @@ function MarkdownRenderer({
         {normalizedContent}
       </ReactMarkdown>
     </div>
-  )
+  );
 }
 
-const MemoizedMarkdownRenderer = memo(MarkdownRenderer)
-MemoizedMarkdownRenderer.displayName = 'MarkdownRenderer'
+const MemoizedMarkdownRenderer = memo(MarkdownRenderer);
+MemoizedMarkdownRenderer.displayName = 'MarkdownRenderer';
 
-export { MemoizedMarkdownRenderer as MarkdownRenderer }
-export default MemoizedMarkdownRenderer
+export { MemoizedMarkdownRenderer as MarkdownRenderer };
+export default MemoizedMarkdownRenderer;

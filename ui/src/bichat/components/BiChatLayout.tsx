@@ -6,14 +6,14 @@
  * Router-agnostic: consumers provide renderSidebar, routeKey, and onNewChat callbacks.
  */
 
-import React, { useEffect, useRef, useMemo } from 'react'
-import { AnimatePresence, motion, type PanInfo } from 'framer-motion'
-import { List } from '@phosphor-icons/react'
-import SkipLink from './SkipLink'
-import { useSidebarState, type UseSidebarStateReturn } from '../hooks/useSidebarState'
-import { useFocusTrap } from '../hooks/useFocusTrap'
-import { useKeyboardShortcuts, type ShortcutConfig } from '../hooks/useKeyboardShortcuts'
-import { useTranslation } from '../hooks/useTranslation'
+import React, { useEffect, useRef, useMemo } from 'react';
+import { AnimatePresence, motion, type PanInfo } from 'framer-motion';
+import { List } from '@phosphor-icons/react';
+import SkipLink from './SkipLink';
+import { useSidebarState, type UseSidebarStateReturn } from '../hooks/useSidebarState';
+import { useFocusTrap } from '../hooks/useFocusTrap';
+import { useKeyboardShortcuts, type ShortcutConfig } from '../hooks/useKeyboardShortcuts';
+import { useTranslation } from '../hooks/useTranslation';
 
 export interface SidebarDrawerProps {
   onClose?: () => void
@@ -39,41 +39,41 @@ export function BiChatLayout({
   routeKey,
   className = '',
 }: BiChatLayoutProps) {
-  const { t } = useTranslation()
-  const { isMobile, isMobileOpen, openMobile, closeMobile } = useSidebarState()
-  const drawerRef = useRef<HTMLDivElement>(null)
-  const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const { t } = useTranslation();
+  const { isMobile, isMobileOpen, openMobile, closeMobile } = useSidebarState();
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   // Focus trap on mobile drawer
-  useFocusTrap(drawerRef, isMobile && isMobileOpen, menuButtonRef.current)
+  useFocusTrap(drawerRef, isMobile && isMobileOpen, menuButtonRef.current);
 
   // Cmd+N keyboard shortcut
   const shortcuts = useMemo<ShortcutConfig[]>(() => {
-    if (!onNewChat) return []
-    return [{ key: 'n', ctrl: true, callback: onNewChat, description: 'New chat' }]
-  }, [onNewChat])
-  useKeyboardShortcuts(shortcuts)
+    if (!onNewChat) {return [];}
+    return [{ key: 'n', ctrl: true, callback: onNewChat, description: 'New chat' }];
+  }, [onNewChat]);
+  useKeyboardShortcuts(shortcuts);
 
   // Escape key closes mobile drawer
   useEffect(() => {
-    if (!isMobile || !isMobileOpen) return
+    if (!isMobile || !isMobileOpen) {return;}
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        e.preventDefault()
-        closeMobile()
+        e.preventDefault();
+        closeMobile();
       }
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [closeMobile, isMobile, isMobileOpen])
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [closeMobile, isMobile, isMobileOpen]);
 
   // Swipe-left to close drawer
   const handleDrawerDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.x < -80) {
-      closeMobile()
+      closeMobile();
     }
-  }
+  };
 
   // Page transition content
   const content = routeKey ? (
@@ -91,7 +91,7 @@ export function BiChatLayout({
     </AnimatePresence>
   ) : (
     <div className="flex flex-1 min-h-0">{children}</div>
-  )
+  );
 
   return (
     <div className={`relative flex flex-1 w-full h-full min-h-0 overflow-hidden ${className}`}>
@@ -156,8 +156,8 @@ export function BiChatLayout({
         {content}
       </main>
     </div>
-  )
+  );
 }
 
 // Re-export useSidebarState for consumers who want custom layout control
-export { useSidebarState, type UseSidebarStateReturn }
+export { useSidebarState, type UseSidebarStateReturn };

@@ -7,10 +7,10 @@
  * the retry button contextually in the conversation flow.
  */
 
-import { memo } from 'react'
-import { motion } from 'framer-motion'
-import { ArrowClockwise, Warning } from '@phosphor-icons/react'
-import { useTranslation } from '../hooks/useTranslation'
+import { memo } from 'react';
+import { motion } from 'framer-motion';
+import { ArrowClockwise, Warning } from '@phosphor-icons/react';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface RetryActionAreaProps {
   /** Callback when retry button is clicked */
@@ -20,7 +20,7 @@ interface RetryActionAreaProps {
 export const RetryActionArea = memo(function RetryActionArea({
   onRetry,
 }: RetryActionAreaProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   return (
     <motion.div
@@ -54,7 +54,7 @@ export const RetryActionArea = memo(function RetryActionArea({
         </button>
       </div>
     </motion.div>
-  )
-})
+  );
+});
 
-export default RetryActionArea
+export default RetryActionArea;

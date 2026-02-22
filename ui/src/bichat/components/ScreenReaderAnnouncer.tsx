@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react';
 
 interface ScreenReaderAnnouncerProps {
   message: string
@@ -25,19 +25,19 @@ export default function ScreenReaderAnnouncer({
   politeness = 'polite',
   clearAfter,
 }: ScreenReaderAnnouncerProps) {
-  const [announcement, setAnnouncement] = useState(message)
+  const [announcement, setAnnouncement] = useState(message);
 
   useEffect(() => {
-    setAnnouncement(message)
+    setAnnouncement(message);
 
     if (clearAfter && message) {
       const timer = setTimeout(() => {
-        setAnnouncement('')
-      }, clearAfter)
-      return () => clearTimeout(timer)
+        setAnnouncement('');
+      }, clearAfter);
+      return () => clearTimeout(timer);
     }
-    return undefined
-  }, [message, clearAfter])
+    return undefined;
+  }, [message, clearAfter]);
 
   return (
     <div
@@ -48,5 +48,5 @@ export default function ScreenReaderAnnouncer({
     >
       {announcement}
     </div>
-  )
+  );
 }

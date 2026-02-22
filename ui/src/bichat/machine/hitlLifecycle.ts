@@ -3,22 +3,22 @@ import type {
   ConversationTurn,
   PendingQuestion,
   StreamInterruptPayload,
-} from '../types'
-import { MessageRole } from '../types'
+} from '../types';
+import { MessageRole } from '../types';
 
 export function normalizeQuestionType(rawType: unknown): 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' {
-  const normalized = String(rawType || '').trim().toUpperCase().replace(/[\s-]+/g, '_')
-  return normalized === 'MULTIPLE_CHOICE' ? 'MULTIPLE_CHOICE' : 'SINGLE_CHOICE'
+  const normalized = String(rawType || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
+  return normalized === 'MULTIPLE_CHOICE' ? 'MULTIPLE_CHOICE' : 'SINGLE_CHOICE';
 }
 
 export function pendingQuestionFromInterrupt(
   interrupt: StreamInterruptPayload | undefined,
   fallbackTurnId: string
 ): PendingQuestion | null {
-  if (!interrupt) return null
+  if (!interrupt) {return null;}
 
-  const checkpointId = interrupt.checkpointId?.trim()
-  if (!checkpointId) return null
+  const checkpointId = interrupt.checkpointId?.trim();
+  if (!checkpointId) {return null;}
 
   const questions = Array.isArray(interrupt.questions)
     ? interrupt.questions
@@ -37,7 +37,7 @@ export function pendingQuestionFromInterrupt(
             }))
           : [],
       }))
-    : []
+    : [];
 
   return {
     id: checkpointId,
@@ -45,7 +45,7 @@ export function pendingQuestionFromInterrupt(
     agentName: interrupt.agentName,
     questions,
     status: 'PENDING',
-  }
+  };
 }
 
 export function resolvePendingQuestionTurnIndex(
@@ -53,43 +53,43 @@ export function resolvePendingQuestionTurnIndex(
   pendingQuestion: PendingQuestion | null
 ): number {
   if (!pendingQuestion || pendingQuestion.status !== 'PENDING' || turns.length === 0) {
-    return -1
+    return -1;
   }
 
-  const pendingTurnId = pendingQuestion.turnId?.trim()
+  const pendingTurnId = pendingQuestion.turnId?.trim();
   if (pendingTurnId) {
     const explicitMatch = turns.findIndex((turn) =>
       turn.id === pendingTurnId ||
       turn.userTurn.id === pendingTurnId ||
       turn.assistantTurn?.id === pendingTurnId
-    )
-    if (explicitMatch !== -1) return explicitMatch
+    );
+    if (explicitMatch !== -1) {return explicitMatch;}
   }
 
   for (let i = turns.length - 1; i >= 0; i--) {
-    if (turns[i].assistantTurn) return i
+    if (turns[i].assistantTurn) {return i;}
   }
 
-  return turns.length - 1
+  return turns.length - 1;
 }
 
 export function applyTurnLifecycleForPendingQuestion(
   turns: ConversationTurn[],
   pendingQuestion: PendingQuestion | null
 ): ConversationTurn[] {
-  const pendingIndex = resolvePendingQuestionTurnIndex(turns, pendingQuestion)
-  if (turns.length === 0) return turns
+  const pendingIndex = resolvePendingQuestionTurnIndex(turns, pendingQuestion);
+  if (turns.length === 0) {return turns;}
 
-  let changed = false
+  let changed = false;
   const nextTurns = turns.map((turn, index) => {
-    const shouldWaitForInput = pendingIndex === index
+    const shouldWaitForInput = pendingIndex === index;
     const desiredLifecycle: AssistantTurnLifecycle = shouldWaitForInput
       ? 'waiting_for_human_input'
-      : 'complete'
+      : 'complete';
 
     if (!turn.assistantTurn) {
-      if (!shouldWaitForInput || !pendingQuestion) return turn
-      changed = true
+      if (!shouldWaitForInput || !pendingQuestion) {return turn;}
+      changed = true;
       return {
         ...turn,
         assistantTurn: {
@@ -102,23 +102,23 @@ export function applyTurnLifecycleForPendingQuestion(
           lifecycle: desiredLifecycle,
           createdAt: turn.createdAt,
         },
-      }
+      };
     }
 
     if (turn.assistantTurn.lifecycle === desiredLifecycle) {
-      return turn
+      return turn;
     }
 
-    changed = true
+    changed = true;
     return {
       ...turn,
       assistantTurn: {
         ...turn.assistantTurn,
         lifecycle: desiredLifecycle,
       },
-    }
-  })
+    };
+  });
 
-  return changed ? nextTurns : turns
+  return changed ? nextTurns : turns;
 }
 

@@ -4,9 +4,9 @@
  * Clean, professional design for enterprise BI applications
  */
 
-import { motion, useReducedMotion } from 'framer-motion'
-import { ChartBar, FileText, Lightbulb, type Icon } from '@phosphor-icons/react'
-import { useTranslation } from '../hooks/useTranslation'
+import { motion, useReducedMotion } from 'framer-motion';
+import { ChartBar, FileText, Lightbulb, type Icon } from '@phosphor-icons/react';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface ExamplePrompt {
   category: string
@@ -28,7 +28,7 @@ const PROMPT_DEFS = [
   { categoryKey: 'BiChat.Welcome.Prompt1Category', textKey: 'BiChat.Welcome.Prompt1Text', icon: ChartBar, defaultCategory: 'Data Analysis', defaultText: 'Show me a summary of key metrics' },
   { categoryKey: 'BiChat.Welcome.Prompt2Category', textKey: 'BiChat.Welcome.Prompt2Text', icon: FileText, defaultCategory: 'Reports', defaultText: 'Generate a report for the current period' },
   { categoryKey: 'BiChat.Welcome.Prompt3Category', textKey: 'BiChat.Welcome.Prompt3Text', icon: Lightbulb, defaultCategory: 'Insights', defaultText: 'What trends can you identify in the data?' },
-] as const
+] as const;
 
 const PROMPT_STYLES: { badge: string; icon: string }[] = [
   {
@@ -43,7 +43,7 @@ const PROMPT_STYLES: { badge: string; icon: string }[] = [
     badge: 'bg-amber-50 text-amber-600 ring-amber-600/10 dark:bg-amber-400/10 dark:text-amber-400 dark:ring-amber-400/20',
     icon: 'text-amber-500 dark:text-amber-400',
   },
-]
+];
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -54,7 +54,7 @@ const containerVariants = {
       delayChildren: 0.05
     }
   }
-}
+};
 
 const reducedContainerVariants = {
   hidden: { opacity: 0 },
@@ -65,7 +65,7 @@ const reducedContainerVariants = {
       delayChildren: 0
     }
   }
-}
+};
 
 const itemVariants = {
   hidden: { opacity: 0, y: 12 },
@@ -77,7 +77,7 @@ const itemVariants = {
       ease: [0.4, 0, 0.2, 1]
     }
   }
-}
+};
 
 const reducedItemVariants = {
   hidden: { opacity: 0 },
@@ -88,15 +88,15 @@ const reducedItemVariants = {
       duration: 0
     }
   }
-}
+};
 
 /** Resolve a translation key, falling back to a default if the key is not translated. */
 function tOr(t: (key: string) => string, key: string, defaultValue: string): string {
-  const v = t(key)
-  return v !== key ? v : defaultValue
+  const v = t(key);
+  return v !== key ? v : defaultValue;
 }
 
-const DEFAULT_ICONS: Icon[] = PROMPT_DEFS.map((d) => d.icon)
+const DEFAULT_ICONS: Icon[] = PROMPT_DEFS.map((d) => d.icon);
 
 function WelcomeContent({
   onPromptSelect,
@@ -105,10 +105,10 @@ function WelcomeContent({
   disabled = false,
   prompts: customPrompts,
 }: WelcomeContentProps) {
-  const { t } = useTranslation()
-  const shouldReduceMotion = useReducedMotion()
-  const resolvedTitle = title || ''
-  const resolvedDescription = description || ''
+  const { t } = useTranslation();
+  const shouldReduceMotion = useReducedMotion();
+  const resolvedTitle = title || '';
+  const resolvedDescription = description || '';
 
   const prompts: ExamplePrompt[] = customPrompts?.length
     ? customPrompts.map((p, i) => ({
@@ -120,16 +120,16 @@ function WelcomeContent({
         category: tOr(t, def.categoryKey, def.defaultCategory),
         text: tOr(t, def.textKey, def.defaultText),
         icon: def.icon,
-      }))
+      }));
 
   const handlePromptClick = (prompt: string) => {
     if (onPromptSelect && !disabled) {
-      onPromptSelect(prompt)
+      onPromptSelect(prompt);
     }
-  }
+  };
 
-  const activeContainerVariants = shouldReduceMotion ? reducedContainerVariants : containerVariants
-  const activeItemVariants = shouldReduceMotion ? reducedItemVariants : itemVariants
+  const activeContainerVariants = shouldReduceMotion ? reducedContainerVariants : containerVariants;
+  const activeItemVariants = shouldReduceMotion ? reducedItemVariants : itemVariants;
 
   return (
     <motion.div
@@ -168,7 +168,7 @@ function WelcomeContent({
 
         <div className={`grid gap-3 ${prompts.length <= 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3'}`}>
           {prompts.map((prompt, index) => {
-            const style = PROMPT_STYLES[index % PROMPT_STYLES.length]
+            const style = PROMPT_STYLES[index % PROMPT_STYLES.length];
             return (
               <motion.button
                 key={index}
@@ -197,13 +197,13 @@ function WelcomeContent({
                   {prompt.text}
                 </p>
               </motion.button>
-            )
+            );
           })}
         </div>
       </motion.div>
     </motion.div>
-  )
+  );
 }
 
-export { WelcomeContent }
-export default WelcomeContent
+export { WelcomeContent };
+export default WelcomeContent;

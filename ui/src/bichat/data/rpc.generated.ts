@@ -112,6 +112,8 @@ export interface DebugTrace {
   usage?: DebugUsage | null
   generationMs?: number
   tools?: DebugToolCall[]
+  traceId?: string
+  traceUrl?: string
 }
 
 export interface DebugUsage {

@@ -1,16 +1,16 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
-import { BiChatLayout } from './BiChatLayout'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
-import { mobileViewport, tabletViewport } from '@sb-helpers/viewportPresets'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
+import { BiChatLayout } from './BiChatLayout';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
+import { mobileViewport, tabletViewport } from '@sb-helpers/viewportPresets';
 
 const meta: Meta<typeof BiChatLayout> = {
   title: 'BiChat/Components/BiChatLayout',
   component: BiChatLayout,
   parameters: { layout: 'fullscreen' },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof BiChatLayout>
 
 const SampleSidebar = () => (
@@ -22,13 +22,13 @@ const SampleSidebar = () => (
       </div>
     ))}
   </div>
-)
+);
 
 const SampleContent = () => (
   <div className="flex h-full items-center justify-center">
     <p className="text-gray-500 dark:text-gray-400">Main content area</p>
   </div>
-)
+);
 
 const HeavyContent = () => (
   <div className="flex flex-col h-full p-6 overflow-auto">
@@ -46,7 +46,7 @@ const HeavyContent = () => (
       </div>
     ))}
   </div>
-)
+);
 
 export const Playground: Story = {
   args: {
@@ -54,7 +54,7 @@ export const Playground: Story = {
     children: <SampleContent />,
     onNewChat: fn(),
   },
-}
+};
 
 export const WithRouteTransitions: Story = {
   args: {
@@ -63,7 +63,7 @@ export const WithRouteTransitions: Story = {
     routeKey: '/chat/session-1',
     onNewChat: fn(),
   },
-}
+};
 
 export const MobileViewport: Story = {
   parameters: mobileViewport,
@@ -72,7 +72,7 @@ export const MobileViewport: Story = {
     children: <SampleContent />,
     onNewChat: fn(),
   },
-}
+};
 
 export const TabletViewport: Story = {
   parameters: tabletViewport,
@@ -81,7 +81,7 @@ export const TabletViewport: Story = {
     children: <HeavyContent />,
     onNewChat: fn(),
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -121,4 +121,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

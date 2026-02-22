@@ -1,8 +1,8 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import { SearchInput } from './SearchInput'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { SearchInput } from './SearchInput';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof SearchInput> = {
   title: 'BiChat/Components/SearchInput',
@@ -22,9 +22,9 @@ const meta: Meta<typeof SearchInput> = {
       </div>
     ),
   ],
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof SearchInput>
 
 // ---------------------------------------------------------------------------
@@ -41,7 +41,7 @@ export const Playground: Story = {
     onSubmit: fn(),
     onEscape: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 2. WithValue — shows the clear button
@@ -53,7 +53,7 @@ export const WithValue: Story = {
     onChange: fn(),
     onSubmit: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 3. Disabled — disabled state with value
@@ -65,7 +65,7 @@ export const Disabled: Story = {
     disabled: true,
     onChange: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 4. Stress — ScenarioGrid covering edge cases
@@ -140,4 +140,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

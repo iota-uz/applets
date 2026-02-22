@@ -5,10 +5,10 @@
  * via window.__APPLET_CONTEXT__.extensions.branding
  */
 
-import { useMemo } from 'react'
-import { useIotaContext } from '../context/IotaContext'
-import type { BrandingConfig, ExamplePrompt } from '../types'
-import { useTranslation } from './useTranslation'
+import { useMemo } from 'react';
+import { useIotaContext } from '../context/IotaContext';
+import type { BrandingConfig, ExamplePrompt } from '../types';
+import { useTranslation } from './useTranslation';
 
 /**
  * Default example prompts when none are configured.
@@ -29,7 +29,7 @@ const defaultExamplePrompts: ExamplePrompt[] = [
     text: 'What are the top performing items?',
     icon: 'lightbulb',
   },
-]
+];
 
 /**
  * Hook to access branding configuration.
@@ -37,20 +37,20 @@ const defaultExamplePrompts: ExamplePrompt[] = [
  * Returns merged branding with fallbacks to defaults and translations.
  */
 export function useBranding() {
-  const context = useIotaContext()
-  const { t } = useTranslation()
+  const context = useIotaContext();
+  const { t } = useTranslation();
 
   const branding = useMemo((): BrandingConfig => {
-    const customBranding = context.extensions?.branding || {}
+    const customBranding = context.extensions?.branding || {};
 
     // Get example prompts with category translations
-    let examplePrompts = customBranding.welcome?.examplePrompts
+    let examplePrompts = customBranding.welcome?.examplePrompts;
     if (!examplePrompts || examplePrompts.length === 0) {
       // Use defaults with translated categories
       examplePrompts = defaultExamplePrompts.map((p) => ({
         ...p,
         category: t(`category.${p.category.toLowerCase().replace(/\s+/g, '')}`) || p.category,
-      }))
+      }));
     }
 
     return {
@@ -62,17 +62,17 @@ export function useBranding() {
         examplePrompts,
       },
       theme: customBranding.theme,
-    }
-  }, [context.extensions?.branding, t])
+    };
+  }, [context.extensions?.branding, t]);
 
-  return branding
+  return branding;
 }
 
 /**
  * Hook to access feature flags.
  */
 export function useFeatureFlags() {
-  const context = useIotaContext()
+  const context = useIotaContext();
 
   return useMemo(
     () => ({
@@ -82,5 +82,5 @@ export function useFeatureFlags() {
       multiAgent: context.extensions?.features?.multiAgent ?? false,
     }),
     [context.extensions?.features]
-  )
+  );
 }

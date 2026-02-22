@@ -4,16 +4,16 @@
  * Uses ChatDataSource for data fetching (no GraphQL dependency)
  */
 
-import { useState, useCallback, useEffect, useMemo } from 'react'
-import { motion } from 'framer-motion'
-import { Archive } from '@phosphor-icons/react'
-import { UserAvatar } from './UserAvatar'
-import { UserFilter } from './UserFilter'
-import SessionSkeleton from './SessionSkeleton'
-import { EmptyState } from './EmptyState'
-import { staggerContainerVariants } from '../animations/variants'
-import { useTranslation } from '../hooks/useTranslation'
-import type { ChatDataSource, Session, SessionUser } from '../types'
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { Archive } from '@phosphor-icons/react';
+import { UserAvatar } from './UserAvatar';
+import { UserFilter } from './UserFilter';
+import SessionSkeleton from './SessionSkeleton';
+import { EmptyState } from './EmptyState';
+import { staggerContainerVariants } from '../animations/variants';
+import { useTranslation } from '../hooks/useTranslation';
+import type { ChatDataSource, Session, SessionUser } from '../types';
 
 interface AllChatsListProps {
   dataSource: ChatDataSource
@@ -22,50 +22,50 @@ interface AllChatsListProps {
 }
 
 export default function AllChatsList({ dataSource, onSessionSelect, activeSessionId }: AllChatsListProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   // State
-  const [includeArchived, setIncludeArchived] = useState(false)
-  const [selectedUser, setSelectedUser] = useState<SessionUser | null>(null)
-  const [offset, setOffset] = useState(0)
-  const [fetching, setFetching] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [chats, setChats] = useState<Array<Session & { owner: SessionUser }>>([])
-  const [totalCount, setTotalCount] = useState(0)
-  const [hasMore, setHasMore] = useState(false)
-  const [users, setUsers] = useState<SessionUser[]>([])
-  const [usersLoading, setUsersLoading] = useState(false)
+  const [includeArchived, setIncludeArchived] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<SessionUser | null>(null);
+  const [offset, setOffset] = useState(0);
+  const [fetching, setFetching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [chats, setChats] = useState<Array<Session & { owner: SessionUser }>>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [users, setUsers] = useState<SessionUser[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
 
-  const limit = 20
+  const limit = 20;
 
   // Fetch users list
   useEffect(() => {
-    if (!dataSource.listUsers) return
+    if (!dataSource.listUsers) {return;}
 
-    let cancelled = false
-    setUsersLoading(true)
+    let cancelled = false;
+    setUsersLoading(true);
 
     dataSource.listUsers().then((result) => {
       if (!cancelled) {
-        setUsers(result)
-        setUsersLoading(false)
+        setUsers(result);
+        setUsersLoading(false);
       }
     }).catch(() => {
       if (!cancelled) {
-        setUsersLoading(false)
+        setUsersLoading(false);
       }
-    })
+    });
 
-    return () => { cancelled = true }
-  }, [dataSource])
+    return () => { cancelled = true; };
+  }, [dataSource]);
 
   // Fetch chats
   useEffect(() => {
-    if (!dataSource.listAllSessions) return
+    if (!dataSource.listAllSessions) {return;}
 
-    let cancelled = false
-    setFetching(true)
-    setError(null)
+    let cancelled = false;
+    setFetching(true);
+    setError(null);
 
     dataSource.listAllSessions({
       limit,
@@ -75,68 +75,68 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
     }).then((result) => {
       if (!cancelled) {
         if (offset === 0) {
-          setChats(result.sessions)
+          setChats(result.sessions);
         } else {
-          setChats((prev) => [...prev, ...result.sessions])
+          setChats((prev) => [...prev, ...result.sessions]);
         }
-        setTotalCount(result.total)
-        setHasMore(result.hasMore)
-        setFetching(false)
+        setTotalCount(result.total);
+        setHasMore(result.hasMore);
+        setFetching(false);
       }
     }).catch(() => {
       if (!cancelled) {
-        setError(t('BiChat.AllChats.FailedToLoad'))
-        setFetching(false)
+        setError(t('BiChat.AllChats.FailedToLoad'));
+        setFetching(false);
       }
-    })
+    });
 
-    return () => { cancelled = true }
-  }, [dataSource, offset, includeArchived, selectedUser, t])
+    return () => { cancelled = true; };
+  }, [dataSource, offset, includeArchived, selectedUser, t]);
 
   // Reset offset when filter changes
   useEffect(() => {
-    setOffset(0)
-    setChats([])
-  }, [includeArchived, selectedUser])
+    setOffset(0);
+    setChats([]);
+  }, [includeArchived, selectedUser]);
 
   // Load more handler
   const handleLoadMore = useCallback(() => {
     if (!fetching && hasMore) {
-      setOffset((prev) => prev + limit)
+      setOffset((prev) => prev + limit);
     }
-  }, [fetching, hasMore])
+  }, [fetching, hasMore]);
 
   // Infinite scroll observer
   const loadMoreRef = useCallback(
     (node: HTMLDivElement | null) => {
-      if (!node || fetching || !hasMore) return
+      if (!node || fetching || !hasMore) {return;}
 
       const observer = new IntersectionObserver(
         (entries) => {
           if (entries[0].isIntersecting) {
-            handleLoadMore()
+            handleLoadMore();
           }
         },
         { threshold: 0.1 }
-      )
+      );
 
-      observer.observe(node)
-      return () => observer.disconnect()
+      observer.observe(node);
+      return () => observer.disconnect();
     },
     [fetching, hasMore, handleLoadMore]
-  )
+  );
 
   // Derive unique users from chat data if listUsers is not available
   const derivedUsers = useMemo(() => {
-    if (dataSource.listUsers) return users
-    const userMap = new Map<string, SessionUser>()
+    if (dataSource.listUsers) {return users;}
+    const userMap = new Map<string, SessionUser>();
     chats.forEach((chat) => {
       if (chat.owner && !userMap.has(chat.owner.id)) {
-        userMap.set(chat.owner.id, chat.owner)
+        userMap.set(chat.owner.id, chat.owner);
       }
-    })
-    return Array.from(userMap.values())
-  }, [chats, users, dataSource.listUsers])
+    });
+    return Array.from(userMap.values());
+  }, [chats, users, dataSource.listUsers]);
 
   return (
     <div
@@ -211,8 +211,8 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
                       onClick={() => onSessionSelect(chat.id)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          onSessionSelect(chat.id)
+                          e.preventDefault();
+                          onSessionSelect(chat.id);
                         }
                       }}
                       className={`
@@ -294,5 +294,5 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
         )}
       </nav>
     </div>
-  )
+  );
 }

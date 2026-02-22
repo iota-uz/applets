@@ -50,10 +50,12 @@ From a repo that contains an applet (e.g. iota-sdk or EAI):
 applet doctor              # environment and config diagnostics
 applet rpc gen --name <applet-name>
 applet rpc check --name <applet-name>
+applet rpc watch --name <applet-name>
 applet deps check
 applet check               # deps + RPC drift for all applets
 applet schema export --name <applet>
 applet dev                 # start dev environment (all configured applets)
+applet dev --rpc-watch     # include RPC codegen watch during dev
 applet build [name]        # build production bundle
 applet list                # list configured applets
 applet secrets set --name <applet> --key OPENAI_API_KEY --value ...

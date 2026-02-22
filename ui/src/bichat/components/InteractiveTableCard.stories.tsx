@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from '@storybook/react'
-import { fn } from '@storybook/test'
+import type { Meta, StoryObj } from '@storybook/react';
+import { fn } from '@storybook/test';
 
-import { InteractiveTableCard } from './InteractiveTableCard'
-import { makeRenderTableData } from '@sb-helpers/bichatFixtures'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import { InteractiveTableCard } from './InteractiveTableCard';
+import { makeRenderTableData } from '@sb-helpers/bichatFixtures';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof InteractiveTableCard> = {
   title: 'BiChat/Components/InteractiveTableCard',
@@ -11,9 +11,9 @@ const meta: Meta<typeof InteractiveTableCard> = {
   parameters: {
     layout: 'centered',
   },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof InteractiveTableCard>
 
 // ---------------------------------------------------------------------------
@@ -29,7 +29,7 @@ export const Playground: Story = {
   argTypes: {
     sendDisabled: { control: 'boolean' },
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 2. WithExportUrl
@@ -42,7 +42,7 @@ export const WithExportUrl: Story = {
     }),
     onSendMessage: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 3. WithExportPrompt
@@ -55,18 +55,18 @@ export const WithExportPrompt: Story = {
     }),
     onSendMessage: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 4. WideTable — 15 columns to test horizontal scroll
 // ---------------------------------------------------------------------------
 
-const wideColumns = Array.from({ length: 15 }, (_, i) => `col${i + 1}`)
-const wideHeaders = Array.from({ length: 15 }, (_, i) => `Column ${i + 1}`)
-const wideColumnTypes = Array.from({ length: 15 }, () => 'string')
+const wideColumns = Array.from({ length: 15 }, (_, i) => `col${i + 1}`);
+const wideHeaders = Array.from({ length: 15 }, (_, i) => `Column ${i + 1}`);
+const wideColumnTypes = Array.from({ length: 15 }, () => 'string');
 const wideRows = Array.from({ length: 5 }, (_, r) =>
   Array.from({ length: 15 }, (_, c) => `R${r + 1}C${c + 1}`),
-)
+);
 
 export const WideTable: Story = {
   args: {
@@ -82,7 +82,7 @@ export const WideTable: Story = {
     }),
     onSendMessage: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 5. Truncated — 20 rows, marked as truncated from 500
@@ -94,7 +94,7 @@ const truncatedRows = Array.from({ length: 20 }, (_, r) => [
   +(Math.random() * 40).toFixed(1),
   Math.round(Math.random() * 5000),
   Math.round(Math.random() * 400),
-])
+]);
 
 export const Truncated: Story = {
   args: {
@@ -107,7 +107,7 @@ export const Truncated: Story = {
     }),
     onSendMessage: fn(),
   },
-}
+};
 
 // ---------------------------------------------------------------------------
 // 6. Stress — ScenarioGrid
@@ -191,4 +191,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

@@ -3,9 +3,9 @@
  * Reusable search input with icon, clear button, and keyboard shortcuts
  */
 
-import { useEffect, useRef, memo, type KeyboardEvent } from 'react'
-import { MagnifyingGlass, X } from '@phosphor-icons/react'
-import { useTranslation } from '../hooks/useTranslation'
+import { useEffect, useRef, memo, type KeyboardEvent } from 'react';
+import { MagnifyingGlass, X } from '@phosphor-icons/react';
+import { useTranslation } from '../hooks/useTranslation';
 
 export interface SearchInputProps {
   /** Current search value */
@@ -46,7 +46,7 @@ const sizeClasses = {
     icon: 18,
     clearBtn: 'p-2',
   },
-}
+};
 
 function SearchInput({
   value,
@@ -60,37 +60,37 @@ function SearchInput({
   disabled = false,
   ariaLabel,
 }: SearchInputProps) {
-  const { t } = useTranslation()
-  const resolvedPlaceholder = placeholder ?? t('BiChat.Common.Search')
-  const resolvedAriaLabel = ariaLabel ?? t('BiChat.Common.Search')
-  const inputRef = useRef<HTMLInputElement>(null)
-  const sizes = sizeClasses[size]
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t('BiChat.Common.Search');
+  const resolvedAriaLabel = ariaLabel ?? t('BiChat.Common.Search');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const sizes = sizeClasses[size];
 
   useEffect(() => {
     if (autoFocus && inputRef.current) {
-      inputRef.current.focus()
+      inputRef.current.focus();
     }
-  }, [autoFocus])
+  }, [autoFocus]);
 
   const handleClear = () => {
-    onChange('')
-    inputRef.current?.focus()
-  }
+    onChange('');
+    inputRef.current?.focus();
+  };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && onSubmit) {
-      e.preventDefault()
-      onSubmit(value)
+      e.preventDefault();
+      onSubmit(value);
     } else if (e.key === 'Escape') {
-      e.preventDefault()
+      e.preventDefault();
       if (value && !onEscape) {
         // Default behavior: clear on Escape if no handler provided
-        handleClear()
+        handleClear();
       } else if (onEscape) {
-        onEscape()
+        onEscape();
       }
     }
-  }
+  };
 
   return (
     <div className={`relative w-full ${className}`} role="search">
@@ -130,11 +130,11 @@ function SearchInput({
         </button>
       )}
     </div>
-  )
+  );
 }
 
-const MemoizedSearchInput = memo(SearchInput)
-MemoizedSearchInput.displayName = 'SearchInput'
+const MemoizedSearchInput = memo(SearchInput);
+MemoizedSearchInput.displayName = 'SearchInput';
 
-export { MemoizedSearchInput as SearchInput }
-export default MemoizedSearchInput
+export { MemoizedSearchInput as SearchInput };
+export default MemoizedSearchInput;

@@ -8,9 +8,9 @@
  * For more customization, use the UserMessage component directly with slots.
  */
 
-import { useChatMessaging } from '../context/ChatContext'
-import { UserMessage, type UserMessageSlots, type UserMessageClassNames } from './UserMessage'
-import type { ConversationTurn } from '../types'
+import { useChatMessaging } from '../context/ChatContext';
+import { UserMessage, type UserMessageSlots, type UserMessageClassNames } from './UserMessage';
+import type { ConversationTurn } from '../types';
 
 export interface UserTurnViewProps {
   /** The conversation turn containing the user message */
@@ -41,7 +41,7 @@ export function UserTurnView({
   hideTimestamp,
   allowEdit,
 }: UserTurnViewProps) {
-  const { handleEdit, handleCopy } = useChatMessaging()
+  const { handleEdit, handleCopy } = useChatMessaging();
 
   return (
     <UserMessage
@@ -57,7 +57,7 @@ export function UserTurnView({
       hideTimestamp={hideTimestamp}
       allowEdit={allowEdit}
     />
-  )
+  );
 }
 
-export default UserTurnView
+export default UserTurnView;

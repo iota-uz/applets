@@ -1,15 +1,15 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react';
 
-import DateGroupHeader from './DateGroupHeader'
-import { ScenarioGrid } from '@sb-helpers/ScenarioGrid'
+import DateGroupHeader from './DateGroupHeader';
+import { ScenarioGrid } from '@sb-helpers/ScenarioGrid';
 
 const meta: Meta<typeof DateGroupHeader> = {
   title: 'BiChat/Components/DateGroupHeader',
   component: DateGroupHeader,
   parameters: { layout: 'centered' },
-}
+};
 
-export default meta
+export default meta;
 type Story = StoryObj<typeof DateGroupHeader>
 
 export const Playground: Story = {
@@ -17,14 +17,14 @@ export const Playground: Story = {
     groupName: 'Today',
     count: 5,
   },
-}
+};
 
 export const WithCount: Story = {
   args: {
     groupName: 'Last 7 days',
     count: 23,
   },
-}
+};
 
 export const Stress: Story = {
   render: () => (
@@ -81,4 +81,4 @@ export const Stress: Story = {
       ]}
     />
   ),
-}
+};

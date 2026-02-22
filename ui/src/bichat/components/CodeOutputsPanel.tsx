@@ -8,10 +8,10 @@
  * - error: Error messages from failed code execution
  */
 
-import { Download } from '@phosphor-icons/react'
-import type { CodeOutput } from '../types'
-import { formatFileSize } from '../utils/fileUtils'
-import { useTranslation } from '../hooks/useTranslation'
+import { Download } from '@phosphor-icons/react';
+import type { CodeOutput } from '../types';
+import { formatFileSize } from '../utils/fileUtils';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface CodeOutputsPanelProps {
   outputs: CodeOutput[]
@@ -19,17 +19,17 @@ interface CodeOutputsPanelProps {
 
 function toBase64(str: string): string {
   // btoa() only supports Latin1; this converts UTF-8 bytes to a binary string first.
-  const bytes = new TextEncoder().encode(str)
-  let binary = ''
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
   for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i])
+    binary += String.fromCharCode(bytes[i]);
   }
-  return btoa(binary)
+  return btoa(binary);
 }
 
 function CodeOutputsPanel({ outputs }: CodeOutputsPanelProps) {
-  const { t } = useTranslation()
-  if (!outputs || outputs.length === 0) return null
+  const { t } = useTranslation();
+  if (!outputs || outputs.length === 0) {return null;}
 
   return (
     <div className="mb-2 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -98,8 +98,8 @@ function CodeOutputsPanel({ outputs }: CodeOutputsPanelProps) {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
-export { CodeOutputsPanel }
-export default CodeOutputsPanel
+export { CodeOutputsPanel };
+export default CodeOutputsPanel;

@@ -1,6 +1,6 @@
-import { memo } from 'react'
-import type { ColumnMeta, ColumnStats } from '../hooks/useDataTable'
-import { useTranslation } from '../hooks/useTranslation'
+import { memo } from 'react';
+import type { ColumnMeta, ColumnStats } from '../hooks/useDataTable';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface DataTableFooterProps {
   visibleColumns: ColumnMeta[]
@@ -9,46 +9,98 @@ interface DataTableFooterProps {
 }
 
 function formatStat(value: number): string {
-  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value)
+  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value);
 }
+
+interface StatRowProps {
+  label: string
+  visibleColumns: ColumnMeta[]
+  stats: Map<number, ColumnStats>
+  getValue: (s: ColumnStats) => number
+  showRowNumbers?: boolean
+  odd?: boolean
+}
+
+const StatRow = memo(function StatRow({
+  label,
+  visibleColumns,
+  stats,
+  getValue,
+  showRowNumbers,
+  odd,
+}: StatRowProps) {
+  const zebra = odd ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-900';
+  return (
+    <tr className={zebra}>
+      <td
+        colSpan={showRowNumbers ? 2 : 1}
+        className={`sticky left-0 z-20 px-3 py-1.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 select-none ${zebra}`}
+      >
+        {label}
+      </td>
+      {visibleColumns.map((col, colIdx) => {
+        if (colIdx === 0 && showRowNumbers) {return null;}
+        const s = stats.get(col.index);
+        return (
+          <td
+            key={col.index}
+            className={`px-3 py-1.5 text-xs ${
+              col.type === 'number' ? 'text-right' : 'text-left'
+            } text-gray-600 dark:text-gray-300`}
+          >
+            {s ? (
+              <span className="font-mono tabular-nums font-medium">
+                {formatStat(getValue(s))}
+              </span>
+            ) : null}
+          </td>
+        );
+      })}
+    </tr>
+  );
+});
 
 export const DataTableFooter = memo(function DataTableFooter({
   visibleColumns,
   stats,
   showRowNumbers,
 }: DataTableFooterProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
-  if (stats.size === 0) return null
+  if (stats.size === 0) {return null;}
 
   return (
-    <tfoot className="sticky bottom-0 z-10 bg-gray-100 dark:bg-gray-800">
-      <tr className="border-t border-gray-200 dark:border-gray-700" aria-label={t('BiChat.DataTable.SummaryRow')}>
-        {showRowNumbers && (
-          <td className="sticky left-0 z-20 w-10 bg-gray-100 px-2 py-2 dark:bg-gray-800" />
-        )}
-        {visibleColumns.map((col, colIdx) => {
-          const s = stats.get(col.index)
-          return (
-            <td
-              key={col.index}
-              className={`px-3 py-2 text-xs font-medium ${
-                col.type === 'number' ? 'text-right' : 'text-left'
-              } text-gray-600 dark:text-gray-300 ${
-                colIdx === 0 && showRowNumbers ? 'sticky left-[2.5rem] z-20 bg-gray-100 dark:bg-gray-800' : ''
-              }`}
-            >
-              {s ? (
-                <span className="font-mono tabular-nums" title={`${t('BiChat.DataTable.StatsSum')}: ${formatStat(s.sum)} | ${t('BiChat.DataTable.StatsAvg')}: ${formatStat(s.avg)} | ${t('BiChat.DataTable.StatsMin')}: ${formatStat(s.min)} | ${t('BiChat.DataTable.StatsMax')}: ${formatStat(s.max)}`}>
-                  {formatStat(s.sum)}
-                </span>
-              ) : (
-                <span className="text-gray-400 dark:text-gray-600">&mdash;</span>
-              )}
-            </td>
-          )
-        })}
-      </tr>
+    <tfoot className="sticky bottom-0 z-10 border-t-2 border-gray-300 dark:border-gray-600">
+      <StatRow
+        label={t('BiChat.DataTable.StatsSum')}
+        visibleColumns={visibleColumns}
+        stats={stats}
+        getValue={(s) => s.sum}
+        showRowNumbers={showRowNumbers}
+      />
+      <StatRow
+        label={t('BiChat.DataTable.StatsAvg')}
+        visibleColumns={visibleColumns}
+        stats={stats}
+        getValue={(s) => s.avg}
+        showRowNumbers={showRowNumbers}
+        odd
+      />
+      <StatRow
+        label={t('BiChat.DataTable.StatsMin')}
+        visibleColumns={visibleColumns}
+        stats={stats}
+        getValue={(s) => s.min}
+        showRowNumbers={showRowNumbers}
+      />
+      <StatRow
+        label={t('BiChat.DataTable.StatsMax')}
+        visibleColumns={visibleColumns}
+        stats={stats}
+        getValue={(s) => s.max}
+        showRowNumbers={showRowNumbers}
+        odd
+      />
     </tfoot>
-  )
-})
+  );
+});

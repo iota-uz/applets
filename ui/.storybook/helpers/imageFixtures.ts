@@ -1,9 +1,9 @@
 function toBase64(input: string): string {
   // Works in both browser and Node environments.
-  if (typeof btoa === 'function') return btoa(input)
+  if (typeof btoa === 'function') {return btoa(input);}
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const B: any = (globalThis as any).Buffer
-  return B.from(input, 'utf8').toString('base64')
+  const B: any = (globalThis as any).Buffer;
+  return B.from(input, 'utf8').toString('base64');
 }
 
 export function svgDataUrl({
@@ -34,16 +34,16 @@ export function svgDataUrl({
         fill="${fg}" fill-opacity="0.92">
     ${text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}
   </text>
-</svg>`
+</svg>`;
 
-  return `data:image/svg+xml;base64,${toBase64(svg)}`
+  return `data:image/svg+xml;base64,${toBase64(svg)}`;
 }
 
-export const smallImageDataUrl = svgDataUrl({ width: 240, height: 160, text: 'Small image' })
-export const largeImageDataUrl = svgDataUrl({ width: 1600, height: 900, text: 'Large image' })
+export const smallImageDataUrl = svgDataUrl({ width: 240, height: 160, text: 'Small image' });
+export const largeImageDataUrl = svgDataUrl({ width: 1600, height: 900, text: 'Large image' });
 
 export function base64FromDataUrl(dataUrl: string): string {
-  const idx = dataUrl.indexOf('base64,')
-  return idx >= 0 ? dataUrl.slice(idx + 'base64,'.length) : ''
+  const idx = dataUrl.indexOf('base64,');
+  return idx >= 0 ? dataUrl.slice(idx + 'base64,'.length) : '';
 }
 

@@ -3,9 +3,9 @@
  * Wraps markdown tables with an export button that sends a message to export the table
  */
 
-import { memo, useCallback, type ReactNode } from 'react'
-import { TableExportButton } from './TableExportButton'
-import { useTranslation } from '../hooks/useTranslation'
+import { memo, useCallback, type ReactNode } from 'react';
+import { TableExportButton } from './TableExportButton';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface TableWithExportProps {
   /** The table content to render */
@@ -27,12 +27,12 @@ export const TableWithExport = memo(function TableWithExport({
   exportMessage,
   exportLabel,
 }: TableWithExportProps) {
-  const { t } = useTranslation()
-  const resolvedExportMessage = exportMessage ?? t('BiChat.ExportTableToExcel')
-  const resolvedExportLabel = exportLabel ?? t('BiChat.Export')
+  const { t } = useTranslation();
+  const resolvedExportMessage = exportMessage ?? t('BiChat.ExportTableToExcel');
+  const resolvedExportLabel = exportLabel ?? t('BiChat.Export');
   const handleExport = useCallback(() => {
-    sendMessage?.(resolvedExportMessage)
-  }, [sendMessage, resolvedExportMessage])
+    sendMessage?.(resolvedExportMessage);
+  }, [sendMessage, resolvedExportMessage]);
 
   return (
     <>
@@ -45,5 +45,5 @@ export const TableWithExport = memo(function TableWithExport({
         </div>
       )}
     </>
-  )
-})
+  );
+});

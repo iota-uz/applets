@@ -4,10 +4,10 @@
  * Allows users to skip navigation and go directly to main content
  */
 
-import { useTranslation } from '../hooks/useTranslation'
+import { useTranslation } from '../hooks/useTranslation';
 
 export default function SkipLink() {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   return (
     <a
@@ -16,5 +16,5 @@ export default function SkipLink() {
     >
       {t('BiChat.SkipLink.Label')}
     </a>
-  )
+  );
 }

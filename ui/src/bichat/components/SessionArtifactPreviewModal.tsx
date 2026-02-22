@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
-import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react'
-import { FloppyDisk, PencilSimple, Trash, X } from '@phosphor-icons/react'
-import type { SessionArtifact } from '../types'
-import { useTranslation } from '../hooks/useTranslation'
-import { SessionArtifactPreview } from './SessionArtifactPreview'
+import { useEffect, useState } from 'react';
+import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
+import { FloppyDisk, PencilSimple, Trash, X } from '@phosphor-icons/react';
+import type { SessionArtifact } from '../types';
+import { useTranslation } from '../hooks/useTranslation';
+import { SessionArtifactPreview } from './SessionArtifactPreview';
 
 interface SessionArtifactPreviewModalProps {
   isOpen: boolean
@@ -24,74 +24,74 @@ export function SessionArtifactPreviewModal({
   onRename,
   onDelete,
 }: SessionArtifactPreviewModalProps) {
-  const { t } = useTranslation()
-  const [isEditingName, setIsEditingName] = useState(false)
-  const [nameDraft, setNameDraft] = useState('')
-  const [submittingRename, setSubmittingRename] = useState(false)
-  const [submittingDelete, setSubmittingDelete] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { t } = useTranslation();
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [submittingRename, setSubmittingRename] = useState(false);
+  const [submittingDelete, setSubmittingDelete] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setIsEditingName(false)
-    setSubmittingRename(false)
-    setSubmittingDelete(false)
-    setError(null)
-    setNameDraft(artifact?.name || '')
-  }, [artifact])
+    setIsEditingName(false);
+    setSubmittingRename(false);
+    setSubmittingDelete(false);
+    setError(null);
+    setNameDraft(artifact?.name || '');
+  }, [artifact]);
 
   const handleClose = () => {
     if (submittingRename || submittingDelete) {
-      return
+      return;
     }
-    onClose()
-  }
+    onClose();
+  };
 
   const handleRename = async () => {
     if (!artifact || !onRename) {
-      return
+      return;
     }
 
-    const nextName = nameDraft.trim()
+    const nextName = nameDraft.trim();
     if (!nextName || nextName === artifact.name) {
-      setIsEditingName(false)
-      setNameDraft(artifact.name)
-      return
+      setIsEditingName(false);
+      setNameDraft(artifact.name);
+      return;
     }
 
-    setSubmittingRename(true)
-    setError(null)
+    setSubmittingRename(true);
+    setError(null);
     try {
-      await onRename(artifact, nextName)
-      setIsEditingName(false)
+      await onRename(artifact, nextName);
+      setIsEditingName(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('BiChat.Artifacts.RenameFailed'))
+      setError(err instanceof Error ? err.message : t('BiChat.Artifacts.RenameFailed'));
     } finally {
-      setSubmittingRename(false)
+      setSubmittingRename(false);
     }
-  }
+  };
 
   const handleDelete = async () => {
     if (!artifact || !onDelete) {
-      return
+      return;
     }
     if (!window.confirm(t('BiChat.Artifacts.DeleteConfirm'))) {
-      return
+      return;
     }
 
-    setSubmittingDelete(true)
-    setError(null)
+    setSubmittingDelete(true);
+    setError(null);
     try {
-      await onDelete(artifact)
-      onClose()
+      await onDelete(artifact);
+      onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('BiChat.Artifacts.DeleteFailed'))
+      setError(err instanceof Error ? err.message : t('BiChat.Artifacts.DeleteFailed'));
     } finally {
-      setSubmittingDelete(false)
+      setSubmittingDelete(false);
     }
-  }
+  };
 
   if (!artifact) {
-    return null
+    return null;
   }
 
   return (
@@ -110,13 +110,13 @@ export function SessionArtifactPreviewModal({
                       onChange={(e) => setNameDraft(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
-                          e.preventDefault()
-                          void handleRename()
+                          e.preventDefault();
+                          void handleRename();
                         }
                         if (e.key === 'Escape') {
-                          e.preventDefault()
-                          setIsEditingName(false)
-                          setNameDraft(artifact.name)
+                          e.preventDefault();
+                          setIsEditingName(false);
+                          setNameDraft(artifact.name);
                         }
                       }}
                       className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
@@ -126,7 +126,7 @@ export function SessionArtifactPreviewModal({
                     <button
                       type="button"
                       onClick={() => {
-                        void handleRename()
+                        void handleRename();
                       }}
                       disabled={submittingRename}
                       className="cursor-pointer inline-flex items-center gap-1 rounded-lg bg-primary-600 px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
@@ -137,8 +137,8 @@ export function SessionArtifactPreviewModal({
                     <button
                       type="button"
                       onClick={() => {
-                        setIsEditingName(false)
-                        setNameDraft(artifact.name)
+                        setIsEditingName(false);
+                        setNameDraft(artifact.name);
                       }}
                       disabled={submittingRename}
                       className="cursor-pointer rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
@@ -163,8 +163,8 @@ export function SessionArtifactPreviewModal({
                   <button
                     type="button"
                     onClick={() => {
-                      setError(null)
-                      setIsEditingName(true)
+                      setError(null);
+                      setIsEditingName(true);
                     }}
                     className="cursor-pointer rounded-lg border border-gray-200 p-2 text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
                     aria-label={t('BiChat.Artifacts.Rename')}
@@ -177,7 +177,7 @@ export function SessionArtifactPreviewModal({
                   <button
                     type="button"
                     onClick={() => {
-                      void handleDelete()
+                      void handleDelete();
                     }}
                     disabled={submittingDelete}
                     className="cursor-pointer rounded-lg border border-red-200 p-2 text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/30 dark:hover:text-red-300"
@@ -211,5 +211,5 @@ export function SessionArtifactPreviewModal({
         </div>
       </div>
     </Dialog>
-  )
+  );
 }

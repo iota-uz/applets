@@ -1,3 +1,3 @@
-export { shouldEnableAppletDevtools } from './enabled'
-export { AppletDevtoolsOverlay } from './overlay'
+export { shouldEnableAppletDevtools } from './enabled';
+export { AppletDevtoolsOverlay } from './overlay';
 
