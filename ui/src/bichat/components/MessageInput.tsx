@@ -5,7 +5,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react';
-import { Paperclip, PaperPlaneRight, X, Bug, ArrowUp, ArrowDown, Stack } from '@phosphor-icons/react';
+import { Paperclip, PaperPlaneRight, X, Bug, ArrowUp, ArrowDown, Stack, Stop } from '@phosphor-icons/react';
 import AttachmentGrid from './AttachmentGrid';
 import { MessageQueueList } from './MessageQueueList';
 import ImageModal from './ImageModal';
@@ -719,11 +719,11 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                   type="button"
                   onClick={onCancelStreaming}
                   disabled={disabled || fetching}
-                  className="cursor-pointer flex-shrink-0 self-center p-2 rounded-lg bg-red-600 hover:bg-red-700 active:bg-red-800 active:scale-95 text-white shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-red-600"
+                  className="cursor-pointer flex-shrink-0 self-center p-2 rounded-lg bg-gray-900 hover:bg-gray-800 active:bg-black active:scale-95 text-white shadow-sm transition-all dark:bg-gray-100 dark:hover:bg-gray-200 dark:active:bg-white dark:text-gray-900 disabled:opacity-40 disabled:cursor-not-allowed"
                   aria-label={t('BiChat.Common.Cancel')}
                   title={t('BiChat.Common.Cancel')}
                 >
-                  <X size={18} weight="bold" />
+                  <Stop size={18} weight="fill" />
                 </button>
               ) : (
                 <button
