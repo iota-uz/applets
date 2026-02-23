@@ -90,13 +90,16 @@ export async function* sendMessage(
       sessionId,
       attachmentCount: streamAttachments.length,
     });
-    const payload = {
+    const payload: Record<string, unknown> = {
       sessionId,
       content,
       debugMode: options?.debugMode ?? false,
       replaceFromMessageId: options?.replaceFromMessageID,
       attachments: streamAttachments,
     };
+    if (options?.reasoningEffort) {
+      payload.reasoningEffort = options.reasoningEffort;
+    }
 
     const timeoutMs = deps.timeout ?? 0;
     if (timeoutMs > 0) {

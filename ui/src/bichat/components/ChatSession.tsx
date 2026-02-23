@@ -25,6 +25,7 @@ import CompactionDoodle from './CompactionDoodle';
 import WelcomeContent from './WelcomeContent';
 import ArchiveBanner from './ArchiveBanner';
 import { useTranslation } from '../hooks/useTranslation';
+import { readReasoningEffortOptionsFromGlobalContext } from '../context/chatHelpers';
 import { SessionArtifactsPanel } from './SessionArtifactsPanel';
 import Alert from './Alert';
 import { StreamError } from './StreamError';
@@ -105,6 +106,8 @@ function ChatSessionCore({
     currentSessionId,
     setError,
     retryFetchSession,
+    reasoningEffort,
+    setReasoningEffort,
   } =
     useChatSession();
   const {
@@ -133,6 +136,7 @@ function ChatSessionCore({
   const isArchived = session?.status === 'archived';
   const effectiveReadOnly = Boolean(readOnly ?? isReadOnly) || isArchived;
   const [restoring, setRestoring] = useState(false);
+  const [reasoningEffortOptions] = useState(() => readReasoningEffortOptionsFromGlobalContext());
 
   const handleRestore = useCallback(async () => {
     if (!session?.id) {return;}
@@ -389,6 +393,9 @@ function ChatSessionCore({
                       onCancelStreaming={cancel}
                       containerClassName="pt-6 px-6"
                       formClassName="mx-auto"
+                      reasoningEffortOptions={reasoningEffortOptions}
+                      reasoningEffort={reasoningEffort}
+                      onReasoningEffortChange={setReasoningEffort}
                     />
                   )}
                   <p className="mt-4 pb-1 text-center text-xs text-gray-500 dark:text-gray-400">
@@ -450,6 +457,9 @@ function ChatSessionCore({
                   onRemoveQueueItem={removeQueueItem}
                   onUpdateQueueItem={updateQueueItem}
                   onCancelStreaming={cancel}
+                  reasoningEffortOptions={reasoningEffortOptions}
+                  reasoningEffort={reasoningEffort}
+                  onReasoningEffortChange={setReasoningEffort}
                 />
               )}
             </>

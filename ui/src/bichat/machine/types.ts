@@ -44,6 +44,7 @@ export interface SessionState {
   errorRetryable: boolean
   debugModeBySession: Record<string, boolean>
   debugLimits: DebugLimits | null
+  reasoningEffort: string | undefined
 }
 
 export interface MessagingState {
@@ -94,8 +95,10 @@ export interface SessionSnapshot {
   debugMode: boolean
   sessionDebugUsage: SessionDebugUsage
   debugLimits: DebugLimits | null
+  reasoningEffort: string | undefined
   setError: (error: string | null) => void
   retryFetchSession: () => void
+  setReasoningEffort: (effort: string) => void
 }
 
 /** Superset of ChatMessagingStateValue used internally by the state machine; includes internal-only fields such as generationInProgress. */

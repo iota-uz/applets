@@ -49,6 +49,9 @@ export interface MessageInputProps {
   maxFileSize?: number
   containerClassName?: string
   formClassName?: string
+  reasoningEffortOptions?: string[]
+  reasoningEffort?: string
+  onReasoningEffortChange?: (effort: string) => void
 }
 
 /* -------------------------------------------------------------------------------------------------
@@ -176,6 +179,55 @@ function DebugStatsPanel({ debugSessionUsage, debugLimits }: DebugStatsPanelProp
   );
 }
 
+/* -------------------------------------------------------------------------------------------------
+ * ReasoningEffortSelector Sub-component
+ * -----------------------------------------------------------------------------------------------*/
+
+const EFFORT_LABELS: Record<string, string> = {
+  low: 'Low',
+  medium: 'Med',
+  high: 'High',
+  xhigh: 'XHigh',
+};
+
+interface ReasoningEffortSelectorProps {
+  options: string[]
+  value?: string
+  onChange: (effort: string) => void
+  disabled?: boolean
+}
+
+function ReasoningEffortSelector({ options, value, onChange, disabled }: ReasoningEffortSelectorProps) {
+  const selected = value || options[1] || options[0];
+
+  return (
+    <div className="flex-shrink-0 self-center flex items-center rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 p-0.5 gap-0.5">
+      {options.map((opt) => {
+        const isActive = opt === selected;
+        return (
+          <button
+            key={opt}
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange(opt)}
+            className={[
+              'cursor-pointer px-2 py-1 text-[11px] font-medium rounded-md transition-all leading-none',
+              isActive
+                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-white/50 dark:hover:bg-gray-600/50',
+              disabled ? 'opacity-40 cursor-not-allowed' : '',
+            ].join(' ')}
+            aria-pressed={isActive}
+            title={`Reasoning effort: ${opt}`}
+          >
+            {EFFORT_LABELS[opt] ?? opt}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 const MAX_FILES_DEFAULT = 10;
 const MAX_FILE_SIZE_DEFAULT = 20 * 1024 * 1024; // 20MB
 const MAX_HEIGHT = 192; // 12 lines approx
@@ -205,6 +257,9 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       maxFileSize = MAX_FILE_SIZE_DEFAULT,
       containerClassName,
       formClassName,
+      reasoningEffortOptions,
+      reasoningEffort,
+      onReasoningEffortChange,
     },
     ref
   ) => {
@@ -712,6 +767,16 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                   aria-label={t('BiChat.Input.MessageInput')}
                 />
               </div>
+
+              {/* Reasoning effort selector */}
+              {reasoningEffortOptions && reasoningEffortOptions.length > 0 && onReasoningEffortChange && (
+                <ReasoningEffortSelector
+                  options={reasoningEffortOptions}
+                  value={reasoningEffort}
+                  onChange={onReasoningEffortChange}
+                  disabled={disabled || loading}
+                />
+              )}
 
               {/* Submit/cancel button slot */}
               {isStreaming && onCancelStreaming ? (

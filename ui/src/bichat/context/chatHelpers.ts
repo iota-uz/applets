@@ -125,3 +125,16 @@ export function readDebugLimitsFromGlobalContext(): DebugLimits | null {
     completionReserveTokens,
   };
 }
+
+export function readReasoningEffortOptionsFromGlobalContext(): string[] | undefined {
+  if (typeof window === 'undefined') {
+    return undefined;
+  }
+
+  const opts = window.__APPLET_CONTEXT__?.extensions?.llm?.reasoningEffortOptions;
+  if (!Array.isArray(opts) || opts.length === 0) {
+    return undefined;
+  }
+
+  return opts.filter((o: unknown): o is string => typeof o === 'string');
+}

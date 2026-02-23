@@ -483,6 +483,7 @@ export interface SessionDebugUsage {
 export interface SendMessageOptions {
   debugMode?: boolean
   replaceFromMessageID?: string
+  reasoningEffort?: string
 }
 
 // ============================================================================
@@ -639,8 +640,10 @@ export interface ChatSessionStateValue {
   debugMode: boolean
   sessionDebugUsage: SessionDebugUsage
   debugLimits: DebugLimits | null
+  reasoningEffort: string | undefined
   setError: (error: string | null) => void
   retryFetchSession: () => void
+  setReasoningEffort: (effort: string) => void
 }
 
 export interface ChatMessagingStateValue {
