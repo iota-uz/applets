@@ -29,6 +29,7 @@ import type { RateLimiter } from '../utils/RateLimiter';
 import { normalizeRPCError } from '../utils/errorDisplay';
 import { loadQueue, saveQueue } from '../utils/queueStorage';
 import { loadDebugMode, saveDebugMode } from '../utils/debugModeStorage';
+import { loadReasoningEffort, saveReasoningEffort } from '../utils/reasoningEffortStorage';
 import { getSessionDebugUsage } from '../utils/debugTrace';
 import {
   ARTIFACT_TOOL_NAMES,
@@ -160,6 +161,7 @@ export class ChatMachine {
   readonly enqueueMessage: (content: string, attachments: Attachment[]) => boolean;
   readonly removeQueueItem: (index: number) => void;
   readonly updateQueueItem: (index: number, content: string) => void;
+  readonly setReasoningEffort: (effort: string) => void;
 
   constructor(config: ChatMachineConfig) {
     this.dataSource = config.dataSource;
@@ -175,6 +177,7 @@ export class ChatMachine {
         errorRetryable: false,
         debugModeBySession: {},
         debugLimits: readDebugLimitsFromGlobalContext(),
+        reasoningEffort: loadReasoningEffort() || undefined,
       },
       messaging: {
         turns: [],
@@ -218,6 +221,7 @@ export class ChatMachine {
     this.enqueueMessage = this._enqueueMessage.bind(this);
     this.removeQueueItem = this._removeQueueItem.bind(this);
     this.updateQueueItem = this._updateQueueItem.bind(this);
+    this.setReasoningEffort = this._setReasoningEffort.bind(this);
   }
 
   // =====================================================================
@@ -280,6 +284,7 @@ export class ChatMachine {
       this.cachedSessionSnapshot = deriveSessionSnapshot(this.state, {
         setError: this.setError,
         retryFetchSession: this.retryFetchSession,
+        setReasoningEffort: this.setReasoningEffort,
       });
       this.lastSessionSnapshotVersion = this.sessionSnapshotVersion;
     }
@@ -407,6 +412,11 @@ export class ChatMachine {
         [sessionId]: true,
       },
     });
+  }
+
+  private _setReasoningEffort(effort: string): void {
+    this._updateSession({ reasoningEffort: effort });
+    saveReasoningEffort(effort);
   }
 
   // =====================================================================
@@ -875,6 +885,7 @@ export class ChatMachine {
     attachments: Attachment[]
     debugMode: boolean
     replaceFromMessageID?: string
+    reasoningEffort?: string
     tempTurnId: string
   }): Promise<{ createdSessionId?: string; sessionFetched: boolean; stopped?: boolean }> {
     const {
@@ -883,6 +894,7 @@ export class ChatMachine {
       attachments,
       debugMode,
       replaceFromMessageID,
+      reasoningEffort,
       tempTurnId,
     } = params;
 
@@ -900,6 +912,7 @@ export class ChatMachine {
       {
         debugMode,
         replaceFromMessageID,
+        reasoningEffort,
       }
     )) {
       if (this.abortController?.signal.aborted) {break;}
@@ -1125,6 +1138,7 @@ export class ChatMachine {
         attachments,
         debugMode: curDebugMode,
         replaceFromMessageID,
+        reasoningEffort: this.state.session.reasoningEffort,
         tempTurnId: tempTurn.id,
       });
 
