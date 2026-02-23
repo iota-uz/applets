@@ -86,6 +86,15 @@ export const bichatTailwindPreset: TailwindPreset = {
  * Resolves via @iota-uz/sdk/package.json when available so the package root is unambiguous.
  */
 export function bichatTailwindContent(): string[] {
+  const sdkDistFromEnv = process.env.IOTA_SDK_DIST;
+  if (sdkDistFromEnv) {
+    const distBichat = path.resolve(sdkDistFromEnv, 'bichat');
+    return [
+      path.join(distBichat, 'index.mjs'),
+      path.join(distBichat, 'index.cjs'),
+    ];
+  }
+
   const require = createRequire(import.meta.url);
   let pkgDir: string;
   try {

@@ -25,7 +25,6 @@ import type {
   CodeOutput,
   PendingQuestion,
   RenderTableData,
-  DebugLimits,
 } from '../types';
 import { DebugPanel } from './DebugPanel';
 import { useTranslation } from '../hooks/useTranslation';
@@ -184,8 +183,6 @@ export interface AssistantMessageProps {
   hideTimestamp?: boolean
   /** Show debug panel */
   showDebug?: boolean
-  /** Context/token limits for debug usage ratio */
-  debugLimits?: DebugLimits | null
 }
 
 type AssistantRenderMode =
@@ -259,7 +256,6 @@ export function AssistantMessage({
   hideActions = false,
   hideTimestamp = false,
   showDebug = false,
-  debugLimits = null,
 }: AssistantMessageProps) {
   const { t } = useTranslation();
   const [explanationExpanded, setExplanationExpanded] = useState(false);
@@ -529,7 +525,7 @@ export function AssistantMessage({
               </div>
             )}
 
-            {showDebug && <DebugPanel trace={turn.debug} debugLimits={debugLimits} />}
+            {showDebug && <DebugPanel trace={turn.debug} />}
           </div>
         )}
 

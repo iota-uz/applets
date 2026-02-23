@@ -45,7 +45,7 @@ export function AssistantTurnView({
   hideTimestamp,
   allowRegenerate = true,
 }: AssistantTurnViewProps) {
-  const { debugMode, debugLimits } = useChatSession();
+  const { debugMode } = useChatSession();
   const { handleCopy, handleRegenerate, pendingQuestion, sendMessage, loading } = useChatMessaging();
 
   const assistantTurn = turn.assistantTurn;
@@ -80,7 +80,6 @@ export function AssistantTurnView({
       hideActions={hideActions}
       hideTimestamp={hideTimestamp}
       showDebug={debugMode}
-      debugLimits={debugLimits}
     />
   );
 }

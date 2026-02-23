@@ -6,12 +6,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
 
-	"github.com/iota-uz/applets/internal/applet/pkgjson"
 	"github.com/iota-uz/applets/internal/config"
 	"github.com/iota-uz/applets/internal/devsetup"
 )
@@ -21,187 +19,84 @@ type sdkPackageMeta struct {
 }
 
 func NewSDKCommand() *cobra.Command {
-	var sdkRootFlag string
 	cmd := &cobra.Command{
 		Use:   "sdk",
-		Short: "Manage local @iota-uz/sdk linking",
-		Long: `Manage local @iota-uz/sdk link workflows for fast iteration.
+		Short: "Manage local @iota-uz/sdk alias mode",
+		Long: `Manage local @iota-uz/sdk runtime aliasing for fast iteration.
 
-These commands avoid package.json mutations and keep local overrides in .applets/local.env.`,
+These commands only write local env overrides to .applets/local.env (gitignored).
+They never touch package.json, lockfiles, or pnpm resolution.`,
 	}
-	cmd.PersistentFlags().StringVar(&sdkRootFlag, "sdk-root", "", "Path to local applets repository (canonical @iota-uz/sdk source)")
 
-	linkCmd := &cobra.Command{
-		Use:     "link",
-		Short:   "Link local @iota-uz/sdk into applet consumers",
-		Example: "  applet sdk link --sdk-root ../../applets",
+	localCmd := &cobra.Command{
+		Use:   "local",
+		Short: "Enable or disable local SDK alias mode",
+		Long: `Enable local SDK alias mode for frontend applets by writing APPLET_SDK_ROOT
+and IOTA_SDK_DIST to .applets/local.env (gitignored).
+
+Use --off to disable and remove local overrides.`,
+		Example: "  applet sdk local --sdk-root ../../applets\n  applet sdk local --off",
 		RunE: func(c *cobra.Command, _ []string) error {
-			return runSDKLink(c, sdkRootFlag)
+			off, err := c.Flags().GetBool("off")
+			if err != nil {
+				return err
+			}
+			sdkRootFlag, err := c.Flags().GetString("sdk-root")
+			if err != nil {
+				return err
+			}
+			if off {
+				return runSDKLocalDisable(c)
+			}
+			return runSDKLocalEnable(c, sdkRootFlag)
 		},
 	}
-	unlinkCmd := &cobra.Command{
-		Use:     "unlink",
-		Short:   "Unlink local @iota-uz/sdk and restore pinned versions",
-		Example: "  applet sdk unlink",
-		RunE: func(c *cobra.Command, _ []string) error {
-			return runSDKUnlink(c, sdkRootFlag)
-		},
-	}
+	localCmd.Flags().Bool("off", false, "Disable local SDK alias mode and remove .applets/local.env overrides")
+	localCmd.Flags().String("sdk-root", "", "Path to local applets repository (canonical @iota-uz/sdk source)")
 
-	cmd.AddCommand(linkCmd, unlinkCmd)
+	cmd.AddCommand(localCmd)
 	return cmd
 }
 
-func runSDKLink(cmd *cobra.Command, sdkRootFlag string) error {
-	root, cfg, err := config.LoadFromCWD()
+func runSDKLocalEnable(cmd *cobra.Command, sdkRootFlag string) error {
+	root, _, err := config.LoadFromCWD()
 	if err != nil {
 		return err
 	}
-	ctx := cmd.Context()
 
 	sdkRoot, err := resolveSDKRoot(root, sdkRootFlag)
 	if err != nil {
 		return err
 	}
-	targets, err := discoverSDKTargets(root, cfg)
-	if err != nil {
-		return err
-	}
-	if len(targets) == 0 {
-		return errors.New("no package.json files with @iota-uz/sdk dependency found")
-	}
-	linkTargets, skippedTargets := filterLinkableSDKTargets(targets, sdkRoot)
-	for _, skipped := range skippedTargets {
-		cmd.Printf("Skipping %s: %s\n", skipped.dir, skipped.reason)
-	}
-	if len(linkTargets) == 0 {
-		return errors.New("no linkable @iota-uz/sdk consumer targets found")
-	}
 
-	cmd.Printf("Registering @iota-uz/sdk globally from %s\n", sdkRoot)
-	cmd.Println("Refreshing global @iota-uz/sdk link state")
-	_ = devsetup.RunCommand(ctx, sdkRoot, "pnpm", "unlink", "--global")
-	if err := devsetup.RunCommand(ctx, sdkRoot, "pnpm", "link", "--global"); err != nil {
-		return fmt.Errorf("pnpm link --global in %s: %w", sdkRoot, err)
-	}
-
-	for _, dir := range linkTargets {
-		cmd.Printf("Linking @iota-uz/sdk in %s\n", dir)
-		_ = devsetup.RunCommand(ctx, root, "pnpm", "-C", dir, "unlink", "@iota-uz/sdk")
-		if err := devsetup.RunCommand(ctx, root, "pnpm", "-C", dir, "link", "--global", "@iota-uz/sdk"); err != nil {
-			cmd.PrintErrln("hint: if this target has no `name` in package.json, add one or remove @iota-uz/sdk from that root manifest")
-			return fmt.Errorf("link @iota-uz/sdk in %s: %w", dir, err)
-		}
+	cmd.Printf("Preparing SDK dist in %s\n", sdkRoot)
+	if err := devsetup.BuildSDKIfNeeded(cmd.Context(), sdkRoot); err != nil {
+		return fmt.Errorf("prepare SDK dist in %s: %w", sdkRoot, err)
 	}
 
 	localEnv := map[string]string{
-		"APPLET_SDK_ROOT":      sdkRoot,
-		"APPLET_SDK_LINK_MODE": "global",
-		"IOTA_SDK_DIST":        filepath.Join(sdkRoot, "dist"),
+		"APPLET_SDK_ROOT": sdkRoot,
+		"IOTA_SDK_DIST":   filepath.Join(sdkRoot, "dist"),
 	}
 	if err := writeLocalEnvFile(root, localEnv); err != nil {
 		return err
 	}
 	cmd.Printf("Saved local overrides to %s\n", localEnvPath(root))
+	cmd.Println("Enabled local SDK alias mode. `applet dev` will alias @iota-uz/sdk via IOTA_SDK_DIST.")
 	return nil
 }
 
-func runSDKUnlink(cmd *cobra.Command, sdkRootFlag string) error {
-	root, cfg, err := config.LoadFromCWD()
+func runSDKLocalDisable(cmd *cobra.Command) error {
+	root, _, err := config.LoadFromCWD()
 	if err != nil {
 		return err
-	}
-	ctx := cmd.Context()
-
-	targets, err := discoverSDKTargets(root, cfg)
-	if err != nil {
-		return err
-	}
-	if len(targets) == 0 {
-		cmd.Println("No @iota-uz/sdk consumers found. Nothing to unlink.")
-		return nil
-	}
-
-	for _, t := range targets {
-		cmd.Printf("Unlinking @iota-uz/sdk in %s\n", t.Dir)
-		if err := devsetup.RunCommand(ctx, root, "pnpm", "-C", t.Dir, "unlink", "@iota-uz/sdk"); err != nil {
-			cmd.Printf("Warning: unlink failed in %s: %v\n", t.Dir, err)
-		}
-		cmd.Printf("Reinstalling pinned dependencies in %s\n", t.Dir)
-		if err := devsetup.RunCommand(ctx, root, "pnpm", "-C", t.Dir, "install", "--frozen-lockfile"); err != nil {
-			return fmt.Errorf("restore deps in %s: %w", t.Dir, err)
-		}
-	}
-
-	sdkRoot, err := resolveSDKRootFromLocalOrFlags(root, sdkRootFlag)
-	if err == nil && sdkRoot != "" {
-		_ = devsetup.RunCommand(ctx, sdkRoot, "pnpm", "unlink", "--global")
 	}
 
 	if err := os.Remove(localEnvPath(root)); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("remove %s: %w", localEnvPath(root), err)
 	}
-	cmd.Println("Local SDK link removed.")
+	cmd.Println("Local SDK alias mode disabled.")
 	return nil
-}
-
-// sdkTarget is a directory that has @iota-uz/sdk in package.json, with name from that package.json.
-type sdkTarget struct {
-	Dir  string
-	Name string
-}
-
-func discoverSDKTargets(root string, cfg *config.ProjectConfig) ([]sdkTarget, error) {
-	seen := make(map[string]sdkTarget)
-	addIfConsumer := func(dir string) error {
-		deps, err := pkgjson.Read(dir)
-		if err != nil {
-			if os.IsNotExist(err) {
-				return nil
-			}
-			return nil
-		}
-		if pkgjson.SDKSpec(deps) == "" {
-			return nil
-		}
-		absDir, err := filepath.Abs(dir)
-		if err != nil {
-			return err
-		}
-		name := strings.TrimSpace(deps.Name)
-		seen[absDir] = sdkTarget{Dir: absDir, Name: name}
-		return nil
-	}
-
-	if err := addIfConsumer(root); err != nil {
-		return nil, err
-	}
-	for _, name := range cfg.AppletNames() {
-		webDir := filepath.Join(root, cfg.Applets[name].Web)
-		if err := addIfConsumer(webDir); err != nil {
-			return nil, err
-		}
-	}
-
-	targets := make([]sdkTarget, 0, len(seen))
-	for _, t := range seen {
-		targets = append(targets, t)
-	}
-	sort.Slice(targets, func(i, j int) bool { return targets[i].Dir < targets[j].Dir })
-	return targets, nil
-}
-
-func resolveSDKRootFromLocalOrFlags(root, sdkRootFlag string) (string, error) {
-	if strings.TrimSpace(sdkRootFlag) != "" {
-		return resolveSDKRoot(root, sdkRootFlag)
-	}
-	localEnv, err := readLocalEnvFile(root)
-	if err == nil {
-		if savedRoot := strings.TrimSpace(localEnv["APPLET_SDK_ROOT"]); savedRoot != "" {
-			return resolveSDKRoot(root, savedRoot)
-		}
-	}
-	return resolveSDKRoot(root, "")
 }
 
 func resolveSDKRoot(root, sdkRootFlag string) (string, error) {
@@ -247,36 +142,4 @@ func readPackageName(dir string) (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(meta.Name), nil
-}
-
-type skippedSDKTarget struct {
-	dir    string
-	reason string
-}
-
-func filterLinkableSDKTargets(targets []sdkTarget, sdkRoot string) (linkable []string, skipped []skippedSDKTarget) {
-	normalizedSDKRoot, err := filepath.Abs(sdkRoot)
-	if err != nil {
-		return nil, []skippedSDKTarget{{dir: sdkRoot, reason: "could not resolve SDK root absolute path"}}
-	}
-	for _, t := range targets {
-		if t.Dir == normalizedSDKRoot {
-			skipped = append(skipped, skippedSDKTarget{
-				dir:    t.Dir,
-				reason: "canonical @iota-uz/sdk source is not a consumer target",
-			})
-			continue
-		}
-		if t.Name == "" {
-			skipped = append(skipped, skippedSDKTarget{
-				dir:    t.Dir,
-				reason: "package.json has no `name`; pnpm global link is unreliable for unnamed importers",
-			})
-			continue
-		}
-		linkable = append(linkable, t.Dir)
-	}
-	sort.Strings(linkable)
-	sort.Slice(skipped, func(i, j int) bool { return skipped[i].dir < skipped[j].dir })
-	return linkable, skipped
 }

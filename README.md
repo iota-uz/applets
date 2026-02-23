@@ -52,8 +52,8 @@ applet rpc gen --name <applet-name>
 applet rpc check --name <applet-name>
 applet rpc watch --name <applet-name>
 applet deps check
-applet sdk link --sdk-root ../../applets
-applet sdk unlink
+applet sdk local --sdk-root ../../applets
+applet sdk local --off
 applet check               # deps + RPC drift for all applets
 applet schema export --name <applet>
 applet dev                 # start dev environment (all configured applets)
@@ -67,14 +67,15 @@ applet secrets delete --name <applet> --key OPENAI_API_KEY
 
 - **Specific version:** `go install github.com/iota-uz/applets/cmd/applet@v0.4.4`
 - **Shell completion:** `applet completion bash`, `applet completion zsh`, or `applet completion fish` — see `applet completion --help` for install instructions.
-- **Local SDK overrides:** `applet sdk link` writes local-only settings to `.applets/local.env` (gitignored) and avoids committing link overrides into package manifests/lockfiles.
+- **Local SDK alias mode:** `applet sdk local` writes local-only settings to `.applets/local.env` (gitignored). `applet dev` then injects `IOTA_SDK_DIST` so Vite aliases `@iota-uz/sdk` to your local SDK dist.
 
 ---
 
 ## DX Migration Notes (Breaking)
 
 - `applets/` is the canonical source of `@iota-uz/sdk`; `iota-sdk/package.json` is no longer the publish source.
-- Local SDK iteration should use `applet sdk link --sdk-root ../../applets` and `applet sdk unlink` instead of committing `pnpm` overrides/workspace links.
+- Local SDK iteration uses runtime alias mode only: `applet sdk local --sdk-root ../../applets` and `applet sdk local --off`.
+- Never commit local `pnpm` overrides/workspace links for `@iota-uz/sdk`.
 - `applet dev` now detects `go.work` dependencies and automatically watches/restarts critical processes when dependency code changes.
 - Keep `.applets/local.env` local-only. It is intentionally gitignored and must not be committed.
 

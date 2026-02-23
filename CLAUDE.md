@@ -16,7 +16,7 @@ This repository is the **applet framework and @iota-uz/sdk UI library**. It is *
   - Applets defines its own local types: `AppletUser`, `AppletPermission`, `AppletRole` (interfaces in `pkg/applet/user.go`), error types `Op`, `Kind`, `Error`, `E()` (in `pkg/applet/errors.go`), and context extractors (`UserExtractorFunc`, `TenantIDExtractorFunc`, etc. in `pkg/applet/options.go`).
   - The host application (iota-sdk) provides adapter implementations via `BuilderOption` functions: `WithUserExtractor()`, `WithTenantIDExtractor()`, `WithPoolExtractor()`, `WithPageLocaleExtractor()`.
 - **Local Go development**: Use `go.work` in the consumer (e.g. `eai/back/go.work`) with `use ../../applets` so the local applets repo is used.
-- **NPM package local development**: Use **`applet sdk link`** from the consumer repo (writes `.applets/local.env`, keeps manifests/lockfiles clean).
+- **NPM package local development**: Use **`applet sdk local`** from the consumer repo (writes `.applets/local.env`, keeps manifests/lockfiles clean).
 
 ## Ownership
 

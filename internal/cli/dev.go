@@ -124,6 +124,15 @@ func runDev(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("go.work dependency discovery failed: %w", err)
 	}
+	if sdkRootFromEnv := strings.TrimSpace(os.Getenv("APPLET_SDK_ROOT")); sdkRootFromEnv != "" {
+		absSDKRoot, absErr := filepath.Abs(sdkRootFromEnv)
+		if absErr == nil && !containsPath(goWorkDependencyDirs, absSDKRoot) {
+			if info, statErr := os.Stat(absSDKRoot); statErr == nil && info.IsDir() && absSDKRoot != root {
+				goWorkDependencyDirs = append(goWorkDependencyDirs, absSDKRoot)
+				sort.Strings(goWorkDependencyDirs)
+			}
+		}
+	}
 	for _, depDir := range goWorkDependencyDirs {
 		tsupCfg := filepath.Join(depDir, "tsup.dev.config.ts")
 		if _, statErr := os.Stat(tsupCfg); statErr != nil {
@@ -260,4 +269,13 @@ func colorForProcess(name string) string {
 		}
 		return colors[sum%len(colors)]
 	}
+}
+
+func containsPath(paths []string, candidate string) bool {
+	for _, p := range paths {
+		if p == candidate {
+			return true
+		}
+	}
+	return false
 }
