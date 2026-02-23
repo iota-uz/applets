@@ -16,3 +16,4 @@ storybook-static/
 go.work
 go.work.sum
 .applets/local.env
+.pnpmfile.cjs
