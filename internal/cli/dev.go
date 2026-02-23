@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -42,6 +43,9 @@ func runDev(cmd *cobra.Command, args []string) error {
 
 	root, cfg, err := config.LoadFromCWD()
 	if err != nil {
+		return err
+	}
+	if err := loadLocalEnv(root); err != nil {
 		return err
 	}
 
@@ -116,14 +120,46 @@ func runDev(cmd *cobra.Command, args []string) error {
 
 	// Determine restart target: first critical process
 	restartTarget := cfg.FirstCriticalProcess()
+	goWorkDependencyDirs, err := devsetup.DiscoverGoWorkDependencyDirs(root)
+	if err != nil {
+		return fmt.Errorf("go.work dependency discovery failed: %w", err)
+	}
+	for _, depDir := range goWorkDependencyDirs {
+		tsupCfg := filepath.Join(depDir, "tsup.dev.config.ts")
+		if _, statErr := os.Stat(tsupCfg); statErr != nil {
+			continue
+		}
+		if err := devsetup.BuildSDKIfNeeded(cmd.Context(), depDir); err != nil {
+			return fmt.Errorf("dependency sdk build failed (%s): %w", depDir, err)
+		}
+		processes = append(processes, devrunner.ProcessSpec{
+			Name:     fmt.Sprintf("sdk:%s", filepath.Base(depDir)),
+			Command:  "pnpm",
+			Args:     []string{"-C", depDir, "exec", "tsup", "--config", "tsup.dev.config.ts", "--watch"},
+			Dir:      root,
+			Color:    devrunner.ColorBlue,
+			Critical: false,
+		})
+	}
 
 	ctx, cancel := devrunner.NotifyContext(context.Background())
 	defer cancel()
+	var restartSignals chan string
+	if len(goWorkDependencyDirs) > 0 {
+		if strings.TrimSpace(restartTarget) == "" {
+			cmd.Printf("Detected go.work with %d dependencies, but no critical process is configured for restart.\n", len(goWorkDependencyDirs))
+		} else {
+			cmd.Printf("Watching %d go.work dependency directories for restart target %q\n", len(goWorkDependencyDirs), restartTarget)
+			restartSignals = make(chan string, 4)
+			go devsetup.WatchGoWorkDependencies(ctx, root, goWorkDependencyDirs, restartTarget, restartSignals)
+		}
+	}
 
 	// CLI already checks tools are in PATH (preflightProcesses, preflightNodeTools).
 	// Devrunner preflight is disabled to avoid duplicate checks.
 	runOpts := &devrunner.RunOptions{
 		RestartProcessName: restartTarget,
+		RestartSignals:     restartSignals,
 		ProjectRoot:        root,
 	}
 

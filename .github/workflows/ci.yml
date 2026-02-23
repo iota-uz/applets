@@ -62,6 +62,10 @@ jobs:
         working-directory: applets
         run: go test ./... -count=1
 
+      - name: Run DX guardrail checks
+        working-directory: applets
+        run: pnpm run check:dx
+
       - name: Install JS dependencies
         working-directory: applets
         run: pnpm install --frozen-lockfile

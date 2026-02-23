@@ -82,6 +82,7 @@
     "storybook:css": "pnpm exec tailwindcss --input ui/.storybook/preview.css --output ui/.storybook/preview.generated.css",
     "storybook": "pnpm run storybook:css && storybook dev -p 6006 -c ui/.storybook",
     "storybook:build": "pnpm run storybook:css && storybook build -c ui/.storybook",
+    "check:dx": "node ./scripts/check-dx-guardrails.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ui/",
     "lint:fix": "eslint ui/ --fix"
@@ -108,7 +109,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
-    "@iota-uz/sdk": "0.3.x",
     "@storybook/addon-a11y": "8.6.15",
     "@storybook/addon-essentials": "8.6.15",
     "@storybook/addon-viewport": "8.6.15",

@@ -29,6 +29,7 @@ export interface MessageInputRef {
 export interface MessageInputProps {
   message: string
   loading: boolean
+  isStreaming?: boolean
   fetching?: boolean
   disabled?: boolean
   commandError?: string | null
@@ -39,6 +40,7 @@ export interface MessageInputProps {
   onClearCommandError?: () => void
   onMessageChange: (value: string) => void
   onSubmit: (e: React.FormEvent, attachments: Attachment[]) => void
+  onCancelStreaming?: () => void
   onUnqueue?: () => { content: string; attachments: Attachment[] } | null
   onRemoveQueueItem?: (index: number) => void
   onUpdateQueueItem?: (index: number, content: string) => void
@@ -183,6 +185,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
     {
       message,
       loading,
+      isStreaming = false,
       fetching = false,
       disabled = false,
       commandError = null,
@@ -193,6 +196,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       onClearCommandError,
       onMessageChange,
       onSubmit,
+      onCancelStreaming,
       onUnqueue,
       onRemoveQueueItem,
       onUpdateQueueItem,
@@ -709,19 +713,32 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                 />
               </div>
 
-              {/* Send button - using inline Tailwind classes */}
-              <button
-                type="submit"
-                disabled={!canSubmit}
-                className="cursor-pointer flex-shrink-0 self-center p-2 rounded-lg bg-primary-600 hover:bg-primary-700 active:bg-primary-800 active:scale-95 text-white shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-primary-600"
-                aria-label={loading ? t('BiChat.Input.Processing') : t('BiChat.Input.SendMessage')}
-              >
-                {loading ? (
-                  <div className="w-[18px] h-[18px] border-2 border-white/60 border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <PaperPlaneRight size={18} weight="fill" />
-                )}
-              </button>
+              {/* Submit/cancel button slot */}
+              {isStreaming && onCancelStreaming ? (
+                <button
+                  type="button"
+                  onClick={onCancelStreaming}
+                  disabled={disabled || fetching}
+                  className="cursor-pointer flex-shrink-0 self-center p-2 rounded-lg bg-red-600 hover:bg-red-700 active:bg-red-800 active:scale-95 text-white shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-red-600"
+                  aria-label={t('BiChat.Common.Cancel')}
+                  title={t('BiChat.Common.Cancel')}
+                >
+                  <X size={18} weight="bold" />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!canSubmit}
+                  className="cursor-pointer flex-shrink-0 self-center p-2 rounded-lg bg-primary-600 hover:bg-primary-700 active:bg-primary-800 active:scale-95 text-white shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-primary-600"
+                  aria-label={loading ? t('BiChat.Input.Processing') : t('BiChat.Input.SendMessage')}
+                >
+                  {loading ? (
+                    <div className="w-[18px] h-[18px] border-2 border-white/60 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <PaperPlaneRight size={18} weight="fill" />
+                  )}
+                </button>
+              )}
             </div>
 
             {/* Keyboard hint */}

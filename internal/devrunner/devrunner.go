@@ -49,6 +49,9 @@ type ProcessSpec struct {
 type RunOptions struct {
 	// RestartProcessName is the process name to restart when user presses 'r'. Empty disables restart key.
 	RestartProcessName string
+	// RestartSignals allows external components to request restarts by process name.
+	// Use a buffered channel; values are treated the same as pressing restart for the given process.
+	RestartSignals <-chan string
 	// ShutdownTimeout is how long to wait for processes to exit after SIGTERM before sending SIGKILL. Default 3s.
 	ShutdownTimeout time.Duration
 
@@ -191,6 +194,19 @@ loop:
 			case 'q':
 				cancel()
 				break loop
+			}
+		case processName := <-opts.RestartSignals:
+			if processName == "" {
+				continue
+			}
+			for _, m := range managed {
+				if m.spec.Name == processName {
+					outputMu.Lock()
+					fmt.Fprintf(os.Stderr, "%s%s[%-*s]%s restart requested by watcher\n", m.spec.Color, ColorDim, m.maxLen, m.spec.Name, ColorReset)
+					outputMu.Unlock()
+					m.restart()
+					break
+				}
 			}
 		}
 	}
