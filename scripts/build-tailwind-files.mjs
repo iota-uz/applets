@@ -15,6 +15,7 @@ const requiredInputs = [
   ["styles", "tailwind", "iota.css"],
   ["ui", "tailwind", "sdk-theme.cjs"],
   ["ui", "tailwind", "create-config.cjs"],
+  ["ui", "tailwind", "sdk-content.cjs"],
   ["styles", "tailwind", "input.css"],
 ];
 for (const parts of requiredInputs) {
@@ -49,6 +50,9 @@ await cp(
   path.join(repoRoot, "ui", "tailwind", "create-config.cjs"),
   createConfigPath,
 );
+
+const sdkContentPath = path.join(outDir, "sdk-content.cjs");
+await cp(path.join(repoRoot, "ui", "tailwind", "sdk-content.cjs"), sdkContentPath);
 
 const compiledInputPath = path.join(repoRoot, "styles", "tailwind", "input.css");
 const compiledCssPath = path.join(outDir, "compiled.css");
