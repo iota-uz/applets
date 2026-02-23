@@ -24,7 +24,7 @@ func readLocalEnvFile(root string) (map[string]string, error) {
 		}
 		return nil, fmt.Errorf("open %s: %w", path, err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	envs := make(map[string]string)
 	scanner := bufio.NewScanner(file)
