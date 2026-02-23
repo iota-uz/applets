@@ -1,7 +1,9 @@
 const STORAGE_KEY = 'bichat.reasoningEffort';
 
 export function saveReasoningEffort(effort: string): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    return;
+  }
   try {
     window.sessionStorage.setItem(STORAGE_KEY, effort);
   } catch {
@@ -10,7 +12,9 @@ export function saveReasoningEffort(effort: string): void {
 }
 
 export function loadReasoningEffort(): string | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined') {
+    return null;
+  }
   try {
     return window.sessionStorage.getItem(STORAGE_KEY);
   } catch {

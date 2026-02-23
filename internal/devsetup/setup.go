@@ -49,7 +49,7 @@ func SetupApplet(ctx context.Context, root, name string, applet *config.AppletCo
 		"APPLET_ASSETS_BASE":                              applet.BasePath + "/assets/",
 		"APPLET_VITE_PORT":                                fmt.Sprintf("%d", applet.Dev.VitePort),
 		fmt.Sprintf("IOTA_APPLET_DEV_%s", upperName):      "1",
-		fmt.Sprintf("IOTA_APPLET_VITE_URL_%s", upperName): fmt.Sprintf("http://localhost:%d", applet.Dev.VitePort),
+		fmt.Sprintf("IOTA_APPLET_VITE_URL_%s", upperName): fmt.Sprintf("http://127.0.0.1:%d", applet.Dev.VitePort),
 		fmt.Sprintf("IOTA_APPLET_ENTRY_%s", upperName):    "/src/main.tsx",
 		fmt.Sprintf("IOTA_APPLET_CLIENT_%s", upperName):   "/@vite/client",
 	}
@@ -91,7 +91,7 @@ func SetupApplet(ctx context.Context, root, name string, applet *config.AppletCo
 	// Vite dev server: always required
 	processes = append(processes, devrunner.ProcessSpec{
 		Name: "vite", Command: "pnpm",
-		Args: []string{"-C", webDir, "exec", "vite"},
+		Args: []string{"-C", webDir, "exec", "vite", "--host", "127.0.0.1"},
 		Dir:  root, Color: devrunner.ColorGreen, Critical: true,
 		Env: copyEnv(envVars),
 	})

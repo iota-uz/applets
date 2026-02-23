@@ -82,7 +82,7 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 	}
 	cmd.Println("Dependency policy: OK")
 
-	sdkConsumerDirs, err := discoverSDKTargets(root, cfg)
+	sdkConsumerDirs, err := discoverSDKConsumerDirs(root, cfg)
 	if err != nil {
 		return NewExitError(FailureCode, err)
 	}

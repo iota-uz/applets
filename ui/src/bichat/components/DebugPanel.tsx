@@ -34,7 +34,6 @@ import {
 
 export interface DebugPanelProps {
   trace?: DebugTrace
-  debugLimits?: import('../types').DebugLimits | null
 }
 
 // ─── CopyPill ───────────────────────────────────────────────
@@ -274,7 +273,7 @@ function ToolCard({ tool }: { tool: StreamToolPayload }) {
 
 // ─── DebugPanel ─────────────────────────────────────────────
 
-export function DebugPanel({ trace, debugLimits = null }: DebugPanelProps) {
+export function DebugPanel({ trace }: DebugPanelProps) {
   const hasData = !!trace && hasDebugTrace(trace);
   const traceID = trace?.traceId?.trim() || '';
   const traceURL = trace?.traceUrl?.trim() || '';

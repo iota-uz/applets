@@ -183,11 +183,11 @@ function DebugStatsPanel({ debugSessionUsage, debugLimits }: DebugStatsPanelProp
  * ReasoningEffortSelector Sub-component
  * -----------------------------------------------------------------------------------------------*/
 
-const EFFORT_LABELS: Record<string, string> = {
-  low: 'Low',
-  medium: 'Med',
-  high: 'High',
-  xhigh: 'XHigh',
+const EFFORT_LABEL_KEYS: Record<string, string> = {
+  low: 'BiChat.Input.ReasoningEffortLow',
+  medium: 'BiChat.Input.ReasoningEffortMedium',
+  high: 'BiChat.Input.ReasoningEffortHigh',
+  xhigh: 'BiChat.Input.ReasoningEffortXHigh',
 };
 
 interface ReasoningEffortSelectorProps {
@@ -198,32 +198,33 @@ interface ReasoningEffortSelectorProps {
 }
 
 function ReasoningEffortSelector({ options, value, onChange, disabled }: ReasoningEffortSelectorProps) {
+  const { t } = useTranslation();
   const selected = value || options[1] || options[0];
+  const label = t('BiChat.Input.ReasoningEffort');
 
   return (
-    <div className="flex-shrink-0 self-center flex items-center rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 p-0.5 gap-0.5">
-      {options.map((opt) => {
-        const isActive = opt === selected;
-        return (
-          <button
-            key={opt}
-            type="button"
-            disabled={disabled}
-            onClick={() => onChange(opt)}
-            className={[
-              'cursor-pointer px-2 py-1 text-[11px] font-medium rounded-md transition-all leading-none',
-              isActive
-                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-white/50 dark:hover:bg-gray-600/50',
-              disabled ? 'opacity-40 cursor-not-allowed' : '',
-            ].join(' ')}
-            aria-pressed={isActive}
-            title={`Reasoning effort: ${opt}`}
-          >
-            {EFFORT_LABELS[opt] ?? opt}
-          </button>
-        );
-      })}
+    <div className="flex-shrink-0 self-center flex items-center gap-1.5">
+      <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap select-none">
+        {label}
+      </span>
+      <select
+        value={selected}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        className={[
+          'cursor-pointer h-8 rounded-lg border border-gray-200 dark:border-gray-600',
+          'bg-gray-50 dark:bg-gray-700/50 px-2.5 text-[11px] font-medium leading-none',
+          'text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500/25',
+          'disabled:opacity-40 disabled:cursor-not-allowed',
+        ].join(' ')}
+        aria-label={label}
+      >
+        {options.map((opt) => (
+          <option key={opt} value={opt}>
+            {t(EFFORT_LABEL_KEYS[opt] ?? opt)}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
