@@ -111,6 +111,7 @@ function ChatSessionCore({
     turns,
     loading,
     isStreaming,
+    cancel,
     streamError,
     streamErrorRetryable,
     isCompacting,
@@ -372,6 +373,7 @@ function ChatSessionCore({
                     <MessageInput
                       message={message}
                       loading={loading}
+                      isStreaming={isStreaming}
                       fetching={fetching}
                       commandError={inputError}
                       onClearCommandError={() => setInputError(null)}
@@ -384,6 +386,7 @@ function ChatSessionCore({
                       onUnqueue={handleUnqueue}
                       onRemoveQueueItem={removeQueueItem}
                       onUpdateQueueItem={updateQueueItem}
+                      onCancelStreaming={cancel}
                       containerClassName="pt-6 px-6"
                       formClassName="mx-auto"
                     />
@@ -433,6 +436,7 @@ function ChatSessionCore({
                 <MessageInput
                   message={message}
                   loading={loading}
+                  isStreaming={isStreaming}
                   fetching={fetching}
                   commandError={inputError}
                   onClearCommandError={() => setInputError(null)}
@@ -445,6 +449,7 @@ function ChatSessionCore({
                   onUnqueue={handleUnqueue}
                   onRemoveQueueItem={removeQueueItem}
                   onUpdateQueueItem={updateQueueItem}
+                  onCancelStreaming={cancel}
                 />
               )}
             </>
