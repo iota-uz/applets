@@ -4,7 +4,7 @@
  * Uses @headlessui Dialog + Combobox, UserAvatars, segmented role controls.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   Dialog, DialogBackdrop, DialogPanel, DialogTitle,
   Combobox, ComboboxInput, ComboboxOptions, ComboboxOption,
@@ -92,8 +92,9 @@ function MemberSkeleton() {
 // ---------------------------------------------------------------------------
 
 export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: SessionMembersModalProps) {
-  const headingId = 'session-members-title';
+  const headingId = useId();
   const { t } = useTranslation();
+  const statusTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -165,9 +166,12 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
     );
   }, [availableUsers, query]);
 
+  useEffect(() => () => clearTimeout(statusTimerRef.current), []);
+
   const flashStatus = (msg: string) => {
+    clearTimeout(statusTimerRef.current);
     setStatusMessage(msg);
-    setTimeout(() => setStatusMessage(null), 3000);
+    statusTimerRef.current = setTimeout(() => setStatusMessage(null), 3000);
   };
 
   const handleAdd = async () => {
@@ -218,15 +222,13 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
 
   return (
     <>
-      <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+      <Dialog open={isOpen} onClose={onClose} className="relative z-40">
         <DialogBackdrop className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200" />
 
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
           <DialogPanel
-            role="dialog"
-            aria-modal="true"
             aria-labelledby={headingId}
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/30 max-w-lg w-full overflow-hidden"
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/30 max-w-lg w-full"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 pt-5 pb-4">
@@ -303,7 +305,7 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
                         ) : (
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <RoleSegmentedControl
-                              value={member.role as 'editor' | 'viewer'}
+                              value={member.role === 'viewer' ? 'viewer' : 'editor'}
                               onChange={(role) => handleUpdateRole(member.user.id, role)}
                               disabled={saving}
                               size="sm"

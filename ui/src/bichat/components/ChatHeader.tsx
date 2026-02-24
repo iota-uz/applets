@@ -35,6 +35,7 @@ export function ChatHeader({ session, onBack, readOnly, logoSlot, actionsSlot, m
 
   const BackButton = onBack ? (
     <button
+      type="button"
       onClick={onBack}
       className="cursor-pointer p-2 hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600 rounded-lg transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
       aria-label={t('BiChat.Chat.GoBack')}
