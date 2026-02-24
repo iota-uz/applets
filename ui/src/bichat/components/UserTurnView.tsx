@@ -29,25 +29,32 @@ export interface UserTurnViewProps {
   hideTimestamp?: boolean
   /** Whether edit action should be available */
   allowEdit?: boolean
+  /** Show sender identity label above the message bubble */
+  showAuthorName?: boolean
 }
 
 export function UserTurnView({
   turn,
   slots,
   classNames,
-  initials = 'U',
+  initials,
   hideAvatar,
   hideActions,
   hideTimestamp,
   allowEdit,
+  showAuthorName = false,
 }: UserTurnViewProps) {
   const { handleEdit, handleCopy } = useChatMessaging();
+  const author = turn.userTurn.author;
+  const authorName = showAuthorName && author ? `${author.firstName} ${author.lastName}`.trim() || author.initials : undefined;
+  const resolvedInitials = initials ?? author?.initials ?? 'U';
 
   return (
     <UserMessage
       turn={turn.userTurn}
       turnId={turn.id}
-      initials={initials}
+      initials={resolvedInitials}
+      authorName={authorName}
       slots={slots}
       classNames={classNames}
       onCopy={handleCopy}

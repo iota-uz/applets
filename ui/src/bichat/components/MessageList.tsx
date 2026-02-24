@@ -91,7 +91,7 @@ interface MessageListProps {
 
 export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs, readOnly }: MessageListProps) {
   const { t } = useTranslation();
-  const { currentSessionId, fetching } = useChatSession();
+  const { session, currentSessionId, fetching } = useChatSession();
   const {
     turns, streamingContent, isStreaming,
     thinkingContent, activeSteps,
@@ -105,6 +105,7 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
     () => (streamingContent ? normalizeStreamingMarkdown(streamingContent) : ''),
     [streamingContent],
   );
+  const showAuthorNames = Boolean(session?.isGroup || ((session?.memberCount ?? 0) > 1));
 
   const showEphemeral = showActivityTrace || showTypingIndicator;
 
@@ -128,7 +129,7 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
                   isLastTurn={isLast}
                   renderUserTurn={renderUserTurn}
                   renderAssistantTurn={renderAssistantTurn}
-                  userTurnProps={readOnly ? { allowEdit: false } : { allowEdit: isLast }}
+                  userTurnProps={readOnly ? { allowEdit: false, showAuthorName: showAuthorNames } : { allowEdit: isLast, showAuthorName: showAuthorNames }}
                   assistantTurnProps={readOnly ? { allowRegenerate: false } : undefined}
                 />
               </Fragment>

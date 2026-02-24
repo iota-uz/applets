@@ -790,18 +790,21 @@ export default function Sidebar({
                           role="list"
                           aria-label={t('BiChat.Sidebar.PinnedChats')}
                         >
-                          {pinnedSessions.map((session) => (
-                            <SessionItem
-                              key={session.id}
-                              session={session}
-                              isActive={session.id === activeSessionId}
-                              onSelect={() => handleSessionSelect(session.id)}
-                              onArchive={() => handleSessionArchive(session.id)}
-                              onPin={() => handleSessionPin(session.id, session.pinned)}
-                              onRename={(newTitle) => handleSessionRename(session.id, newTitle)}
-                              onRegenerateTitle={() => handleSessionRegenerateTitle(session.id)}
-                            />
-                          ))}
+                          {pinnedSessions.map((session) => {
+                            const canManage = session.access?.canManageMembers ?? true;
+                            return (
+                              <SessionItem
+                                key={session.id}
+                                session={session}
+                                isActive={session.id === activeSessionId}
+                                onSelect={() => handleSessionSelect(session.id)}
+                                onArchive={canManage ? () => handleSessionArchive(session.id) : undefined}
+                                onPin={canManage ? () => handleSessionPin(session.id, session.pinned) : undefined}
+                                onRename={canManage ? (newTitle) => handleSessionRename(session.id, newTitle) : undefined}
+                                onRegenerateTitle={canManage ? () => handleSessionRegenerateTitle(session.id) : undefined}
+                              />
+                            );
+                          })}
                         </motion.div>
                         <div className="border-b border-gray-200 dark:border-gray-700 my-3" />
                       </div>
@@ -822,18 +825,21 @@ export default function Sidebar({
                           role="list"
                           aria-label={`${group.name} chats`}
                         >
-                          {group.sessions.map((session) => (
-                            <SessionItem
-                              key={session.id}
-                              session={session}
-                              isActive={session.id === activeSessionId}
-                              onSelect={() => handleSessionSelect(session.id)}
-                              onArchive={() => handleSessionArchive(session.id)}
-                              onPin={() => handleSessionPin(session.id, session.pinned)}
-                              onRename={(newTitle) => handleSessionRename(session.id, newTitle)}
-                              onRegenerateTitle={() => handleSessionRegenerateTitle(session.id)}
-                            />
-                          ))}
+                          {group.sessions.map((session) => {
+                            const canManage = session.access?.canManageMembers ?? true;
+                            return (
+                              <SessionItem
+                                key={session.id}
+                                session={session}
+                                isActive={session.id === activeSessionId}
+                                onSelect={() => handleSessionSelect(session.id)}
+                                onArchive={canManage ? () => handleSessionArchive(session.id) : undefined}
+                                onPin={canManage ? () => handleSessionPin(session.id, session.pinned) : undefined}
+                                onRename={canManage ? (newTitle) => handleSessionRename(session.id, newTitle) : undefined}
+                                onRegenerateTitle={canManage ? () => handleSessionRegenerateTitle(session.id) : undefined}
+                              />
+                            );
+                          })}
                         </motion.div>
                       </div>
                     ))}

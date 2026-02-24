@@ -83,6 +83,22 @@ const SessionItem = memo<SessionItemProps>(
     // Generate title from session (use existing title or show generating state)
     const displayTitle = isTitleGenerating ? t('BiChat.Common.Generating') : (session.title ?? t('BiChat.Common.Untitled'));
     const lastActivity = formatRelativeTime(session.updatedAt, t);
+    const accessRole = session.access?.role ?? 'owner';
+    const roleLabel =
+      accessRole === 'editor'
+        ? t('BiChat.Share.RoleEditor')
+        : accessRole === 'viewer'
+          ? t('BiChat.Share.RoleViewer')
+          : accessRole === 'read_all'
+            ? t('BiChat.Share.RoleReadOnly')
+            : '';
+    const visibilityLabel =
+      session.isGroup
+        ? t('BiChat.Sidebar.GroupChat')
+        : accessRole === 'editor' || accessRole === 'viewer'
+          ? t('BiChat.Sidebar.SharedWithYou')
+          : '';
+    const metaParts = [lastActivity, visibilityLabel, roleLabel].filter(Boolean);
 
     // Long press handlers for touch devices
     const { handlers: longPressHandlers } = useLongPress({
@@ -240,7 +256,7 @@ const SessionItem = memo<SessionItemProps>(
                   isLoading={isTitleGenerating}
                 />
                 <span className="text-[11px] text-gray-400 dark:text-gray-500 truncate mt-0.5">
-                  {lastActivity}
+                  {metaParts.join(' • ')}
                 </span>
               </div>
               {!isTouch && hasContextMenu && (

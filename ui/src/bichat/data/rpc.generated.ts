@@ -14,19 +14,25 @@ export type BichatRPC = {
   "bichat.session.delete": { params: SessionIDParams; result: OkResult }
   "bichat.session.get": { params: SessionGetParams; result: SessionGetResult }
   "bichat.session.list": { params: SessionListParams; result: SessionListResult }
+  "bichat.session.listAll": { params: SessionListAllParams; result: SessionListAllResult }
+  "bichat.session.members.add": { params: SessionMembersUpsertParams; result: OkResult }
+  "bichat.session.members.list": { params: SessionMembersListParams; result: SessionMembersListResult }
+  "bichat.session.members.remove": { params: SessionMembersRemoveParams; result: OkResult }
+  "bichat.session.members.updateRole": { params: SessionMembersUpsertParams; result: OkResult }
   "bichat.session.pin": { params: SessionIDParams; result: SessionCreateResult }
   "bichat.session.regenerateTitle": { params: SessionIDParams; result: SessionCreateResult }
   "bichat.session.unarchive": { params: SessionIDParams; result: SessionCreateResult }
   "bichat.session.unpin": { params: SessionIDParams; result: SessionCreateResult }
   "bichat.session.updateTitle": { params: SessionUpdateTitleParams; result: SessionCreateResult }
   "bichat.session.uploadArtifacts": { params: SessionUploadArtifactsParams; result: SessionUploadArtifactsResult }
+  "bichat.user.list": { params: PingParams; result: UserListResult }
 }
 
 export interface Artifact {
   id: string
   sessionId: string
   messageId?: string
-  uploadId?: number
+  uploadId?: number | null
   type: string
   name: string
   description?: string
@@ -65,11 +71,11 @@ export interface AssistantTurn {
 }
 
 export interface Attachment {
-  id?: string
-  uploadId?: number
-  filename?: string
-  mimeType?: string
-  sizeBytes?: number
+  id: string
+  uploadId?: number | null
+  filename: string
+  mimeType: string
+  sizeBytes: number
   url?: string
 }
 
@@ -81,6 +87,7 @@ export interface Citation {
   startIndex: number
   endIndex: number
   excerpt?: string
+  source?: string
 }
 
 export interface CodeOutput {
@@ -99,6 +106,59 @@ export interface ConversationTurn {
   createdAt: string
 }
 
+export interface DebugEvent {
+  id?: string
+  name?: string
+  type?: string
+  level?: string
+  message?: string
+  reason?: string
+  spanId?: string
+  generationId?: string
+  timestamp?: string
+  attributes?: Record<string, unknown>
+}
+
+export interface DebugGeneration {
+  id?: string
+  requestId?: string
+  model?: string
+  provider?: string
+  finishReason?: string
+  promptTokens?: number
+  completionTokens?: number
+  totalTokens?: number
+  cachedTokens?: number
+  cost?: number
+  latencyMs?: number
+  input?: string
+  output?: string
+  thinking?: string
+  observationReason?: string
+  startedAt?: string
+  completedAt?: string
+  toolCalls?: DebugToolCall[]
+}
+
+export interface DebugSpan {
+  id?: string
+  parentId?: string
+  generationId?: string
+  name?: string
+  type?: string
+  status?: string
+  level?: string
+  callId?: string
+  toolName?: string
+  input?: string
+  output?: string
+  error?: string
+  durationMs?: number
+  startedAt?: string
+  completedAt?: string
+  attributes?: Record<string, unknown>
+}
+
 export interface DebugToolCall {
   callId?: string
   name?: string
@@ -109,11 +169,20 @@ export interface DebugToolCall {
 }
 
 export interface DebugTrace {
+  schemaVersion?: string
+  startedAt?: string
+  completedAt?: string
   usage?: DebugUsage | null
   generationMs?: number
   tools?: DebugToolCall[]
+  attempts?: DebugGeneration[]
+  spans?: DebugSpan[]
+  events?: DebugEvent[]
   traceId?: string
   traceUrl?: string
+  sessionId?: string
+  thinking?: string
+  observationReason?: string
 }
 
 export interface DebugUsage {
@@ -171,6 +240,18 @@ export interface Session {
   pinned: boolean
   createdAt: string
   updatedAt: string
+  owner?: SessionUser | null
+  isGroup?: boolean
+  memberCount?: number
+  access?: SessionAccess | null
+}
+
+export interface SessionAccess {
+  role: string
+  source: string
+  canRead: boolean
+  canWrite: boolean
+  canManageMembers: boolean
 }
 
 export interface SessionArtifactsParams {
@@ -220,6 +301,19 @@ export interface SessionIDParams {
   id: string
 }
 
+export interface SessionListAllParams {
+  limit: number
+  offset: number
+  includeArchived: boolean
+  userId?: string | null
+}
+
+export interface SessionListAllResult {
+  sessions: Session[]
+  total?: number
+  hasMore: boolean
+}
+
 export interface SessionListParams {
   limit: number
   offset: number
@@ -230,6 +324,32 @@ export interface SessionListResult {
   sessions: Session[]
   total?: number
   hasMore: boolean
+}
+
+export interface SessionMember {
+  user: SessionUser
+  role: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface SessionMembersListParams {
+  sessionId: string
+}
+
+export interface SessionMembersListResult {
+  members: SessionMember[]
+}
+
+export interface SessionMembersRemoveParams {
+  sessionId: string
+  userId: string
+}
+
+export interface SessionMembersUpsertParams {
+  sessionId: string
+  userId: string
+  role: string
 }
 
 export interface SessionUpdateTitleParams {
@@ -246,6 +366,13 @@ export interface SessionUploadArtifactsResult {
   artifacts: Artifact[]
 }
 
+export interface SessionUser {
+  id: string
+  firstName: string
+  lastName: string
+  initials: string
+}
+
 export interface ToolCall {
   id: string
   name: string
@@ -255,9 +382,15 @@ export interface ToolCall {
   durationMs?: number
 }
 
+export interface UserListResult {
+  users: SessionUser[]
+}
+
 export interface UserTurn {
   id: string
   content: string
   attachments: Attachment[]
+  author?: SessionUser | null
   createdAt: string
 }
+

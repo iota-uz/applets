@@ -17,7 +17,9 @@ import type { BichatRPC } from './rpc.generated';
 import type {
   ChatDataSource,
   Session,
+  SessionMember,
   SessionListResult,
+  SessionUser,
   SessionArtifact,
   Attachment,
   StreamChunk,
@@ -194,6 +196,39 @@ export class HttpDataSource implements ChatDataSource {
     deletedArtifacts: number
   }> {
     return Sessions.compactSessionHistory(this.boundCallRPC, sessionId);
+  }
+
+  async listUsers(): Promise<SessionUser[]> {
+    return Sessions.listUsers(this.boundCallRPC);
+  }
+
+  async listAllSessions(options?: {
+    limit?: number
+    offset?: number
+    includeArchived?: boolean
+    userId?: string | null
+  }): Promise<{
+    sessions: Session[]
+    total: number
+    hasMore: boolean
+  }> {
+    return Sessions.listAllSessions(this.boundCallRPC, options);
+  }
+
+  async listSessionMembers(sessionId: string): Promise<SessionMember[]> {
+    return Sessions.listSessionMembers(this.boundCallRPC, sessionId);
+  }
+
+  async addSessionMember(sessionId: string, userId: string, role: 'editor' | 'viewer'): Promise<void> {
+    return Sessions.addSessionMember(this.boundCallRPC, sessionId, userId, role);
+  }
+
+  async updateSessionMemberRole(sessionId: string, userId: string, role: 'editor' | 'viewer'): Promise<void> {
+    return Sessions.updateSessionMemberRole(this.boundCallRPC, sessionId, userId, role);
+  }
+
+  async removeSessionMember(sessionId: string, userId: string): Promise<void> {
+    return Sessions.removeSessionMember(this.boundCallRPC, sessionId, userId);
   }
 
   // -------------------------------------------------------------------------

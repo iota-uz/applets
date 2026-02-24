@@ -30,7 +30,7 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
   const [offset, setOffset] = useState(0);
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [chats, setChats] = useState<Array<Session & { owner: SessionUser }>>([]);
+  const [chats, setChats] = useState<Session[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [users, setUsers] = useState<SessionUser[]>([]);
@@ -198,8 +198,15 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
                 role="list"
                 aria-label={t('BiChat.AllChats.OrganizationChatSessions')}
               >
-                {chats.map((chat) => (
-                  <motion.div
+                {chats.map((chat) => {
+                  const owner = chat.owner ?? {
+                    id: '',
+                    firstName: '',
+                    lastName: '',
+                    initials: 'U',
+                  };
+                  return (
+                    <motion.div
                     key={chat.id}
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -228,9 +235,9 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
                       <div className="flex items-start gap-2">
                         {/* Owner avatar */}
                         <UserAvatar
-                          firstName={chat.owner.firstName}
-                          lastName={chat.owner.lastName}
-                          initials={chat.owner.initials}
+                          firstName={owner.firstName}
+                          lastName={owner.lastName}
+                          initials={owner.initials}
                           size="sm"
                         />
 
@@ -240,7 +247,7 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
                             {chat.title || t('BiChat.Common.Untitled')}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                            {chat.owner.firstName} {chat.owner.lastName}
+                            {owner.firstName} {owner.lastName}
                           </p>
                           {chat.status === 'archived' && (
                             <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full text-xs">
@@ -252,7 +259,8 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
                       </div>
                     </div>
                   </motion.div>
-                ))}
+                  );
+                })}
 
                 {/* Load more trigger */}
                 {hasMore && (

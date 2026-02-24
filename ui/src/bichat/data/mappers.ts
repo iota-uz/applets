@@ -12,6 +12,8 @@ import type { Session as RPCSession } from './rpc.generated';
 import type { PendingQuestion as RPCPendingQuestion } from './rpc.generated';
 import type {
   Session,
+  SessionUser,
+  SessionAccess,
   ConversationTurn,
   Artifact as DownloadArtifact,
   SessionArtifact,
@@ -120,10 +122,61 @@ function resolveArtifactName(artifact: RPCArtifact): string {
 // Session mappers
 // ---------------------------------------------------------------------------
 
+function mapSessionUser(rawUser: unknown): SessionUser | undefined {
+  if (!isRecord(rawUser)) {return undefined;}
+
+  const id = readNonEmptyString(rawUser.id);
+  if (!id) {return undefined;}
+
+  const firstName = readString(rawUser.firstName);
+  const lastName = readString(rawUser.lastName);
+  const initials = readNonEmptyString(rawUser.initials)
+    || `${firstName.charAt(0)}${lastName.charAt(0)}`.trim().toUpperCase()
+    || 'U';
+
+  return {
+    id,
+    firstName,
+    lastName,
+    initials,
+  };
+}
+
+function mapSessionAccess(rawAccess: unknown): SessionAccess | undefined {
+  if (!isRecord(rawAccess)) {return undefined;}
+  const role = readString(rawAccess.role).toLowerCase();
+  const source = readString(rawAccess.source).toLowerCase();
+
+  const normalizedRole: SessionAccess['role'] =
+    role === 'owner' || role === 'editor' || role === 'viewer' || role === 'read_all'
+      ? role
+      : 'none';
+  const normalizedSource: SessionAccess['source'] =
+    source === 'owner' || source === 'member' || source === 'permission'
+      ? source
+      : 'none';
+
+  return {
+    role: normalizedRole,
+    source: normalizedSource,
+    canRead: Boolean(rawAccess.canRead),
+    canWrite: Boolean(rawAccess.canWrite),
+    canManageMembers: Boolean(rawAccess.canManageMembers),
+  };
+}
+
 export function toSession(session: RPCSession): Session {
   return {
-    ...session,
+    id: readString(session.id),
+    title: readString(session.title),
     status: session.status === 'archived' ? 'archived' : 'active',
+    pinned: Boolean(session.pinned),
+    createdAt: readString(session.createdAt),
+    updatedAt: readString(session.updatedAt),
+    owner: mapSessionUser(session.owner),
+    isGroup: Boolean(session.isGroup),
+    memberCount: typeof session.memberCount === 'number' ? session.memberCount : undefined,
+    access: mapSessionAccess(session.access),
   };
 }
 
@@ -462,6 +515,7 @@ function sanitizeConversationTurn(rawTurn: unknown, index: number, fallbackSessi
       id: userTurnID,
       content: readString(rawTurn.userTurn.content),
       attachments: sanitizeUserAttachments(rawTurn.userTurn.attachments, turnID),
+      author: mapSessionUser(rawTurn.userTurn.author),
       createdAt: readString(rawTurn.userTurn.createdAt, createdAt),
     },
     assistantTurn: sanitizeAssistantTurn(rawTurn.assistantTurn, createdAt, turnID),

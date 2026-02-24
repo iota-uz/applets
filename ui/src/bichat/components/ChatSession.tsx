@@ -14,7 +14,7 @@
 
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Sidebar } from '@phosphor-icons/react';
+import { Sidebar, Users } from '@phosphor-icons/react';
 import { ChatSessionProvider, useChatSession, useChatMessaging, useChatInput } from '../context/ChatContext';
 import { ChatDataSource, ConversationTurn } from '../types';
 import { RateLimiter } from '../utils/RateLimiter';
@@ -26,6 +26,7 @@ import WelcomeContent from './WelcomeContent';
 import ArchiveBanner from './ArchiveBanner';
 import { useTranslation } from '../hooks/useTranslation';
 import { SessionArtifactsPanel } from './SessionArtifactsPanel';
+import { SessionMembersModal } from './SessionMembersModal';
 import Alert from './Alert';
 import { StreamError } from './StreamError';
 
@@ -131,7 +132,8 @@ function ChatSessionCore({
   } = useChatInput();
 
   const isArchived = session?.status === 'archived';
-  const effectiveReadOnly = Boolean(readOnly ?? isReadOnly) || isArchived;
+  const accessReadOnly = session?.access ? !session.access.canWrite : false;
+  const effectiveReadOnly = Boolean(readOnly ?? isReadOnly) || isArchived || accessReadOnly;
   const [restoring, setRestoring] = useState(false);
 
   const handleRestore = useCallback(async () => {
@@ -152,6 +154,7 @@ function ChatSessionCore({
   const [artifactsPanelExpanded, setArtifactsPanelExpanded] = useState(
     artifactsPanelDefaultExpanded
   );
+  const [membersModalOpen, setMembersModalOpen] = useState(false);
   const [artifactsPanelWidth, setArtifactsPanelWidth] = useState(ARTIFACTS_PANEL_WIDTH_DEFAULT);
   const [isResizingArtifactsPanel, setIsResizingArtifactsPanel] = useState(false);
   const layoutContainerRef = useRef<HTMLDivElement>(null);
@@ -301,6 +304,23 @@ function ChatSessionCore({
 
   const headerActions = showArtifactsControls ? (
     <>
+      {session?.access?.canManageMembers
+        && dataSource.listUsers
+        && dataSource.listSessionMembers
+        && dataSource.addSessionMember
+        && dataSource.updateSessionMemberRole
+        && dataSource.removeSessionMember && (
+        <button
+          type="button"
+          onClick={() => setMembersModalOpen(true)}
+          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-500 transition-all duration-150 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+          aria-label={t('BiChat.Share.Title')}
+          title={t('BiChat.Share.Title')}
+        >
+          <Users className="h-4 w-4" />
+          {t('BiChat.Share.Button')}
+        </button>
+      )}
       <button
         type="button"
         onClick={handleToggleArtifactsPanel}
@@ -321,7 +341,26 @@ function ChatSessionCore({
       {actionsSlot}
     </>
   ) : (
-    actionsSlot
+    <>
+      {session?.access?.canManageMembers
+        && dataSource.listUsers
+        && dataSource.listSessionMembers
+        && dataSource.addSessionMember
+        && dataSource.updateSessionMemberRole
+        && dataSource.removeSessionMember && (
+        <button
+          type="button"
+          onClick={() => setMembersModalOpen(true)}
+          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-500 transition-all duration-150 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+          aria-label={t('BiChat.Share.Title')}
+          title={t('BiChat.Share.Title')}
+        >
+          <Users className="h-4 w-4" />
+          {t('BiChat.Share.Button')}
+        </button>
+      )}
+      {actionsSlot}
+    </>
   );
 
   return (
@@ -533,6 +572,12 @@ function ChatSessionCore({
           )}
         </AnimatePresence>
       </div>
+      <SessionMembersModal
+        isOpen={membersModalOpen}
+        sessionId={session?.id}
+        dataSource={dataSource}
+        onClose={() => setMembersModalOpen(false)}
+      />
     </main>
   );
 }
