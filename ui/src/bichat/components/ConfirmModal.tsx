@@ -52,7 +52,7 @@ function ConfirmModalBase({
         <DialogPanel className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/30 max-w-sm w-full overflow-hidden">
           <div className="px-6 pt-6 pb-5">
             {/* Icon + Title */}
-            <div className="flex items-start gap-3.5">
+            <div className="flex items-start gap-4">
               {isDanger && (
                 <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200/60 dark:border-red-800/40">
                   <WarningCircle size={22} weight="duotone" className="text-red-600 dark:text-red-400" />
