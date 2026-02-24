@@ -43,11 +43,11 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
   const currentOtherText = otherTexts[currentQuestion?.id] || '';
 
   const handleOptionChange = useCallback(
-    (optionLabel: string, checked: boolean) => {
+    (optionID: string, checked: boolean) => {
       if (!currentQuestion) {return;}
       const questionId = currentQuestion.id;
       const existingAnswer = answers[questionId] || { options: [] };
-      const isOtherOption = optionLabel === '__other__';
+      const isOtherOption = optionID === '__other__';
       const isMultiSelect = currentQuestion.type === 'MULTIPLE_CHOICE';
 
       // "Other" is mutually exclusive with predefined options.
@@ -66,15 +66,15 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
       if (isMultiSelect) {
         // Multi-select: toggle option
         if (!checked) {
-          newOptions = existingAnswer.options.filter((o) => o !== optionLabel);
-        } else if (existingAnswer.options.includes(optionLabel)) {
+          newOptions = existingAnswer.options.filter((o) => o !== optionID);
+        } else if (existingAnswer.options.includes(optionID)) {
           newOptions = existingAnswer.options;
         } else {
-          newOptions = [...existingAnswer.options, optionLabel];
+          newOptions = [...existingAnswer.options, optionID];
         }
       } else {
         // Single-select: replace selection (radio)
-        newOptions = checked ? [optionLabel] : [];
+        newOptions = checked ? [optionID] : [];
       }
 
       setAnswers({
@@ -181,7 +181,7 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
     .map((option, index) => ({
       id: option.id || `${currentQuestion.id}-option-${index}`,
       label: option.label,
-      value: option.value || option.label,
+      value: option.value || option.id || `${currentQuestion.id}-option-${index}`,
     }));
   const isOtherSelected = currentAnswer?.customText !== undefined;
   const canProceed = isCurrentAnswerValid();
@@ -256,7 +256,7 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
         {/* Options as clickable cards */}
         <div className="px-4 pb-2 space-y-1.5">
           {options.map((option) => {
-            const isSelected = currentAnswer?.options.includes(option.label) || false;
+            const isSelected = currentAnswer?.options.includes(option.id) || false;
             return (
               <label
                 key={option.id}
@@ -285,7 +285,7 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
                   name={`question-${currentQuestion.id}`}
                   value={option.value}
                   checked={isSelected}
-                  onChange={(e) => handleOptionChange(option.label, e.target.checked)}
+                  onChange={(e) => handleOptionChange(option.id, e.target.checked)}
                   className="sr-only"
                 />
                 <span className={[

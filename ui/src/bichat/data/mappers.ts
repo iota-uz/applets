@@ -549,10 +549,11 @@ export function sanitizePendingQuestion(
             })
             .map((option, optionIndex) => {
               const label = readString(option.label);
+              const id = readString(option.id, `${questionID}-opt-${optionIndex}`);
               return {
-                id: readString(option.id, `${questionID}-opt-${optionIndex}`),
+                id,
                 label,
-                value: label,
+                value: id,
               };
             })
           : [];

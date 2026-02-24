@@ -11,8 +11,12 @@ import type {
   StreamStatus,
   QuestionAnswers,
   SendMessageOptions,
+  Session,
+  ConversationTurn,
+  PendingQuestion,
 } from '../types';
 import { parseBichatStream } from '../utils/sseParser';
+import { normalizeTurns, sanitizeConversationTurns, sanitizePendingQuestion, toSession } from './mappers';
 import {
   ensureAttachmentUpload,
   assertUploadReferences,
@@ -27,6 +31,12 @@ interface Result<T> {
   success: boolean
   data?: T
   error?: string
+}
+
+interface QuestionActionState {
+  session: Session
+  turns: ConversationTurn[]
+  pendingQuestion?: PendingQuestion | null
 }
 
 type RPCCaller = <TMethod extends keyof BichatRPC & string>(
@@ -306,7 +316,7 @@ export async function submitQuestionAnswers(
   sessionId: string,
   questionId: string,
   answers: QuestionAnswers
-): Promise<Result<void>> {
+): Promise<Result<QuestionActionState>> {
   try {
     // Convert QuestionAnswers to flat map[string]string for RPC
     const flatAnswers: Record<string, string> = {};
@@ -317,12 +327,19 @@ export async function submitQuestionAnswers(
         flatAnswers[qId] = answerData.options.join(', ');
       }
     }
-    await callRPC('bichat.question.submit', {
+    const result = await callRPC('bichat.question.submit', {
       sessionId,
       checkpointId: questionId,
       answers: flatAnswers,
     });
-    return { success: true };
+    return {
+      success: true,
+      data: {
+        session: toSession(result.session),
+        turns: normalizeTurns(sanitizeConversationTurns(result.turns, sessionId)),
+        pendingQuestion: sanitizePendingQuestion(result.pendingQuestion, sessionId),
+      },
+    };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
   }

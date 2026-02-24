@@ -36,6 +36,7 @@ export default function ConfirmationStep({
           const answerData = answers[question.id] || { options: [] };
           const selectedOptions = answerData.options || [];
           const customText = answerData.customText;
+          const optionLabelByID = new Map((question.options || []).map((option) => [option.id, option.label]));
 
           const hasAnswer = selectedOptions.length > 0 || !!customText;
 
@@ -58,7 +59,7 @@ export default function ConfirmationStep({
                       key={option}
                       className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium border border-primary-500 bg-primary-500/10 text-primary-600 dark:border-primary-400 dark:bg-primary-400/10 dark:text-primary-400"
                     >
-                      {option}
+                      {optionLabelByID.get(option) || option}
                     </span>
                   ))}
 

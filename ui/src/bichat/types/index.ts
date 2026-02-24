@@ -278,7 +278,7 @@ export interface QuestionOption {
  * Answer data for a single question, including predefined options and custom "Other" text.
  */
 export interface QuestionAnswerData {
-  /** Selected predefined options (labels) */
+  /** Selected predefined options (option IDs) */
   options: string[]
   /** Custom text entered when user selects "Other" option */
   customText?: string
@@ -564,7 +564,15 @@ export interface ChatDataSource {
     sessionId: string,
     questionId: string,
     answers: QuestionAnswers
-  ): Promise<{ success: boolean; error?: string }>
+  ): Promise<{
+    success: boolean
+    error?: string
+    data?: {
+      session: Session
+      turns: ConversationTurn[]
+      pendingQuestion?: PendingQuestion | null
+    }
+  }>
   rejectPendingQuestion(sessionId: string): Promise<{ success: boolean; error?: string }>
   /**
    * Stops the active stream for the given session. No partial assistant message is persisted.

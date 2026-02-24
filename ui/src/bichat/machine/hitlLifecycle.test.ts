@@ -84,7 +84,7 @@ describe('pendingQuestionFromInterrupt', () => {
     expect(pending?.turnId).toBe('turn-fallback');
     expect(pending?.agentName).toBe('Analyst');
     expect(pending?.questions[0]?.type).toBe('SINGLE_CHOICE');
-    expect(pending?.questions[0]?.options?.[0]?.value).toBe('A');
+    expect(pending?.questions[0]?.options?.[0]?.value).toBe('o-1');
   });
 
   it('returns null for malformed checkpointId', () => {

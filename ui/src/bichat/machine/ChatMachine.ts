@@ -1283,14 +1283,9 @@ export class ChatMachine {
     const curPendingQuestion = this.state.messaging.pendingQuestion;
     if (!curSessionId || !curPendingQuestion) {return;}
 
-    const previousTurns = this.state.messaging.turns;
     this._updateMessaging({ loading: true });
     this._updateSession({ error: null, errorRetryable: false });
     const previousPendingQuestion = curPendingQuestion;
-    this._updateMessaging({
-      pendingQuestion: null,
-      turns: applyTurnLifecycleForPendingQuestion(previousTurns, null),
-    });
 
     try {
       const result = await this.dataSource.submitQuestionAnswers(
@@ -1301,58 +1296,24 @@ export class ChatMachine {
       if (this.disposed) {return;}
 
       if (result.success) {
-        if (curSessionId !== 'new') {
-          try {
-            const fetchResult = await this.dataSource.fetchSession(curSessionId);
-            if (this.disposed) {return;}
-            if (fetchResult) {
-              this._updateSession({ session: fetchResult.session });
-              const hasMalformedRefresh =
-                previousTurns.length > 0 &&
-                Array.isArray(fetchResult.turns) &&
-                fetchResult.turns.length === 0;
-
-              if (hasMalformedRefresh) {
-                console.warn('[ChatMachine] Preserving previous turns due to empty post-HITL refetch payload', {
-                  sessionId: curSessionId,
-                  previousTurnCount: previousTurns.length,
-                });
-                this._updateSession({
-                  error: 'Failed to fully refresh session. Showing last known messages.',
-                  errorRetryable: true,
-                });
-                this._updateMessaging({
-                  pendingQuestion: fetchResult.pendingQuestion || null,
-                  turns: applyTurnLifecycleForPendingQuestion(
-                    previousTurns,
-                    fetchResult.pendingQuestion || null
-                  ),
-                });
-              } else {
-                this._setTurnsFromFetch(fetchResult.turns, fetchResult.pendingQuestion || null);
-              }
-            } else {
-              this._updateSession({ error: 'Failed to load updated session', errorRetryable: true });
-            }
-          } catch (fetchErr) {
-            if (this.disposed) {return;}
-            const normalized = normalizeRPCError(fetchErr, 'Failed to load updated session');
-            this._updateSession({ error: normalized.userMessage, errorRetryable: true });
+        if (result.data) {
+          this._updateSession({ session: result.data.session });
+          this._setTurnsFromFetch(result.data.turns, result.data.pendingQuestion || null);
+        } else if (curSessionId !== 'new') {
+          const fetchResult = await this.dataSource.fetchSession(curSessionId);
+          if (this.disposed) {return;}
+          if (fetchResult) {
+            this._updateSession({ session: fetchResult.session });
+            this._setTurnsFromFetch(fetchResult.turns, fetchResult.pendingQuestion || null);
+          } else {
+            this._updateSession({ error: 'Failed to load updated session', errorRetryable: true });
           }
         }
       } else {
-        this._updateMessaging({
-          pendingQuestion: previousPendingQuestion,
-          turns: applyTurnLifecycleForPendingQuestion(previousTurns, previousPendingQuestion),
-        });
         this._updateSession({ error: result.error || 'Failed to submit answers', errorRetryable: false });
       }
     } catch (err) {
       if (this.disposed) {return;}
-      this._updateMessaging({
-        pendingQuestion: previousPendingQuestion,
-        turns: applyTurnLifecycleForPendingQuestion(previousTurns, previousPendingQuestion),
-      });
       const normalized = normalizeRPCError(err, 'Failed to submit answers');
       this._updateSession({ error: normalized.userMessage, errorRetryable: normalized.retryable });
     } finally {

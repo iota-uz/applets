@@ -35,16 +35,16 @@ export default function QuestionStep({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [question.id]);
 
-  const handleOptionClick = (optionLabel: string) => {
+  const handleOptionClick = (optionID: string) => {
     if (isMultiSelect) {
       // Multi-select: toggle the option
-      const newOptions = selectedOptions.includes(optionLabel)
-        ? selectedOptions.filter((a) => a !== optionLabel)
-        : [...selectedOptions, optionLabel];
+      const newOptions = selectedOptions.includes(optionID)
+        ? selectedOptions.filter((a) => a !== optionID)
+        : [...selectedOptions, optionID];
       onAnswer({ options: newOptions, customText: otherText || undefined });
     } else {
       // Single-select: replace with new selection, preserve custom text
-      onAnswer({ options: [optionLabel], customText: otherText || undefined });
+      onAnswer({ options: [optionID], customText: otherText || undefined });
     }
   };
 
@@ -75,12 +75,12 @@ export default function QuestionStep({
       {/* Options Grid */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {(question.options || []).map((option) => {
-          const isSelected = selectedOptions.includes(option.label);
+          const isSelected = selectedOptions.includes(option.id);
 
           return (
             <button
               key={option.id}
-              onClick={() => handleOptionClick(option.label)}
+              onClick={() => handleOptionClick(option.id)}
               className={`
                 cursor-pointer relative p-4 text-left border-2 rounded-lg transition-all
                 ${

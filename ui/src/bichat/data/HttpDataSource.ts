@@ -24,6 +24,8 @@ import type {
   StreamStatus,
   QuestionAnswers,
   SendMessageOptions,
+  ConversationTurn,
+  PendingQuestion,
 } from '../types';
 
 import * as Sessions from './SessionManager';
@@ -297,7 +299,11 @@ export class HttpDataSource implements ChatDataSource {
     sessionId: string,
     questionId: string,
     answers: QuestionAnswers
-  ): Promise<{ success: boolean; error?: string }> {
+  ): Promise<{
+    success: boolean
+    error?: string
+    data?: { session: Session; turns: ConversationTurn[]; pendingQuestion?: PendingQuestion | null }
+  }> {
     return Messages.submitQuestionAnswers(this.boundCallRPC, sessionId, questionId, answers);
   }
 

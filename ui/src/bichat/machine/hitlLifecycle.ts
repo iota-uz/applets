@@ -33,7 +33,7 @@ export function pendingQuestionFromInterrupt(
             .map((option) => ({
               id: option.id,
               label: typeof option.label === 'string' ? option.label : '',
-              value: typeof option.label === 'string' ? option.label : '',
+              value: option.id,
             }))
           : [],
       }))
@@ -121,4 +121,3 @@ export function applyTurnLifecycleForPendingQuestion(
 
   return changed ? nextTurns : turns;
 }
-
