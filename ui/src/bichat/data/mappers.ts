@@ -35,7 +35,7 @@ export interface RPCArtifact {
   id: string
   sessionId: string
   messageId?: string
-  uploadId?: number
+  uploadId?: number | null
   type: string
   name: string
   description?: string
@@ -155,13 +155,26 @@ function mapSessionAccess(rawAccess: unknown): SessionAccess | undefined {
     source === 'owner' || source === 'member' || source === 'permission'
       ? source
       : 'none';
+  const canRead = Boolean(rawAccess.canRead);
+  const canWrite = Boolean(rawAccess.canWrite);
+  const canManageMembers = Boolean(rawAccess.canManageMembers);
+
+  if (
+    normalizedRole === 'none'
+    && normalizedSource === 'none'
+    && !canRead
+    && !canWrite
+    && !canManageMembers
+  ) {
+    return undefined;
+  }
 
   return {
     role: normalizedRole,
     source: normalizedSource,
-    canRead: Boolean(rawAccess.canRead),
-    canWrite: Boolean(rawAccess.canWrite),
-    canManageMembers: Boolean(rawAccess.canManageMembers),
+    canRead,
+    canWrite,
+    canManageMembers,
   };
 }
 

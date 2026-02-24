@@ -221,7 +221,12 @@ export async function listSessionMembers(callRPC: RPCCaller, sessionId: string):
       lastName: member.user.lastName,
       initials: member.user.initials,
     },
-    role: member.role === 'owner' ? 'owner' : member.role === 'editor' ? 'editor' : 'viewer',
+    role: (() => {
+      const normalizedRole = (member.role || '').toLowerCase();
+      if (normalizedRole === 'owner') {return 'owner';}
+      if (normalizedRole === 'editor') {return 'editor';}
+      return 'viewer';
+    })(),
     createdAt: member.createdAt,
     updatedAt: member.updatedAt,
   }));

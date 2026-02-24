@@ -442,9 +442,14 @@ export function UserMessage({
     <div className={classes.root}>
       <div className={classes.wrapper}>
         {authorName && (
-          <div className="mb-1 px-1 text-[11px] text-right text-gray-500 dark:text-gray-400">
+          <span
+            id={`${turn.id}-author`}
+            role="note"
+            aria-label={authorName}
+            className="mb-1 px-1 text-[11px] text-right text-gray-500 dark:text-gray-400"
+          >
             {authorName}
-          </div>
+          </span>
         )}
         {/* Attachments */}
         {normalizedAttachments.length > 0 && (
@@ -462,7 +467,11 @@ export function UserMessage({
 
         {/* Message bubble */}
         {turn.content && (
-          <div ref={bubbleRef} className={classes.bubble}>
+          <div
+            ref={bubbleRef}
+            className={classes.bubble}
+            aria-describedby={authorName ? `${turn.id}-author` : undefined}
+          >
             <div className={classes.content}>
               {isEditing ? (
                 <EditForm

@@ -791,17 +791,17 @@ export default function Sidebar({
                           aria-label={t('BiChat.Sidebar.PinnedChats')}
                         >
                           {pinnedSessions.map((session) => {
-                            const canManage = session.access?.canManageMembers ?? true;
+                            const canWrite = session.access?.canWrite ?? true;
                             return (
                               <SessionItem
                                 key={session.id}
                                 session={session}
                                 isActive={session.id === activeSessionId}
                                 onSelect={() => handleSessionSelect(session.id)}
-                                onArchive={canManage ? () => handleSessionArchive(session.id) : undefined}
-                                onPin={canManage ? () => handleSessionPin(session.id, session.pinned) : undefined}
-                                onRename={canManage ? (newTitle) => handleSessionRename(session.id, newTitle) : undefined}
-                                onRegenerateTitle={canManage ? () => handleSessionRegenerateTitle(session.id) : undefined}
+                                onArchive={canWrite ? () => handleSessionArchive(session.id) : undefined}
+                                onPin={canWrite ? () => handleSessionPin(session.id, session.pinned) : undefined}
+                                onRename={canWrite ? (newTitle) => handleSessionRename(session.id, newTitle) : undefined}
+                                onRegenerateTitle={canWrite ? () => handleSessionRegenerateTitle(session.id) : undefined}
                               />
                             );
                           })}
@@ -826,17 +826,17 @@ export default function Sidebar({
                           aria-label={`${group.name} chats`}
                         >
                           {group.sessions.map((session) => {
-                            const canManage = session.access?.canManageMembers ?? true;
+                            const canWrite = session.access?.canWrite ?? true;
                             return (
                               <SessionItem
                                 key={session.id}
                                 session={session}
                                 isActive={session.id === activeSessionId}
                                 onSelect={() => handleSessionSelect(session.id)}
-                                onArchive={canManage ? () => handleSessionArchive(session.id) : undefined}
-                                onPin={canManage ? () => handleSessionPin(session.id, session.pinned) : undefined}
-                                onRename={canManage ? (newTitle) => handleSessionRename(session.id, newTitle) : undefined}
-                                onRegenerateTitle={canManage ? () => handleSessionRegenerateTitle(session.id) : undefined}
+                                onArchive={canWrite ? () => handleSessionArchive(session.id) : undefined}
+                                onPin={canWrite ? () => handleSessionPin(session.id, session.pinned) : undefined}
+                                onRename={canWrite ? (newTitle) => handleSessionRename(session.id, newTitle) : undefined}
+                                onRegenerateTitle={canWrite ? () => handleSessionRegenerateTitle(session.id) : undefined}
                               />
                             );
                           })}

@@ -46,7 +46,8 @@ export function UserTurnView({
 }: UserTurnViewProps) {
   const { handleEdit, handleCopy } = useChatMessaging();
   const author = turn.userTurn.author;
-  const authorName = showAuthorName && author ? `${author.firstName} ${author.lastName}`.trim() || author.initials : undefined;
+  const fullName = [author?.firstName || '', author?.lastName || ''].join(' ').trim();
+  const authorName = showAuthorName && fullName.length > 0 ? fullName : undefined;
   const resolvedInitials = initials ?? author?.initials ?? 'U';
 
   return (

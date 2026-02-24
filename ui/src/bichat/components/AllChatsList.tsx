@@ -4,7 +4,7 @@
  * Uses ChatDataSource for data fetching (no GraphQL dependency)
  */
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Archive } from '@phosphor-icons/react';
 import { UserAvatar } from './UserAvatar';
@@ -106,25 +106,27 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
     }
   }, [fetching, hasMore]);
 
+  const loadMoreNodeRef = useRef<HTMLDivElement | null>(null);
+
+  const loadMoreRef = useCallback((node: HTMLDivElement | null) => {
+    loadMoreNodeRef.current = node;
+  }, []);
+
   // Infinite scroll observer
-  const loadMoreRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (!node || fetching || !hasMore) {return;}
+  useEffect(() => {
+    const node = loadMoreNodeRef.current;
+    if (!node || fetching || !hasMore) {return;}
 
-      const observer = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting) {
-            handleLoadMore();
-          }
-        },
-        { threshold: 0.1 }
-      );
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        handleLoadMore();
+      }
+    }, { threshold: 0.1 });
 
-      observer.observe(node);
-      return () => observer.disconnect();
-    },
-    [fetching, hasMore, handleLoadMore]
-  );
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [fetching, hasMore, handleLoadMore]);
 
   // Derive unique users from chat data if listUsers is not available
   const derivedUsers = useMemo(() => {

@@ -69,6 +69,8 @@ export { Toast, type ToastProps } from './components/Toast';
 export { ToastContainer } from './components/ToastContainer';
 export { ConfirmModal, type ConfirmModalProps } from './components/ConfirmModal';
 export { UserAvatar, type UserAvatarProps } from './components/UserAvatar';
+export { AvatarStack, type AvatarStackProps } from './components/AvatarStack';
+export { SessionMembersModal, type SessionMembersModalProps } from './components/SessionMembersModal';
 export { PermissionGuard, type PermissionGuardProps } from './components/PermissionGuard';
 export { ErrorBoundary, DefaultErrorContent } from './components/ErrorBoundary';
 export { TypingIndicator, type TypingIndicatorProps } from './components/TypingIndicator';
@@ -305,6 +307,8 @@ export type {
   // Session management types
   SessionListResult,
   SessionUser,
+  SessionMember,
+  SessionAccess,
   SessionGroup,
   // Turn-based architecture types
   ConversationTurn,

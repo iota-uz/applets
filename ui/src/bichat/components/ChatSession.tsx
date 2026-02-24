@@ -302,61 +302,48 @@ function ChatSessionCore({
     }
   };
 
-  const headerActions = showArtifactsControls ? (
+  const canShowShareButton = Boolean(
+    session?.access?.canManageMembers
+    && dataSource.listUsers
+    && dataSource.listSessionMembers
+    && dataSource.addSessionMember
+    && dataSource.updateSessionMemberRole
+    && dataSource.removeSessionMember
+  );
+
+  const shareButton = canShowShareButton ? (
+    <button
+      type="button"
+      onClick={() => setMembersModalOpen(true)}
+      className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-500 transition-all duration-150 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+      aria-label={t('BiChat.Share.Title')}
+      title={t('BiChat.Share.Title')}
+    >
+      <Users className="h-4 w-4" />
+      {t('BiChat.Share.Button')}
+    </button>
+  ) : null;
+
+  const headerActions = (
     <>
-      {session?.access?.canManageMembers
-        && dataSource.listUsers
-        && dataSource.listSessionMembers
-        && dataSource.addSessionMember
-        && dataSource.updateSessionMemberRole
-        && dataSource.removeSessionMember && (
+      {shareButton}
+      {showArtifactsControls && (
         <button
           type="button"
-          onClick={() => setMembersModalOpen(true)}
-          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-500 transition-all duration-150 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-          aria-label={t('BiChat.Share.Title')}
-          title={t('BiChat.Share.Title')}
+          onClick={handleToggleArtifactsPanel}
+          className={[
+            'inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-150',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50',
+            artifactsPanelExpanded
+              ? 'bg-primary-50 text-primary-700 hover:bg-primary-100 dark:bg-primary-950/30 dark:text-primary-300 dark:hover:bg-primary-900/40'
+              : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200',
+          ].join(' ')}
+          aria-label={artifactsPanelExpanded ? t('BiChat.Artifacts.ToggleHide') : t('BiChat.Artifacts.ToggleShow')}
+          aria-expanded={artifactsPanelExpanded}
+          title={artifactsPanelExpanded ? t('BiChat.Artifacts.ToggleHide') : t('BiChat.Artifacts.ToggleShow')}
         >
-          <Users className="h-4 w-4" />
-          {t('BiChat.Share.Button')}
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={handleToggleArtifactsPanel}
-        className={[
-          'inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-150',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50',
-          artifactsPanelExpanded
-            ? 'bg-primary-50 text-primary-700 hover:bg-primary-100 dark:bg-primary-950/30 dark:text-primary-300 dark:hover:bg-primary-900/40'
-            : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200',
-        ].join(' ')}
-        aria-label={artifactsPanelExpanded ? t('BiChat.Artifacts.ToggleHide') : t('BiChat.Artifacts.ToggleShow')}
-        aria-expanded={artifactsPanelExpanded}
-        title={artifactsPanelExpanded ? t('BiChat.Artifacts.ToggleHide') : t('BiChat.Artifacts.ToggleShow')}
-      >
-        <Sidebar className="h-4 w-4" weight={artifactsPanelExpanded ? 'duotone' : 'regular'} />
-        {t('BiChat.Artifacts.Title')}
-      </button>
-      {actionsSlot}
-    </>
-  ) : (
-    <>
-      {session?.access?.canManageMembers
-        && dataSource.listUsers
-        && dataSource.listSessionMembers
-        && dataSource.addSessionMember
-        && dataSource.updateSessionMemberRole
-        && dataSource.removeSessionMember && (
-        <button
-          type="button"
-          onClick={() => setMembersModalOpen(true)}
-          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-500 transition-all duration-150 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
-          aria-label={t('BiChat.Share.Title')}
-          title={t('BiChat.Share.Title')}
-        >
-          <Users className="h-4 w-4" />
-          {t('BiChat.Share.Button')}
+          <Sidebar className="h-4 w-4" weight={artifactsPanelExpanded ? 'duotone' : 'regular'} />
+          {t('BiChat.Artifacts.Title')}
         </button>
       )}
       {actionsSlot}
@@ -374,6 +361,8 @@ function ChatSessionCore({
           readOnly={effectiveReadOnly}
           logoSlot={logoSlot}
           actionsSlot={headerActions}
+          members={session?.owner ? [session.owner] : undefined}
+          onMembersClick={canShowShareButton ? () => setMembersModalOpen(true) : undefined}
         />
       )}
       {error && (

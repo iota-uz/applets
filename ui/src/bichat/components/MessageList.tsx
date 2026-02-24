@@ -120,6 +120,10 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
             const prevDate = index > 0 ? new Date(turns[index - 1].createdAt) : null;
             const showDateSeparator = !!prevDate && !isSameDay(turnDate, prevDate);
             const isLast = index === turns.length - 1;
+            const userTurnProps = {
+              allowEdit: readOnly ? false : isLast,
+              showAuthorName: showAuthorNames,
+            };
 
             return (
               <Fragment key={turn.id}>
@@ -129,7 +133,7 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
                   isLastTurn={isLast}
                   renderUserTurn={renderUserTurn}
                   renderAssistantTurn={renderAssistantTurn}
-                  userTurnProps={readOnly ? { allowEdit: false, showAuthorName: showAuthorNames } : { allowEdit: isLast, showAuthorName: showAuthorNames }}
+                  userTurnProps={userTurnProps}
                   assistantTurnProps={readOnly ? { allowRegenerate: false } : undefined}
                 />
               </Fragment>
