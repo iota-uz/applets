@@ -195,6 +195,12 @@ export { useScrollToBottom } from './hooks/useScrollToBottom';
 export { useKeyboardShortcuts, type ShortcutConfig } from './hooks/useKeyboardShortcuts';
 export { useLongPress } from './hooks/useLongPress';
 export { useSidebarState, type UseSidebarStateReturn } from './hooks/useSidebarState';
+export { useHttpDataSourceConfigFromApplet } from './hooks/useHttpDataSourceConfigFromApplet';
+export {
+  useBichatRouter,
+  type UseBichatRouterParams,
+  type UseBichatRouterReturn,
+} from './hooks/useBichatRouter';
 
 // =============================================================================
 // Animations
