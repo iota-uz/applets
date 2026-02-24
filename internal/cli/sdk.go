@@ -70,16 +70,26 @@ func runSDKLink(cmd *cobra.Command, sdkRootFlag string) error {
 	if len(targets) == 0 {
 		return errors.New("no package.json files with @iota-uz/sdk dependency found")
 	}
+	linkTargets, skippedTargets := filterLinkableSDKTargets(targets, sdkRoot)
+	for _, skipped := range skippedTargets {
+		cmd.Printf("Skipping %s: %s\n", skipped.dir, skipped.reason)
+	}
+	if len(linkTargets) == 0 {
+		return errors.New("no linkable @iota-uz/sdk consumer targets found")
+	}
 
 	cmd.Printf("Registering @iota-uz/sdk globally from %s\n", sdkRoot)
+	cmd.Println("Refreshing global @iota-uz/sdk link state")
+	_ = devsetup.RunCommand(ctx, sdkRoot, "pnpm", "unlink", "--global")
 	if err := devsetup.RunCommand(ctx, sdkRoot, "pnpm", "link", "--global"); err != nil {
 		return fmt.Errorf("pnpm link --global in %s: %w", sdkRoot, err)
 	}
 
-	for _, dir := range targets {
+	for _, dir := range linkTargets {
 		cmd.Printf("Linking @iota-uz/sdk in %s\n", dir)
+		_ = devsetup.RunCommand(ctx, root, "pnpm", "-C", dir, "unlink", "@iota-uz/sdk")
 		if err := devsetup.RunCommand(ctx, root, "pnpm", "-C", dir, "link", "--global", "@iota-uz/sdk"); err != nil {
-			return fmt.Errorf("link @iota-uz/sdk in %s: %w", dir, err)
+			return fmt.Errorf("link @iota-uz/sdk in %s: %w\nhint: if this target has no `name` in package.json, add one or remove @iota-uz/sdk from that root manifest", dir, err)
 		}
 	}
 
@@ -229,4 +239,48 @@ func readPackageName(dir string) (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(meta.Name), nil
+}
+
+type skippedSDKTarget struct {
+	dir    string
+	reason string
+}
+
+func filterLinkableSDKTargets(targets []string, sdkRoot string) (linkable []string, skipped []skippedSDKTarget) {
+	normalizedSDKRoot, _ := filepath.Abs(sdkRoot)
+	for _, dir := range targets {
+		absDir, err := filepath.Abs(dir)
+		if err != nil {
+			skipped = append(skipped, skippedSDKTarget{
+				dir:    dir,
+				reason: "could not resolve absolute path",
+			})
+			continue
+		}
+		if absDir == normalizedSDKRoot {
+			skipped = append(skipped, skippedSDKTarget{
+				dir:    absDir,
+				reason: "canonical @iota-uz/sdk source is not a consumer target",
+			})
+			continue
+		}
+		name, err := readPackageName(absDir)
+		if err != nil {
+			skipped = append(skipped, skippedSDKTarget{
+				dir:    absDir,
+				reason: "could not read package.json name",
+			})
+			continue
+		}
+		if name == "" {
+			skipped = append(skipped, skippedSDKTarget{
+				dir:    absDir,
+				reason: "package.json has no `name`; pnpm global link is unreliable for unnamed importers",
+			})
+			continue
+		}
+		linkable = append(linkable, absDir)
+	}
+	sort.Strings(linkable)
+	return linkable, skipped
 }
