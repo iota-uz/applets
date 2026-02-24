@@ -1,4 +1,3 @@
-import type React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 export type RouterMode = 'url' | 'memory'
@@ -22,6 +21,14 @@ export interface DefineReactAppletElementOptions {
   render: (host: AppletHostConfig) => React.ReactElement
   observedAttributes?: string[]
   observeDarkMode?: boolean
+  /**
+   * Use Shadow DOM for CSS isolation (default: true).
+   *
+   * Set to `false` for full-page applets that use libraries requiring
+   * document-level DOM access (e.g. Headless UI Dialog portals).
+   * When false, styles are injected into document.head instead.
+   */
+  shadow?: boolean
 }
 
 export function defineReactAppletElement(options: DefineReactAppletElementOptions): void {
@@ -62,8 +69,19 @@ export function defineReactAppletElement(options: DefineReactAppletElementOption
       return Array.from(getEntry().observed);
     }
 
+    private get useShadow(): boolean {
+      return getEntry().options.shadow !== false;
+    }
+
+    /** The root node that holds the container and styles (shadow root or the element itself). */
+    private get styleRoot(): ShadowRoot | this {
+      return this.useShadow
+        ? (this.shadowRoot ?? this.attachShadow({ mode: 'open' }))
+        : this;
+    }
+
     connectedCallback(): void {
-      const shadowRoot = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
+      const root = this.styleRoot;
 
       if (!this.container) {
         this.container = document.createElement('div');
@@ -76,10 +94,10 @@ export function defineReactAppletElement(options: DefineReactAppletElementOption
         this.container.style.width = '100%';
       }
 
-      const existingContainer = shadowRoot.querySelector('#react-root');
+      const existingContainer = root.querySelector('#react-root');
       if (!existingContainer) {
-        if (this.styleEl) {shadowRoot.appendChild(this.styleEl);}
-        shadowRoot.appendChild(this.container);
+        if (this.useShadow && this.styleEl) {root.appendChild(this.styleEl);}
+        root.appendChild(this.container);
       } else if (existingContainer !== this.container) {
         this.container = existingContainer as HTMLDivElement;
       }
@@ -108,6 +126,12 @@ export function defineReactAppletElement(options: DefineReactAppletElementOption
 
       this.reactRoot?.unmount();
       this.reactRoot = null;
+
+      // Clean up document.head style when not using shadow DOM
+      if (!this.useShadow && this.styleEl) {
+        this.styleEl.remove();
+        this.styleEl = null;
+      }
     }
 
     attributeChangedCallback(_name: string, oldValue: string | null, newValue: string | null): void {
@@ -149,8 +173,18 @@ export function defineReactAppletElement(options: DefineReactAppletElementOption
       if (styles) {
         this.styleEl ??= document.createElement('style');
         this.styleEl.textContent = styles;
-        if (this.shadowRoot && !this.shadowRoot.contains(this.styleEl)) {
-          this.shadowRoot.insertBefore(this.styleEl, this.shadowRoot.firstChild);
+
+        if (this.useShadow) {
+          // Shadow mode: inject <style> into shadow root
+          if (this.shadowRoot && !this.shadowRoot.contains(this.styleEl)) {
+            this.shadowRoot.insertBefore(this.styleEl, this.shadowRoot.firstChild);
+          }
+        } else {
+          // Light mode: inject <style> into document.head
+          this.styleEl.id = `${tagName}-styles`;
+          if (!document.head.contains(this.styleEl)) {
+            document.head.appendChild(this.styleEl);
+          }
         }
       } else if (this.styleEl) {
         this.styleEl.remove();

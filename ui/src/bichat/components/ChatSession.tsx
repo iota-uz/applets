@@ -14,7 +14,7 @@
 
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Sidebar, Users } from '@phosphor-icons/react';
+import { Sidebar, ShareNetwork } from '@phosphor-icons/react';
 import { ChatSessionProvider, useChatSession, useChatMessaging, useChatInput } from '../context/ChatContext';
 import { ChatDataSource, ConversationTurn } from '../types';
 import { RateLimiter } from '../utils/RateLimiter';
@@ -319,7 +319,7 @@ function ChatSessionCore({
       aria-label={t('BiChat.Share.Title')}
       title={t('BiChat.Share.Title')}
     >
-      <Users className="h-4 w-4" />
+      <ShareNetwork className="h-4 w-4" />
       {t('BiChat.Share.Button')}
     </button>
   ) : null;

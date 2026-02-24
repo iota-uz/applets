@@ -6,10 +6,9 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
-  Dialog, DialogBackdrop, DialogPanel, DialogTitle,
-  Combobox, ComboboxInput, ComboboxOptions, ComboboxOption,
-} from '@headlessui/react';
-import { UserPlus, Trash, Crown, UsersThree, MagnifyingGlass } from '@phosphor-icons/react';
+  InlineDialog, InlineDialogBackdrop, InlineDialogPanel, InlineDialogTitle,
+} from './InlineDialog';
+import { UserPlus, Trash, Crown, UsersThree, MagnifyingGlass, X } from '@phosphor-icons/react';
 import type { ChatDataSource, SessionMember, SessionUser } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
 import { UserAvatar } from './UserAvatar';
@@ -105,6 +104,8 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
   const [query, setQuery] = useState('');
   const [confirmRemove, setConfirmRemove] = useState<SessionMember | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const canManageMembers = Boolean(
     dataSource.listUsers
@@ -150,6 +151,7 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
       setError(null);
       setConfirmRemove(null);
       setStatusMessage(null);
+      setDropdownOpen(false);
     }
   }, [isOpen]);
 
@@ -171,6 +173,17 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
         || `${u.firstName} ${u.lastName}`.toLowerCase().includes(q)
     );
   }, [availableUsers, query]);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   useEffect(() => () => clearTimeout(statusTimerRef.current), []);
 
@@ -234,13 +247,13 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
 
   return (
     <>
-      <Dialog open={isOpen} onClose={onClose} className="relative z-40">
-        <DialogBackdrop className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200" />
+      <InlineDialog open={isOpen} onClose={onClose} className="relative z-40">
+        <InlineDialogBackdrop className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200" />
 
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-          <DialogPanel
+          <InlineDialogPanel
             aria-labelledby={headingId}
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/30 max-w-lg w-full"
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/30 max-w-md w-full"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 pt-5 pb-4">
@@ -248,10 +261,18 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
                 <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary-50 dark:bg-primary-950/40 border border-primary-200/60 dark:border-primary-800/40">
                   <UsersThree size={18} weight="duotone" className="text-primary-600 dark:text-primary-400" />
                 </div>
-                <DialogTitle id={headingId} className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                <InlineDialogTitle id={headingId} className="text-base font-semibold text-gray-900 dark:text-gray-100">
                   {t('BiChat.Share.Title')}
-                </DialogTitle>
+                </InlineDialogTitle>
               </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-300 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
+                aria-label={t('BiChat.Common.Close')}
+              >
+                <X size={18} />
+              </button>
             </div>
 
             {/* Body */}
@@ -347,88 +368,79 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
                     {t('BiChat.Share.AddMember')}
                   </h3>
 
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    {/* User picker combobox */}
-                    <div className="relative flex-1">
-                      <Combobox
-                        value={selectedUser}
-                        onChange={(user: SessionUser | null) => {
-                          setSelectedUser(user);
-                          if (user) {
-                            setQuery('');
-                          }
-                        }}
-                      >
-                        <div className="relative">
-                          <MagnifyingGlass
-                            size={14}
-                            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
-                          />
-                          <ComboboxInput
-                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 pl-8 pr-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-colors focus:border-primary-400 dark:focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                            placeholder={t('BiChat.Share.SearchUsers')}
-                            displayValue={(user: SessionUser | null) =>
-                              user ? `${user.firstName} ${user.lastName}` : ''
-                            }
-                            onChange={(e) => setQuery(e.target.value)}
-                          />
-                        </div>
-
-                        <ComboboxOptions className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg py-1">
-                          {filteredUsers.length === 0 ? (
-                            <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                              {availableUsers.length === 0
-                                ? t('BiChat.Share.NoUsersAvailable')
-                                : t('BiChat.Share.NoSearchResults')}
-                            </div>
-                          ) : (
-                            filteredUsers.map((user) => (
-                              <ComboboxOption
-                                key={user.id}
-                                value={user}
-                                className="flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors data-[focus]:bg-primary-50 dark:data-[focus]:bg-primary-900/20 data-[selected]:bg-primary-50 dark:data-[selected]:bg-primary-900/20"
-                              >
-                                <UserAvatar
-                                  firstName={user.firstName}
-                                  lastName={user.lastName}
-                                  initials={user.initials}
-                                  size="xs"
-                                />
-                                <span className="text-sm text-gray-900 dark:text-gray-100">
-                                  {user.firstName} {user.lastName}
-                                </span>
-                              </ComboboxOption>
-                            ))
-                          )}
-                        </ComboboxOptions>
-                      </Combobox>
-                    </div>
-
-                    {/* Role selector + Add button */}
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <RoleSegmentedControl
-                        value={selectedRole}
-                        onChange={setSelectedRole}
-                        disabled={saving}
-                        t={t}
+                  {/* User search + dropdown */}
+                  <div className="relative" ref={dropdownRef}>
+                    <div className="relative">
+                      <MagnifyingGlass
+                        size={14}
+                        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
                       />
-                      <button
-                        type="button"
-                        onClick={handleAdd}
-                        disabled={saving || !selectedUser}
-                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-primary-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition-all duration-150 hover:bg-primary-700 hover:shadow active:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
-                      >
-                        <UserPlus size={14} />
-                        {t('BiChat.Share.Add')}
-                      </button>
+                      <input
+                        type="text"
+                        className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 pl-8 pr-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-colors focus:border-primary-400 dark:focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                        placeholder={t('BiChat.Share.SearchUsers')}
+                        value={selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}` : query}
+                        onFocus={() => { setDropdownOpen(true); if (selectedUser) { setSelectedUser(null); setQuery(''); } }}
+                        onChange={(e) => { setQuery(e.target.value); setSelectedUser(null); setDropdownOpen(true); }}
+                      />
                     </div>
+
+                    {dropdownOpen && !selectedUser && (
+                      <div className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg py-1">
+                        {filteredUsers.length === 0 ? (
+                          <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                            {availableUsers.length === 0
+                              ? t('BiChat.Share.NoUsersAvailable')
+                              : t('BiChat.Share.NoSearchResults')}
+                          </div>
+                        ) : (
+                          filteredUsers.map((user) => (
+                            <button
+                              key={user.id}
+                              type="button"
+                              className="flex w-full items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors hover:bg-primary-50 dark:hover:bg-primary-900/20"
+                              onClick={() => { setSelectedUser(user); setQuery(''); setDropdownOpen(false); }}
+                            >
+                              <UserAvatar
+                                firstName={user.firstName}
+                                lastName={user.lastName}
+                                initials={user.initials}
+                                size="xs"
+                              />
+                              <span className="text-sm text-gray-900 dark:text-gray-100">
+                                {user.firstName} {user.lastName}
+                              </span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Role selector + Add button */}
+                  <div className="flex items-center justify-between">
+                    <RoleSegmentedControl
+                      value={selectedRole}
+                      onChange={setSelectedRole}
+                      disabled={saving}
+                      t={t}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAdd}
+                      disabled={saving || !selectedUser}
+                      className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-primary-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition-all duration-150 hover:bg-primary-700 hover:shadow active:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
+                    >
+                      <UserPlus size={14} />
+                      {t('BiChat.Share.Add')}
+                    </button>
                   </div>
                 </div>
               )}
             </div>
-          </DialogPanel>
+          </InlineDialogPanel>
         </div>
-      </Dialog>
+      </InlineDialog>
 
       {/* Remove confirmation */}
       <ConfirmModal

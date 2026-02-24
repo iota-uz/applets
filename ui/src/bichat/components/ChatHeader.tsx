@@ -104,7 +104,7 @@ export function ChatHeader({ session, onBack, readOnly, logoSlot, actionsSlot, m
               )}
             </div>
             {isGroupSession && memberCount > 0 && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
                 {memberCount === 1
                   ? t('BiChat.Chat.OneMember')
                   : t('BiChat.Chat.MemberCount').replace('{{count}}', String(memberCount))}
