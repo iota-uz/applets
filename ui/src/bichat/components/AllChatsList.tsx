@@ -207,6 +207,7 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
                     lastName: '',
                     initials: 'U',
                   };
+                  const ownerName = [owner.firstName, owner.lastName].filter(Boolean).join(' ');
                   return (
                     <motion.div
                     key={chat.id}
@@ -248,9 +249,11 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
                           <p className="text-sm font-medium truncate">
                             {chat.title || t('BiChat.Common.Untitled')}
                           </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                            {owner.firstName} {owner.lastName}
-                          </p>
+                          {ownerName && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                              {ownerName}
+                            </p>
+                          )}
                           {chat.status === 'archived' && (
                             <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full text-xs">
                               <Archive size={12} className="w-3 h-3" />

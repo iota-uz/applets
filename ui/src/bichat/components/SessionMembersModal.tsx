@@ -115,7 +115,9 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
   );
 
   const refresh = useCallback(async () => {
-    if (!sessionId || !canManageMembers) return;
+    if (!sessionId || !canManageMembers) {
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -133,7 +135,9 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
   }, [canManageMembers, dataSource, sessionId, t]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return;
+    }
     void refresh();
   }, [isOpen, refresh]);
 
@@ -156,7 +160,9 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
   );
 
   const filteredUsers = useMemo(() => {
-    if (!query.trim()) return availableUsers;
+    if (!query.trim()) {
+      return availableUsers;
+    }
     const q = query.toLowerCase();
     return availableUsers.filter(
       (u) =>
@@ -175,7 +181,9 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
   };
 
   const handleAdd = async () => {
-    if (!sessionId || !selectedUser || !dataSource.addSessionMember) return;
+    if (!sessionId || !selectedUser || !dataSource.addSessionMember) {
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -192,7 +200,9 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
   };
 
   const handleUpdateRole = async (userId: string, role: 'editor' | 'viewer') => {
-    if (!sessionId || !dataSource.updateSessionMemberRole) return;
+    if (!sessionId || !dataSource.updateSessionMemberRole) {
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -206,7 +216,9 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
   };
 
   const handleRemove = async (userId: string) => {
-    if (!sessionId || !dataSource.removeSessionMember) return;
+    if (!sessionId || !dataSource.removeSessionMember) {
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -342,7 +354,9 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
                         value={selectedUser}
                         onChange={(user: SessionUser | null) => {
                           setSelectedUser(user);
-                          if (user) setQuery('');
+                          if (user) {
+                            setQuery('');
+                          }
                         }}
                       >
                         <div className="relative">

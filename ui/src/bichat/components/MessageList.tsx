@@ -105,7 +105,7 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
     () => (streamingContent ? normalizeStreamingMarkdown(streamingContent) : ''),
     [streamingContent],
   );
-  const showAuthorNames = Boolean(session?.isGroup || ((session?.memberCount ?? 0) > 1));
+  const showAuthorNames = Boolean(session?.isGroup);
 
   const showEphemeral = showActivityTrace || showTypingIndicator;
 
