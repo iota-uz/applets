@@ -202,7 +202,12 @@ export function defineReactAppletElement(options: DefineReactAppletElementOption
             this.styleEl.remove();
             this.styleEl = null;
           }
-          if (!this.styleEl || this.styleEl.parentNode !== document.head) {
+          // Release any stale ref (orphaned or from a previous cycle) before acquiring a new one.
+          if (this.styleEl && this.styleEl.parentNode !== document.head) {
+            releaseLightStyle(tagName);
+            this.styleEl = null;
+          }
+          if (!this.styleEl) {
             this.styleEl = getOrCreateLightStyle(tagName, styles);
           } else {
             this.styleEl.textContent = styles;
@@ -266,6 +271,11 @@ function getLightStyleRegistry(): Map<string, LightStyleEntry> {
   return g.__IOTA_REACT_APPLET_LIGHT_STYLES__ as Map<string, LightStyleEntry>;
 }
 
+/**
+ * Returns a shared <style> element for the given tagName (ref-counted).
+ * Callers (e.g. syncFromRegistry) are responsible for appending the element
+ * to document.head; it is not appended here.
+ */
 function getOrCreateLightStyle(tagName: string, styles: string): HTMLStyleElement {
   const registry = getLightStyleRegistry();
   let entry = registry.get(tagName);

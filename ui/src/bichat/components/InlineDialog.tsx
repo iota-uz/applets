@@ -47,10 +47,13 @@ export function InlineDialog({ open, onClose, className, children }: InlineDialo
     previousFocusRef.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const container = containerRef.current;
+    if (!container) {
+      return;
+    }
 
     const getFocusable = (): HTMLElement[] =>
       Array.from(
-        container?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR) ?? [],
+        container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
       );
 
     const handler = (e: KeyboardEvent) => {
@@ -58,7 +61,7 @@ export function InlineDialog({ open, onClose, className, children }: InlineDialo
         onClose();
         return;
       }
-      if (e.key !== 'Tab' || !container) {
+      if (e.key !== 'Tab') {
         return;
       }
       const focusable = getFocusable();
@@ -79,9 +82,9 @@ export function InlineDialog({ open, onClose, className, children }: InlineDialo
     };
 
     (getFocusable()[0] ?? container)?.focus();
-    window.addEventListener('keydown', handler);
+    container.addEventListener('keydown', handler as EventListener);
     return () => {
-      window.removeEventListener('keydown', handler);
+      container.removeEventListener('keydown', handler as EventListener);
       previousFocusRef.current?.focus();
     };
   }, [open, onClose]);

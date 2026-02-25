@@ -360,7 +360,7 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
                         ) : (
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <RoleSegmentedControl
-                              value={member.role === 'viewer' ? 'viewer' : 'editor'}
+                              value={member.role}
                               onChange={(role) => handleUpdateRole(member.user.id, role)}
                               disabled={saving}
                               size="sm"
@@ -390,8 +390,15 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
                     {t('BiChat.Share.AddMember')}
                   </h3>
 
-                  {/* User search + dropdown */}
-                  <div className="relative">
+                  {/* User search + dropdown — outer container owns blur-to-close so keyboard nav does not close dropdown */}
+                  <div
+                    className="relative"
+                    onBlur={(e: React.FocusEvent<HTMLDivElement>) => {
+                      if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                        setDropdownOpen(false);
+                      }
+                    }}
+                  >
                     <div className="relative">
                       <MagnifyingGlass
                         size={14}
@@ -403,7 +410,6 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
                         placeholder={t('BiChat.Share.SearchUsers')}
                         value={selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}` : query}
                         onFocus={() => { setDropdownOpen(true); setDropdownHighlightIndex(0); if (selectedUser) { setSelectedUser(null); setQuery(''); } }}
-                        onBlur={() => setDropdownOpen(false)}
                         onChange={(e) => { setQuery(e.target.value); setSelectedUser(null); setDropdownOpen(true); setDropdownHighlightIndex(0); }}
                         onKeyDown={(e) => {
                           if (!dropdownOpen || filteredUsers.length === 0) {

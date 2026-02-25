@@ -125,7 +125,10 @@ function resolveArtifactName(artifact: RPCArtifact): string {
 function mapSessionUser(rawUser: unknown): SessionUser | undefined {
   if (!isRecord(rawUser)) {return undefined;}
 
-  const id = readNonEmptyString(rawUser.id);
+  const rawId = rawUser.id;
+  const id =
+    readNonEmptyString(rawId)
+    ?? (typeof rawId === 'number' && Number.isFinite(rawId) ? String(rawId) : null);
   if (!id) {return undefined;}
 
   const firstName = readString(rawUser.firstName);

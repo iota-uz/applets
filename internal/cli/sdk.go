@@ -89,7 +89,8 @@ func runSDKLink(cmd *cobra.Command, sdkRootFlag string) error {
 		cmd.Printf("Linking @iota-uz/sdk in %s\n", dir)
 		_ = devsetup.RunCommand(ctx, root, "pnpm", "-C", dir, "unlink", "@iota-uz/sdk")
 		if err := devsetup.RunCommand(ctx, root, "pnpm", "-C", dir, "link", "--global", "@iota-uz/sdk"); err != nil {
-			return fmt.Errorf("link @iota-uz/sdk in %s: %w\nhint: if this target has no `name` in package.json, add one or remove @iota-uz/sdk from that root manifest", dir, err)
+			cmd.PrintErrln("hint: if this target has no `name` in package.json, add one or remove @iota-uz/sdk from that root manifest")
+			return fmt.Errorf("link @iota-uz/sdk in %s: %w", dir, err)
 		}
 	}
 
@@ -247,7 +248,10 @@ type skippedSDKTarget struct {
 }
 
 func filterLinkableSDKTargets(targets []string, sdkRoot string) (linkable []string, skipped []skippedSDKTarget) {
-	normalizedSDKRoot, _ := filepath.Abs(sdkRoot)
+	normalizedSDKRoot, err := filepath.Abs(sdkRoot)
+	if err != nil {
+		return nil, []skippedSDKTarget{{dir: sdkRoot, reason: "could not resolve SDK root absolute path"}}
+	}
 	for _, dir := range targets {
 		absDir, err := filepath.Abs(dir)
 		if err != nil {
