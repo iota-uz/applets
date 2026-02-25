@@ -7,7 +7,7 @@
 import React, { useRef, memo, useState, useEffect, useMemo } from 'react';
 import { motion, useMotionValue, useTransform, type PanInfo } from 'framer-motion';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
-import { DotsThree, Check, Bookmark, PencilSimple, Archive, ArrowsClockwise, ArrowUUpLeft, Trash } from '@phosphor-icons/react';
+import { DotsThree, Check, Bookmark, PencilSimple, Archive, ArrowsClockwise, ArrowUUpLeft, Trash, UsersThree } from '@phosphor-icons/react';
 import { EditableText, type EditableTextRef } from './EditableText';
 import { sessionItemVariants } from '../animations/variants';
 import type { Session } from '../types';
@@ -83,6 +83,23 @@ const SessionItem = memo<SessionItemProps>(
     // Generate title from session (use existing title or show generating state)
     const displayTitle = isTitleGenerating ? t('BiChat.Common.Generating') : (session.title ?? t('BiChat.Common.Untitled'));
     const lastActivity = formatRelativeTime(session.updatedAt, t);
+    const accessRole = session.access?.role ?? 'owner';
+    const roleLabel =
+      accessRole === 'editor'
+        ? t('BiChat.Share.RoleEditor')
+        : accessRole === 'viewer'
+          ? t('BiChat.Share.RoleViewer')
+          : accessRole === 'read_all'
+            ? t('BiChat.Share.RoleReadOnly')
+            : '';
+    const visibilityLabel =
+      session.isGroup
+        ? t('BiChat.Sidebar.GroupChat')
+        : accessRole === 'editor' || accessRole === 'viewer'
+          ? t('BiChat.Sidebar.SharedWithYou')
+          : '';
+    const isGroupOrShared = Boolean(session.isGroup || (session.memberCount && session.memberCount > 1));
+    const metaParts = [lastActivity, visibilityLabel, roleLabel].filter(Boolean);
 
     // Long press handlers for touch devices
     const { handlers: longPressHandlers } = useLongPress({
@@ -232,16 +249,26 @@ const SessionItem = memo<SessionItemProps>(
             {...longPressHandlers}
           >
             <div className="flex items-center justify-between gap-2">
-              <div className="flex flex-col min-w-0 flex-1">
-                <EditableText
-                  ref={editableTitleRef}
-                  value={displayTitle}
-                  onSave={(newTitle) => onRename?.(newTitle)}
-                  isLoading={isTitleGenerating}
-                />
-                <span className="text-[11px] text-gray-400 dark:text-gray-500 truncate mt-0.5">
-                  {lastActivity}
-                </span>
+              <div className="flex items-start gap-2 min-w-0 flex-1">
+                {isGroupOrShared && (
+                  <UsersThree size={14} weight="duotone" className="text-primary-500 dark:text-primary-400 mt-1 flex-shrink-0" />
+                )}
+                <div className="flex flex-col min-w-0 flex-1">
+                  <EditableText
+                    ref={editableTitleRef}
+                    value={displayTitle}
+                    onSave={(newTitle) => onRename?.(newTitle)}
+                    isLoading={isTitleGenerating}
+                  />
+                  <span className="text-[11px] text-gray-400 dark:text-gray-500 truncate mt-0.5">
+                    {metaParts.join(' • ')}
+                    {isGroupOrShared && session.memberCount && session.memberCount > 0 && (
+                      <span className="inline-flex items-center ml-1 rounded-full bg-primary-50 dark:bg-primary-900/30 px-1.5 text-[10px] font-medium text-primary-600 dark:text-primary-400">
+                        {session.memberCount}
+                      </span>
+                    )}
+                  </span>
+                </div>
               </div>
               {!isTouch && hasContextMenu && (
                 <Menu>

@@ -91,7 +91,7 @@ interface MessageListProps {
 
 export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs, readOnly }: MessageListProps) {
   const { t } = useTranslation();
-  const { currentSessionId, fetching } = useChatSession();
+  const { session, currentSessionId, fetching } = useChatSession();
   const {
     turns, streamingContent, isStreaming,
     thinkingContent, activeSteps,
@@ -105,6 +105,7 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
     () => (streamingContent ? normalizeStreamingMarkdown(streamingContent) : ''),
     [streamingContent],
   );
+  const showAuthorNames = Boolean(session?.isGroup);
 
   const showEphemeral = showActivityTrace || showTypingIndicator;
 
@@ -119,6 +120,10 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
             const prevDate = index > 0 ? new Date(turns[index - 1].createdAt) : null;
             const showDateSeparator = !!prevDate && !isSameDay(turnDate, prevDate);
             const isLast = index === turns.length - 1;
+            const userTurnProps = {
+              allowEdit: readOnly ? false : isLast,
+              showAuthorName: showAuthorNames,
+            };
 
             return (
               <Fragment key={turn.id}>
@@ -128,7 +133,7 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
                   isLastTurn={isLast}
                   renderUserTurn={renderUserTurn}
                   renderAssistantTurn={renderAssistantTurn}
-                  userTurnProps={readOnly ? { allowEdit: false } : { allowEdit: isLast }}
+                  userTurnProps={userTurnProps}
                   assistantTurnProps={readOnly ? { allowRegenerate: false } : undefined}
                 />
               </Fragment>

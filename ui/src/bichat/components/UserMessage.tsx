@@ -88,6 +88,8 @@ export interface UserMessageProps {
   turnId?: string
   /** User initials for avatar */
   initials?: string
+  /** Optional sender name for shared/group chats */
+  authorName?: string
   /** Slot overrides */
   slots?: UserMessageSlots
   /** Class name overrides */
@@ -208,6 +210,7 @@ export function UserMessage({
   turn,
   turnId,
   initials = 'U',
+  authorName,
   slots,
   classNames: classNameOverrides,
   onCopy,
@@ -438,6 +441,16 @@ export function UserMessage({
   return (
     <div className={classes.root}>
       <div className={classes.wrapper}>
+        {authorName && (
+          <span
+            id={`${turn.id}-author`}
+            role="note"
+            aria-label={authorName}
+            className="mb-1 px-1 text-[11px] text-right text-gray-500 dark:text-gray-400"
+          >
+            {authorName}
+          </span>
+        )}
         {/* Attachments */}
         {normalizedAttachments.length > 0 && (
           <div className={classes.attachments}>
@@ -454,7 +467,11 @@ export function UserMessage({
 
         {/* Message bubble */}
         {turn.content && (
-          <div ref={bubbleRef} className={classes.bubble}>
+          <div
+            ref={bubbleRef}
+            className={classes.bubble}
+            aria-describedby={authorName ? `${turn.id}-author` : undefined}
+          >
             <div className={classes.content}>
               {isEditing ? (
                 <EditForm

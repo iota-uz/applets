@@ -14,9 +14,9 @@
 
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Sidebar } from '@phosphor-icons/react';
+import { Sidebar, ShareNetwork } from '@phosphor-icons/react';
 import { ChatSessionProvider, useChatSession, useChatMessaging, useChatInput } from '../context/ChatContext';
-import { ChatDataSource, ConversationTurn } from '../types';
+import { ChatDataSource, ConversationTurn, type SessionUser } from '../types';
 import { RateLimiter } from '../utils/RateLimiter';
 import { ChatHeader } from './ChatHeader';
 import { MessageList } from './MessageList';
@@ -26,6 +26,7 @@ import WelcomeContent from './WelcomeContent';
 import ArchiveBanner from './ArchiveBanner';
 import { useTranslation } from '../hooks/useTranslation';
 import { SessionArtifactsPanel } from './SessionArtifactsPanel';
+import { SessionMembersModal } from './SessionMembersModal';
 import Alert from './Alert';
 import { StreamError } from './StreamError';
 
@@ -131,7 +132,8 @@ function ChatSessionCore({
   } = useChatInput();
 
   const isArchived = session?.status === 'archived';
-  const effectiveReadOnly = Boolean(readOnly ?? isReadOnly) || isArchived;
+  const accessReadOnly = session?.access ? !session.access.canWrite : false;
+  const effectiveReadOnly = Boolean(readOnly ?? isReadOnly) || isArchived || accessReadOnly;
   const [restoring, setRestoring] = useState(false);
 
   const handleRestore = useCallback(async () => {
@@ -152,6 +154,8 @@ function ChatSessionCore({
   const [artifactsPanelExpanded, setArtifactsPanelExpanded] = useState(
     artifactsPanelDefaultExpanded
   );
+  const [membersModalOpen, setMembersModalOpen] = useState(false);
+  const [headerMembers, setHeaderMembers] = useState<SessionUser[] | null>(null);
   const [artifactsPanelWidth, setArtifactsPanelWidth] = useState(ARTIFACTS_PANEL_WIDTH_DEFAULT);
   const [isResizingArtifactsPanel, setIsResizingArtifactsPanel] = useState(false);
   const layoutContainerRef = useRef<HTMLDivElement>(null);
@@ -187,6 +191,25 @@ function ChatSessionCore({
       // ignore
     }
   }, [artifactsPanelStorageKey, showArtifactsPanel]);
+
+  // Load full member list for header avatar stack when session and listSessionMembers are available
+  useEffect(() => {
+    if (!session?.id || !dataSource.listSessionMembers) {
+      setHeaderMembers(null);
+      return;
+    }
+    let cancelled = false;
+    dataSource.listSessionMembers(session.id).then((members) => {
+      if (!cancelled) {
+        setHeaderMembers(members.map((m) => m.user));
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setHeaderMembers(null);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [session?.id, dataSource.listSessionMembers]);
 
   const handleArtifactsResizeStart = useCallback(() => {
     setIsResizingArtifactsPanel(true);
@@ -299,29 +322,52 @@ function ChatSessionCore({
     }
   };
 
-  const headerActions = showArtifactsControls ? (
+  const canShowShareButton = Boolean(
+    session?.access?.canManageMembers
+    && dataSource.listUsers
+    && dataSource.listSessionMembers
+    && dataSource.addSessionMember
+    && dataSource.updateSessionMemberRole
+    && dataSource.removeSessionMember
+  );
+
+  const shareButton = canShowShareButton ? (
+    <button
+      type="button"
+      onClick={() => setMembersModalOpen(true)}
+      className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-500 transition-all duration-150 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+      aria-label={t('BiChat.Share.Title')}
+      title={t('BiChat.Share.Title')}
+    >
+      <ShareNetwork className="h-4 w-4" />
+      {t('BiChat.Share.Button')}
+    </button>
+  ) : null;
+
+  const headerActions = (
     <>
-      <button
-        type="button"
-        onClick={handleToggleArtifactsPanel}
-        className={[
-          'inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-150',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50',
-          artifactsPanelExpanded
-            ? 'bg-primary-50 text-primary-700 hover:bg-primary-100 dark:bg-primary-950/30 dark:text-primary-300 dark:hover:bg-primary-900/40'
-            : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200',
-        ].join(' ')}
-        aria-label={artifactsPanelExpanded ? t('BiChat.Artifacts.ToggleHide') : t('BiChat.Artifacts.ToggleShow')}
-        aria-expanded={artifactsPanelExpanded}
-        title={artifactsPanelExpanded ? t('BiChat.Artifacts.ToggleHide') : t('BiChat.Artifacts.ToggleShow')}
-      >
-        <Sidebar className="h-4 w-4" weight={artifactsPanelExpanded ? 'duotone' : 'regular'} />
-        {t('BiChat.Artifacts.Title')}
-      </button>
+      {shareButton}
+      {showArtifactsControls && (
+        <button
+          type="button"
+          onClick={handleToggleArtifactsPanel}
+          className={[
+            'inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-150',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50',
+            artifactsPanelExpanded
+              ? 'bg-primary-50 text-primary-700 hover:bg-primary-100 dark:bg-primary-950/30 dark:text-primary-300 dark:hover:bg-primary-900/40'
+              : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200',
+          ].join(' ')}
+          aria-label={artifactsPanelExpanded ? t('BiChat.Artifacts.ToggleHide') : t('BiChat.Artifacts.ToggleShow')}
+          aria-expanded={artifactsPanelExpanded}
+          title={artifactsPanelExpanded ? t('BiChat.Artifacts.ToggleHide') : t('BiChat.Artifacts.ToggleShow')}
+        >
+          <Sidebar className="h-4 w-4" weight={artifactsPanelExpanded ? 'duotone' : 'regular'} />
+          {t('BiChat.Artifacts.Title')}
+        </button>
+      )}
       {actionsSlot}
     </>
-  ) : (
-    actionsSlot
   );
 
   return (
@@ -335,6 +381,8 @@ function ChatSessionCore({
           readOnly={effectiveReadOnly}
           logoSlot={logoSlot}
           actionsSlot={headerActions}
+          members={headerMembers ?? (session?.owner ? [session.owner] : undefined)}
+          onMembersClick={canShowShareButton ? () => setMembersModalOpen(true) : undefined}
         />
       )}
       {error && (
@@ -533,6 +581,14 @@ function ChatSessionCore({
           )}
         </AnimatePresence>
       </div>
+      {canShowShareButton && (
+        <SessionMembersModal
+          isOpen={membersModalOpen}
+          sessionId={session?.id}
+          dataSource={dataSource}
+          onClose={() => setMembersModalOpen(false)}
+        />
+      )}
     </main>
   );
 }

@@ -8,6 +8,8 @@ import { AppletRPCException } from '../../applet-host';
 import type { BichatRPC } from './rpc.generated';
 import type {
   Session,
+  SessionMember,
+  SessionUser,
   SessionListResult,
   SessionArtifact,
   ConversationTurn,
@@ -171,4 +173,91 @@ export async function compactSessionHistory(callRPC: RPCCaller, sessionId: strin
   deletedArtifacts: number
 }> {
   return callRPC('bichat.session.compact', { id: sessionId });
+}
+
+export async function listUsers(callRPC: RPCCaller): Promise<SessionUser[]> {
+  const data = await callRPC('bichat.user.list', {});
+  return data.users.map((user) => ({
+    id: String(user.id),
+    firstName: user.firstName || '',
+    lastName: user.lastName || '',
+    initials: user.initials || '',
+  }));
+}
+
+export async function listAllSessions(
+  callRPC: RPCCaller,
+  options?: {
+    limit?: number
+    offset?: number
+    includeArchived?: boolean
+    userId?: string | null
+  }
+): Promise<{
+  sessions: Session[]
+  total: number
+  hasMore: boolean
+}> {
+  const data = await callRPC('bichat.session.listAll', {
+    limit: options?.limit ?? 50,
+    offset: options?.offset ?? 0,
+    includeArchived: options?.includeArchived ?? false,
+    userId: options?.userId ?? null,
+  });
+
+  return {
+    sessions: data.sessions.map(toSession),
+    total: typeof data.total === 'number' ? data.total : data.sessions.length,
+    hasMore: Boolean(data.hasMore),
+  };
+}
+
+export async function listSessionMembers(callRPC: RPCCaller, sessionId: string): Promise<SessionMember[]> {
+  const data = await callRPC('bichat.session.members.list', { sessionId });
+  return data.members.map((member) => ({
+    user: {
+      id: String(member.user.id),
+      firstName: member.user.firstName,
+      lastName: member.user.lastName,
+      initials: member.user.initials,
+    },
+    role: (() => {
+      const normalizedRole = (member.role || '').toLowerCase();
+      if (normalizedRole === 'owner') {return 'owner';}
+      if (normalizedRole === 'editor') {return 'editor';}
+      return 'viewer';
+    })(),
+    createdAt: member.createdAt,
+    updatedAt: member.updatedAt,
+  }));
+}
+
+export async function addSessionMember(
+  callRPC: RPCCaller,
+  sessionId: string,
+  userId: string,
+  role: 'editor' | 'viewer',
+): Promise<void> {
+  await callRPC('bichat.session.members.add', {
+    sessionId,
+    userId,
+    role: role.toUpperCase(),
+  });
+}
+
+export async function updateSessionMemberRole(
+  callRPC: RPCCaller,
+  sessionId: string,
+  userId: string,
+  role: 'editor' | 'viewer',
+): Promise<void> {
+  await callRPC('bichat.session.members.updateRole', {
+    sessionId,
+    userId,
+    role: role.toUpperCase(),
+  });
+}
+
+export async function removeSessionMember(callRPC: RPCCaller, sessionId: string, userId: string): Promise<void> {
+  await callRPC('bichat.session.members.remove', { sessionId, userId });
 }

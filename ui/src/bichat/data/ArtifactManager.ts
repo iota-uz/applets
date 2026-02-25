@@ -70,7 +70,12 @@ export async function uploadSessionArtifacts(
   const data = await callRPC('bichat.session.uploadArtifacts', {
     sessionId,
     attachments: uploads.map((upload) => ({
+      id: String(upload.id),
+      filename: upload.name,
       uploadId: upload.id,
+      mimeType: upload.mimetype || 'application/octet-stream',
+      sizeBytes: upload.size,
+      url: upload.url,
     })),
   });
 

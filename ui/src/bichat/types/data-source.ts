@@ -10,6 +10,7 @@
 
 import type {
   Session,
+  SessionMember,
   SessionListResult,
   SessionUser,
   ConversationTurn,
@@ -110,8 +111,12 @@ export interface AdminStore {
     includeArchived?: boolean
     userId?: string | null
   }): Promise<{
-    sessions: Array<Session & { owner: SessionUser }>
+    sessions: Session[]
     total: number
     hasMore: boolean
   }>
+  listSessionMembers(sessionId: string): Promise<SessionMember[]>
+  addSessionMember(sessionId: string, userId: string, role: 'editor' | 'viewer'): Promise<void>
+  updateSessionMemberRole(sessionId: string, userId: string, role: 'editor' | 'viewer'): Promise<void>
+  removeSessionMember(sessionId: string, userId: string): Promise<void>
 }

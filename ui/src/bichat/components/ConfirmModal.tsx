@@ -6,7 +6,9 @@
  */
 
 import { memo } from 'react';
-import { Dialog, DialogBackdrop, DialogPanel, DialogTitle, Description } from '@headlessui/react';
+import {
+  InlineDialog, InlineDialogBackdrop, InlineDialogPanel, InlineDialogTitle, InlineDialogDescription,
+} from './InlineDialog';
 import { WarningCircle } from '@phosphor-icons/react';
 import { useTranslation } from '../hooks/useTranslation';
 
@@ -43,28 +45,28 @@ function ConfirmModalBase({
   const resolvedConfirmText = confirmText?.trim() ? confirmText : t('BiChat.Common.Confirm');
   const resolvedCancelText = cancelText?.trim() ? cancelText : t('BiChat.Common.Cancel');
   return (
-    <Dialog open={isOpen} onClose={onCancel} className="relative z-40">
+    <InlineDialog open={isOpen} onClose={onCancel} className="relative z-40">
       {/* Backdrop */}
-      <DialogBackdrop className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200" />
+      <InlineDialogBackdrop className="fixed inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm transition-opacity duration-200" />
 
       {/* Modal */}
       <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-        <DialogPanel className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/30 max-w-sm w-full overflow-hidden">
+        <InlineDialogPanel className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/30 max-w-sm w-full overflow-hidden">
           <div className="px-6 pt-6 pb-5">
             {/* Icon + Title */}
-            <div className="flex items-start gap-3.5">
+            <div className="flex items-start gap-4">
               {isDanger && (
                 <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200/60 dark:border-red-800/40">
                   <WarningCircle size={22} weight="duotone" className="text-red-600 dark:text-red-400" />
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <DialogTitle className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-snug">
+                <InlineDialogTitle className="text-base font-semibold text-gray-900 dark:text-gray-100 leading-snug">
                   {title}
-                </DialogTitle>
-                <Description className="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                </InlineDialogTitle>
+                <InlineDialogDescription className="mt-2 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
                   {message}
-                </Description>
+                </InlineDialogDescription>
               </div>
             </div>
           </div>
@@ -97,9 +99,9 @@ function ConfirmModalBase({
               {resolvedConfirmText}
             </button>
           </div>
-        </DialogPanel>
+        </InlineDialogPanel>
       </div>
-    </Dialog>
+    </InlineDialog>
   );
 }
 

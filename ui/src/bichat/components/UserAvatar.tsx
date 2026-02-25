@@ -13,7 +13,7 @@ export interface UserAvatarProps {
   /** Override initials (defaults to first letters of first and last name) */
   initials?: string
   /** Avatar size */
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'xs' | 'sm' | 'md' | 'lg'
   /** Additional CSS classes */
   className?: string
 }
@@ -53,6 +53,7 @@ const colorPalette = [
  * Size configurations
  */
 const sizeClasses = {
+  xs: 'w-6 h-6 text-[10px]',
   sm: 'w-8 h-8 text-xs',
   md: 'w-10 h-10 text-sm',
   lg: 'w-12 h-12 text-base',

@@ -1,4 +1,3 @@
-import type React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 export type RouterMode = 'url' | 'memory'
@@ -22,6 +21,14 @@ export interface DefineReactAppletElementOptions {
   render: (host: AppletHostConfig) => React.ReactElement
   observedAttributes?: string[]
   observeDarkMode?: boolean
+  /**
+   * Use Shadow DOM for CSS isolation (default: true).
+   *
+   * Set to `false` for full-page applets that use libraries requiring
+   * document-level DOM access (e.g. Headless UI Dialog portals).
+   * When false, styles are injected into document.head instead.
+   */
+  shadow?: boolean
 }
 
 export function defineReactAppletElement(options: DefineReactAppletElementOptions): void {
@@ -62,9 +69,32 @@ export function defineReactAppletElement(options: DefineReactAppletElementOption
       return Array.from(getEntry().observed);
     }
 
-    connectedCallback(): void {
-      const shadowRoot = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
+    private get useShadow(): boolean {
+      return getEntry().options.shadow !== false;
+    }
 
+    /** The root node that holds the container and styles (shadow root or the element itself). Call ensureMountMode() before reading when using shadow. */
+    private get styleRoot(): ShadowRoot | this {
+      if (!this.useShadow) {
+        return this;
+      }
+      if (!this.shadowRoot) {
+        throw new Error(`[${tagName}] shadowRoot missing; call ensureMountMode() first`);
+      }
+      return this.shadowRoot;
+    }
+
+    /** Ensures shadow root exists when needed and the React container is in the correct root (shadow or light). */
+    private ensureMountMode(): void {
+      const targetRoot = this.useShadow
+        ? (this.shadowRoot ?? this.attachShadow({ mode: 'open' }))
+        : this;
+      if (this.container && this.container.parentNode !== targetRoot) {
+        targetRoot.appendChild(this.container);
+      }
+    }
+
+    connectedCallback(): void {
       if (!this.container) {
         this.container = document.createElement('div');
         this.container.id = 'react-root';
@@ -76,10 +106,13 @@ export function defineReactAppletElement(options: DefineReactAppletElementOption
         this.container.style.width = '100%';
       }
 
-      const existingContainer = shadowRoot.querySelector('#react-root');
+      this.ensureMountMode();
+      const root = this.styleRoot;
+
+      const existingContainer = root.querySelector('#react-root');
       if (!existingContainer) {
-        if (this.styleEl) {shadowRoot.appendChild(this.styleEl);}
-        shadowRoot.appendChild(this.container);
+        if (this.useShadow && this.styleEl) {root.appendChild(this.styleEl);}
+        root.appendChild(this.container);
       } else if (existingContainer !== this.container) {
         this.container = existingContainer as HTMLDivElement;
       }
@@ -108,6 +141,16 @@ export function defineReactAppletElement(options: DefineReactAppletElementOption
 
       this.reactRoot?.unmount();
       this.reactRoot = null;
+
+      // Clean up style: release shared light-mode style or remove shadow style
+      if (this.styleEl) {
+        if (this.styleEl.parentNode === document.head) {
+          releaseLightStyle(tagName);
+        } else {
+          this.styleEl.remove();
+        }
+        this.styleEl = null;
+      }
     }
 
     attributeChangedCallback(_name: string, oldValue: string | null, newValue: string | null): void {
@@ -143,17 +186,48 @@ export function defineReactAppletElement(options: DefineReactAppletElementOption
     }
 
     private syncFromRegistry(): void {
+      this.ensureMountMode();
       const entry = getEntry();
 
       const styles = typeof entry.options.styles === 'function' ? entry.options.styles() : entry.options.styles;
       if (styles) {
-        this.styleEl ??= document.createElement('style');
-        this.styleEl.textContent = styles;
-        if (this.shadowRoot && !this.shadowRoot.contains(this.styleEl)) {
-          this.shadowRoot.insertBefore(this.styleEl, this.shadowRoot.firstChild);
+        if (this.useShadow) {
+          // Shadow mode: per-instance <style> in shadow root (release shared if we were in light mode)
+          if (this.styleEl && this.styleEl.parentNode === document.head) {
+            releaseLightStyle(tagName);
+            this.styleEl = null;
+          }
+          this.styleEl ??= document.createElement('style');
+          this.styleEl.textContent = styles;
+          if (this.shadowRoot && !this.shadowRoot.contains(this.styleEl)) {
+            this.shadowRoot.insertBefore(this.styleEl, this.shadowRoot.firstChild);
+          }
+        } else {
+          // Light mode: shared <style> per tagName in document.head (ref-counted)
+          if (this.styleEl && this.shadowRoot?.contains(this.styleEl)) {
+            this.styleEl.remove();
+            this.styleEl = null;
+          }
+          // Release any stale ref (orphaned or from a previous cycle) before acquiring a new one.
+          if (this.styleEl && this.styleEl.parentNode !== document.head) {
+            releaseLightStyle(tagName);
+            this.styleEl = null;
+          }
+          if (!this.styleEl) {
+            this.styleEl = getOrCreateLightStyle(tagName, styles);
+          } else {
+            this.styleEl.textContent = styles;
+          }
+          if (!document.head.contains(this.styleEl)) {
+            document.head.appendChild(this.styleEl);
+          }
         }
       } else if (this.styleEl) {
-        this.styleEl.remove();
+        if (this.styleEl.parentNode === document.head) {
+          releaseLightStyle(tagName);
+        } else {
+          this.styleEl.remove();
+        }
         this.styleEl = null;
       }
 
@@ -189,4 +263,46 @@ function getRegistry(): Map<string, RegistryEntry> {
   const g = globalThis as Record<string, unknown>;
   g.__IOTA_REACT_APPLET_HOST_REGISTRY__ ??= new Map<string, RegistryEntry>();
   return g.__IOTA_REACT_APPLET_HOST_REGISTRY__ as Map<string, RegistryEntry>;
+}
+
+// Light-mode style registry: one shared <style> per tagName, ref-counted
+interface LightStyleEntry {
+  element: HTMLStyleElement
+  refCount: number
+}
+
+function getLightStyleRegistry(): Map<string, LightStyleEntry> {
+  const g = globalThis as Record<string, unknown>;
+  g.__IOTA_REACT_APPLET_LIGHT_STYLES__ ??= new Map<string, LightStyleEntry>();
+  return g.__IOTA_REACT_APPLET_LIGHT_STYLES__ as Map<string, LightStyleEntry>;
+}
+
+/**
+ * Returns a shared <style> element for the given tagName (ref-counted).
+ * Callers (e.g. syncFromRegistry) are responsible for appending the element
+ * to document.head; it is not appended here.
+ */
+function getOrCreateLightStyle(tagName: string, styles: string): HTMLStyleElement {
+  const registry = getLightStyleRegistry();
+  let entry = registry.get(tagName);
+  if (!entry) {
+    const el = document.createElement('style');
+    el.id = `${tagName}-styles`;
+    entry = { element: el, refCount: 0 };
+    registry.set(tagName, entry);
+  }
+  entry.refCount++;
+  entry.element.textContent = styles;
+  return entry.element;
+}
+
+function releaseLightStyle(tagName: string): void {
+  const registry = getLightStyleRegistry();
+  const entry = registry.get(tagName);
+  if (!entry) {return;}
+  entry.refCount--;
+  if (entry.refCount <= 0) {
+    entry.element.remove();
+    registry.delete(tagName);
+  }
 }

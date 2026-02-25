@@ -13,6 +13,18 @@ export interface Session {
   pinned: boolean
   createdAt: string
   updatedAt: string
+  owner?: SessionUser
+  isGroup?: boolean
+  memberCount?: number
+  access?: SessionAccess
+}
+
+export interface SessionAccess {
+  role: 'owner' | 'editor' | 'viewer' | 'read_all' | 'none'
+  source: 'owner' | 'member' | 'permission' | 'none'
+  canRead: boolean
+  canWrite: boolean
+  canManageMembers: boolean
 }
 
 // ============================================================================
@@ -38,6 +50,7 @@ export interface UserTurn {
   id: string
   content: string
   attachments: Attachment[]
+  author?: SessionUser
   createdAt: string
 }
 
@@ -502,6 +515,13 @@ export interface SessionUser {
   initials: string
 }
 
+export interface SessionMember {
+  user: SessionUser
+  role: 'owner' | 'editor' | 'viewer'
+  createdAt: string
+  updatedAt: string
+}
+
 export interface SessionGroup {
   name: string
   sessions: Session[]
@@ -624,10 +644,14 @@ export interface ChatDataSource {
     includeArchived?: boolean
     userId?: string | null
   }): Promise<{
-    sessions: Array<Session & { owner: SessionUser }>
+    sessions: Session[]
     total: number
     hasMore: boolean
   }>
+  listSessionMembers?(sessionId: string): Promise<SessionMember[]>
+  addSessionMember?(sessionId: string, userId: string, role: 'editor' | 'viewer'): Promise<void>
+  updateSessionMemberRole?(sessionId: string, userId: string, role: 'editor' | 'viewer'): Promise<void>
+  removeSessionMember?(sessionId: string, userId: string): Promise<void>
 }
 
 // ============================================================================
