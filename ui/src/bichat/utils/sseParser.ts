@@ -93,6 +93,9 @@ export async function* parseBichatStream(
   let yieldedTerminal = false;
 
   for await (const event of parseSSEStream(reader)) {
+    if (event.type === 'ping') {
+      continue;
+    }
     const parsed = event as StreamChunk;
 
     // Infer type if missing

@@ -68,22 +68,46 @@ export class MockChatDataSource implements ChatDataSource {
     return { success: true, deletedMessages: 0, deletedArtifacts: 0 };
   }
 
-  async compactSessionHistory(_sessionId: string): Promise<{ success: boolean; summary: string; deletedMessages: number; deletedArtifacts: number }> {
-    return { success: true, summary: 'Compacted summary', deletedMessages: 0, deletedArtifacts: 0 };
+  async compactSessionHistory(_sessionId: string): Promise<{ accepted: true; operation: 'question_submit' | 'question_reject' | 'session_compact'; sessionId: string; runId: string; startedAt: number }> {
+    return {
+      accepted: true,
+      operation: 'session_compact',
+      sessionId: _sessionId,
+      runId: `run-${_sessionId}`,
+      startedAt: Date.now(),
+    };
   }
 
   async submitQuestionAnswers(
     _sessionId: string,
     _questionId: string,
     _answers: QuestionAnswers
-  ): Promise<{ success: boolean; error?: string }> {
+  ): Promise<{ success: boolean; data?: { accepted: true; operation: 'question_submit' | 'question_reject' | 'session_compact'; sessionId: string; runId: string; startedAt: number }; error?: string }> {
     console.log('Mock submit answers:', _answers);
-    return { success: true };
+    return {
+      success: true,
+      data: {
+        accepted: true,
+        operation: 'question_submit',
+        sessionId: _sessionId,
+        runId: `run-${_sessionId}-submit`,
+        startedAt: Date.now(),
+      },
+    };
   }
 
-  async rejectPendingQuestion(_questionId: string): Promise<{ success: boolean; error?: string }> {
-    console.log('Mock reject question:', _questionId);
-    return { success: true };
+  async rejectPendingQuestion(_sessionId: string): Promise<{ success: boolean; data?: { accepted: true; operation: 'question_submit' | 'question_reject' | 'session_compact'; sessionId: string; runId: string; startedAt: number }; error?: string }> {
+    console.log('Mock reject question:', _sessionId);
+    return {
+      success: true,
+      data: {
+        accepted: true,
+        operation: 'question_reject',
+        sessionId: _sessionId,
+        runId: `run-${_sessionId}-reject`,
+        startedAt: Date.now(),
+      },
+    };
   }
 
   navigateToSession(sessionId: string): void {

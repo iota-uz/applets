@@ -356,6 +356,14 @@ export interface StreamStatus {
   startedAt?: number
 }
 
+export interface AsyncRunAccepted {
+  accepted: true
+  operation: 'question_submit' | 'question_reject' | 'session_compact'
+  sessionId: string
+  runId: string
+  startedAt: number
+}
+
 /**
  * @deprecated Use `StreamEvent` instead. `StreamChunk` is kept for backwards
  * compatibility but the flat all-optional shape is unsound.
@@ -575,10 +583,11 @@ export interface ChatDataSource {
     deletedArtifacts: number
   }>
   compactSessionHistory(sessionId: string): Promise<{
-    success: boolean
-    summary: string
-    deletedMessages: number
-    deletedArtifacts: number
+    accepted: true
+    operation: AsyncRunAccepted['operation']
+    sessionId: string
+    runId: string
+    startedAt: number
   }>
   submitQuestionAnswers(
     sessionId: string,
@@ -586,14 +595,10 @@ export interface ChatDataSource {
     answers: QuestionAnswers
   ): Promise<{
     success: boolean
+    data?: AsyncRunAccepted
     error?: string
-    data?: {
-      session: Session
-      turns: ConversationTurn[]
-      pendingQuestion?: PendingQuestion | null
-    }
   }>
-  rejectPendingQuestion(sessionId: string): Promise<{ success: boolean; error?: string }>
+  rejectPendingQuestion(sessionId: string): Promise<{ success: boolean; data?: AsyncRunAccepted; error?: string }>
   /**
    * Stops the active stream for the given session. No partial assistant message is persisted.
    * Optional for backward compatibility with data sources that do not support stop.

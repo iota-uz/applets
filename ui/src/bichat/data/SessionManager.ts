@@ -14,6 +14,7 @@ import type {
   SessionArtifact,
   ConversationTurn,
   PendingQuestion,
+  AsyncRunAccepted,
 } from '../types';
 import {
   toSession,
@@ -167,12 +168,20 @@ export async function clearSessionHistory(callRPC: RPCCaller, sessionId: string)
 }
 
 export async function compactSessionHistory(callRPC: RPCCaller, sessionId: string): Promise<{
-  success: boolean
-  summary: string
-  deletedMessages: number
-  deletedArtifacts: number
+  accepted: true
+  operation: AsyncRunAccepted['operation']
+  sessionId: string
+  runId: string
+  startedAt: number
 }> {
-  return callRPC('bichat.session.compact', { id: sessionId });
+  const result = await callRPC('bichat.session.compact', { id: sessionId });
+  return {
+    accepted: true,
+    operation: result.operation as AsyncRunAccepted['operation'],
+    sessionId: result.sessionId,
+    runId: result.runId,
+    startedAt: result.startedAt,
+  };
 }
 
 export async function listUsers(callRPC: RPCCaller): Promise<SessionUser[]> {

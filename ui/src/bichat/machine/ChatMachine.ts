@@ -615,6 +615,32 @@ export class ChatMachine {
     }
   }
 
+  private async _resumeAcceptedRunOrPoll(sessionId: string, runId: string): Promise<void> {
+    setRunMarker(sessionId, runId);
+    try {
+      await this._runResumeStream(sessionId, runId);
+    } catch (err) {
+      if (this.disposed) {return;}
+      console.warn('[ChatMachine] resumeStream failed, switching to status polling fallback:', err);
+
+      const status = await this.dataSource.getStreamStatus?.(sessionId).catch(() => null);
+      if (!status?.active) {
+        clearRunMarker(sessionId);
+        await this._syncSessionFromServer(sessionId, true).catch(() => {});
+        this._updateMessaging({ generationInProgress: false });
+        return;
+      }
+
+      setRunMarker(sessionId, status.runId ?? runId);
+      this._updateMessaging({
+        isStreaming: false,
+        loading: false,
+        generationInProgress: true,
+      });
+      this._startPassivePolling(sessionId);
+    }
+  }
+
   // =====================================================================
   // Private — actions
   // =====================================================================
@@ -751,21 +777,25 @@ export class ChatMachine {
       });
 
       try {
-        const compactResult = await this.dataSource.compactSessionHistory(curSessionId);
-        const summary = compactResult.summary || '';
+        const accepted = await this.dataSource.compactSessionHistory(curSessionId);
         this._updateMessaging({
-          turns: applyTurnLifecycleForPendingQuestion([createCompactedSystemTurn(curSessionId, summary)], null),
+          turns: applyTurnLifecycleForPendingQuestion(
+            [createCompactedSystemTurn(curSessionId, 'Compacting conversation history...')],
+            null
+          ),
           pendingQuestion: null,
         });
-
-        const result = await this.dataSource.fetchSession(curSessionId);
-        if (result) {
-          this._updateSession({ session: result.session });
-          this._setTurnsFromFetch(result.turns, result.pendingQuestion || null);
-        } else {
-          this._setTurnsFromFetch([], null);
+        await this._resumeAcceptedRunOrPoll(curSessionId, accepted.runId);
+        if (!this.state.messaging.generationInProgress) {
+          const result = await this.dataSource.fetchSession(curSessionId);
+          if (result) {
+            this._updateSession({ session: result.session });
+            this._setTurnsFromFetch(result.turns, result.pendingQuestion || null);
+          } else {
+            this._setTurnsFromFetch([], null);
+          }
+          this._updateMessaging({ codeOutputs: [] });
         }
-        this._updateMessaging({ codeOutputs: [] });
       } catch (err) {
         const normalized = normalizeRPCError(err, 'Failed to compact session history');
         this._updateInput({ inputError: normalized.userMessage });
@@ -1296,18 +1326,24 @@ export class ChatMachine {
       if (this.disposed) {return;}
 
       if (result.success) {
+        this._updateMessaging({
+          pendingQuestion: null,
+          turns: applyTurnLifecycleForPendingQuestion(this.state.messaging.turns, null),
+        });
         if (result.data) {
-          this._updateSession({ session: result.data.session });
-          this._setTurnsFromFetch(result.data.turns, result.data.pendingQuestion || null);
-        } else if (curSessionId !== 'new') {
-          const fetchResult = await this.dataSource.fetchSession(curSessionId);
-          if (this.disposed) {return;}
-          if (fetchResult) {
-            this._updateSession({ session: fetchResult.session });
-            this._setTurnsFromFetch(fetchResult.turns, fetchResult.pendingQuestion || null);
-          } else {
-            this._updateSession({ error: 'Failed to load updated session', errorRetryable: true });
+          await this._resumeAcceptedRunOrPoll(curSessionId, result.data.runId);
+          if (!this.state.messaging.generationInProgress) {
+            const fetchResult = await this.dataSource.fetchSession(curSessionId);
+            if (this.disposed) {return;}
+            if (fetchResult) {
+              this._updateSession({ session: fetchResult.session });
+              this._setTurnsFromFetch(fetchResult.turns, fetchResult.pendingQuestion || null);
+            } else {
+              this._updateSession({ error: 'Failed to load updated session', errorRetryable: true });
+            }
           }
+        } else {
+          this._updateSession({ error: 'Missing async run metadata', errorRetryable: true });
         }
       } else {
         this._updateSession({ error: result.error || 'Failed to submit answers', errorRetryable: false });
@@ -1336,7 +1372,9 @@ export class ChatMachine {
           pendingQuestion: null,
           turns: applyTurnLifecycleForPendingQuestion(this.state.messaging.turns, null),
         });
-        if (curSessionId !== 'new') {
+        if (result.data) {
+          await this._resumeAcceptedRunOrPoll(curSessionId, result.data.runId);
+        } else if (curSessionId !== 'new') {
           const fetchResult = await this.dataSource.fetchSession(curSessionId);
           if (this.disposed) {return;}
           if (fetchResult) {
