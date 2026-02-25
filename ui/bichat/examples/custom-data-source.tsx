@@ -448,12 +448,13 @@ export class MockDataSource implements ChatDataSource {
     deletedArtifacts: number
   }> {
     const turns = this.turns.get(sessionId) || [];
+    const deletedMessages = turns.length;
     this.turns.set(sessionId, []);
     this.saveToLocalStorage();
 
     return {
       success: true,
-      deletedMessages: count,
+      deletedMessages,
       deletedArtifacts: 0,
     };
   }
