@@ -130,7 +130,6 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [dropdownHighlightIndex, setDropdownHighlightIndex] = useState(0);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const dropdownOptionRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const canManageMembers = Boolean(
@@ -207,21 +206,6 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
       Math.min(Math.max(0, i), Math.max(0, filteredUsers.length - 1))
     );
   }, [filteredUsers.length]);
-
-  // Close dropdown on click outside when modal and dropdown are open
-  useEffect(() => {
-    if (!isOpen || !dropdownOpen) {
-      return;
-    }
-    const handler = (e: Event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
-    };
-    const root = dropdownRef.current?.getRootNode() ?? document;
-    root.addEventListener('mousedown', handler as EventListener);
-    return () => root.removeEventListener('mousedown', handler as EventListener);
-  }, [isOpen, dropdownOpen]);
 
   useEffect(() => () => clearTimeout(statusTimerRef.current), []);
 
@@ -407,7 +391,7 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
                   </h3>
 
                   {/* User search + dropdown */}
-                  <div className="relative" ref={dropdownRef}>
+                  <div className="relative">
                     <div className="relative">
                       <MagnifyingGlass
                         size={14}
@@ -419,6 +403,7 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
                         placeholder={t('BiChat.Share.SearchUsers')}
                         value={selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}` : query}
                         onFocus={() => { setDropdownOpen(true); setDropdownHighlightIndex(0); if (selectedUser) { setSelectedUser(null); setQuery(''); } }}
+                        onBlur={() => setDropdownOpen(false)}
                         onChange={(e) => { setQuery(e.target.value); setSelectedUser(null); setDropdownOpen(true); setDropdownHighlightIndex(0); }}
                         onKeyDown={(e) => {
                           if (!dropdownOpen || filteredUsers.length === 0) {
@@ -473,6 +458,7 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
                               type="button"
                               ref={(el) => { dropdownOptionRefs.current[index] = el; }}
                               className={`flex w-full items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors hover:bg-primary-50 dark:hover:bg-primary-900/20 ${index === dropdownHighlightIndex ? 'bg-primary-50 dark:bg-primary-900/20' : ''}`}
+                              onMouseDown={(e) => e.preventDefault()}
                               onClick={() => { setSelectedUser(user); setQuery(''); setDropdownOpen(false); }}
                             >
                               <UserAvatar
