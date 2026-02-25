@@ -10,7 +10,6 @@
 
 import {
   createContext,
-  useContext,
   useEffect,
   useRef,
   type HTMLAttributes,
