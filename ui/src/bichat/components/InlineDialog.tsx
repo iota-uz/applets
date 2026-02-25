@@ -35,15 +35,21 @@ interface InlineDialogProps {
 
 export function InlineDialog({ open, onClose, className, children }: InlineDialogProps) {
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onClose();
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
   return (
     <DialogContext.Provider value={onClose}>
@@ -75,7 +81,9 @@ export function InlineDialogPanel({
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current) {
+      return;
+    }
     const target =
       ref.current.querySelector<HTMLElement>('[data-autofocus]') ??
       ref.current.querySelector<HTMLElement>(
