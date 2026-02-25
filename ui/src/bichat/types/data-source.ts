@@ -51,13 +51,7 @@ export interface SessionStore {
     deletedMessages: number
     deletedArtifacts: number
   }>
-  compactSessionHistory(sessionId: string): Promise<{
-    accepted: true
-    operation: AsyncRunAccepted['operation']
-    sessionId: string
-    runId: string
-    startedAt: number
-  }>
+  compactSessionHistory(sessionId: string): Promise<AsyncRunAccepted>
 }
 
 // ---------------------------------------------------------------------------

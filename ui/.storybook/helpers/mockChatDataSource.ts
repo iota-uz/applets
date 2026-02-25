@@ -1,5 +1,6 @@
 import type {
   ChatDataSource,
+  AsyncRunAccepted,
   Session,
   SessionListResult,
   SessionUser,
@@ -68,7 +69,7 @@ export class MockChatDataSource implements ChatDataSource {
     return { success: true, deletedMessages: 0, deletedArtifacts: 0 };
   }
 
-  async compactSessionHistory(_sessionId: string): Promise<{ accepted: true; operation: 'question_submit' | 'question_reject' | 'session_compact'; sessionId: string; runId: string; startedAt: number }> {
+  async compactSessionHistory(_sessionId: string): Promise<AsyncRunAccepted> {
     return {
       accepted: true,
       operation: 'session_compact',
@@ -82,7 +83,7 @@ export class MockChatDataSource implements ChatDataSource {
     _sessionId: string,
     _questionId: string,
     _answers: QuestionAnswers
-  ): Promise<{ success: boolean; data?: { accepted: true; operation: 'question_submit' | 'question_reject' | 'session_compact'; sessionId: string; runId: string; startedAt: number }; error?: string }> {
+  ): Promise<{ success: boolean; data?: AsyncRunAccepted; error?: string }> {
     console.log('Mock submit answers:', _answers);
     return {
       success: true,
@@ -96,7 +97,7 @@ export class MockChatDataSource implements ChatDataSource {
     };
   }
 
-  async rejectPendingQuestion(_sessionId: string): Promise<{ success: boolean; data?: { accepted: true; operation: 'question_submit' | 'question_reject' | 'session_compact'; sessionId: string; runId: string; startedAt: number }; error?: string }> {
+  async rejectPendingQuestion(_sessionId: string): Promise<{ success: boolean; data?: AsyncRunAccepted; error?: string }> {
     console.log('Mock reject question:', _sessionId);
     return {
       success: true,
@@ -108,10 +109,6 @@ export class MockChatDataSource implements ChatDataSource {
         startedAt: Date.now(),
       },
     };
-  }
-
-  navigateToSession(sessionId: string): void {
-    console.log('Mock navigate to session:', sessionId);
   }
 
   // Session management

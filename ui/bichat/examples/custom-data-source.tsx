@@ -7,6 +7,7 @@
 
 import {
   ChatDataSource,
+  AsyncRunAccepted,
   Session,
   ConversationTurn,
   UserTurn,
@@ -256,7 +257,7 @@ export class MockDataSource implements ChatDataSource {
     sessionId: string,
     questionId: string,
     answers: QuestionAnswers
-  ): Promise<{ success: boolean; error?: string }> {
+  ): Promise<{ success: boolean; data?: AsyncRunAccepted; error?: string }> {
     try {
       const response = await fetch(`${this.baseUrl}/api/questions/${questionId}/answers`, {
         method: 'POST',
@@ -273,7 +274,10 @@ export class MockDataSource implements ChatDataSource {
         };
       }
 
-      return { success: true };
+      return {
+        success: true,
+        data: (await response.json()) as AsyncRunAccepted,
+      };
     } catch (err) {
       return {
         success: false,
@@ -285,7 +289,7 @@ export class MockDataSource implements ChatDataSource {
   /**
    * Reject a pending question
    */
-  async rejectPendingQuestion(sessionId: string): Promise<{ success: boolean; error?: string }> {
+  async rejectPendingQuestion(sessionId: string): Promise<{ success: boolean; data?: AsyncRunAccepted; error?: string }> {
     try {
       const response = await fetch(`${this.baseUrl}/api/sessions/${sessionId}/reject-question`, {
         method: 'POST',
@@ -298,24 +302,16 @@ export class MockDataSource implements ChatDataSource {
         };
       }
 
-      return { success: true };
+      return {
+        success: true,
+        data: (await response.json()) as AsyncRunAccepted,
+      };
     } catch (err) {
       return {
         success: false,
         error: err instanceof Error ? err.message : 'Unknown error',
       };
     }
-  }
-
-  /**
-   * Navigate to a session (SPA routing example)
-   */
-  navigateToSession(sessionId: string): void {
-    // Example: Use React Router
-    // navigate(`/chat/${sessionId}`)
-
-    // Or vanilla JS
-    window.history.pushState({}, '', `/chat/${sessionId}`);
   }
 
   /**
@@ -452,7 +448,6 @@ export class MockDataSource implements ChatDataSource {
     deletedArtifacts: number
   }> {
     const turns = this.turns.get(sessionId) || [];
-    const count = turns.length;
     this.turns.set(sessionId, []);
     this.saveToLocalStorage();
 
@@ -466,14 +461,8 @@ export class MockDataSource implements ChatDataSource {
   /**
    * Compact session history
    */
-  async compactSessionHistory(sessionId: string): Promise<{
-    success: boolean
-    summary: string
-    deletedMessages: number
-    deletedArtifacts: number
-  }> {
+  async compactSessionHistory(sessionId: string): Promise<AsyncRunAccepted> {
     const turns = this.turns.get(sessionId) || [];
-    const count = turns.length;
 
     // Mock compaction - keep only last 3 turns
     const compacted = turns.slice(-3);
@@ -481,10 +470,11 @@ export class MockDataSource implements ChatDataSource {
     this.saveToLocalStorage();
 
     return {
-      success: true,
-      summary: `Compacted ${count - compacted.length} turns`,
-      deletedMessages: count - compacted.length,
-      deletedArtifacts: 0,
+      accepted: true,
+      operation: 'session_compact',
+      sessionId,
+      runId: `run-${sessionId}`,
+      startedAt: Date.now(),
     };
   }
 }
@@ -542,12 +532,34 @@ export class SimpleMockDataSource implements ChatDataSource {
     yield { type: 'done', sessionId };
   }
 
-  async submitQuestionAnswers() {
-    return { success: true };
+  async submitQuestionAnswers(
+    sessionId: string,
+    _questionId: string,
+    _answers: QuestionAnswers
+  ) {
+    return {
+      success: true,
+      data: {
+        accepted: true,
+        operation: 'question_submit',
+        sessionId,
+        runId: `run-${sessionId}-submit`,
+        startedAt: Date.now(),
+      },
+    };
   }
 
-  async rejectPendingQuestion() {
-    return { success: true };
+  async rejectPendingQuestion(sessionId: string) {
+    return {
+      success: true,
+      data: {
+        accepted: true,
+        operation: 'question_reject',
+        sessionId,
+        runId: `run-${sessionId}-reject`,
+        startedAt: Date.now(),
+      },
+    };
   }
 
   async listSessions(): Promise<SessionListResult> {
@@ -588,17 +600,13 @@ export class SimpleMockDataSource implements ChatDataSource {
     return { success: true, deletedMessages: 0, deletedArtifacts: 0 };
   }
 
-  async compactSessionHistory(): Promise<{
-    success: boolean
-    summary: string
-    deletedMessages: number
-    deletedArtifacts: number
-  }> {
+  async compactSessionHistory(): Promise<AsyncRunAccepted> {
     return {
-      success: true,
-      summary: 'No turns to compact',
-      deletedMessages: 0,
-      deletedArtifacts: 0,
+      accepted: true,
+      operation: 'session_compact',
+      sessionId: 'mock',
+      runId: 'mock-run',
+      startedAt: Date.now(),
     };
   }
 }

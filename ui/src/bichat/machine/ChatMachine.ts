@@ -623,7 +623,10 @@ export class ChatMachine {
       if (this.disposed) {return;}
       console.warn('[ChatMachine] resumeStream failed, switching to status polling fallback:', err);
 
-      const status = await this.dataSource.getStreamStatus?.(sessionId).catch(() => null);
+      const getStreamStatus = this.dataSource.getStreamStatus;
+      const status = getStreamStatus
+        ? await getStreamStatus(sessionId).catch(() => null)
+        : null;
       if (!status?.active) {
         clearRunMarker(sessionId);
         await this._syncSessionFromServer(sessionId, true).catch(() => {});
@@ -778,6 +781,9 @@ export class ChatMachine {
 
       try {
         const accepted = await this.dataSource.compactSessionHistory(curSessionId);
+        if (!accepted.runId) {
+          throw new Error('Async compaction run metadata is missing');
+        }
         this._updateMessaging({
           turns: applyTurnLifecycleForPendingQuestion(
             [createCompactedSystemTurn(curSessionId, 'Compacting conversation history...')],
@@ -990,11 +996,8 @@ export class ChatMachine {
     }
     if (shouldNavigateAfter && targetSessionId && targetSessionId !== 'new') {
       this._notifySessionsUpdated('session_created', targetSessionId);
-      // Prefer callback prop over deprecated data source method
       if (this.onSessionCreated) {
         this.onSessionCreated(targetSessionId);
-      } else {
-        this.dataSource.navigateToSession?.(targetSessionId);
       }
     }
     this._clearStreamError();
@@ -1342,8 +1345,15 @@ export class ChatMachine {
               this._updateSession({ error: 'Failed to load updated session', errorRetryable: true });
             }
           }
-        } else {
-          this._updateSession({ error: 'Missing async run metadata', errorRetryable: true });
+        } else if (curSessionId !== 'new') {
+          const fetchResult = await this.dataSource.fetchSession(curSessionId);
+          if (this.disposed) {return;}
+          if (fetchResult) {
+            this._updateSession({ session: fetchResult.session });
+            this._setTurnsFromFetch(fetchResult.turns, fetchResult.pendingQuestion || null);
+          } else {
+            this._updateSession({ error: 'Failed to load updated session', errorRetryable: true });
+          }
         }
       } else {
         this._updateSession({ error: result.error || 'Failed to submit answers', errorRetryable: false });

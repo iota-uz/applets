@@ -38,8 +38,6 @@ interface ChatSessionProps {
   /**
    * Called when a new session is created (e.g. on first message in a "new
    * chat"). Use this to navigate your SPA router to the new session URL.
-   *
-   * Replaces the deprecated `dataSource.navigateToSession`.
    */
   onSessionCreated?: (sessionId: string) => void
   /** Alias for isReadOnly (preferred) */

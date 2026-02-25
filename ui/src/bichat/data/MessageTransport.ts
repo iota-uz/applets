@@ -349,6 +349,10 @@ export async function rejectPendingQuestion(
   }
 }
 
+function isAsyncRunOperation(value: string): value is AsyncRunAccepted['operation'] {
+  return value === 'question_submit' || value === 'question_reject' || value === 'session_compact';
+}
+
 function normalizeAsyncRunAccepted(input: {
   accepted: boolean
   operation: string
@@ -356,9 +360,18 @@ function normalizeAsyncRunAccepted(input: {
   runId: string
   startedAt: number
 }): AsyncRunAccepted {
+  if (!input.accepted) {
+    throw new Error('Async run request was not accepted');
+  }
+  if (!isAsyncRunOperation(input.operation)) {
+    throw new Error(`Unexpected async operation: ${input.operation}`);
+  }
+  if (!input.sessionId || !input.runId) {
+    throw new Error('Missing async run metadata');
+  }
   return {
     accepted: true,
-    operation: input.operation as AsyncRunAccepted['operation'],
+    operation: input.operation,
     sessionId: input.sessionId,
     runId: input.runId,
     startedAt: input.startedAt,

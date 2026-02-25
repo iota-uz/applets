@@ -55,8 +55,6 @@ export interface ChatSessionProviderProps {
   /**
    * Called when the machine creates a new session (e.g. on first message in a
    * "new chat"). Use this to navigate your SPA router to the new session URL.
-   *
-   * Replaces the deprecated `dataSource.navigateToSession`.
    */
   onSessionCreated?: (sessionId: string) => void
   children: ReactNode

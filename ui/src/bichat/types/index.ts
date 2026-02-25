@@ -582,13 +582,7 @@ export interface ChatDataSource {
     deletedMessages: number
     deletedArtifacts: number
   }>
-  compactSessionHistory(sessionId: string): Promise<{
-    accepted: true
-    operation: AsyncRunAccepted['operation']
-    sessionId: string
-    runId: string
-    startedAt: number
-  }>
+  compactSessionHistory(sessionId: string): Promise<AsyncRunAccepted>
   submitQuestionAnswers(
     sessionId: string,
     questionId: string,
@@ -620,13 +614,6 @@ export interface ChatDataSource {
     onChunk: (chunk: StreamChunk) => void,
     signal?: AbortSignal
   ): Promise<void>
-  /**
-   * @deprecated Pass `onSessionCreated` to `ChatSessionProvider` instead.
-   * This method couples navigation to the data source, causing component
-   * remounts during active streams.
-   */
-  navigateToSession?(sessionId: string): void
-
   // Session management
   listSessions(options?: {
     limit?: number

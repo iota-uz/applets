@@ -167,17 +167,20 @@ export async function clearSessionHistory(callRPC: RPCCaller, sessionId: string)
   return callRPC('bichat.session.clear', { id: sessionId });
 }
 
-export async function compactSessionHistory(callRPC: RPCCaller, sessionId: string): Promise<{
-  accepted: true
-  operation: AsyncRunAccepted['operation']
-  sessionId: string
-  runId: string
-  startedAt: number
-}> {
+export async function compactSessionHistory(callRPC: RPCCaller, sessionId: string): Promise<AsyncRunAccepted> {
   const result = await callRPC('bichat.session.compact', { id: sessionId });
+  if (!result.accepted) {
+    throw new Error('Session compact request was not accepted');
+  }
+  if (result.operation !== 'session_compact') {
+    throw new Error(`Unexpected async operation: ${result.operation}`);
+  }
+  if (!result.sessionId || !result.runId) {
+    throw new Error('Missing async run metadata');
+  }
   return {
     accepted: true,
-    operation: result.operation as AsyncRunAccepted['operation'],
+    operation: result.operation,
     sessionId: result.sessionId,
     runId: result.runId,
     startedAt: result.startedAt,
