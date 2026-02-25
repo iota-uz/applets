@@ -35,7 +35,11 @@ func TestFilterLinkableSDKTargets(t *testing.T) {
 		t.Fatalf("write unnamed consumer package.json: %v", err)
 	}
 
-	linkable, skipped := filterLinkableSDKTargets([]string{sdkRoot, namedConsumer, unnamedConsumer}, sdkRoot)
+	linkable, skipped := filterLinkableSDKTargets([]sdkTarget{
+		{Dir: sdkRoot, Name: "@iota-uz/sdk"},
+		{Dir: namedConsumer, Name: "@eai/ali-web"},
+		{Dir: unnamedConsumer, Name: ""},
+	}, sdkRoot)
 	if len(linkable) != 1 || linkable[0] != namedConsumer {
 		t.Fatalf("unexpected linkable targets: %#v", linkable)
 	}

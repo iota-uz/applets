@@ -73,25 +73,28 @@ export function defineReactAppletElement(options: DefineReactAppletElementOption
       return getEntry().options.shadow !== false;
     }
 
-    /** The root node that holds the container and styles (shadow root or the element itself). */
+    /** The root node that holds the container and styles (shadow root or the element itself). Call ensureMountMode() before reading when using shadow. */
     private get styleRoot(): ShadowRoot | this {
-      return this.useShadow
-        ? (this.shadowRoot ?? this.attachShadow({ mode: 'open' }))
-        : this;
+      if (!this.useShadow) {
+        return this;
+      }
+      if (!this.shadowRoot) {
+        throw new Error(`[${tagName}] shadowRoot missing; call ensureMountMode() first`);
+      }
+      return this.shadowRoot;
     }
 
-    /** Ensures the React container is in the correct root (shadow or light) when options.shadow changes at runtime. */
+    /** Ensures shadow root exists when needed and the React container is in the correct root (shadow or light). */
     private ensureMountMode(): void {
-      const targetRoot = this.styleRoot;
+      const targetRoot = this.useShadow
+        ? (this.shadowRoot ?? this.attachShadow({ mode: 'open' }))
+        : this;
       if (this.container && this.container.parentNode !== targetRoot) {
         targetRoot.appendChild(this.container);
       }
     }
 
     connectedCallback(): void {
-      this.ensureMountMode();
-      const root = this.styleRoot;
-
       if (!this.container) {
         this.container = document.createElement('div');
         this.container.id = 'react-root';
@@ -102,6 +105,9 @@ export function defineReactAppletElement(options: DefineReactAppletElementOption
         this.container.style.height = '100%';
         this.container.style.width = '100%';
       }
+
+      this.ensureMountMode();
+      const root = this.styleRoot;
 
       const existingContainer = root.querySelector('#react-root');
       if (!existingContainer) {

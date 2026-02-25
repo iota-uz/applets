@@ -9,8 +9,9 @@ import (
 	"strings"
 )
 
-// PackageDeps holds dependencies and devDependencies from package.json.
+// PackageDeps holds name and dependencies from package.json.
 type PackageDeps struct {
+	Name            string            `json:"name"`
 	Dependencies    map[string]string `json:"dependencies"`
 	DevDependencies map[string]string `json:"devDependencies"`
 }

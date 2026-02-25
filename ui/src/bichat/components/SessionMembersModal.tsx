@@ -209,13 +209,13 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
 
   useEffect(() => () => clearTimeout(statusTimerRef.current), []);
 
-  const flashStatus = (msg: string) => {
+  const flashStatus = useCallback((msg: string) => {
     clearTimeout(statusTimerRef.current);
     setStatusMessage(msg);
     statusTimerRef.current = setTimeout(() => setStatusMessage(null), 3000);
-  };
+  }, []);
 
-  const handleAdd = async () => {
+  const handleAdd = useCallback(async () => {
     if (!sessionId || !selectedUser || !dataSource.addSessionMember) {
       return;
     }
@@ -232,9 +232,9 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
     } finally {
       setSaving(false);
     }
-  };
+  }, [sessionId, selectedUser, selectedRole, dataSource.addSessionMember, refresh, t, flashStatus]);
 
-  const handleUpdateRole = async (userId: string, role: 'editor' | 'viewer') => {
+  const handleUpdateRole = useCallback(async (userId: string, role: 'editor' | 'viewer') => {
     if (!sessionId || !dataSource.updateSessionMemberRole) {
       return;
     }
@@ -248,9 +248,9 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
     } finally {
       setSaving(false);
     }
-  };
+  }, [sessionId, dataSource.updateSessionMemberRole, refresh]);
 
-  const handleRemove = async (userId: string) => {
+  const handleRemove = useCallback(async (userId: string) => {
     if (!sessionId || !dataSource.removeSessionMember) {
       return;
     }
@@ -265,7 +265,7 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
     } finally {
       setSaving(false);
     }
-  };
+  }, [sessionId, dataSource.removeSessionMember, refresh, flashStatus]);
 
   return (
     <>

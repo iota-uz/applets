@@ -16,7 +16,7 @@ import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Sidebar, ShareNetwork } from '@phosphor-icons/react';
 import { ChatSessionProvider, useChatSession, useChatMessaging, useChatInput } from '../context/ChatContext';
-import { ChatDataSource, ConversationTurn } from '../types';
+import { ChatDataSource, ConversationTurn, type SessionUser } from '../types';
 import { RateLimiter } from '../utils/RateLimiter';
 import { ChatHeader } from './ChatHeader';
 import { MessageList } from './MessageList';
@@ -155,6 +155,7 @@ function ChatSessionCore({
     artifactsPanelDefaultExpanded
   );
   const [membersModalOpen, setMembersModalOpen] = useState(false);
+  const [headerMembers, setHeaderMembers] = useState<SessionUser[] | null>(null);
   const [artifactsPanelWidth, setArtifactsPanelWidth] = useState(ARTIFACTS_PANEL_WIDTH_DEFAULT);
   const [isResizingArtifactsPanel, setIsResizingArtifactsPanel] = useState(false);
   const layoutContainerRef = useRef<HTMLDivElement>(null);
@@ -190,6 +191,25 @@ function ChatSessionCore({
       // ignore
     }
   }, [artifactsPanelStorageKey, showArtifactsPanel]);
+
+  // Load full member list for header avatar stack when session and listSessionMembers are available
+  useEffect(() => {
+    if (!session?.id || !dataSource.listSessionMembers) {
+      setHeaderMembers(null);
+      return;
+    }
+    let cancelled = false;
+    dataSource.listSessionMembers(session.id).then((members) => {
+      if (!cancelled) {
+        setHeaderMembers(members.map((m) => m.user));
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setHeaderMembers(null);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [session?.id, dataSource.listSessionMembers]);
 
   const handleArtifactsResizeStart = useCallback(() => {
     setIsResizingArtifactsPanel(true);
@@ -361,7 +381,7 @@ function ChatSessionCore({
           readOnly={effectiveReadOnly}
           logoSlot={logoSlot}
           actionsSlot={headerActions}
-          members={session?.owner ? [session.owner] : undefined}
+          members={headerMembers ?? (session?.owner ? [session.owner] : undefined)}
           onMembersClick={canShowShareButton ? () => setMembersModalOpen(true) : undefined}
         />
       )}

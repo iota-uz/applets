@@ -122,14 +122,14 @@ func runSDKUnlink(cmd *cobra.Command, sdkRootFlag string) error {
 		return nil
 	}
 
-	for _, dir := range targets {
-		cmd.Printf("Unlinking @iota-uz/sdk in %s\n", dir)
-		if err := devsetup.RunCommand(ctx, root, "pnpm", "-C", dir, "unlink", "@iota-uz/sdk"); err != nil {
-			cmd.Printf("Warning: unlink failed in %s: %v\n", dir, err)
+	for _, t := range targets {
+		cmd.Printf("Unlinking @iota-uz/sdk in %s\n", t.Dir)
+		if err := devsetup.RunCommand(ctx, root, "pnpm", "-C", t.Dir, "unlink", "@iota-uz/sdk"); err != nil {
+			cmd.Printf("Warning: unlink failed in %s: %v\n", t.Dir, err)
 		}
-		cmd.Printf("Reinstalling pinned dependencies in %s\n", dir)
-		if err := devsetup.RunCommand(ctx, root, "pnpm", "-C", dir, "install", "--frozen-lockfile"); err != nil {
-			return fmt.Errorf("restore deps in %s: %w", dir, err)
+		cmd.Printf("Reinstalling pinned dependencies in %s\n", t.Dir)
+		if err := devsetup.RunCommand(ctx, root, "pnpm", "-C", t.Dir, "install", "--frozen-lockfile"); err != nil {
+			return fmt.Errorf("restore deps in %s: %w", t.Dir, err)
 		}
 	}
 
@@ -145,8 +145,14 @@ func runSDKUnlink(cmd *cobra.Command, sdkRootFlag string) error {
 	return nil
 }
 
-func discoverSDKTargets(root string, cfg *config.ProjectConfig) ([]string, error) {
-	seen := make(map[string]struct{})
+// sdkTarget is a directory that has @iota-uz/sdk in package.json, with name from that package.json.
+type sdkTarget struct {
+	Dir  string
+	Name string
+}
+
+func discoverSDKTargets(root string, cfg *config.ProjectConfig) ([]sdkTarget, error) {
+	seen := make(map[string]sdkTarget)
 	addIfConsumer := func(dir string) error {
 		deps, err := pkgjson.Read(dir)
 		if err != nil {
@@ -162,7 +168,8 @@ func discoverSDKTargets(root string, cfg *config.ProjectConfig) ([]string, error
 		if err != nil {
 			return err
 		}
-		seen[absDir] = struct{}{}
+		name := strings.TrimSpace(deps.Name)
+		seen[absDir] = sdkTarget{Dir: absDir, Name: name}
 		return nil
 	}
 
@@ -176,12 +183,12 @@ func discoverSDKTargets(root string, cfg *config.ProjectConfig) ([]string, error
 		}
 	}
 
-	dirs := make([]string, 0, len(seen))
-	for dir := range seen {
-		dirs = append(dirs, dir)
+	targets := make([]sdkTarget, 0, len(seen))
+	for _, t := range seen {
+		targets = append(targets, t)
 	}
-	sort.Strings(dirs)
-	return dirs, nil
+	sort.Slice(targets, func(i, j int) bool { return targets[i].Dir < targets[j].Dir })
+	return targets, nil
 }
 
 func resolveSDKRootFromLocalOrFlags(root, sdkRootFlag string) (string, error) {
@@ -247,43 +254,27 @@ type skippedSDKTarget struct {
 	reason string
 }
 
-func filterLinkableSDKTargets(targets []string, sdkRoot string) (linkable []string, skipped []skippedSDKTarget) {
+func filterLinkableSDKTargets(targets []sdkTarget, sdkRoot string) (linkable []string, skipped []skippedSDKTarget) {
 	normalizedSDKRoot, err := filepath.Abs(sdkRoot)
 	if err != nil {
 		return nil, []skippedSDKTarget{{dir: sdkRoot, reason: "could not resolve SDK root absolute path"}}
 	}
-	for _, dir := range targets {
-		absDir, err := filepath.Abs(dir)
-		if err != nil {
+	for _, t := range targets {
+		if t.Dir == normalizedSDKRoot {
 			skipped = append(skipped, skippedSDKTarget{
-				dir:    dir,
-				reason: "could not resolve absolute path",
-			})
-			continue
-		}
-		if absDir == normalizedSDKRoot {
-			skipped = append(skipped, skippedSDKTarget{
-				dir:    absDir,
+				dir:    t.Dir,
 				reason: "canonical @iota-uz/sdk source is not a consumer target",
 			})
 			continue
 		}
-		name, err := readPackageName(absDir)
-		if err != nil {
+		if t.Name == "" {
 			skipped = append(skipped, skippedSDKTarget{
-				dir:    absDir,
-				reason: "could not read package.json name",
-			})
-			continue
-		}
-		if name == "" {
-			skipped = append(skipped, skippedSDKTarget{
-				dir:    absDir,
+				dir:    t.Dir,
 				reason: "package.json has no `name`; pnpm global link is unreliable for unnamed importers",
 			})
 			continue
 		}
-		linkable = append(linkable, absDir)
+		linkable = append(linkable, t.Dir)
 	}
 	sort.Strings(linkable)
 	sort.Slice(skipped, func(i, j int) bool { return skipped[i].dir < skipped[j].dir })
