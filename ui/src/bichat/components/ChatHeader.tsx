@@ -71,7 +71,7 @@ export function ChatHeader({ session, onBack, readOnly, logoSlot, actionsSlot, m
   const isGroupSession = Boolean(session.isGroup || (session.memberCount && session.memberCount > 1));
   const memberCount = session.memberCount ?? 0;
 
-  // Build avatar stack users: start with provided members, fill count from memberCount
+  // Avatar stack: use provided members or empty array
   const stackUsers = members && members.length > 0 ? members : [];
 
   return (
@@ -88,6 +88,7 @@ export function ChatHeader({ session, onBack, readOnly, logoSlot, actionsSlot, m
                   className="w-4 h-4 text-[var(--bichat-primary)] flex-shrink-0"
                   fill="currentColor"
                   viewBox="0 0 20 20"
+                  role="img"
                   aria-label={t('BiChat.Chat.Pinned')}
                 >
                   <path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" />

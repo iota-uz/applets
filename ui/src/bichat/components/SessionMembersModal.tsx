@@ -1,7 +1,7 @@
 /**
  * SessionMembersModal
  * Polished sharing dialog for managing session members.
- * Uses @headlessui Dialog + Combobox, UserAvatars, segmented role controls.
+ * Uses InlineDialog, UserAvatars, custom search dropdown, and segmented role controls.
  */
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
@@ -25,6 +25,8 @@ export interface SessionMembersModalProps {
 // RoleSegmentedControl
 // ---------------------------------------------------------------------------
 
+const ROLES: readonly ['editor', 'viewer'] = ['editor', 'viewer'];
+
 function RoleSegmentedControl({
   value,
   onChange,
@@ -41,19 +43,41 @@ function RoleSegmentedControl({
   const btnBase = size === 'sm'
     ? 'px-2 py-0.5 text-[11px]'
     : 'px-3 py-1 text-xs';
+  const currentIndex = ROLES.indexOf(value);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (disabled) {return;}
+    let nextIndex: number | null = null;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      nextIndex = currentIndex <= 0 ? ROLES.length - 1 : currentIndex - 1;
+    } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      nextIndex = currentIndex >= ROLES.length - 1 ? 0 : currentIndex + 1;
+    }
+    if (nextIndex !== null) {
+      const nextRole = ROLES[nextIndex];
+      onChange(nextRole);
+      const target = e.currentTarget.querySelector(`[data-role="${nextRole}"]`) as HTMLButtonElement | null;
+      target?.focus();
+    }
+  };
 
   return (
     <div
       role="radiogroup"
       aria-label={t('BiChat.Share.RoleLabel')}
       className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-0.5 bg-gray-50 dark:bg-gray-800/50"
+      onKeyDown={handleKeyDown}
     >
-      {(['editor', 'viewer'] as const).map((role) => (
+      {ROLES.map((role) => (
         <button
           key={role}
           type="button"
           role="radio"
           aria-checked={value === role}
+          tabIndex={value === role ? 0 : -1}
+          data-role={role}
           disabled={disabled}
           onClick={() => onChange(role)}
           className={`${btnBase} cursor-pointer rounded-md font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 disabled:opacity-50 disabled:cursor-not-allowed ${
@@ -105,7 +129,9 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
   const [confirmRemove, setConfirmRemove] = useState<SessionMember | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownHighlightIndex, setDropdownHighlightIndex] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownOptionRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const canManageMembers = Boolean(
     dataSource.listUsers
@@ -152,6 +178,7 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
       setConfirmRemove(null);
       setStatusMessage(null);
       setDropdownOpen(false);
+      setDropdownHighlightIndex(0);
     }
   }, [isOpen]);
 
@@ -174,16 +201,27 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
     );
   }, [availableUsers, query]);
 
-  // Close dropdown on click outside
+  // Reset dropdown highlight when filtered list changes
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    setDropdownHighlightIndex((i) =>
+      Math.min(Math.max(0, i), Math.max(0, filteredUsers.length - 1))
+    );
+  }, [filteredUsers.length]);
+
+  // Close dropdown on click outside when modal and dropdown are open
+  useEffect(() => {
+    if (!isOpen || !dropdownOpen) {
+      return;
+    }
+    const handler = (e: Event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
       }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+    const root = dropdownRef.current?.getRootNode() ?? document;
+    root.addEventListener('mousedown', handler as EventListener);
+    return () => root.removeEventListener('mousedown', handler as EventListener);
+  }, [isOpen, dropdownOpen]);
 
   useEffect(() => () => clearTimeout(statusTimerRef.current), []);
 
@@ -380,8 +418,43 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
                         className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 pl-8 pr-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 transition-colors focus:border-primary-400 dark:focus:border-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                         placeholder={t('BiChat.Share.SearchUsers')}
                         value={selectedUser ? `${selectedUser.firstName} ${selectedUser.lastName}` : query}
-                        onFocus={() => { setDropdownOpen(true); if (selectedUser) { setSelectedUser(null); setQuery(''); } }}
-                        onChange={(e) => { setQuery(e.target.value); setSelectedUser(null); setDropdownOpen(true); }}
+                        onFocus={() => { setDropdownOpen(true); setDropdownHighlightIndex(0); if (selectedUser) { setSelectedUser(null); setQuery(''); } }}
+                        onChange={(e) => { setQuery(e.target.value); setSelectedUser(null); setDropdownOpen(true); setDropdownHighlightIndex(0); }}
+                        onKeyDown={(e) => {
+                          if (!dropdownOpen || filteredUsers.length === 0) {
+                            if (e.key === 'Escape') { setDropdownOpen(false); }
+                            return;
+                          }
+                          if (e.key === 'Escape') {
+                            e.preventDefault();
+                            setDropdownOpen(false);
+                            setDropdownHighlightIndex(0);
+                            return;
+                          }
+                          if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            const next = (dropdownHighlightIndex + 1) % filteredUsers.length;
+                            setDropdownHighlightIndex(next);
+                            setTimeout(() => dropdownOptionRefs.current[next]?.focus(), 0);
+                            return;
+                          }
+                          if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            const next = dropdownHighlightIndex <= 0 ? filteredUsers.length - 1 : dropdownHighlightIndex - 1;
+                            setDropdownHighlightIndex(next);
+                            setTimeout(() => dropdownOptionRefs.current[next]?.focus(), 0);
+                            return;
+                          }
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const user = filteredUsers[dropdownHighlightIndex];
+                            if (user) {
+                              setSelectedUser(user);
+                              setQuery('');
+                              setDropdownOpen(false);
+                            }
+                          }
+                        }}
                       />
                     </div>
 
@@ -394,11 +467,12 @@ export function SessionMembersModal({ isOpen, sessionId, dataSource, onClose }: 
                               : t('BiChat.Share.NoSearchResults')}
                           </div>
                         ) : (
-                          filteredUsers.map((user) => (
+                          filteredUsers.map((user, index) => (
                             <button
                               key={user.id}
                               type="button"
-                              className="flex w-full items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors hover:bg-primary-50 dark:hover:bg-primary-900/20"
+                              ref={(el) => { dropdownOptionRefs.current[index] = el; }}
+                              className={`flex w-full items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors hover:bg-primary-50 dark:hover:bg-primary-900/20 ${index === dropdownHighlightIndex ? 'bg-primary-50 dark:bg-primary-900/20' : ''}`}
                               onClick={() => { setSelectedUser(user); setQuery(''); setDropdownOpen(false); }}
                             >
                               <UserAvatar

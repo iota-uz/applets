@@ -561,12 +561,14 @@ function ChatSessionCore({
           )}
         </AnimatePresence>
       </div>
-      <SessionMembersModal
-        isOpen={membersModalOpen}
-        sessionId={session?.id}
-        dataSource={dataSource}
-        onClose={() => setMembersModalOpen(false)}
-      />
+      {canShowShareButton && (
+        <SessionMembersModal
+          isOpen={membersModalOpen}
+          sessionId={session?.id}
+          dataSource={dataSource}
+          onClose={() => setMembersModalOpen(false)}
+        />
+      )}
     </main>
   );
 }

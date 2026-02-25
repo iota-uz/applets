@@ -33,18 +33,57 @@ interface InlineDialogProps {
   children: ReactNode
 }
 
+const FOCUSABLE_SELECTOR =
+  'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
 export function InlineDialog({ open, onClose, className, children }: InlineDialogProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
     if (!open) {
       return;
     }
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const container = containerRef.current;
+
+    const getFocusable = (): HTMLElement[] =>
+      Array.from(
+        container?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR) ?? [],
+      );
+
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
+        return;
+      }
+      if (e.key !== 'Tab' || !container) {
+        return;
+      }
+      const focusable = getFocusable();
+      if (focusable.length === 0) {
+        e.preventDefault();
+        container.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
       }
     };
+
+    (getFocusable()[0] ?? container)?.focus();
     window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    return () => {
+      window.removeEventListener('keydown', handler);
+      previousFocusRef.current?.focus();
+    };
   }, [open, onClose]);
 
   if (!open) {
@@ -54,7 +93,12 @@ export function InlineDialog({ open, onClose, className, children }: InlineDialo
   return (
     <DialogContext.Provider value={onClose}>
       {/* onClick closes dialog when clicking outside the Panel (Panel stops propagation) */}
-      <div className={className} onClick={onClose}>
+      <div
+        ref={containerRef}
+        className={className}
+        onClick={onClose}
+        tabIndex={-1}
+      >
         {children}
       </div>
     </DialogContext.Provider>

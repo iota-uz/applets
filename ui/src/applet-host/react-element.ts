@@ -80,7 +80,16 @@ export function defineReactAppletElement(options: DefineReactAppletElementOption
         : this;
     }
 
+    /** Ensures the React container is in the correct root (shadow or light) when options.shadow changes at runtime. */
+    private ensureMountMode(): void {
+      const targetRoot = this.styleRoot;
+      if (this.container && this.container.parentNode !== targetRoot) {
+        targetRoot.appendChild(this.container);
+      }
+    }
+
     connectedCallback(): void {
+      this.ensureMountMode();
       const root = this.styleRoot;
 
       if (!this.container) {
@@ -127,9 +136,13 @@ export function defineReactAppletElement(options: DefineReactAppletElementOption
       this.reactRoot?.unmount();
       this.reactRoot = null;
 
-      // Clean up document.head style when not using shadow DOM
-      if (!this.useShadow && this.styleEl) {
-        this.styleEl.remove();
+      // Clean up style: release shared light-mode style or remove shadow style
+      if (this.styleEl) {
+        if (this.styleEl.parentNode === document.head) {
+          releaseLightStyle(tagName);
+        } else {
+          this.styleEl.remove();
+        }
         this.styleEl = null;
       }
     }
@@ -167,27 +180,43 @@ export function defineReactAppletElement(options: DefineReactAppletElementOption
     }
 
     private syncFromRegistry(): void {
+      this.ensureMountMode();
       const entry = getEntry();
 
       const styles = typeof entry.options.styles === 'function' ? entry.options.styles() : entry.options.styles;
       if (styles) {
-        this.styleEl ??= document.createElement('style');
-        this.styleEl.textContent = styles;
-
         if (this.useShadow) {
-          // Shadow mode: inject <style> into shadow root
+          // Shadow mode: per-instance <style> in shadow root (release shared if we were in light mode)
+          if (this.styleEl && this.styleEl.parentNode === document.head) {
+            releaseLightStyle(tagName);
+            this.styleEl = null;
+          }
+          this.styleEl ??= document.createElement('style');
+          this.styleEl.textContent = styles;
           if (this.shadowRoot && !this.shadowRoot.contains(this.styleEl)) {
             this.shadowRoot.insertBefore(this.styleEl, this.shadowRoot.firstChild);
           }
         } else {
-          // Light mode: inject <style> into document.head
-          this.styleEl.id = `${tagName}-styles`;
+          // Light mode: shared <style> per tagName in document.head (ref-counted)
+          if (this.styleEl && this.shadowRoot?.contains(this.styleEl)) {
+            this.styleEl.remove();
+            this.styleEl = null;
+          }
+          if (!this.styleEl || this.styleEl.parentNode !== document.head) {
+            this.styleEl = getOrCreateLightStyle(tagName, styles);
+          } else {
+            this.styleEl.textContent = styles;
+          }
           if (!document.head.contains(this.styleEl)) {
             document.head.appendChild(this.styleEl);
           }
         }
       } else if (this.styleEl) {
-        this.styleEl.remove();
+        if (this.styleEl.parentNode === document.head) {
+          releaseLightStyle(tagName);
+        } else {
+          this.styleEl.remove();
+        }
         this.styleEl = null;
       }
 
@@ -223,4 +252,41 @@ function getRegistry(): Map<string, RegistryEntry> {
   const g = globalThis as Record<string, unknown>;
   g.__IOTA_REACT_APPLET_HOST_REGISTRY__ ??= new Map<string, RegistryEntry>();
   return g.__IOTA_REACT_APPLET_HOST_REGISTRY__ as Map<string, RegistryEntry>;
+}
+
+// Light-mode style registry: one shared <style> per tagName, ref-counted
+interface LightStyleEntry {
+  element: HTMLStyleElement
+  refCount: number
+}
+
+function getLightStyleRegistry(): Map<string, LightStyleEntry> {
+  const g = globalThis as Record<string, unknown>;
+  g.__IOTA_REACT_APPLET_LIGHT_STYLES__ ??= new Map<string, LightStyleEntry>();
+  return g.__IOTA_REACT_APPLET_LIGHT_STYLES__ as Map<string, LightStyleEntry>;
+}
+
+function getOrCreateLightStyle(tagName: string, styles: string): HTMLStyleElement {
+  const registry = getLightStyleRegistry();
+  let entry = registry.get(tagName);
+  if (!entry) {
+    const el = document.createElement('style');
+    el.id = `${tagName}-styles`;
+    entry = { element: el, refCount: 0 };
+    registry.set(tagName, entry);
+  }
+  entry.refCount++;
+  entry.element.textContent = styles;
+  return entry.element;
+}
+
+function releaseLightStyle(tagName: string): void {
+  const registry = getLightStyleRegistry();
+  const entry = registry.get(tagName);
+  if (!entry) {return;}
+  entry.refCount--;
+  if (entry.refCount <= 0) {
+    entry.element.remove();
+    registry.delete(tagName);
+  }
 }

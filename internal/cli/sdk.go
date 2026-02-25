@@ -282,5 +282,6 @@ func filterLinkableSDKTargets(targets []string, sdkRoot string) (linkable []stri
 		linkable = append(linkable, absDir)
 	}
 	sort.Strings(linkable)
+	sort.Slice(skipped, func(i, j int) bool { return skipped[i].dir < skipped[j].dir })
 	return linkable, skipped
 }

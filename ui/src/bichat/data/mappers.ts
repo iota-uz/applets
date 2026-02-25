@@ -155,9 +155,9 @@ function mapSessionAccess(rawAccess: unknown): SessionAccess | undefined {
     source === 'owner' || source === 'member' || source === 'permission'
       ? source
       : 'none';
-  const canRead = Boolean(rawAccess.canRead);
-  const canWrite = Boolean(rawAccess.canWrite);
-  const canManageMembers = Boolean(rawAccess.canManageMembers);
+  const canRead = rawAccess.canRead === true || rawAccess.canRead === 'true';
+  const canWrite = rawAccess.canWrite === true || rawAccess.canWrite === 'true';
+  const canManageMembers = rawAccess.canManageMembers === true || rawAccess.canManageMembers === 'true';
 
   if (
     normalizedRole === 'none'

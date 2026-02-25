@@ -216,7 +216,7 @@ export async function listSessionMembers(callRPC: RPCCaller, sessionId: string):
   const data = await callRPC('bichat.session.members.list', { sessionId });
   return data.members.map((member) => ({
     user: {
-      id: member.user.id,
+      id: String(member.user.id),
       firstName: member.user.firstName,
       lastName: member.user.lastName,
       initials: member.user.initials,
