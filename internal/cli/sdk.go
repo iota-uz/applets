@@ -36,6 +36,7 @@ and IOTA_SDK_DIST to .applets/local.env (gitignored).
 
 Use --off to disable and remove local overrides.`,
 		Example: "  applet sdk local --sdk-root ../../applets\n  applet sdk local --off",
+		Args:    cobra.NoArgs,
 		RunE: func(c *cobra.Command, _ []string) error {
 			off, err := c.Flags().GetBool("off")
 			if err != nil {

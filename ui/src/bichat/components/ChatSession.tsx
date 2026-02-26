@@ -25,7 +25,6 @@ import CompactionDoodle from './CompactionDoodle';
 import WelcomeContent from './WelcomeContent';
 import ArchiveBanner from './ArchiveBanner';
 import { useTranslation } from '../hooks/useTranslation';
-import { readReasoningEffortOptionsFromGlobalContext } from '../context/chatHelpers';
 import { SessionArtifactsPanel } from './SessionArtifactsPanel';
 import { SessionMembersModal } from './SessionMembersModal';
 import Alert from './Alert';
@@ -107,6 +106,7 @@ function ChatSessionCore({
     retryFetchSession,
     reasoningEffort,
     setReasoningEffort,
+    reasoningEffortOptions,
   } =
     useChatSession();
   const {
@@ -136,8 +136,6 @@ function ChatSessionCore({
   const accessReadOnly = session?.access ? !session.access.canWrite : false;
   const effectiveReadOnly = Boolean(readOnly ?? isReadOnly) || isArchived || accessReadOnly;
   const [restoring, setRestoring] = useState(false);
-  const [reasoningEffortOptions] = useState(() => readReasoningEffortOptionsFromGlobalContext());
-
   const handleRestore = useCallback(async () => {
     if (!session?.id) {return;}
     setRestoring(true);

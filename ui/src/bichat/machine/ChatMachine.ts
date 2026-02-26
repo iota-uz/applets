@@ -121,7 +121,8 @@ export class ChatMachine {
   private sendingSessionId: string | null = null;
   private fetchCancelled = false;
   private disposed = false;
-  private reasoningEffortOptions: Set<string> | null = null;
+  private reasoningEffortOptions: string[] | null = null;
+  private reasoningEffortOptionSet: Set<string> | null = null;
   /** Memoized sessionDebugUsage — avoids unnecessary session re-renders during streaming. */
   private lastSessionDebugUsage: SessionDebugUsage | null = null;
   /** Interval handle for passive polling when another tab has an active stream. */
@@ -170,6 +171,9 @@ export class ChatMachine {
     this.rateLimiter = config.rateLimiter;
     this.onSessionCreated = config.onSessionCreated;
     this.reasoningEffortOptions = this.buildReasoningEffortOptions();
+    this.reasoningEffortOptionSet = this.reasoningEffortOptions
+      ? new Set(this.reasoningEffortOptions)
+      : null;
     const initialReasoningEffort = this.sanitizeReasoningEffort(loadReasoningEffort() || undefined);
     if (!initialReasoningEffort) {
       clearReasoningEffort();
@@ -185,6 +189,7 @@ export class ChatMachine {
         debugModeBySession: {},
         debugLimits: readDebugLimitsFromGlobalContext(),
         reasoningEffort: initialReasoningEffort,
+        reasoningEffortOptions: this.reasoningEffortOptions ?? undefined,
       },
       messaging: {
         turns: [],
@@ -231,20 +236,24 @@ export class ChatMachine {
     this.setReasoningEffort = this._setReasoningEffort.bind(this);
   }
 
-  private buildReasoningEffortOptions(): Set<string> | null {
+  private buildReasoningEffortOptions(): string[] | null {
     const options = readReasoningEffortOptionsFromGlobalContext();
     if (!options || options.length === 0) {
       return null;
     }
-    return new Set(options);
+    return options;
   }
 
   // Keep outbound payloads constrained to server-declared options.
   private sanitizeReasoningEffort(effort: string | undefined): string | undefined {
-    if (!effort || !this.reasoningEffortOptions || this.reasoningEffortOptions.size === 0) {
+    if (
+      !effort
+      || !this.reasoningEffortOptionSet
+      || this.reasoningEffortOptionSet.size === 0
+    ) {
       return undefined;
     }
-    return this.reasoningEffortOptions.has(effort) ? effort : undefined;
+    return this.reasoningEffortOptionSet.has(effort) ? effort : undefined;
   }
 
   // =====================================================================

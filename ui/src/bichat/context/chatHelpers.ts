@@ -136,5 +136,10 @@ export function readReasoningEffortOptionsFromGlobalContext(): string[] | undefi
     return undefined;
   }
 
-  return opts.filter((o: unknown): o is string => typeof o === 'string');
+  const filtered = opts.filter((o: unknown): o is string => typeof o === 'string');
+  if (filtered.length === 0) {
+    return undefined;
+  }
+
+  return filtered;
 }
