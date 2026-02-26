@@ -29,6 +29,7 @@ import type { RateLimiter } from '../utils/RateLimiter';
 import { normalizeRPCError } from '../utils/errorDisplay';
 import { loadQueue, saveQueue } from '../utils/queueStorage';
 import { loadDebugMode, saveDebugMode } from '../utils/debugModeStorage';
+import { clearReasoningEffort, loadReasoningEffort, saveReasoningEffort } from '../utils/reasoningEffortStorage';
 import { getSessionDebugUsage } from '../utils/debugTrace';
 import {
   ARTIFACT_TOOL_NAMES,
@@ -36,6 +37,7 @@ import {
   createCompactedSystemTurn,
   parseSlashCommand,
   readDebugLimitsFromGlobalContext,
+  readReasoningEffortOptionsFromGlobalContext,
   type ParsedSlashCommand,
 } from '../context/chatHelpers';
 import type {
@@ -119,6 +121,7 @@ export class ChatMachine {
   private sendingSessionId: string | null = null;
   private fetchCancelled = false;
   private disposed = false;
+  private reasoningEffortOptions: Set<string> | null = null;
   /** Memoized sessionDebugUsage — avoids unnecessary session re-renders during streaming. */
   private lastSessionDebugUsage: SessionDebugUsage | null = null;
   /** Interval handle for passive polling when another tab has an active stream. */
@@ -160,11 +163,17 @@ export class ChatMachine {
   readonly enqueueMessage: (content: string, attachments: Attachment[]) => boolean;
   readonly removeQueueItem: (index: number) => void;
   readonly updateQueueItem: (index: number, content: string) => void;
+  readonly setReasoningEffort: (effort: string) => void;
 
   constructor(config: ChatMachineConfig) {
     this.dataSource = config.dataSource;
     this.rateLimiter = config.rateLimiter;
     this.onSessionCreated = config.onSessionCreated;
+    this.reasoningEffortOptions = this.buildReasoningEffortOptions();
+    const initialReasoningEffort = this.sanitizeReasoningEffort(loadReasoningEffort() || undefined);
+    if (!initialReasoningEffort) {
+      clearReasoningEffort();
+    }
 
     this.state = {
       session: {
@@ -175,6 +184,7 @@ export class ChatMachine {
         errorRetryable: false,
         debugModeBySession: {},
         debugLimits: readDebugLimitsFromGlobalContext(),
+        reasoningEffort: initialReasoningEffort,
       },
       messaging: {
         turns: [],
@@ -218,6 +228,23 @@ export class ChatMachine {
     this.enqueueMessage = this._enqueueMessage.bind(this);
     this.removeQueueItem = this._removeQueueItem.bind(this);
     this.updateQueueItem = this._updateQueueItem.bind(this);
+    this.setReasoningEffort = this._setReasoningEffort.bind(this);
+  }
+
+  private buildReasoningEffortOptions(): Set<string> | null {
+    const options = readReasoningEffortOptionsFromGlobalContext();
+    if (!options || options.length === 0) {
+      return null;
+    }
+    return new Set(options);
+  }
+
+  // Keep outbound payloads constrained to server-declared options.
+  private sanitizeReasoningEffort(effort: string | undefined): string | undefined {
+    if (!effort || !this.reasoningEffortOptions || this.reasoningEffortOptions.size === 0) {
+      return undefined;
+    }
+    return this.reasoningEffortOptions.has(effort) ? effort : undefined;
   }
 
   // =====================================================================
@@ -280,6 +307,7 @@ export class ChatMachine {
       this.cachedSessionSnapshot = deriveSessionSnapshot(this.state, {
         setError: this.setError,
         retryFetchSession: this.retryFetchSession,
+        setReasoningEffort: this.setReasoningEffort,
       });
       this.lastSessionSnapshotVersion = this.sessionSnapshotVersion;
     }
@@ -407,6 +435,16 @@ export class ChatMachine {
         [sessionId]: true,
       },
     });
+  }
+
+  private _setReasoningEffort(effort: string): void {
+    const next = this.sanitizeReasoningEffort(effort);
+    this._updateSession({ reasoningEffort: next });
+    if (next) {
+      saveReasoningEffort(next);
+      return;
+    }
+    clearReasoningEffort();
   }
 
   // =====================================================================
@@ -875,6 +913,7 @@ export class ChatMachine {
     attachments: Attachment[]
     debugMode: boolean
     replaceFromMessageID?: string
+    reasoningEffort?: string
     tempTurnId: string
   }): Promise<{ createdSessionId?: string; sessionFetched: boolean; stopped?: boolean }> {
     const {
@@ -883,6 +922,7 @@ export class ChatMachine {
       attachments,
       debugMode,
       replaceFromMessageID,
+      reasoningEffort,
       tempTurnId,
     } = params;
 
@@ -900,6 +940,7 @@ export class ChatMachine {
       {
         debugMode,
         replaceFromMessageID,
+        reasoningEffort,
       }
     )) {
       if (this.abortController?.signal.aborted) {break;}
@@ -1125,6 +1166,7 @@ export class ChatMachine {
         attachments,
         debugMode: curDebugMode,
         replaceFromMessageID,
+        reasoningEffort: this.sanitizeReasoningEffort(this.state.session.reasoningEffort),
         tempTurnId: tempTurn.id,
       });
 

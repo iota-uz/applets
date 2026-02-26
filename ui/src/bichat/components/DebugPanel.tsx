@@ -28,14 +28,12 @@ import type { DebugTrace, StreamToolPayload } from '../types';
 import { hasMeaningfulUsage, hasDebugTrace } from '../utils/debugTrace';
 import {
   calculateCompletionTokensPerSecond,
-  calculateContextUsagePercent,
   formatDuration,
   formatGenerationDuration,
 } from '../utils/debugMetrics';
 
 export interface DebugPanelProps {
   trace?: DebugTrace
-  debugLimits?: import('../types').DebugLimits | null
 }
 
 // ─── CopyPill ───────────────────────────────────────────────
@@ -76,6 +74,47 @@ function CopyPill({ text }: { text: string }) {
     >
       {copied ? <Check size={10} weight="bold" /> : <Copy size={10} />}
       <span>{copied ? 'Copied!' : 'Copy'}</span>
+    </button>
+  );
+}
+
+// ─── InlineCopyButton ────────────────────────────────────────
+
+function InlineCopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const timerRef = useRef<number | null>(null);
+
+  useEffect(() => () => {
+    if (timerRef.current !== null) {clearTimeout(timerRef.current);}
+  }, []);
+
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      if (timerRef.current !== null) {clearTimeout(timerRef.current);}
+      timerRef.current = window.setTimeout(() => {
+        setCopied(false);
+        timerRef.current = null;
+      }, 2000);
+    } catch (err) {
+      console.error('Copy failed:', err);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      aria-label={copied ? 'Copied' : 'Copy'}
+      className={[
+        'flex-shrink-0 p-1 rounded transition-colors duration-150',
+        copied
+          ? 'text-emerald-500 dark:text-emerald-400'
+          : 'text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/40',
+      ].join(' ')}
+    >
+      {copied ? <Check size={11} weight="bold" /> : <Copy size={11} />}
     </button>
   );
 }
@@ -234,7 +273,7 @@ function ToolCard({ tool }: { tool: StreamToolPayload }) {
 
 // ─── DebugPanel ─────────────────────────────────────────────
 
-export function DebugPanel({ trace, debugLimits = null }: DebugPanelProps) {
+export function DebugPanel({ trace }: DebugPanelProps) {
   const hasData = !!trace && hasDebugTrace(trace);
   const traceID = trace?.traceId?.trim() || '';
   const traceURL = trace?.traceUrl?.trim() || '';
@@ -250,33 +289,6 @@ export function DebugPanel({ trace, debugLimits = null }: DebugPanelProps) {
   })();
 
   const tokensPerSecond = calculateCompletionTokensPerSecond(trace?.usage, trace?.generationMs);
-  const effectiveMaxTokens = debugLimits?.effectiveMaxTokens ?? 0;
-  const promptTokens = trace?.usage?.promptTokens ?? 0;
-  const contextUsagePercent = calculateContextUsagePercent(promptTokens, effectiveMaxTokens);
-  const contextUsagePercentLabel = contextUsagePercent !== null ? contextUsagePercent.toFixed(1) : null;
-
-  const formatCompactTokens = (value: number): string => {
-    if (!Number.isFinite(value) || value <= 0) {return '0 tokens';}
-    return `${new Intl.NumberFormat('en-US', {
-      notation: 'compact',
-      maximumFractionDigits: value >= 100_000 ? 0 : 1,
-    }).format(value)} tokens`;
-  };
-
-  const contextPercentValue = contextUsagePercent ?? 0;
-  const contextUsageToneClass =
-    contextPercentValue > 75
-      ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-      : contextPercentValue > 50
-      ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
-      : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400';
-
-  const contextUsageBarColor =
-    contextPercentValue > 75
-      ? '#ef4444'
-      : contextPercentValue > 50
-      ? '#f59e0b'
-      : '#10b981';
 
   // Build metric list from available data
   const metrics: MetricChipProps[] = [];
@@ -343,41 +355,42 @@ export function DebugPanel({ trace, debugLimits = null }: DebugPanelProps) {
 
       {hasData && trace ? (
         <div className="space-y-4">
-          {(traceID || safeTraceURL) && (
-            <div className="rounded-lg border border-gray-200/60 dark:border-gray-700/40 bg-gray-50/50 dark:bg-gray-800/40 p-3 space-y-2">
+          {(traceID || trace.sessionId) && (
+            <div className="rounded-lg border border-gray-200/60 dark:border-gray-700/40 bg-gray-50/50 dark:bg-gray-800/40 px-3 py-2 space-y-1.5">
               {traceID && (
-                <div className="flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">Trace ID</div>
-                    <div className="font-mono text-[11px] text-gray-800 dark:text-gray-200 break-all">
-                      {traceID}
-                    </div>
-                  </div>
-                  <CopyPill text={traceID} />
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="flex-shrink-0 text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 w-14">Trace</span>
+                  <span className="flex-1 min-w-0 font-mono text-[11px] text-gray-700 dark:text-gray-300 truncate" title={traceID}>{traceID}</span>
+                  <InlineCopyButton text={traceID} />
+                </div>
+              )}
+              {trace.sessionId && (
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="flex-shrink-0 text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 w-14">Session</span>
+                  <span className="flex-1 min-w-0 font-mono text-[11px] text-gray-700 dark:text-gray-300 truncate" title={trace.sessionId}>{trace.sessionId}</span>
+                  <InlineCopyButton text={trace.sessionId} />
                 </div>
               )}
               {safeTraceURL && (
-                <a
-                  href={safeTraceURL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="View full trace in Langfuse (opens in new tab)"
-                  className="inline-flex items-center gap-1.5 text-[11px] font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                >
-                  <ArrowSquareOut size={12} weight="bold" />
-                  <span>Open in Langfuse</span>
-                </a>
+                <div className="flex items-center gap-2 min-w-0 pt-0.5">
+                  <span className="flex-shrink-0 w-14" />
+                  <a
+                    href={safeTraceURL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Open in Langfuse"
+                    className="inline-flex items-center gap-1.5 text-[11px] font-medium text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-150"
+                  >
+                    <ArrowSquareOut size={11} weight="bold" />
+                    <span>Open in Langfuse</span>
+                  </a>
+                </div>
               )}
             </div>
           )}
 
-          {(trace.thinking || trace.observationReason || trace.sessionId) && (
+          {(trace.thinking || trace.observationReason) && (
             <div className="rounded-lg border border-gray-200/60 dark:border-gray-700/40 bg-gray-50/50 dark:bg-gray-800/40 p-3 space-y-2">
-              {trace.sessionId && (
-                <div className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  Session: <span className="font-mono normal-case break-all">{trace.sessionId}</span>
-                </div>
-              )}
               {trace.observationReason && (
                 <div className="text-[11px] text-amber-700 dark:text-amber-300">
                   Observation: <span className="font-mono">{trace.observationReason}</span>
@@ -461,30 +474,6 @@ export function DebugPanel({ trace, debugLimits = null }: DebugPanelProps) {
             </div>
           )}
 
-          {contextUsagePercentLabel !== null && (
-            <div className="rounded-lg border border-gray-200/60 dark:border-gray-700/40 bg-gray-50/50 dark:bg-gray-800/40 p-3 space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  Context usage
-                </span>
-                <span className="font-mono text-[10px] text-gray-500 dark:text-gray-400 tabular-nums">
-                  {formatCompactTokens(promptTokens)} / {formatCompactTokens(effectiveMaxTokens)}
-                </span>
-                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold tabular-nums ${contextUsageToneClass}`}>
-                  {contextUsagePercentLabel}%
-                </span>
-              </div>
-              <div className="h-1.5 rounded-full bg-gray-200/80 dark:bg-gray-700/50 overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-700 ease-out"
-                  style={{
-                    width: `${Math.min(contextPercentValue, 100)}%`,
-                    backgroundColor: contextUsageBarColor,
-                  }}
-                />
-              </div>
-            </div>
-          )}
         </div>
       ) : (
         <p className="text-xs text-gray-400 dark:text-gray-500 italic">

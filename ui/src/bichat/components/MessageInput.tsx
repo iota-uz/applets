@@ -5,7 +5,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react';
-import { Paperclip, PaperPlaneRight, X, Bug, ArrowUp, ArrowDown, Stack } from '@phosphor-icons/react';
+import { Paperclip, PaperPlaneRight, X, Bug, ArrowUp, ArrowDown, Stack, Stop } from '@phosphor-icons/react';
 import AttachmentGrid from './AttachmentGrid';
 import { MessageQueueList } from './MessageQueueList';
 import ImageModal from './ImageModal';
@@ -49,6 +49,9 @@ export interface MessageInputProps {
   maxFileSize?: number
   containerClassName?: string
   formClassName?: string
+  reasoningEffortOptions?: string[]
+  reasoningEffort?: string
+  onReasoningEffortChange?: (effort: string) => void
 }
 
 /* -------------------------------------------------------------------------------------------------
@@ -176,6 +179,56 @@ function DebugStatsPanel({ debugSessionUsage, debugLimits }: DebugStatsPanelProp
   );
 }
 
+/* -------------------------------------------------------------------------------------------------
+ * ReasoningEffortSelector Sub-component
+ * -----------------------------------------------------------------------------------------------*/
+
+const EFFORT_LABEL_KEYS: Record<string, string> = {
+  low: 'BiChat.Input.ReasoningEffortLow',
+  medium: 'BiChat.Input.ReasoningEffortMedium',
+  high: 'BiChat.Input.ReasoningEffortHigh',
+  xhigh: 'BiChat.Input.ReasoningEffortXHigh',
+};
+
+interface ReasoningEffortSelectorProps {
+  options: string[]
+  value?: string
+  onChange: (effort: string) => void
+  disabled?: boolean
+}
+
+function ReasoningEffortSelector({ options, value, onChange, disabled }: ReasoningEffortSelectorProps) {
+  const { t } = useTranslation();
+  const selected = value || options[1] || options[0];
+  const label = t('BiChat.Input.ReasoningEffort');
+
+  return (
+    <div className="flex-shrink-0 self-center flex items-center gap-1.5">
+      <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap select-none">
+        {label}
+      </span>
+      <select
+        value={selected}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        className={[
+          'cursor-pointer h-8 rounded-lg border border-gray-200 dark:border-gray-600',
+          'bg-gray-50 dark:bg-gray-700/50 px-2.5 text-[11px] font-medium leading-none',
+          'text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500/25',
+          'disabled:opacity-40 disabled:cursor-not-allowed',
+        ].join(' ')}
+        aria-label={label}
+      >
+        {options.map((opt) => (
+          <option key={opt} value={opt}>
+            {t(EFFORT_LABEL_KEYS[opt] ?? opt)}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 const MAX_FILES_DEFAULT = 10;
 const MAX_FILE_SIZE_DEFAULT = 20 * 1024 * 1024; // 20MB
 const MAX_HEIGHT = 192; // 12 lines approx
@@ -205,6 +258,9 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       maxFileSize = MAX_FILE_SIZE_DEFAULT,
       containerClassName,
       formClassName,
+      reasoningEffortOptions,
+      reasoningEffort,
+      onReasoningEffortChange,
     },
     ref
   ) => {
@@ -713,17 +769,27 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                 />
               </div>
 
+              {/* Reasoning effort selector */}
+              {reasoningEffortOptions && reasoningEffortOptions.length > 0 && onReasoningEffortChange && (
+                <ReasoningEffortSelector
+                  options={reasoningEffortOptions}
+                  value={reasoningEffort}
+                  onChange={onReasoningEffortChange}
+                  disabled={disabled || loading}
+                />
+              )}
+
               {/* Submit/cancel button slot */}
               {isStreaming && onCancelStreaming ? (
                 <button
                   type="button"
                   onClick={onCancelStreaming}
                   disabled={disabled || fetching}
-                  className="cursor-pointer flex-shrink-0 self-center p-2 rounded-lg bg-red-600 hover:bg-red-700 active:bg-red-800 active:scale-95 text-white shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-red-600"
+                  className="cursor-pointer flex-shrink-0 self-center p-2 rounded-lg bg-gray-900 hover:bg-gray-800 active:bg-black active:scale-95 text-white shadow-sm transition-all dark:bg-gray-100 dark:hover:bg-gray-200 dark:active:bg-white dark:text-gray-900 disabled:opacity-40 disabled:cursor-not-allowed"
                   aria-label={t('BiChat.Common.Cancel')}
                   title={t('BiChat.Common.Cancel')}
                 >
-                  <X size={18} weight="bold" />
+                  <Stop size={18} weight="fill" />
                 </button>
               ) : (
                 <button

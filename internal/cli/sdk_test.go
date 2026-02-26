@@ -3,59 +3,119 @@ package cli
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/iota-uz/applets/internal/config"
 )
 
-func TestFilterLinkableSDKTargets(t *testing.T) {
-	t.Parallel()
-
+func TestResolveSDKRoot_PrefersFlagOverEnv(t *testing.T) {
 	tmp := t.TempDir()
 
-	sdkRoot := filepath.Join(tmp, "applets")
-	if err := os.MkdirAll(sdkRoot, 0o755); err != nil {
-		t.Fatalf("mkdir sdk root: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(sdkRoot, "package.json"), []byte(`{"name":"@iota-uz/sdk"}`), 0o644); err != nil {
-		t.Fatalf("write sdk package.json: %v", err)
+	root := filepath.Join(tmp, "project")
+	require.NoError(t, os.MkdirAll(root, 0o755))
+	writePackageJSON(t, root, `{"name":"@eai/project"}`)
+
+	flagSDK := filepath.Join(tmp, "flag-applets")
+	require.NoError(t, os.MkdirAll(flagSDK, 0o755))
+	writePackageJSON(t, flagSDK, `{"name":"@iota-uz/sdk"}`)
+
+	envSDK := filepath.Join(tmp, "env-applets")
+	require.NoError(t, os.MkdirAll(envSDK, 0o755))
+	writePackageJSON(t, envSDK, `{"name":"@iota-uz/sdk"}`)
+
+	t.Setenv("APPLET_SDK_ROOT", envSDK)
+	got, err := resolveSDKRoot(root, flagSDK)
+	require.NoError(t, err)
+
+	absFlagSDK, err := filepath.Abs(flagSDK)
+	require.NoError(t, err)
+	assert.Equal(t, absFlagSDK, got)
+}
+
+func TestResolveSDKRoot_UsesEnvWhenFlagMissing(t *testing.T) {
+	tmp := t.TempDir()
+
+	root := filepath.Join(tmp, "project")
+	require.NoError(t, os.MkdirAll(root, 0o755))
+	writePackageJSON(t, root, `{"name":"@eai/project"}`)
+
+	envSDK := filepath.Join(tmp, "applets")
+	require.NoError(t, os.MkdirAll(envSDK, 0o755))
+	writePackageJSON(t, envSDK, `{"name":"@iota-uz/sdk"}`)
+
+	t.Setenv("APPLET_SDK_ROOT", envSDK)
+	got, err := resolveSDKRoot(root, "")
+	require.NoError(t, err)
+
+	absEnvSDK, err := filepath.Abs(envSDK)
+	require.NoError(t, err)
+	assert.Equal(t, absEnvSDK, got)
+}
+
+func TestResolveSDKRoot_AutoDiscoveryFindsSiblingApplets(t *testing.T) {
+	tmp := t.TempDir()
+
+	root := filepath.Join(tmp, "workspace", "eai", "back")
+	require.NoError(t, os.MkdirAll(root, 0o755))
+	writePackageJSON(t, root, `{"name":"@eai/back"}`)
+
+	siblingSDK := filepath.Join(tmp, "workspace", "applets")
+	require.NoError(t, os.MkdirAll(siblingSDK, 0o755))
+	writePackageJSON(t, siblingSDK, `{"name":"@iota-uz/sdk"}`)
+
+	t.Setenv("APPLET_SDK_ROOT", "")
+	got, err := resolveSDKRoot(root, "")
+	require.NoError(t, err)
+
+	absSiblingSDK, err := filepath.Abs(siblingSDK)
+	require.NoError(t, err)
+	assert.Equal(t, absSiblingSDK, got)
+}
+
+func TestDiscoverSDKConsumerDirs_FindsRootAndAppletWebConsumers(t *testing.T) {
+	tmp := t.TempDir()
+
+	root := filepath.Join(tmp, "project")
+	require.NoError(t, os.MkdirAll(root, 0o755))
+	writePackageJSON(t, root, `{"name":"@eai/root","dependencies":{"@iota-uz/sdk":"0.4.0"}}`)
+
+	aliWeb := filepath.Join(root, "modules", "ali", "presentation", "web")
+	require.NoError(t, os.MkdirAll(aliWeb, 0o755))
+	writePackageJSON(t, aliWeb, `{"name":"@eai/ali-web","devDependencies":{"@iota-uz/sdk":"0.4.0"}}`)
+
+	salesWeb := filepath.Join(root, "modules", "sales", "presentation", "web")
+	require.NoError(t, os.MkdirAll(salesWeb, 0o755))
+	writePackageJSON(t, salesWeb, `{"name":"@eai/sales-web"}`)
+
+	cfg := &config.ProjectConfig{
+		Applets: map[string]*config.AppletConfig{
+			"ali": {
+				Web: "modules/ali/presentation/web",
+			},
+			"sales": {
+				Web: "modules/sales/presentation/web",
+			},
+		},
 	}
 
-	namedConsumer := filepath.Join(tmp, "named-consumer")
-	if err := os.MkdirAll(namedConsumer, 0o755); err != nil {
-		t.Fatalf("mkdir named consumer: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(namedConsumer, "package.json"), []byte(`{"name":"@eai/ali-web"}`), 0o644); err != nil {
-		t.Fatalf("write named consumer package.json: %v", err)
-	}
+	got, err := discoverSDKConsumerDirs(root, cfg)
+	require.NoError(t, err)
 
-	unnamedConsumer := filepath.Join(tmp, "unnamed-consumer")
-	if err := os.MkdirAll(unnamedConsumer, 0o755); err != nil {
-		t.Fatalf("mkdir unnamed consumer: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(unnamedConsumer, "package.json"), []byte(`{"devDependencies":{"@iota-uz/sdk":"0.4.23"}}`), 0o644); err != nil {
-		t.Fatalf("write unnamed consumer package.json: %v", err)
-	}
+	absRoot, err := filepath.Abs(root)
+	require.NoError(t, err)
+	absAliWeb, err := filepath.Abs(aliWeb)
+	require.NoError(t, err)
 
-	linkable, skipped := filterLinkableSDKTargets([]sdkTarget{
-		{Dir: sdkRoot, Name: "@iota-uz/sdk"},
-		{Dir: namedConsumer, Name: "@eai/ali-web"},
-		{Dir: unnamedConsumer, Name: ""},
-	}, sdkRoot)
-	if len(linkable) != 1 || linkable[0] != namedConsumer {
-		t.Fatalf("unexpected linkable targets: %#v", linkable)
-	}
-	if len(skipped) != 2 {
-		t.Fatalf("expected 2 skipped targets, got %d", len(skipped))
-	}
+	want := []string{absRoot, absAliWeb}
+	sort.Strings(want)
+	assert.Equal(t, want, got)
+}
 
-	reasons := map[string]string{}
-	for _, s := range skipped {
-		reasons[s.dir] = s.reason
-	}
-
-	if reasons[sdkRoot] != "canonical @iota-uz/sdk source is not a consumer target" {
-		t.Fatalf("unexpected sdk root skip reason: %q", reasons[sdkRoot])
-	}
-	if reasons[unnamedConsumer] != "package.json has no `name`; pnpm global link is unreliable for unnamed importers" {
-		t.Fatalf("unexpected unnamed skip reason: %q", reasons[unnamedConsumer])
-	}
+func writePackageJSON(t *testing.T, dir, content string) {
+	t.Helper()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(content), 0o644))
 }

@@ -58,6 +58,7 @@ export interface Extensions {
   llm?: {
     provider?: string
     apiKeyConfigured?: boolean
+    reasoningEffortOptions?: string[]
   }
   debug?: {
     limits?: {

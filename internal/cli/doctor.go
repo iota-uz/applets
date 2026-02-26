@@ -82,17 +82,17 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 	}
 	cmd.Println("Dependency policy: OK")
 
-	sdkTargets, err := discoverSDKTargets(root, cfg)
+	sdkConsumerDirs, err := discoverSDKConsumerDirs(root, cfg)
 	if err != nil {
 		return NewExitError(FailureCode, err)
 	}
-	for _, t := range sdkTargets {
-		if err := verifySDKTailwindHelpers(t.Dir); err != nil {
+	for _, dir := range sdkConsumerDirs {
+		if err := verifySDKTailwindHelpers(dir); err != nil {
 			cmd.PrintErrln(err)
 			return NewExitError(FailureCode, err)
 		}
 	}
-	if len(sdkTargets) > 0 {
+	if len(sdkConsumerDirs) > 0 {
 		cmd.Println("SDK Tailwind helpers: OK")
 	}
 
