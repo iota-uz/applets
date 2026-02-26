@@ -11,12 +11,9 @@ import type {
   StreamStatus,
   QuestionAnswers,
   SendMessageOptions,
-  Session,
-  ConversationTurn,
-  PendingQuestion,
+  AsyncRunAccepted,
 } from '../types';
 import { parseBichatStream } from '../utils/sseParser';
-import { normalizeTurns, sanitizeConversationTurns, sanitizePendingQuestion, toSession } from './mappers';
 import {
   ensureAttachmentUpload,
   assertUploadReferences,
@@ -33,12 +30,6 @@ interface Result<T> {
   error?: string
 }
 
-interface QuestionActionState {
-  session: Session
-  turns: ConversationTurn[]
-  pendingQuestion?: PendingQuestion | null
-}
-
 type RPCCaller = <TMethod extends keyof BichatRPC & string>(
   method: TMethod,
   params: BichatRPC[TMethod]['params']
@@ -53,7 +44,8 @@ export interface MessageTransportDeps {
   callRPC: RPCCaller
   baseUrl: string
   streamEndpoint: string
-  timeout: number
+  rpcTimeoutMs: number
+  streamConnectTimeoutMs: number
   createHeaders: (additionalHeaders?: Record<string, string>) => Headers
   uploadFileFn: (file: File) => Promise<CoreUploadResponse>
   logAttachmentLifecycle: AttachmentLifecycleLogger
@@ -108,7 +100,7 @@ export async function* sendMessage(
       attachments: streamAttachments,
     };
 
-    const timeoutMs = deps.timeout ?? 0;
+    const timeoutMs = deps.streamConnectTimeoutMs ?? 0;
     if (timeoutMs > 0) {
       connectionTimeoutID = setTimeout(() => {
         connectionTimedOut = true;
@@ -150,7 +142,7 @@ export async function* sendMessage(
         yield {
           type: 'error',
           error: connectionTimedOut
-            ? `Stream request timed out after ${deps.timeout}ms`
+            ? `Stream request timed out after ${deps.streamConnectTimeoutMs}ms`
             : 'Stream cancelled',
         };
       } else {
@@ -228,7 +220,7 @@ const DEFAULT_STREAM_STATUS_TIMEOUT_MS = 5000;
 type StreamStatusResumeDeps = Pick<
   MessageTransportDeps,
   'baseUrl' | 'streamEndpoint' | 'createHeaders'
-> & { timeoutMs?: number }
+> & { timeoutMs?: number; connectTimeoutMs?: number }
 
 export async function getStreamStatus(
   deps: StreamStatusResumeDeps,
@@ -264,7 +256,7 @@ export async function getStreamStatus(
 }
 
 export async function resumeStream(
-  deps: StreamStatusResumeDeps & { timeout?: number },
+  deps: StreamStatusResumeDeps,
   sessionId: string,
   runId: string,
   onChunk: (chunk: StreamChunk) => void,
@@ -273,7 +265,7 @@ export async function resumeStream(
   const url = buildStreamUrl(deps, '/resume');
   const controller = new AbortController();
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
-  const timeoutMs = deps.timeout;
+  const timeoutMs = deps.connectTimeoutMs;
   if (timeoutMs != null && timeoutMs > 0) {
     timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   }
@@ -289,6 +281,10 @@ export async function resumeStream(
     });
     if (!response.ok) {
       throw new Error(`Resume stream failed: HTTP ${response.status}`);
+    }
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId);
+      timeoutId = undefined;
     }
     if (!response.body) {
       throw new Error('Resume response body is null');
@@ -316,7 +312,7 @@ export async function submitQuestionAnswers(
   sessionId: string,
   questionId: string,
   answers: QuestionAnswers
-): Promise<Result<QuestionActionState>> {
+): Promise<Result<AsyncRunAccepted>> {
   try {
     // Convert QuestionAnswers to flat map[string]string for RPC
     const flatAnswers: Record<string, string> = {};
@@ -334,11 +330,7 @@ export async function submitQuestionAnswers(
     });
     return {
       success: true,
-      data: {
-        session: toSession(result.session),
-        turns: normalizeTurns(sanitizeConversationTurns(result.turns, sessionId)),
-        pendingQuestion: sanitizePendingQuestion(result.pendingQuestion, sessionId),
-      },
+      data: normalizeAsyncRunAccepted(result),
     };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
@@ -348,11 +340,40 @@ export async function submitQuestionAnswers(
 export async function rejectPendingQuestion(
   callRPC: RPCCaller,
   sessionId: string
-): Promise<Result<void>> {
+): Promise<Result<AsyncRunAccepted>> {
   try {
-    await callRPC('bichat.question.reject', { sessionId });
-    return { success: true };
+    const result = await callRPC('bichat.question.reject', { sessionId });
+    return { success: true, data: normalizeAsyncRunAccepted(result) };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
   }
+}
+
+function isAsyncRunOperation(value: string): value is AsyncRunAccepted['operation'] {
+  return value === 'question_submit' || value === 'question_reject' || value === 'session_compact';
+}
+
+function normalizeAsyncRunAccepted(input: {
+  accepted: boolean
+  operation: string
+  sessionId: string
+  runId: string
+  startedAt: number
+}): AsyncRunAccepted {
+  if (!input.accepted) {
+    throw new Error('Async run request was not accepted');
+  }
+  if (!isAsyncRunOperation(input.operation)) {
+    throw new Error(`Unexpected async operation: ${input.operation}`);
+  }
+  if (!input.sessionId || !input.runId) {
+    throw new Error('Missing async run metadata');
+  }
+  return {
+    accepted: true,
+    operation: input.operation,
+    sessionId: input.sessionId,
+    runId: input.runId,
+    startedAt: input.startedAt,
+  };
 }

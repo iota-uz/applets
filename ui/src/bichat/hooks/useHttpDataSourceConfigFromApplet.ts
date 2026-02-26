@@ -18,7 +18,7 @@ import type { IotaContext } from '../types/iota';
  * @throws Error if window.__APPLET_CONTEXT__ is not available
  */
 export function useHttpDataSourceConfigFromApplet(
-  options?: { timeout?: number }
+  options?: { rpcTimeoutMs?: number; streamConnectTimeoutMs?: number }
 ): HttpDataSourceConfig {
   return useMemo(() => {
     const ctx = typeof window !== 'undefined' ? (window as Window & { __APPLET_CONTEXT__?: IotaContext }).__APPLET_CONTEXT__ : undefined;
@@ -48,7 +48,8 @@ export function useHttpDataSourceConfigFromApplet(
       rpcEndpoint,
       streamEndpoint,
       csrfToken,
-      timeout: options?.timeout ?? 120_000,
+      rpcTimeoutMs: options?.rpcTimeoutMs ?? 120_000,
+      streamConnectTimeoutMs: options?.streamConnectTimeoutMs ?? 30_000,
     };
-  }, [options?.timeout]);
+  }, [options?.rpcTimeoutMs, options?.streamConnectTimeoutMs]);
 }

@@ -20,6 +20,7 @@ import type {
   QuestionAnswers,
   SendMessageOptions,
   SessionArtifact,
+  AsyncRunAccepted,
 } from './index';
 
 // ---------------------------------------------------------------------------
@@ -50,12 +51,7 @@ export interface SessionStore {
     deletedMessages: number
     deletedArtifacts: number
   }>
-  compactSessionHistory(sessionId: string): Promise<{
-    success: boolean
-    summary: string
-    deletedMessages: number
-    deletedArtifacts: number
-  }>
+  compactSessionHistory(sessionId: string): Promise<AsyncRunAccepted>
 }
 
 // ---------------------------------------------------------------------------
@@ -74,8 +70,8 @@ export interface MessageTransport {
     sessionId: string,
     questionId: string,
     answers: QuestionAnswers
-  ): Promise<{ success: boolean; error?: string }>
-  rejectPendingQuestion(sessionId: string): Promise<{ success: boolean; error?: string }>
+  ): Promise<{ success: boolean; data?: AsyncRunAccepted; error?: string }>
+  rejectPendingQuestion(sessionId: string): Promise<{ success: boolean; data?: AsyncRunAccepted; error?: string }>
 }
 
 // ---------------------------------------------------------------------------

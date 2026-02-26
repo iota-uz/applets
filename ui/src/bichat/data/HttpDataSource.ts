@@ -26,8 +26,7 @@ import type {
   StreamStatus,
   QuestionAnswers,
   SendMessageOptions,
-  ConversationTurn,
-  PendingQuestion,
+  AsyncRunAccepted,
 } from '../types';
 
 import * as Sessions from './SessionManager';
@@ -43,13 +42,8 @@ export interface HttpDataSourceConfig {
   uploadEndpoint?: string
   csrfToken?: string | (() => string)
   headers?: Record<string, string>
-  timeout?: number
-  /**
-   * @deprecated Pass `onSessionCreated` to `ChatSessionProvider` or
-   * `ChatSession` instead. Coupling navigation to the data source causes
-   * component remounts during active streams.
-   */
-  navigateToSession?: (sessionId: string) => void
+  rpcTimeoutMs?: number
+  streamConnectTimeoutMs?: number
 }
 
 export class HttpDataSource implements ChatDataSource {
@@ -61,15 +55,15 @@ export class HttpDataSource implements ChatDataSource {
     this.config = {
       streamEndpoint: '/stream',
       uploadEndpoint: '/api/uploads',
-      timeout: 120000,
       ...config,
+      rpcTimeoutMs: typeof config.rpcTimeoutMs === 'number' ? config.rpcTimeoutMs : 120000,
+      streamConnectTimeoutMs: typeof config.streamConnectTimeoutMs === 'number'
+        ? config.streamConnectTimeoutMs
+        : 30000,
     };
-    if (config.navigateToSession) {
-      this.navigateToSession = config.navigateToSession;
-    }
     this.rpc = createAppletRPCClient({
       endpoint: `${this.config.baseUrl}${this.config.rpcEndpoint}`,
-      timeoutMs: this.config.timeout,
+      timeoutMs: this.config.rpcTimeoutMs,
     });
   }
 
@@ -189,12 +183,7 @@ export class HttpDataSource implements ChatDataSource {
     return Sessions.clearSessionHistory(this.boundCallRPC, sessionId);
   }
 
-  async compactSessionHistory(sessionId: string): Promise<{
-    success: boolean
-    summary: string
-    deletedMessages: number
-    deletedArtifacts: number
-  }> {
+  async compactSessionHistory(sessionId: string): Promise<AsyncRunAccepted> {
     return Sessions.compactSessionHistory(this.boundCallRPC, sessionId);
   }
 
@@ -253,7 +242,7 @@ export class HttpDataSource implements ChatDataSource {
         baseUrl: this.config.baseUrl,
         streamEndpoint: this.config.streamEndpoint!,
         createHeaders: (h) => this.createHeaders(h),
-        timeoutMs: this.config.timeout,
+        timeoutMs: this.config.rpcTimeoutMs,
       },
       sessionId
     );
@@ -270,7 +259,7 @@ export class HttpDataSource implements ChatDataSource {
         baseUrl: this.config.baseUrl,
         streamEndpoint: this.config.streamEndpoint!,
         createHeaders: (h) => this.createHeaders(h),
-        timeout: this.config.timeout,
+        connectTimeoutMs: this.config.streamConnectTimeoutMs,
       },
       sessionId,
       runId,
@@ -302,7 +291,8 @@ export class HttpDataSource implements ChatDataSource {
           callRPC: this.boundCallRPC,
           baseUrl: this.config.baseUrl,
           streamEndpoint: this.config.streamEndpoint!,
-          timeout: this.config.timeout!,
+          rpcTimeoutMs: this.config.rpcTimeoutMs!,
+          streamConnectTimeoutMs: this.config.streamConnectTimeoutMs!,
           createHeaders: (additional) => this.createHeaders(additional),
           uploadFileFn: this.boundUploadFile,
           logAttachmentLifecycle: () => {
@@ -336,13 +326,13 @@ export class HttpDataSource implements ChatDataSource {
     answers: QuestionAnswers
   ): Promise<{
     success: boolean
+    data?: AsyncRunAccepted
     error?: string
-    data?: { session: Session; turns: ConversationTurn[]; pendingQuestion?: PendingQuestion | null }
   }> {
     return Messages.submitQuestionAnswers(this.boundCallRPC, sessionId, questionId, answers);
   }
 
-  async rejectPendingQuestion(sessionId: string): Promise<{ success: boolean; error?: string }> {
+  async rejectPendingQuestion(sessionId: string): Promise<{ success: boolean; data?: AsyncRunAccepted; error?: string }> {
     return Messages.rejectPendingQuestion(this.boundCallRPC, sessionId);
   }
 
@@ -381,18 +371,6 @@ export class HttpDataSource implements ChatDataSource {
     return Artifacts.deleteSessionArtifact(this.boundCallRPC, artifactId);
   }
 
-  // -------------------------------------------------------------------------
-  // Navigation (optional, deprecated)
-  // -------------------------------------------------------------------------
-
-  /**
-   * @deprecated Pass `onSessionCreated` to `ChatSessionProvider` instead.
-   */
-  navigateToSession?(sessionId: string): void {
-    if (typeof window !== 'undefined') {
-      window.location.href = `/chat/${sessionId}`;
-    }
-  }
 }
 
 /**
