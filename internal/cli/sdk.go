@@ -93,8 +93,8 @@ func runSDKLocalDisable(cmd *cobra.Command) error {
 		return err
 	}
 
-	if err := os.Remove(localEnvPath(root)); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("remove %s: %w", localEnvPath(root), err)
+	if err := removeSDKLocalEnvEntries(root); err != nil {
+		return err
 	}
 	cmd.Println("Local SDK alias mode disabled.")
 	return nil

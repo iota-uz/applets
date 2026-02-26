@@ -97,3 +97,60 @@ func writeLocalEnvFile(root string, env map[string]string) error {
 	}
 	return nil
 }
+
+func filterLocalEnvEntries(root string, keep func(string) bool) (bool, error) {
+	path := localEnvPath(root)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("read %s: %w", path, err)
+	}
+
+	lines := strings.Split(string(data), "\n")
+	filtered := make([]string, 0, len(lines))
+	removed := false
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			filtered = append(filtered, line)
+			continue
+		}
+		idx := strings.IndexByte(line, '=')
+		if idx <= 0 {
+			filtered = append(filtered, line)
+			continue
+		}
+		key := strings.TrimSpace(line[:idx])
+		if keep(key) {
+			filtered = append(filtered, line)
+			continue
+		}
+		removed = true
+	}
+
+	content := strings.Join(filtered, "\n")
+	if strings.TrimSpace(content) == "" {
+		if err := os.Remove(path); err != nil {
+			return false, fmt.Errorf("remove %s: %w", path, err)
+		}
+		return true, nil
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		return false, fmt.Errorf("stat %s: %w", path, err)
+	}
+	if err := os.WriteFile(path, []byte(content), info.Mode()); err != nil {
+		return false, fmt.Errorf("write %s: %w", path, err)
+	}
+	return removed, nil
+}
+
+func removeSDKLocalEnvEntries(root string) error {
+	_, err := filterLocalEnvEntries(root, func(key string) bool {
+		return key != "APPLET_SDK_ROOT" && key != "IOTA_SDK_DIST"
+	})
+	return err
+}

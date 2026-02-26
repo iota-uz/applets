@@ -1,6 +1,9 @@
 name: Publish npm Package
 
 on:
+  push:
+    tags:
+      - "iota-sdk-v*"
   workflow_dispatch:
 
 concurrency:
@@ -40,6 +43,16 @@ jobs:
         run: |
           VERSION="$(node -p "require('./package.json').version")"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Validate publish tag
+        if: github.event_name == 'push'
+        run: |
+          TAG_NAME="${{ github.ref_name }}"
+          TAG_VERSION="${TAG_NAME#iota-sdk-v}"
+          if [ "$TAG_VERSION" != "${{ steps.version.outputs.version }}" ]; then
+            echo "Tag ${TAG_NAME} does not match package.json version ${{ steps.version.outputs.version }}."
+            exit 1
+          fi
 
       - name: Verify version not published
         run: |
