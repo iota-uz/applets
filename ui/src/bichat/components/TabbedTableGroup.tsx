@@ -56,7 +56,7 @@ export const TabbedTableGroup = memo(function TabbedTableGroup({
     () =>
       tables.map((table, i) => ({
         id: table.id,
-        label: `${table.title || `${t('BiChat.Table.QueryResults')} ${i + 1}`} (${table.rows.length})`,
+        label: `${table.title || `${t('BiChat.Table.QueryResults')} ${i + 1}`} (${Math.max(table.totalRows || 0, table.rows.length)})`,
       })),
     [tables, t],
   );

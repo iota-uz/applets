@@ -126,4 +126,54 @@ describe('attachArtifactsToTurns table artifacts', () => {
     const assistant = result[0]?.assistantTurn;
     expect(assistant?.renderTables).toHaveLength(1);
   });
+
+  it('uses row_count metadata as totalRows fallback when total_rows is missing', () => {
+    const assistantId = 'msg-assistant-3';
+    const turns: ConversationTurn[] = [
+      {
+        id: 'turn-3',
+        sessionId: 'session-1',
+        createdAt: '2026-02-22T00:00:00.000Z',
+        userTurn: {
+          id: 'user-3',
+          content: 'Show revenue',
+          attachments: [],
+          createdAt: '2026-02-22T00:00:00.000Z',
+        },
+        assistantTurn: {
+          id: assistantId,
+          role: MessageRole.Assistant,
+          content: 'Here is the table.',
+          citations: [],
+          artifacts: [],
+          codeOutputs: [],
+          lifecycle: 'complete',
+          createdAt: '2026-02-22T00:00:01.000Z',
+        },
+      },
+    ];
+
+    const tableArtifact: SessionArtifact = {
+      id: 'art-table-3',
+      sessionId: 'session-1',
+      messageId: assistantId,
+      type: 'table',
+      name: 'Revenue',
+      sizeBytes: 0,
+      createdAt: '2026-02-22T00:00:02.000Z',
+      metadata: {
+        query: 'SELECT * FROM revenue LIMIT 10',
+        columns: ['region', 'amount'],
+        headers: ['Region', 'Amount'],
+        rows: [['North', 100], ['South', 200]],
+        row_count: 19,
+        page_size: 25,
+        truncated: false,
+      },
+    };
+
+    const result = attachArtifactsToTurns(turns, [tableArtifact]);
+    const assistant = result[0]?.assistantTurn;
+    expect(assistant?.renderTables?.[0]?.totalRows).toBe(19);
+  });
 });

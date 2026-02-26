@@ -474,18 +474,24 @@ export default function Sidebar({
       : [];
   }, [unpinnedSessions, t]);
 
+  // Keep collapsed indicators in the same visual order as expanded list.
+  const orderedUnpinnedSessions = useMemo(
+    () => sessionGroups.flatMap((group) => group.sessions),
+    [sessionGroups]
+  );
+
   // Collapsed sidebar indicators — pinned first, then most recent
   const collapsedIndicators = useMemo(() => {
     const seen = new Set<string>();
     const result: Session[] = [];
-    for (const s of [...pinnedSessions, ...unpinnedSessions]) {
+    for (const s of [...pinnedSessions, ...orderedUnpinnedSessions]) {
       if (seen.has(s.id)) {continue;}
       seen.add(s.id);
       result.push(s);
       if (result.length >= MAX_COLLAPSED_INDICATORS) {break;}
     }
     return result;
-  }, [pinnedSessions, unpinnedSessions]);
+  }, [pinnedSessions, orderedUnpinnedSessions]);
 
   const totalSessionCount = filteredSessions.length;
   const overflowCount = Math.max(0, totalSessionCount - collapsedIndicators.length);
