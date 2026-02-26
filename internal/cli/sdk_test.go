@@ -119,4 +119,3 @@ func writePackageJSON(t *testing.T, dir, content string) {
 	t.Helper()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(content), 0o644))
 }
-
