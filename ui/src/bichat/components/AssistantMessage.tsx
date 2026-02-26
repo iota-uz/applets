@@ -28,6 +28,7 @@ import type {
 } from '../types';
 import { DebugPanel } from './DebugPanel';
 import { useTranslation } from '../hooks/useTranslation';
+import { shouldRenderInlineRetry } from '../utils/assistantTurnState';
 
 const MarkdownRenderer = lazy(() =>
   import('./MarkdownRenderer').then((module) => ({ default: module.MarkdownRenderer }))
@@ -305,16 +306,16 @@ export function AssistantMessage({
     hasArtifacts ||
     hasDebug;
   const canRegenerate = !!onRegenerate && !!turnId && !isSystemMessage && isLastTurn;
+  const showInlineRetry = shouldRenderInlineRetry(turn, canRegenerate) && !hasAnyRenderedContent;
   const renderMode: AssistantRenderMode = hasPendingQuestion
     ? 'hitl_form'
     : isAwaitingHumanInput
       ? 'hitl_waiting'
       : hasAnyRenderedContent
         ? 'content'
-        : canRegenerate
+        : showInlineRetry
           ? 'retry'
           : 'empty';
-  const showInlineRetry = renderMode === 'retry';
 
   const handleCopyClick = useCallback(async () => {
     try {
