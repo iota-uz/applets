@@ -45,6 +45,7 @@ export interface SessionState {
   debugModeBySession: Record<string, boolean>
   debugLimits: DebugLimits | null
   reasoningEffort: string | undefined
+  reasoningEffortOptions?: string[]
 }
 
 export interface MessagingState {
@@ -96,6 +97,7 @@ export interface SessionSnapshot {
   sessionDebugUsage: SessionDebugUsage
   debugLimits: DebugLimits | null
   reasoningEffort: string | undefined
+  reasoningEffortOptions: string[] | undefined
   setError: (error: string | null) => void
   retryFetchSession: () => void
   setReasoningEffort: (effort: string) => void

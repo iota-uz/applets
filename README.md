@@ -81,9 +81,11 @@ applet secrets delete --name <applet> --key OPENAI_API_KEY
 
 ### Release flow
 
-1. Publish SDK changes from `applets/` (bump `applets/package.json` version and release).
-2. Upgrade consumers (`eai/back`, applet web packages, etc.) to the published version.
-3. Commit only version upgrades in consumer repos; never commit local-link overrides.
+1. Publish SDK changes from `applets/` (bump `applets/package.json` version).
+2. Create and push a tag `iota-sdk-v<version>` where `<version>` exactly matches
+   `applets/package.json`. This triggers `publish-npm.yml`.
+3. Upgrade consumers (`eai/back`, applet web packages, etc.) to the published version.
+4. Commit only version upgrades in consumer repos; never commit local-link overrides.
 
 ---
 

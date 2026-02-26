@@ -6,7 +6,7 @@
  * Debug UI is English-only (developer-facing) — no i18n.
  */
 
-import { useState, useRef, useEffect, type ReactNode } from 'react';
+import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
 import {
   Bug,
   Timer,
@@ -38,20 +38,20 @@ export interface DebugPanelProps {
 
 // ─── CopyPill ───────────────────────────────────────────────
 
-function CopyPill({ text }: { text: string }) {
+interface UseCopyFeedbackResult {
+  copied: boolean
+  copy: (text: string) => Promise<void>
+}
+
+function useCopyFeedback(): UseCopyFeedbackResult {
   const [copied, setCopied] = useState(false);
-  const timerRef = useRef<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | number | null>(null);
 
-  useEffect(() => () => {
-    if (timerRef.current !== null) {clearTimeout(timerRef.current);}
-  }, []);
-
-  const handleCopy = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const copy = useCallback(async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      if (timerRef.current !== null) {clearTimeout(timerRef.current);}
+      if (timerRef.current !== null) {window.clearTimeout(timerRef.current);}
       timerRef.current = window.setTimeout(() => {
         setCopied(false);
         timerRef.current = null;
@@ -59,6 +59,21 @@ function CopyPill({ text }: { text: string }) {
     } catch (err) {
       console.error('Copy failed:', err);
     }
+  }, []);
+
+  useEffect(() => () => {
+    if (timerRef.current !== null) {window.clearTimeout(timerRef.current);}
+  }, []);
+
+  return { copied, copy };
+}
+
+function CopyPill({ text }: { text: string }) {
+  const { copied, copy } = useCopyFeedback();
+
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    await copy(text);
   };
 
   return (
@@ -81,26 +96,11 @@ function CopyPill({ text }: { text: string }) {
 // ─── InlineCopyButton ────────────────────────────────────────
 
 function InlineCopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  const timerRef = useRef<number | null>(null);
-
-  useEffect(() => () => {
-    if (timerRef.current !== null) {clearTimeout(timerRef.current);}
-  }, []);
+  const { copied, copy } = useCopyFeedback();
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      if (timerRef.current !== null) {clearTimeout(timerRef.current);}
-      timerRef.current = window.setTimeout(() => {
-        setCopied(false);
-        timerRef.current = null;
-      }, 2000);
-    } catch (err) {
-      console.error('Copy failed:', err);
-    }
+    await copy(text);
   };
 
   return (

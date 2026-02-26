@@ -19,7 +19,7 @@ func discoverSDKConsumerDirs(root string, cfg *config.ProjectConfig) ([]string, 
 			if os.IsNotExist(err) {
 				return nil
 			}
-			return nil
+			return err
 		}
 		if pkgjson.SDKSpec(deps) == "" {
 			return nil

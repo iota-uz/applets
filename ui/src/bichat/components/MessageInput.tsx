@@ -620,6 +620,20 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
     const canSubmit = !disabled && (message.trim() || attachments.length > 0);
     const visibleError = error || commandError;
     const visibleErrorText = visibleError ? t(visibleError) : '';
+    const resolvedReasoningEffort = reasoningEffortOptions && reasoningEffortOptions.length > 0
+      ? reasoningEffortOptions.includes(reasoningEffort ?? '')
+        ? reasoningEffort
+        : reasoningEffortOptions[1] || reasoningEffortOptions[0]
+      : undefined;
+
+    useEffect(() => {
+      if (!onReasoningEffortChange || !reasoningEffortOptions?.length) {return;}
+      if (!resolvedReasoningEffort || resolvedReasoningEffort === reasoningEffort) {
+        return;
+      }
+      onReasoningEffortChange(resolvedReasoningEffort);
+    }, [reasoningEffort, onReasoningEffortChange, reasoningEffortOptions, resolvedReasoningEffort]);
+
     const defaultContainerClassName = "shrink-0 px-4 pt-4 pb-6";
 
     return (
@@ -773,7 +787,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
               {reasoningEffortOptions && reasoningEffortOptions.length > 0 && onReasoningEffortChange && (
                 <ReasoningEffortSelector
                   options={reasoningEffortOptions}
-                  value={reasoningEffort}
+                  value={resolvedReasoningEffort}
                   onChange={onReasoningEffortChange}
                   disabled={disabled || loading}
                 />

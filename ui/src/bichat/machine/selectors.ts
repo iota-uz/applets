@@ -26,6 +26,7 @@ export function deriveSessionSnapshot(
     sessionDebugUsage: getSessionDebugUsage(state.messaging.turns),
     debugLimits: state.session.debugLimits,
     reasoningEffort: state.session.reasoningEffort,
+    reasoningEffortOptions: state.session.reasoningEffortOptions,
     setError: methods.setError,
     retryFetchSession: methods.retryFetchSession,
     setReasoningEffort: methods.setReasoningEffort,
