@@ -29,7 +29,7 @@ import type { RateLimiter } from '../utils/RateLimiter';
 import { normalizeRPCError } from '../utils/errorDisplay';
 import { loadQueue, saveQueue } from '../utils/queueStorage';
 import { loadDebugMode, saveDebugMode } from '../utils/debugModeStorage';
-import { loadReasoningEffort, saveReasoningEffort } from '../utils/reasoningEffortStorage';
+import { clearReasoningEffort, loadReasoningEffort, saveReasoningEffort } from '../utils/reasoningEffortStorage';
 import { getSessionDebugUsage } from '../utils/debugTrace';
 import {
   ARTIFACT_TOOL_NAMES,
@@ -37,6 +37,7 @@ import {
   createCompactedSystemTurn,
   parseSlashCommand,
   readDebugLimitsFromGlobalContext,
+  readReasoningEffortOptionsFromGlobalContext,
   type ParsedSlashCommand,
 } from '../context/chatHelpers';
 import type {
@@ -120,6 +121,7 @@ export class ChatMachine {
   private sendingSessionId: string | null = null;
   private fetchCancelled = false;
   private disposed = false;
+  private reasoningEffortOptions: Set<string> | null = null;
   /** Memoized sessionDebugUsage — avoids unnecessary session re-renders during streaming. */
   private lastSessionDebugUsage: SessionDebugUsage | null = null;
   /** Interval handle for passive polling when another tab has an active stream. */
@@ -167,6 +169,11 @@ export class ChatMachine {
     this.dataSource = config.dataSource;
     this.rateLimiter = config.rateLimiter;
     this.onSessionCreated = config.onSessionCreated;
+    this.reasoningEffortOptions = this.buildReasoningEffortOptions();
+    const initialReasoningEffort = this.sanitizeReasoningEffort(loadReasoningEffort() || undefined);
+    if (!initialReasoningEffort) {
+      clearReasoningEffort();
+    }
 
     this.state = {
       session: {
@@ -177,7 +184,7 @@ export class ChatMachine {
         errorRetryable: false,
         debugModeBySession: {},
         debugLimits: readDebugLimitsFromGlobalContext(),
-        reasoningEffort: loadReasoningEffort() || undefined,
+        reasoningEffort: initialReasoningEffort,
       },
       messaging: {
         turns: [],
@@ -222,6 +229,22 @@ export class ChatMachine {
     this.removeQueueItem = this._removeQueueItem.bind(this);
     this.updateQueueItem = this._updateQueueItem.bind(this);
     this.setReasoningEffort = this._setReasoningEffort.bind(this);
+  }
+
+  private buildReasoningEffortOptions(): Set<string> | null {
+    const options = readReasoningEffortOptionsFromGlobalContext();
+    if (!options || options.length === 0) {
+      return null;
+    }
+    return new Set(options);
+  }
+
+  // Keep outbound payloads constrained to server-declared options.
+  private sanitizeReasoningEffort(effort: string | undefined): string | undefined {
+    if (!effort || !this.reasoningEffortOptions || this.reasoningEffortOptions.size === 0) {
+      return undefined;
+    }
+    return this.reasoningEffortOptions.has(effort) ? effort : undefined;
   }
 
   // =====================================================================
@@ -415,8 +438,13 @@ export class ChatMachine {
   }
 
   private _setReasoningEffort(effort: string): void {
-    this._updateSession({ reasoningEffort: effort });
-    saveReasoningEffort(effort);
+    const next = this.sanitizeReasoningEffort(effort);
+    this._updateSession({ reasoningEffort: next });
+    if (next) {
+      saveReasoningEffort(next);
+      return;
+    }
+    clearReasoningEffort();
   }
 
   // =====================================================================
@@ -1138,7 +1166,7 @@ export class ChatMachine {
         attachments,
         debugMode: curDebugMode,
         replaceFromMessageID,
-        reasoningEffort: this.state.session.reasoningEffort,
+        reasoningEffort: this.sanitizeReasoningEffort(this.state.session.reasoningEffort),
         tempTurnId: tempTurn.id,
       });
 

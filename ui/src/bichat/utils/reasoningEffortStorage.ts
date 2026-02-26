@@ -21,3 +21,14 @@ export function loadReasoningEffort(): string | null {
     return null;
   }
 }
+
+export function clearReasoningEffort(): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  try {
+    window.sessionStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // ignore storage errors (quota, privacy mode)
+  }
+}
