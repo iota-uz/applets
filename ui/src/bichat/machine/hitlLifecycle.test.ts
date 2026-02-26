@@ -142,6 +142,25 @@ describe('applyTurnLifecycleForPendingQuestion', () => {
     expect(updated[0].assistantTurn?.lifecycle).toBe('waiting_for_human_input');
   });
 
+  it('removes empty HITL placeholder assistant turn when pending question is removed', () => {
+    const turns = [
+      makeTurn({
+        id: 'turn-1',
+        assistantTurn: makeAssistantTurn({
+          id: 'checkpoint-9-assistant',
+          content: '',
+          citations: [],
+          artifacts: [],
+          codeOutputs: [],
+          lifecycle: 'waiting_for_human_input',
+        }),
+      }),
+    ];
+
+    const updated = applyTurnLifecycleForPendingQuestion(turns, null);
+    expect(updated[0].assistantTurn).toBeUndefined();
+  });
+
   it('clears waiting lifecycle when pending question is removed', () => {
     const turns = [
       makeTurn({

@@ -5,6 +5,7 @@ import type {
   StreamInterruptPayload,
 } from '../types';
 import { MessageRole } from '../types';
+import { isPlaceholderWaitingAssistantTurn } from '../utils/assistantTurnState';
 
 export function normalizeQuestionType(rawType: unknown): 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' {
   const normalized = String(rawType || '').trim().toUpperCase().replace(/[\s-]+/g, '_');
@@ -102,6 +103,17 @@ export function applyTurnLifecycleForPendingQuestion(
           lifecycle: desiredLifecycle,
           createdAt: turn.createdAt,
         },
+      };
+    }
+
+    if (
+      !shouldWaitForInput &&
+      isPlaceholderWaitingAssistantTurn(turn.assistantTurn)
+    ) {
+      changed = true;
+      return {
+        ...turn,
+        assistantTurn: undefined,
       };
     }
 
