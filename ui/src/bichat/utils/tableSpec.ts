@@ -12,9 +12,10 @@ function readString(value: unknown): string | null {
 
 function readPositiveInteger(value: unknown): number | null {
   if (typeof value === 'string') {
-    const parsed = Number.parseInt(value, 10);
-    if (!Number.isFinite(parsed)) {return null;}
-    return parsed > 0 ? parsed : null;
+    const trimmed = value.trim();
+    if (!/^\d+$/.test(trimmed)) {return null;}
+    const parsed = Number(trimmed);
+    return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
   }
   if (typeof value !== 'number' || !Number.isFinite(value)) {return null;}
   const n = Math.floor(value);
