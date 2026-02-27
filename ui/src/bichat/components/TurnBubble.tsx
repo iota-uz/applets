@@ -52,7 +52,7 @@ export interface TurnBubbleProps {
 }
 
 const defaultClassNames: Required<TurnBubbleClassNames> = {
-  root: 'space-y-4',
+  root: 'space-y-4 min-w-0',
   userTurn: '',
   assistantTurn: '',
 };

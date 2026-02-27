@@ -80,7 +80,7 @@ export function BiChatLayout({
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={routeKey}
-        className="flex flex-1 min-h-0"
+        className="flex flex-1 min-w-0 min-h-0"
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -4 }}
@@ -90,7 +90,7 @@ export function BiChatLayout({
       </motion.div>
     </AnimatePresence>
   ) : (
-    <div className="flex flex-1 min-h-0">{children}</div>
+    <div className="flex flex-1 min-w-0 min-h-0">{children}</div>
   );
 
   return (
@@ -140,7 +140,7 @@ export function BiChatLayout({
       </AnimatePresence>
 
       {/* Main Content */}
-      <main id="main-content" className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
+      <main id="main-content" className="relative flex-1 min-w-0 flex flex-col min-h-0 overflow-hidden">
         {/* Mobile menu button */}
         {isMobile && !isMobileOpen && (
           <button
