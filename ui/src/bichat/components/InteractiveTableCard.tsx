@@ -10,6 +10,8 @@ import { DataTableToolbar } from './DataTableToolbar';
 import { DataTableFooter } from './DataTableFooter';
 import { FullscreenOverlay } from './FullscreenOverlay';
 
+const FULL_WIDTH_CLASS = 'w-full min-w-0 max-w-full';
+
 function getPageNumbers(current: number, total: number): (number | 'ellipsis')[] {
   if (total <= 7) {return Array.from({ length: total }, (_, i) => i + 1);}
   const pages: (number | 'ellipsis')[] = [1];
@@ -138,6 +140,8 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
   const hasHiddenColumns = dt.columns.some((c) => !c.visible);
   const from = dt.totalFilteredRows === 0 ? 0 : (dt.page - 1) * dt.pageSize + 1;
   const to = Math.min(dt.page * dt.pageSize, dt.totalFilteredRows);
+  const loadedRowsCount = table.rows.length;
+  const reportedRowsCount = Math.max(table.totalRows || 0, loadedRowsCount);
 
   const renderToolbar = () => (
     <DataTableToolbar
@@ -162,13 +166,18 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
           {table.title || t('BiChat.Table.QueryResults')}
         </h4>
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          {dt.totalFilteredRows === table.rows.length
-            ? dt.totalFilteredRows === 1
-              ? t('BiChat.Table.OneRowLoaded')
-              : t('BiChat.Table.RowsLoaded', { count: String(dt.totalFilteredRows) })
+          {dt.totalFilteredRows === loadedRowsCount
+            ? loadedRowsCount === reportedRowsCount
+              ? loadedRowsCount === 1
+                ? t('BiChat.Table.OneRowLoaded')
+                : t('BiChat.Table.RowsLoaded', { count: String(loadedRowsCount) })
+              : t('BiChat.DataTable.FilteredRows', {
+                  filtered: String(loadedRowsCount),
+                  total: String(reportedRowsCount),
+                })
             : t('BiChat.DataTable.FilteredRows', {
                 filtered: String(dt.totalFilteredRows),
-                total: String(table.rows.length),
+                total: String(loadedRowsCount),
               })}
           {table.truncated ? ` ${t('BiChat.Table.TruncatedSuffix')}` : ''}
         </p>
@@ -184,7 +193,7 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
   );
 
   const renderTable = (scrollClass: string) => (
-    <div className={scrollClass}>
+    <div className={`${FULL_WIDTH_CLASS} ${scrollClass}`}>
       <table className="min-w-full border-collapse text-sm">
         <DataTableHeader
           tableId={table.id}
@@ -344,8 +353,8 @@ export const InteractiveTableCard = memo(function InteractiveTableCard({
   const fillHeight = host?.isFullscreen ?? false;
 
   const sectionClassName = host
-    ? `w-full min-w-0 overflow-hidden${fillHeight ? ' flex flex-col flex-1' : ''}`
-    : 'w-full min-w-0 rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/40 overflow-hidden';
+    ? `${FULL_WIDTH_CLASS} overflow-hidden${fillHeight ? ' flex flex-col flex-1' : ''}`
+    : `${FULL_WIDTH_CLASS} rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900/40 overflow-hidden`;
 
   return (
     <>

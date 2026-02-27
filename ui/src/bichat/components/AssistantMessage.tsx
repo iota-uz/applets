@@ -28,6 +28,7 @@ import type {
 } from '../types';
 import { DebugPanel } from './DebugPanel';
 import { useTranslation } from '../hooks/useTranslation';
+import { shouldRenderInlineRetry } from '../utils/assistantTurnState';
 
 const MarkdownRenderer = lazy(() =>
   import('./MarkdownRenderer').then((module) => ({ default: module.MarkdownRenderer }))
@@ -199,8 +200,8 @@ const COPY_FEEDBACK_MS = 2000;
  * -----------------------------------------------------------------------------------------------*/
 
 const defaultClassNames: Required<AssistantMessageClassNames> = {
-  root: 'flex gap-3 group',
-  wrapper: 'flex-1 min-w-0 flex flex-col gap-3 max-w-[var(--bichat-bubble-assistant-max-width,85%)]',
+  root: 'flex min-w-0 gap-3 group',
+  wrapper: 'flex-1 w-full min-w-0 flex flex-col gap-3 max-w-[var(--bichat-bubble-assistant-max-width,85%)]',
   avatar: 'flex-shrink-0 w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-medium text-xs',
   bubble: 'bg-white dark:bg-gray-800 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm',
   codeOutputs: '',
@@ -305,16 +306,16 @@ export function AssistantMessage({
     hasArtifacts ||
     hasDebug;
   const canRegenerate = !!onRegenerate && !!turnId && !isSystemMessage && isLastTurn;
+  const showInlineRetry = shouldRenderInlineRetry(turn, canRegenerate) && !hasAnyRenderedContent;
   const renderMode: AssistantRenderMode = hasPendingQuestion
     ? 'hitl_form'
     : isAwaitingHumanInput
       ? 'hitl_waiting'
       : hasAnyRenderedContent
         ? 'content'
-        : canRegenerate
+        : showInlineRetry
           ? 'retry'
           : 'empty';
-  const showInlineRetry = renderMode === 'retry';
 
   const handleCopyClick = useCallback(async () => {
     try {

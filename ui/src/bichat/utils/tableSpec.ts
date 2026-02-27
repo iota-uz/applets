@@ -11,6 +11,12 @@ function readString(value: unknown): string | null {
 }
 
 function readPositiveInteger(value: unknown): number | null {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!/^\d+$/.test(trimmed)) {return null;}
+    const parsed = Number(trimmed);
+    return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+  }
   if (typeof value !== 'number' || !Number.isFinite(value)) {return null;}
   const n = Math.floor(value);
   return n > 0 ? n : null;
@@ -78,7 +84,12 @@ function parseRenderTableDataFromObject(parsed: Record<string, unknown>, fallbac
       ? columnTypesRaw.map((t) => readString(t) || 'string')
       : undefined;
 
-  const totalRows = readPositiveInteger(parsed.total_rows) || readPositiveInteger(parsed.totalRows) || rows.length;
+  const totalRows =
+    readPositiveInteger(parsed.total_rows) ||
+    readPositiveInteger(parsed.totalRows) ||
+    readPositiveInteger(parsed.row_count) ||
+    readPositiveInteger(parsed.rowCount) ||
+    rows.length;
   const pageSize = readPositiveInteger(parsed.page_size) || readPositiveInteger(parsed.pageSize) || 25;
 
   const query = readString(parsed.query) || readString(parsed.sql);

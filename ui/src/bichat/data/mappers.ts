@@ -666,13 +666,15 @@ function formatSizeReadable(bytes: number): string | undefined {
 
 function parseRowCount(metadata?: Record<string, unknown>): number | undefined {
   if (!metadata) {return undefined;}
-  const raw = metadata.row_count ?? metadata.rowCount;
-  if (typeof raw === 'number' && Number.isFinite(raw)) {
+  const raw = metadata.row_count ?? metadata.rowCount ?? metadata.total_rows ?? metadata.totalRows;
+  if (typeof raw === 'number' && Number.isSafeInteger(raw) && raw >= 0) {
     return raw;
   }
   if (typeof raw === 'string') {
-    const parsed = Number.parseInt(raw, 10);
-    if (Number.isFinite(parsed)) {
+    const trimmed = raw.trim();
+    if (!/^\d+$/.test(trimmed)) {return undefined;}
+    const parsed = Number(trimmed);
+    if (Number.isSafeInteger(parsed)) {
       return parsed;
     }
   }
