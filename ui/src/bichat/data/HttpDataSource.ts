@@ -59,7 +59,7 @@ export class HttpDataSource implements ChatDataSource {
       rpcTimeoutMs: typeof config.rpcTimeoutMs === 'number' ? config.rpcTimeoutMs : 120000,
       streamConnectTimeoutMs: typeof config.streamConnectTimeoutMs === 'number'
         ? config.streamConnectTimeoutMs
-        : 30000,
+        : undefined,
     };
     this.rpc = createAppletRPCClient({
       endpoint: `${this.config.baseUrl}${this.config.rpcEndpoint}`,
@@ -292,7 +292,7 @@ export class HttpDataSource implements ChatDataSource {
           baseUrl: this.config.baseUrl,
           streamEndpoint: this.config.streamEndpoint!,
           rpcTimeoutMs: this.config.rpcTimeoutMs!,
-          streamConnectTimeoutMs: this.config.streamConnectTimeoutMs!,
+          streamConnectTimeoutMs: this.config.streamConnectTimeoutMs,
           createHeaders: (additional) => this.createHeaders(additional),
           uploadFileFn: this.boundUploadFile,
           logAttachmentLifecycle: () => {
