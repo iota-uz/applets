@@ -7,24 +7,24 @@
 // ============================================================================
 
 export interface Session {
-  id: string
-  title: string
-  status: 'active' | 'archived'
-  pinned: boolean
-  createdAt: string
-  updatedAt: string
-  owner?: SessionUser
-  isGroup?: boolean
-  memberCount?: number
-  access?: SessionAccess
+  id: string;
+  title: string;
+  status: "active" | "archived";
+  pinned: boolean;
+  createdAt: string;
+  updatedAt: string;
+  owner?: SessionUser;
+  isGroup?: boolean;
+  memberCount?: number;
+  access?: SessionAccess;
 }
 
 export interface SessionAccess {
-  role: 'owner' | 'editor' | 'viewer' | 'read_all' | 'none'
-  source: 'owner' | 'member' | 'permission' | 'none'
-  canRead: boolean
-  canWrite: boolean
-  canManageMembers: boolean
+  role: "owner" | "editor" | "viewer" | "read_all" | "none";
+  source: "owner" | "member" | "permission" | "none";
+  canRead: boolean;
+  canWrite: boolean;
+  canManageMembers: boolean;
 }
 
 // ============================================================================
@@ -36,47 +36,47 @@ export interface SessionAccess {
  * This provides a cleaner mental model than flat message lists.
  */
 export interface ConversationTurn {
-  id: string
-  sessionId: string
-  userTurn: UserTurn
-  assistantTurn?: AssistantTurn
-  createdAt: string
+  id: string;
+  sessionId: string;
+  userTurn: UserTurn;
+  assistantTurn?: AssistantTurn;
+  createdAt: string;
 }
 
 /**
  * Content of a user's message in a conversation turn
  */
 export interface UserTurn {
-  id: string
-  content: string
-  attachments: Attachment[]
-  author?: SessionUser
-  createdAt: string
+  id: string;
+  content: string;
+  attachments: Attachment[];
+  author?: SessionUser;
+  createdAt: string;
 }
 
 /**
  * Assistant turn lifecycle used by renderers to distinguish completed output
  * from HITL checkpoints that require user input.
  */
-export type AssistantTurnLifecycle = 'complete' | 'waiting_for_human_input'
+export type AssistantTurnLifecycle = "complete" | "waiting_for_human_input";
 
 /**
  * Content of an assistant's response in a conversation turn
  */
 export interface AssistantTurn {
-  id: string
-  role: MessageRole
-  content: string
-  explanation?: string
-  citations: Citation[]
-  toolCalls?: ToolCall[]
-  charts?: ChartData[]
-  renderTables?: RenderTableData[]
-  artifacts: Artifact[]
-  codeOutputs: CodeOutput[]
-  lifecycle: AssistantTurnLifecycle
-  debug?: DebugTrace
-  createdAt: string
+  id: string;
+  role: MessageRole;
+  content: string;
+  explanation?: string;
+  citations: Citation[];
+  toolCalls?: ToolCall[];
+  charts?: ChartData[];
+  renderTables?: RenderTableData[];
+  artifacts: Artifact[];
+  codeOutputs: CodeOutput[];
+  lifecycle: AssistantTurnLifecycle;
+  debug?: DebugTrace;
+  createdAt: string;
 }
 
 // ============================================================================
@@ -87,10 +87,10 @@ export interface AssistantTurn {
  * Role of a message in a conversation
  */
 export enum MessageRole {
-  User = 'user',
-  Assistant = 'assistant',
-  System = 'system',
-  Tool = 'tool',
+  User = "user",
+  Assistant = "assistant",
+  System = "system",
+  Tool = "tool",
 }
 
 // ============================================================================
@@ -101,12 +101,12 @@ export enum MessageRole {
  * A tool/function call made by the assistant
  */
 export interface ToolCall {
-  id: string
-  name: string
-  arguments: string
-  result?: string
-  error?: string
-  durationMs?: number
+  id: string;
+  name: string;
+  arguments: string;
+  result?: string;
+  error?: string;
+  durationMs?: number;
 }
 
 // ============================================================================
@@ -117,38 +117,38 @@ export interface ToolCall {
  * Citation with position information for inline replacement
  */
 export interface Citation {
-  id: string
+  id: string;
   /** Type of citation (e.g., "url_citation") */
-  type: string
+  type: string;
   /** Title of the cited source */
-  title: string
+  title: string;
   /** URL of the cited source */
-  url: string
+  url: string;
   /** Starting character index in the message content where this citation is referenced */
-  startIndex: number
+  startIndex: number;
   /** Ending character index in the message content where this citation is referenced */
-  endIndex: number
+  endIndex: number;
   /** Optional excerpt from the source */
-  excerpt?: string
+  excerpt?: string;
 }
 
 export interface Attachment {
-  id?: string
-  clientKey: string
-  uploadId?: number
-  filename: string
-  mimeType: string
-  sizeBytes: number
-  base64Data?: string
-  url?: string
-  preview?: string
+  id?: string;
+  clientKey: string;
+  uploadId?: number;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  base64Data?: string;
+  url?: string;
+  preview?: string;
 }
 
 // Image attachment with preview for MessageInput
 export type ImageAttachment = Attachment & {
-  base64Data: string
-  preview: string
-}
+  base64Data: string;
+  preview: string;
+};
 
 // ============================================================================
 // Code Interpreter Output Types
@@ -158,12 +158,12 @@ export type ImageAttachment = Attachment & {
  * Output from code interpreter tool
  */
 export interface CodeOutput {
-  type: 'image' | 'text' | 'error'
-  content: string
+  type: "image" | "text" | "error";
+  content: string;
   /** File metadata for downloadable outputs */
-  filename?: string
-  mimeType?: string
-  sizeBytes?: number
+  filename?: string;
+  mimeType?: string;
+  sizeBytes?: number;
 }
 
 // ============================================================================
@@ -174,8 +174,8 @@ export interface CodeOutput {
  * Queued message for offline/loading state
  */
 export interface QueuedMessage {
-  content: string
-  attachments: Attachment[]
+  content: string;
+  attachments: Attachment[];
 }
 
 // ============================================================================
@@ -187,21 +187,21 @@ export interface QueuedMessage {
  */
 export interface ChartData {
   /** Type of chart: line, bar, pie, area, or donut */
-  chartType: 'line' | 'bar' | 'area' | 'pie' | 'donut'
+  chartType: "line" | "bar" | "area" | "pie" | "donut";
   /** Chart title displayed above the chart */
-  title: string
+  title: string;
   /** Data series (multiple allowed for line/bar/area, single for pie/donut) */
-  series: ChartSeries[]
+  series: ChartSeries[];
   /** X-axis category labels or segment labels for pie/donut */
-  labels?: string[]
+  labels?: string[];
   /** Hex color codes for series (e.g., '#4CAF50') */
-  colors?: string[]
+  colors?: string[];
   /** Chart height in pixels */
-  height?: number
+  height?: number;
   /** Optional original Apex options (used by richer renderers) */
-  options?: Record<string, unknown>
+  options?: Record<string, unknown>;
   /** Optional logarithmic Y-axis hint */
-  logarithmic?: boolean
+  logarithmic?: boolean;
 }
 
 /**
@@ -209,56 +209,56 @@ export interface ChartData {
  */
 export interface ChartSeries {
   /** Display name for this series */
-  name: string
+  name: string;
   /** Numeric data values */
-  data: number[]
+  data: number[];
 }
 
 export interface RenderTableExport {
-  url: string
-  filename: string
-  rowCount?: number
-  fileSizeKB?: number
+  url: string;
+  filename: string;
+  rowCount?: number;
+  fileSizeKB?: number;
 }
 
 export interface RenderTableData {
-  id: string
-  title?: string
-  query: string
-  columns: string[]
-  columnTypes?: string[]
-  headers: string[]
-  rows: unknown[][]
-  totalRows: number
-  pageSize: number
-  truncated: boolean
-  truncatedReason?: string
-  export?: RenderTableExport
-  exportPrompt?: string
+  id: string;
+  title?: string;
+  query: string;
+  columns: string[];
+  columnTypes?: string[];
+  headers: string[];
+  rows: unknown[][];
+  totalRows: number;
+  pageSize: number;
+  truncated: boolean;
+  truncatedReason?: string;
+  export?: RenderTableExport;
+  exportPrompt?: string;
 }
 
 export interface Artifact {
-  type: 'excel' | 'pdf'
-  filename: string
-  url: string
-  sizeReadable?: string
-  rowCount?: number
-  description?: string
+  type: "excel" | "pdf";
+  filename: string;
+  url: string;
+  sizeReadable?: string;
+  rowCount?: number;
+  description?: string;
 }
 
 export interface SessionArtifact {
-  id: string
-  sessionId: string
-  messageId?: string
-  uploadId?: number
-  type: string
-  name: string
-  description?: string
-  mimeType?: string
-  url?: string
-  sizeBytes: number
-  metadata?: Record<string, unknown>
-  createdAt: string
+  id: string;
+  sessionId: string;
+  messageId?: string;
+  uploadId?: number;
+  type: string;
+  name: string;
+  description?: string;
+  mimeType?: string;
+  url?: string;
+  sizeBytes: number;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
 }
 
 // ============================================================================
@@ -266,25 +266,33 @@ export interface SessionArtifact {
 // ============================================================================
 
 export interface PendingQuestion {
-  id: string
-  turnId: string
-  agentName?: string
-  questions: Question[]
-  status: 'PENDING' | 'ANSWERED' | 'CANCELLED'
+  id: string;
+  turnId: string;
+  agentName?: string;
+  questions: Question[];
+  status:
+    | "PENDING"
+    | "ANSWER_SUBMITTED"
+    | "REJECT_SUBMITTED"
+    | "ANSWER_RESUME_FAILED"
+    | "REJECT_RESUME_FAILED"
+    | "ANSWERED"
+    | "REJECTED"
+    | "CANCELLED";
 }
 
 export interface Question {
-  id: string
-  text: string
-  type: 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE'
-  options?: QuestionOption[]
-  required?: boolean
+  id: string;
+  text: string;
+  type: "SINGLE_CHOICE" | "MULTIPLE_CHOICE";
+  options?: QuestionOption[];
+  required?: boolean;
 }
 
 export interface QuestionOption {
-  id: string
-  label: string
-  value: string
+  id: string;
+  label: string;
+  value: string;
 }
 
 /**
@@ -292,9 +300,9 @@ export interface QuestionOption {
  */
 export interface QuestionAnswerData {
   /** Selected predefined options (option IDs) */
-  options: string[]
+  options: string[];
   /** Custom text entered when user selects "Other" option */
-  customText?: string
+  customText?: string;
 }
 
 /**
@@ -302,7 +310,7 @@ export interface QuestionAnswerData {
  * Supports both multi-select options and custom "Other" text input.
  */
 export interface QuestionAnswers {
-  [questionId: string]: QuestionAnswerData
+  [questionId: string]: QuestionAnswerData;
 }
 
 // ---------------------------------------------------------------------------
@@ -314,17 +322,17 @@ export interface QuestionAnswers {
  * Steps represent thinking, tool calls, or sub-agent delegations.
  */
 export interface ActivityStep {
-  id: string
-  type: 'thinking' | 'tool' | 'agent_delegation'
-  toolName: string
+  id: string;
+  type: "thinking" | "tool" | "agent_delegation";
+  toolName: string;
   /** Raw tool arguments JSON string (used for label interpolation, e.g., delegation agent name). */
-  arguments?: string
-  agentName?: string
-  status: 'active' | 'completed' | 'failed'
-  startedAt: number
-  completedAt?: number
-  durationMs?: number
-  error?: string
+  arguments?: string;
+  agentName?: string;
+  status: "active" | "completed" | "failed";
+  startedAt: number;
+  completedAt?: number;
+  durationMs?: number;
+  error?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -332,36 +340,36 @@ export interface ActivityStep {
 // ---------------------------------------------------------------------------
 
 export type StreamEvent =
-  | { type: 'content'; content: string }
-  | { type: 'thinking'; content: string }
-  | { type: 'tool_start'; tool: StreamToolPayload }
-  | { type: 'tool_end'; tool: StreamToolPayload }
-  | { type: 'usage'; usage: DebugUsage }
-  | { type: 'user_message'; sessionId: string }
-  | { type: 'interrupt'; interrupt: StreamInterruptPayload; sessionId?: string }
-  | { type: 'done'; sessionId?: string; generationMs?: number }
-  | { type: 'error'; error: string }
+  | { type: "content"; content: string }
+  | { type: "thinking"; content: string }
+  | { type: "tool_start"; tool: StreamToolPayload }
+  | { type: "tool_end"; tool: StreamToolPayload }
+  | { type: "usage"; usage: DebugUsage }
+  | { type: "user_message"; sessionId: string }
+  | { type: "interrupt"; interrupt: StreamInterruptPayload; sessionId?: string }
+  | { type: "done"; sessionId?: string; generationMs?: number }
+  | { type: "error"; error: string };
 
 /** Partial state when resuming a stream after refresh */
 export interface StreamSnapshotPayload {
-  partialContent?: string
-  partialMetadata?: Record<string, unknown>
+  partialContent?: string;
+  partialMetadata?: Record<string, unknown>;
 }
 
 /** Active stream status for a session (from GET /stream/status) */
 export interface StreamStatus {
-  active: boolean
-  runId?: string
-  snapshot?: StreamSnapshotPayload
-  startedAt?: number
+  active: boolean;
+  runId?: string;
+  snapshot?: StreamSnapshotPayload;
+  startedAt?: number;
 }
 
 export interface AsyncRunAccepted {
-  accepted: true
-  operation: 'question_submit' | 'question_reject' | 'session_compact'
-  sessionId: string
-  runId: string
-  startedAt: number
+  accepted: true;
+  operation: "question_submit" | "question_reject" | "session_compact";
+  sessionId: string;
+  runId: string;
+  startedAt: number;
 }
 
 /**
@@ -369,142 +377,154 @@ export interface AsyncRunAccepted {
  * compatibility but the flat all-optional shape is unsound.
  */
 export interface StreamChunk {
-  type: 'chunk' | 'content' | 'thinking' | 'tool_start' | 'tool_end' | 'usage' | 'done' | 'error' | 'user_message' | 'interrupt' | 'snapshot' | 'stream_started'
-  content?: string
-  error?: string
-  sessionId?: string
-  usage?: DebugUsage
-  tool?: StreamToolPayload
-  interrupt?: StreamInterruptPayload
-  generationMs?: number
-  timestamp?: number
-  snapshot?: StreamSnapshotPayload
+  type:
+    | "chunk"
+    | "content"
+    | "thinking"
+    | "tool_start"
+    | "tool_end"
+    | "usage"
+    | "done"
+    | "error"
+    | "user_message"
+    | "interrupt"
+    | "snapshot"
+    | "stream_started";
+  content?: string;
+  error?: string;
+  sessionId?: string;
+  usage?: DebugUsage;
+  tool?: StreamToolPayload;
+  interrupt?: StreamInterruptPayload;
+  generationMs?: number;
+  timestamp?: number;
+  snapshot?: StreamSnapshotPayload;
   /** Set when type is 'stream_started'; client should store for refresh-safe resume */
-  runId?: string
+  runId?: string;
 }
 
 export interface StreamInterruptPayload {
-  checkpointId: string
-  agentName?: string
-  questions: StreamInterruptQuestion[]
+  checkpointId: string;
+  agentName?: string;
+  questions: StreamInterruptQuestion[];
 }
 
 export interface StreamInterruptQuestion {
-  id: string
-  text: string
-  type: string
-  options: Array<{ id: string; label: string }>
+  id: string;
+  text: string;
+  type: string;
+  options: Array<{ id: string; label: string }>;
 }
 
 export interface DebugUsage {
-  promptTokens: number
-  completionTokens: number
-  totalTokens: number
-  cachedTokens?: number
-  cost?: number
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  cachedTokens?: number;
+  cost?: number;
 }
 
 export interface StreamToolPayload {
-  callId?: string
-  name: string
-  arguments?: string
-  result?: string
-  error?: string
-  durationMs?: number
-  agentName?: string
+  callId?: string;
+  name: string;
+  arguments?: string;
+  result?: string;
+  error?: string;
+  durationMs?: number;
+  agentName?: string;
 }
 
 export interface DebugTrace {
-  schemaVersion?: string
-  startedAt?: string
-  completedAt?: string
-  generationMs?: number
-  usage?: DebugUsage
-  tools: StreamToolPayload[]
-  attempts?: DebugGeneration[]
-  spans?: DebugSpan[]
-  events?: DebugEvent[]
-  traceId?: string
-  traceUrl?: string
-  sessionId?: string
-  thinking?: string
-  observationReason?: string
+  schemaVersion?: string;
+  startedAt?: string;
+  completedAt?: string;
+  generationMs?: number;
+  usage?: DebugUsage;
+  tools: StreamToolPayload[];
+  attempts?: DebugGeneration[];
+  spans?: DebugSpan[];
+  events?: DebugEvent[];
+  traceId?: string;
+  traceUrl?: string;
+  sessionId?: string;
+  thinking?: string;
+  observationReason?: string;
 }
 
 export interface DebugGeneration {
-  id?: string
-  requestId?: string
-  model?: string
-  provider?: string
-  finishReason?: string
-  promptTokens?: number
-  completionTokens?: number
-  totalTokens?: number
-  cachedTokens?: number
-  cost?: number
-  latencyMs?: number
-  input?: string
-  output?: string
-  thinking?: string
-  observationReason?: string
-  startedAt?: string
-  completedAt?: string
-  toolCalls?: StreamToolPayload[]
+  id?: string;
+  requestId?: string;
+  model?: string;
+  provider?: string;
+  finishReason?: string;
+  promptTokens?: number;
+  completionTokens?: number;
+  totalTokens?: number;
+  cachedTokens?: number;
+  cost?: number;
+  latencyMs?: number;
+  input?: string;
+  output?: string;
+  thinking?: string;
+  observationReason?: string;
+  startedAt?: string;
+  completedAt?: string;
+  toolCalls?: StreamToolPayload[];
 }
 
 export interface DebugSpan {
-  id?: string
-  parentId?: string
-  generationId?: string
-  name?: string
-  type?: string
-  status?: string
-  level?: string
-  callId?: string
-  toolName?: string
-  input?: string
-  output?: string
-  error?: string
-  durationMs?: number
-  startedAt?: string
-  completedAt?: string
-  attributes?: Record<string, unknown>
+  id?: string;
+  parentId?: string;
+  generationId?: string;
+  name?: string;
+  type?: string;
+  status?: string;
+  level?: string;
+  callId?: string;
+  toolName?: string;
+  input?: string;
+  output?: string;
+  error?: string;
+  durationMs?: number;
+  startedAt?: string;
+  completedAt?: string;
+  attributes?: Record<string, unknown>;
 }
 
 export interface DebugEvent {
-  id?: string
-  name?: string
-  type?: string
-  level?: string
-  message?: string
-  reason?: string
-  spanId?: string
-  generationId?: string
-  timestamp?: string
-  attributes?: Record<string, unknown>
+  id?: string;
+  name?: string;
+  type?: string;
+  level?: string;
+  message?: string;
+  reason?: string;
+  spanId?: string;
+  generationId?: string;
+  timestamp?: string;
+  attributes?: Record<string, unknown>;
 }
 
 export interface DebugLimits {
-  policyMaxTokens: number
-  modelMaxTokens: number
-  effectiveMaxTokens: number
-  completionReserveTokens: number
+  policyMaxTokens: number;
+  modelMaxTokens: number;
+  effectiveMaxTokens: number;
+  completionReserveTokens: number;
 }
 
 export interface SessionDebugUsage {
-  promptTokens: number
-  completionTokens: number
-  totalTokens: number
-  turnsWithUsage: number
-  latestPromptTokens: number
-  latestCompletionTokens: number
-  latestTotalTokens: number
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  turnsWithUsage: number;
+  latestPromptTokens: number;
+  latestCompletionTokens: number;
+  latestTotalTokens: number;
 }
 
 export interface SendMessageOptions {
-  debugMode?: boolean
-  replaceFromMessageID?: string
-  reasoningEffort?: string
+  debugMode?: boolean;
+  replaceFromMessageID?: string;
+  reasoningEffort?: string;
 }
 
 // ============================================================================
@@ -512,32 +532,37 @@ export interface SendMessageOptions {
 // ============================================================================
 
 export interface SessionListResult {
-  sessions: Session[]
-  total: number
-  hasMore: boolean
+  sessions: Session[];
+  total: number;
+  hasMore: boolean;
 }
 
 export interface SessionUser {
-  id: string
-  firstName: string
-  lastName: string
-  initials: string
+  id: string;
+  firstName: string;
+  lastName: string;
+  initials: string;
 }
 
 export interface SessionMember {
-  user: SessionUser
-  role: 'owner' | 'editor' | 'viewer'
-  createdAt: string
-  updatedAt: string
+  user: SessionUser;
+  role: "owner" | "editor" | "viewer";
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface SessionGroup {
-  name: string
-  sessions: Session[]
+  name: string;
+  sessions: Session[];
 }
 
 // Re-export split interfaces for consumers that only need a subset
-export type { SessionStore, MessageTransport, ArtifactStore, AdminStore } from './data-source';
+export type {
+  SessionStore,
+  MessageTransport,
+  ArtifactStore,
+  AdminStore,
+} from "./data-source";
 
 /**
  * Full data source interface for BiChat.
@@ -551,59 +576,65 @@ export type { SessionStore, MessageTransport, ArtifactStore, AdminStore } from '
  */
 export interface ChatDataSource {
   // Core operations
-  createSession(): Promise<Session>
+  createSession(): Promise<Session>;
   fetchSession(id: string): Promise<{
-    session: Session
-    turns: ConversationTurn[]
-    pendingQuestion?: PendingQuestion | null
-  } | null>
+    session: Session;
+    turns: ConversationTurn[];
+    pendingQuestion?: PendingQuestion | null;
+  } | null>;
   fetchSessionArtifacts?(
     sessionId: string,
-    options?: { limit?: number; offset?: number }
-  ): Promise<{ artifacts: SessionArtifact[]; hasMore?: boolean; nextOffset?: number }>
+    options?: { limit?: number; offset?: number },
+  ): Promise<{
+    artifacts: SessionArtifact[];
+    hasMore?: boolean;
+    nextOffset?: number;
+  }>;
   uploadSessionArtifacts?(
     sessionId: string,
-    files: File[]
-  ): Promise<{ artifacts: SessionArtifact[] }>
+    files: File[],
+  ): Promise<{ artifacts: SessionArtifact[] }>;
   renameSessionArtifact?(
     artifactId: string,
     name: string,
-    description?: string
-  ): Promise<SessionArtifact>
-  deleteSessionArtifact?(artifactId: string): Promise<void>
+    description?: string,
+  ): Promise<SessionArtifact>;
+  deleteSessionArtifact?(artifactId: string): Promise<void>;
   sendMessage(
     sessionId: string,
     content: string,
     attachments?: Attachment[],
     signal?: AbortSignal,
-    options?: SendMessageOptions
-  ): AsyncGenerator<StreamChunk>
+    options?: SendMessageOptions,
+  ): AsyncGenerator<StreamChunk>;
   clearSessionHistory(sessionId: string): Promise<{
-    success: boolean
-    deletedMessages: number
-    deletedArtifacts: number
-  }>
-  compactSessionHistory(sessionId: string): Promise<AsyncRunAccepted>
+    success: boolean;
+    deletedMessages: number;
+    deletedArtifacts: number;
+  }>;
+  compactSessionHistory(sessionId: string): Promise<AsyncRunAccepted>;
   submitQuestionAnswers(
     sessionId: string,
     questionId: string,
-    answers: QuestionAnswers
+    answers: QuestionAnswers,
   ): Promise<{
-    success: boolean
-    data?: AsyncRunAccepted
-    error?: string
-  }>
-  rejectPendingQuestion(sessionId: string): Promise<{ success: boolean; data?: AsyncRunAccepted; error?: string }>
+    success: boolean;
+    data?: AsyncRunAccepted;
+    error?: string;
+  }>;
+  rejectPendingQuestion(
+    sessionId: string,
+  ): Promise<{ success: boolean; data?: AsyncRunAccepted; error?: string }>;
   /**
    * Stops the active stream for the given session. No partial assistant message is persisted.
    * Optional for backward compatibility with data sources that do not support stop.
    */
-  stopGeneration?(sessionId: string): Promise<void>
+  stopGeneration?(sessionId: string): Promise<void>;
   /**
    * Returns active stream status for the session (for refresh-safe resume).
    * Optional; if absent, no resume/passive flow is used.
    */
-  getStreamStatus?(sessionId: string): Promise<StreamStatus | null>
+  getStreamStatus?(sessionId: string): Promise<StreamStatus | null>;
   /**
    * Resumes an active stream: delivers snapshot then new chunks. Use when getStreamStatus
    * reported active and the client has the same-browser run marker.
@@ -613,38 +644,46 @@ export interface ChatDataSource {
     sessionId: string,
     runId: string,
     onChunk: (chunk: StreamChunk) => void,
-    signal?: AbortSignal
-  ): Promise<void>
+    signal?: AbortSignal,
+  ): Promise<void>;
   // Session management
   listSessions(options?: {
-    limit?: number
-    offset?: number
-    includeArchived?: boolean
-  }): Promise<SessionListResult>
-  archiveSession(sessionId: string): Promise<Session>
-  unarchiveSession(sessionId: string): Promise<Session>
-  pinSession(sessionId: string): Promise<Session>
-  unpinSession(sessionId: string): Promise<Session>
-  deleteSession(sessionId: string): Promise<void>
-  renameSession(sessionId: string, title: string): Promise<Session>
-  regenerateSessionTitle(sessionId: string): Promise<Session>
+    limit?: number;
+    offset?: number;
+    includeArchived?: boolean;
+  }): Promise<SessionListResult>;
+  archiveSession(sessionId: string): Promise<Session>;
+  unarchiveSession(sessionId: string): Promise<Session>;
+  pinSession(sessionId: string): Promise<Session>;
+  unpinSession(sessionId: string): Promise<Session>;
+  deleteSession(sessionId: string): Promise<void>;
+  renameSession(sessionId: string, title: string): Promise<Session>;
+  regenerateSessionTitle(sessionId: string): Promise<Session>;
 
   // Organization-wide features (optional)
-  listUsers?(): Promise<SessionUser[]>
+  listUsers?(): Promise<SessionUser[]>;
   listAllSessions?(options?: {
-    limit?: number
-    offset?: number
-    includeArchived?: boolean
-    userId?: string | null
+    limit?: number;
+    offset?: number;
+    includeArchived?: boolean;
+    userId?: string | null;
   }): Promise<{
-    sessions: Session[]
-    total: number
-    hasMore: boolean
-  }>
-  listSessionMembers?(sessionId: string): Promise<SessionMember[]>
-  addSessionMember?(sessionId: string, userId: string, role: 'editor' | 'viewer'): Promise<void>
-  updateSessionMemberRole?(sessionId: string, userId: string, role: 'editor' | 'viewer'): Promise<void>
-  removeSessionMember?(sessionId: string, userId: string): Promise<void>
+    sessions: Session[];
+    total: number;
+    hasMore: boolean;
+  }>;
+  listSessionMembers?(sessionId: string): Promise<SessionMember[]>;
+  addSessionMember?(
+    sessionId: string,
+    userId: string,
+    role: "editor" | "viewer",
+  ): Promise<void>;
+  updateSessionMemberRole?(
+    sessionId: string,
+    userId: string,
+    role: "editor" | "viewer",
+  ): Promise<void>;
+  removeSessionMember?(sessionId: string, userId: string): Promise<void>;
 }
 
 // ============================================================================
@@ -656,63 +695,66 @@ export interface ChatDataSource {
 // ============================================================================
 
 export interface ChatSessionStateValue {
-  session: Session | null
-  currentSessionId?: string
-  fetching: boolean
-  error: string | null
-  errorRetryable: boolean
-  debugMode: boolean
-  sessionDebugUsage: SessionDebugUsage
-  debugLimits: DebugLimits | null
-  reasoningEffort: string | undefined
-  reasoningEffortOptions: string[] | undefined
-  setError: (error: string | null) => void
-  retryFetchSession: () => void
-  setReasoningEffort: (effort: string) => void
+  session: Session | null;
+  currentSessionId?: string;
+  fetching: boolean;
+  error: string | null;
+  errorRetryable: boolean;
+  debugMode: boolean;
+  sessionDebugUsage: SessionDebugUsage;
+  debugLimits: DebugLimits | null;
+  reasoningEffort: string | undefined;
+  reasoningEffortOptions: string[] | undefined;
+  setError: (error: string | null) => void;
+  retryFetchSession: () => void;
+  setReasoningEffort: (effort: string) => void;
 }
 
 export interface ChatMessagingStateValue {
-  turns: ConversationTurn[]
-  streamingContent: string
-  isStreaming: boolean
-  streamError: string | null
-  streamErrorRetryable: boolean
-  loading: boolean
-  pendingQuestion: PendingQuestion | null
-  codeOutputs: CodeOutput[]
-  isCompacting: boolean
-  compactionSummary: string | null
+  turns: ConversationTurn[];
+  streamingContent: string;
+  isStreaming: boolean;
+  streamError: string | null;
+  streamErrorRetryable: boolean;
+  loading: boolean;
+  pendingQuestion: PendingQuestion | null;
+  codeOutputs: CodeOutput[];
+  isCompacting: boolean;
+  compactionSummary: string | null;
   /** Bumped when artifacts should be refetched (e.g. tool_end for artifact-producing tools). */
-  artifactsInvalidationTrigger: number
+  artifactsInvalidationTrigger: number;
   /** Ephemeral reasoning/thinking content, cleared when final answer arrives. */
-  thinkingContent: string
+  thinkingContent: string;
   /** Ephemeral activity steps (tools, thinking, delegations), cleared on done. */
-  activeSteps: ActivityStep[]
-  showActivityTrace: boolean
-  showTypingIndicator: boolean
-  sendMessage: (content: string, attachments?: Attachment[]) => Promise<void>
-  handleRegenerate?: (turnId: string) => Promise<void>
-  handleEdit?: (turnId: string, newContent: string) => Promise<void>
-  handleCopy: (text: string) => Promise<void>
-  handleSubmitQuestionAnswers: (answers: QuestionAnswers) => void
-  handleRejectPendingQuestion: () => Promise<void>
-  retryLastMessage: () => Promise<void>
-  clearStreamError: () => void
-  cancel: () => void
-  setCodeOutputs: (outputs: CodeOutput[]) => void
+  activeSteps: ActivityStep[];
+  showActivityTrace: boolean;
+  showTypingIndicator: boolean;
+  sendMessage: (content: string, attachments?: Attachment[]) => Promise<void>;
+  handleRegenerate?: (turnId: string) => Promise<void>;
+  handleEdit?: (turnId: string, newContent: string) => Promise<void>;
+  handleCopy: (text: string) => Promise<void>;
+  handleSubmitQuestionAnswers: (answers: QuestionAnswers) => void;
+  handleRejectPendingQuestion: () => Promise<void>;
+  retryLastMessage: () => Promise<void>;
+  clearStreamError: () => void;
+  cancel: () => void;
+  setCodeOutputs: (outputs: CodeOutput[]) => void;
 }
 
 export interface ChatInputStateValue {
-  message: string
-  inputError: string | null
-  messageQueue: QueuedMessage[]
-  setMessage: (message: string) => void
-  setInputError: (error: string | null) => void
-  handleSubmit: (e: { preventDefault: () => void }, attachments?: Attachment[]) => void
-  handleUnqueue: () => { content: string; attachments: Attachment[] } | null
-  enqueueMessage: (content: string, attachments: Attachment[]) => boolean
-  removeQueueItem: (index: number) => void
-  updateQueueItem: (index: number, content: string) => void
+  message: string;
+  inputError: string | null;
+  messageQueue: QueuedMessage[];
+  setMessage: (message: string) => void;
+  setInputError: (error: string | null) => void;
+  handleSubmit: (
+    e: { preventDefault: () => void },
+    attachments?: Attachment[],
+  ) => void;
+  handleUnqueue: () => { content: string; attachments: Attachment[] } | null;
+  enqueueMessage: (content: string, attachments: Attachment[]) => boolean;
+  removeQueueItem: (index: number) => void;
+  updateQueueItem: (index: number, content: string) => void;
 }
 
 // ============================================================================
@@ -720,45 +762,47 @@ export interface ChatInputStateValue {
 // ============================================================================
 
 export interface ChatSessionContextValue
-  extends ChatSessionStateValue, ChatMessagingStateValue, ChatInputStateValue {
+  extends ChatSessionStateValue,
+    ChatMessagingStateValue,
+    ChatInputStateValue {
   /**
    * @deprecated Use `retryLastMessage` from `ChatMessagingStateValue` instead.
    * This field is not populated by the current ChatMachine-based provider and
    * will always be `undefined` at runtime.
    */
-  handleRetry?: () => Promise<void>
+  handleRetry?: () => Promise<void>;
 }
 
 // Translations
-export type Translations = Record<string, string>
+export type Translations = Record<string, string>;
 
 // Branding
 export interface ExamplePrompt {
-  category: string
-  text: string
-  icon: string
+  category: string;
+  text: string;
+  icon: string;
 }
 
 export interface BrandingConfig {
-  appName: string
-  logoUrl?: string
+  appName: string;
+  logoUrl?: string;
   theme?: {
-    primary?: string
-    secondary?: string
-    accent?: string
-  }
+    primary?: string;
+    secondary?: string;
+    accent?: string;
+  };
   welcome?: {
-    title?: string
-    description?: string
-    examplePrompts?: ExamplePrompt[]
-  }
+    title?: string;
+    description?: string;
+    examplePrompts?: ExamplePrompt[];
+  };
   colors?: {
-    primary?: string
-    secondary?: string
-    accent?: string
-  }
+    primary?: string;
+    secondary?: string;
+    accent?: string;
+  };
   logo?: {
-    src?: string
-    alt?: string
-  }
+    src?: string;
+    alt?: string;
+  };
 }
