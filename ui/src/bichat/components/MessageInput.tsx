@@ -210,7 +210,7 @@ function ReasoningEffortSelector({ options, value, onChange, disabled }: Reasoni
         disabled={disabled}
         className={[
           'cursor-pointer inline-flex h-8 items-center gap-1.5 rounded-xl border border-gray-200/80 dark:border-gray-600/70',
-          'bg-gray-50/90 dark:bg-gray-800/70 px-2.5 text-[11px] font-medium leading-none text-gray-700 dark:text-gray-200',
+          'bg-white dark:bg-gray-800 px-2.5 text-[11px] font-medium leading-none text-gray-700 dark:text-gray-200',
           'shadow-sm transition-colors hover:border-gray-300 hover:bg-white dark:hover:border-gray-500 dark:hover:bg-gray-800',
           'focus:outline-none focus:ring-2 focus:ring-primary-500/20',
           'disabled:cursor-not-allowed disabled:opacity-40',
@@ -225,7 +225,7 @@ function ReasoningEffortSelector({ options, value, onChange, disabled }: Reasoni
 
       <MenuItems
         anchor="top end"
-        className="z-30 min-w-[148px] rounded-xl border border-gray-200/80 bg-white/95 p-1 shadow-lg backdrop-blur dark:border-gray-700/80 dark:bg-gray-900/95 [--anchor-gap:8px]"
+        className="isolate z-30 min-w-[148px] rounded-xl border border-gray-200 bg-white p-1 shadow-xl ring-1 ring-black/5 dark:border-gray-700 dark:bg-gray-900 dark:ring-white/10 [--anchor-gap:8px]"
       >
         {options.map((opt) => {
           const optionLabel = t(EFFORT_LABEL_KEYS[opt] ?? opt);

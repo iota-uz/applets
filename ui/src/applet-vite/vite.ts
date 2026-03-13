@@ -54,7 +54,6 @@ export function createAppletViteConfig(opts: AppletViteOptions): UserConfig {
     base,
     resolve: {
       dedupe: DEFAULT_DEDUPE,
-      preserveSymlinks: true,
       alias: createLocalSdkAliases({
         enabled: opts.enableLocalSdkAliases,
         sdkDistDir: opts.sdkDistDir,

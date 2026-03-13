@@ -30,7 +30,7 @@ func ensureLocalSDKPackage(webDir, localSDKRoot string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if managedRoot == absSDKRoot && localSDKPackageLooksReady(pkgDir) && !IsNewer(filepath.Join(absSDKRoot, "package.json"), filepath.Join(pkgDir, "package.json")) {
+	if managedRoot == absSDKRoot && localSDKPackageLooksReady(pkgDir, absSDKRoot) && !IsNewer(filepath.Join(absSDKRoot, "package.json"), filepath.Join(pkgDir, "package.json")) {
 		return false, nil
 	}
 
@@ -53,6 +53,9 @@ func ensureLocalSDKPackage(webDir, localSDKRoot string) (bool, error) {
 			return false, err
 		}
 	}
+	if err := symlinkIfExists(filepath.Join(absSDKRoot, "node_modules"), filepath.Join(pkgDir, "node_modules")); err != nil {
+		return false, err
+	}
 
 	if err := os.WriteFile(filepath.Join(pkgDir, localSDKMarkerFile), []byte(absSDKRoot), 0o644); err != nil {
 		return false, fmt.Errorf("write local sdk marker: %w", err)
@@ -73,7 +76,7 @@ func readManagedLocalSDKRoot(webDir string) (pkgDir string, managedRoot string, 
 	return pkgDir, strings.TrimSpace(string(data)), nil
 }
 
-func localSDKPackageLooksReady(pkgDir string) bool {
+func localSDKPackageLooksReady(pkgDir, sdkRoot string) bool {
 	for _, requiredPath := range []string{
 		"package.json",
 		"dist/index.mjs",
@@ -81,6 +84,11 @@ func localSDKPackageLooksReady(pkgDir string) bool {
 		"dist/bichat/index.mjs",
 	} {
 		if _, err := os.Stat(filepath.Join(pkgDir, requiredPath)); err != nil {
+			return false
+		}
+	}
+	if _, err := os.Stat(filepath.Join(sdkRoot, "node_modules")); err == nil {
+		if _, err := os.Stat(filepath.Join(pkgDir, "node_modules")); err != nil {
 			return false
 		}
 	}
