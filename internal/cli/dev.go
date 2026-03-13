@@ -32,6 +32,7 @@ Starts project-level processes (e.g. air, templ, css) and all configured applets
 		RunE: runDev,
 	}
 	cmd.Flags().Bool("rpc-watch", false, "Enable applet RPC codegen watch processes")
+	cmd.Flags().String("sdk-root", "", "Path to a local @iota-uz/sdk checkout for dev (rare; convention-based discovery is preferred)")
 	return cmd
 }
 
@@ -40,13 +41,22 @@ func runDev(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	sdkRootFlag, err := cmd.Flags().GetString("sdk-root")
+	if err != nil {
+		return err
+	}
 
 	root, cfg, err := config.LoadFromCWD()
 	if err != nil {
 		return err
 	}
-	if err := loadLocalEnv(root); err != nil {
+	sdkRoot, err := detectLocalSDKRoot(root, cfg, sdkRootFlag)
+	if err != nil {
 		return err
+	}
+	if sdkRoot != nil && sdkRoot.Auto {
+		cmd.Printf("Auto-detected local @iota-uz/sdk source at %s\n", sdkRoot.Root)
+		cmd.Println("Applet dev will wire consumers to the conventional local SDK checkout.")
 	}
 
 	// Preflight: check configured process commands are in PATH
@@ -61,7 +71,11 @@ func runDev(cmd *cobra.Command, args []string) error {
 		if err := preflightNodeTools(); err != nil {
 			return err
 		}
-		if err := devsetup.BuildSDKIfNeeded(cmd.Context(), root); err != nil {
+		sdkBuildRoot := root
+		if sdkRoot != nil && strings.TrimSpace(sdkRoot.Root) != "" {
+			sdkBuildRoot = sdkRoot.Root
+		}
+		if err := devsetup.BuildSDKIfNeeded(cmd.Context(), sdkBuildRoot); err != nil {
 			return fmt.Errorf("sdk build failed: %w", err)
 		}
 	}
@@ -91,7 +105,11 @@ func runDev(cmd *cobra.Command, args []string) error {
 	for _, name := range appletNames {
 		applet := cfg.Applets[name]
 
-		if err := devsetup.RefreshAppletDeps(cmd.Context(), root, applet.Web); err != nil {
+		localSDKRoot := ""
+		if sdkRoot != nil {
+			localSDKRoot = sdkRoot.Root
+		}
+		if err := devsetup.RefreshAppletDeps(cmd.Context(), root, applet.Web, localSDKRoot); err != nil {
 			return fmt.Errorf("applet %s dep refresh failed: %w", name, err)
 		}
 
@@ -124,13 +142,10 @@ func runDev(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("go.work dependency discovery failed: %w", err)
 	}
-	if sdkRootFromEnv := strings.TrimSpace(os.Getenv("APPLET_SDK_ROOT")); sdkRootFromEnv != "" {
-		absSDKRoot, absErr := filepath.Abs(sdkRootFromEnv)
-		if absErr == nil && !containsPath(goWorkDependencyDirs, absSDKRoot) {
-			if info, statErr := os.Stat(absSDKRoot); statErr == nil && info.IsDir() && absSDKRoot != root {
-				goWorkDependencyDirs = append(goWorkDependencyDirs, absSDKRoot)
-				sort.Strings(goWorkDependencyDirs)
-			}
+	if sdkRoot != nil && sdkRoot.Root != "" && !containsPath(goWorkDependencyDirs, sdkRoot.Root) && sdkRoot.Root != root {
+		if info, statErr := os.Stat(sdkRoot.Root); statErr == nil && info.IsDir() {
+			goWorkDependencyDirs = append(goWorkDependencyDirs, sdkRoot.Root)
+			sort.Strings(goWorkDependencyDirs)
 		}
 	}
 	for _, depDir := range goWorkDependencyDirs {
