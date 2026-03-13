@@ -45,7 +45,7 @@ export interface MessageTransportDeps {
   baseUrl: string
   streamEndpoint: string
   rpcTimeoutMs: number
-  streamConnectTimeoutMs: number
+  streamConnectTimeoutMs?: number
   createHeaders: (additionalHeaders?: Record<string, string>) => Headers
   uploadFileFn: (file: File) => Promise<CoreUploadResponse>
   logAttachmentLifecycle: AttachmentLifecycleLogger

@@ -7,7 +7,7 @@
  * - MULTIPLE_CHOICE: Clickable option cards (checkbox) + always-present "Other" text input
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -16,39 +16,49 @@ import {
   PencilSimpleLine,
   PaperPlaneTilt,
   X,
-} from '@phosphor-icons/react';
-import { PendingQuestion, QuestionAnswers } from '../types';
-import { useChatMessaging } from '../context/ChatContext';
-import { useTranslation } from '../hooks/useTranslation';
+} from "@phosphor-icons/react";
+import { PendingQuestion, QuestionAnswers } from "../types";
+import { useChatMessaging } from "../context/ChatContext";
+import { useTranslation } from "../hooks/useTranslation";
 
 interface InlineQuestionFormProps {
-  pendingQuestion: PendingQuestion
+  pendingQuestion: PendingQuestion;
 }
 
-export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps) {
-  const { handleSubmitQuestionAnswers, handleRejectPendingQuestion, loading } = useChatMessaging();
+export function InlineQuestionForm({
+  pendingQuestion,
+}: InlineQuestionFormProps) {
+  const { handleSubmitQuestionAnswers, handleRejectPendingQuestion, loading } =
+    useChatMessaging();
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<QuestionAnswers>({});
   const [otherTexts, setOtherTexts] = useState<Record<string, string>>({});
 
-  const questions = Array.isArray(pendingQuestion.questions) ? pendingQuestion.questions : [];
+  const questions = Array.isArray(pendingQuestion.questions)
+    ? pendingQuestion.questions
+    : [];
   const currentQuestion = questions[currentStep];
   const isLastStep = currentStep === questions.length - 1;
   const isFirstStep = currentStep === 0;
   const totalSteps = questions.length;
+  const isFailedRetry =
+    pendingQuestion.status === "ANSWER_RESUME_FAILED" ||
+    pendingQuestion.status === "REJECT_RESUME_FAILED";
 
   // Get current answer for the current question
   const currentAnswer = answers[currentQuestion?.id];
-  const currentOtherText = otherTexts[currentQuestion?.id] || '';
+  const currentOtherText = otherTexts[currentQuestion?.id] || "";
 
   const handleOptionChange = useCallback(
     (optionID: string, checked: boolean) => {
-      if (!currentQuestion) {return;}
+      if (!currentQuestion) {
+        return;
+      }
       const questionId = currentQuestion.id;
       const existingAnswer = answers[questionId] || { options: [] };
-      const isOtherOption = optionID === '__other__';
-      const isMultiSelect = currentQuestion.type === 'MULTIPLE_CHOICE';
+      const isOtherOption = optionID === "__other__";
+      const isMultiSelect = currentQuestion.type === "MULTIPLE_CHOICE";
 
       // "Other" is mutually exclusive with predefined options.
       if (isOtherOption) {
@@ -85,12 +95,14 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
         },
       });
     },
-    [currentQuestion, answers, currentOtherText]
+    [currentQuestion, answers, currentOtherText],
   );
 
   const handleOtherTextChange = useCallback(
     (text: string) => {
-      if (!currentQuestion) {return;}
+      if (!currentQuestion) {
+        return;
+      }
       const questionId = currentQuestion.id;
       setOtherTexts({ ...otherTexts, [questionId]: text });
 
@@ -103,16 +115,20 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
         },
       });
     },
-    [currentQuestion, answers, otherTexts]
+    [currentQuestion, answers, otherTexts],
   );
 
   const isCurrentAnswerValid = (): boolean => {
-    if (!currentQuestion) {return false;}
+    if (!currentQuestion) {
+      return false;
+    }
 
     const answer = answers[currentQuestion.id];
     const required = currentQuestion.required ?? true;
 
-    if (!answer) {return !required;}
+    if (!answer) {
+      return !required;
+    }
 
     const hasOptionSelection = answer.options.length > 0;
     const hasOtherSelected = answer.customText !== undefined;
@@ -131,7 +147,9 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
   };
 
   const handleNext = () => {
-    if (!isCurrentAnswerValid()) {return;}
+    if (!isCurrentAnswerValid()) {
+      return;
+    }
 
     if (isLastStep) {
       handleSubmitQuestionAnswers(answers);
@@ -155,10 +173,10 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
     return (
       <div className="animate-slide-up rounded-2xl border border-amber-200 dark:border-amber-700/50 bg-gradient-to-b from-amber-50/70 to-white dark:from-amber-950/20 dark:to-gray-900/80 shadow-sm overflow-hidden p-4">
         <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-          {t('BiChat.Error.SomethingWentWrong')}
+          {t("BiChat.Error.SomethingWentWrong")}
         </p>
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          {t('BiChat.Error.UnexpectedError')}
+          {t("BiChat.Error.UnexpectedError")}
         </p>
         <div className="mt-3">
           <button
@@ -168,20 +186,21 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
             className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-40"
           >
             <X size={14} weight="bold" />
-            {t('BiChat.InlineQuestion.Dismiss')}
+            {t("BiChat.InlineQuestion.Dismiss")}
           </button>
         </div>
       </div>
     );
   }
 
-  const isMultiSelect = currentQuestion.type === 'MULTIPLE_CHOICE';
+  const isMultiSelect = currentQuestion.type === "MULTIPLE_CHOICE";
   const options = (currentQuestion.options || [])
-    .filter((option) => Boolean(option && typeof option.label === 'string'))
+    .filter((option) => Boolean(option && typeof option.label === "string"))
     .map((option, index) => ({
       id: option.id || `${currentQuestion.id}-option-${index}`,
       label: option.label,
-      value: option.value || option.id || `${currentQuestion.id}-option-${index}`,
+      value:
+        option.value || option.id || `${currentQuestion.id}-option-${index}`,
     }));
   const isOtherSelected = currentAnswer?.customText !== undefined;
   const canProceed = isCurrentAnswerValid();
@@ -192,12 +211,15 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
         {/* Header bar */}
         <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
           <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-900/40">
-            <ChatCircleDots className="w-4 h-4 text-primary-600 dark:text-primary-400" weight="fill" />
+            <ChatCircleDots
+              className="w-4 h-4 text-primary-600 dark:text-primary-400"
+              weight="fill"
+            />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">
-                {t('BiChat.InlineQuestion.InputNeeded')}
+                {t("BiChat.InlineQuestion.InputNeeded")}
               </span>
               {totalSteps > 1 && (
                 <span className="text-[11px] tabular-nums text-gray-400 dark:text-gray-500">
@@ -211,11 +233,23 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
             onClick={handleRejectPendingQuestion}
             disabled={loading}
             className="cursor-pointer p-1 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors disabled:opacity-40"
-            aria-label={t('BiChat.InlineQuestion.Dismiss')}
+            aria-label={t("BiChat.InlineQuestion.Dismiss")}
           >
             <X size={16} weight="bold" />
           </button>
         </div>
+
+        {isFailedRetry && (
+          <div className="mx-4 mb-3 rounded-xl border border-amber-200 dark:border-amber-700/40 bg-amber-50/80 dark:bg-amber-950/20 px-3 py-2">
+            <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+              Continuing after your last response failed.
+            </p>
+            <p className="mt-1 text-xs text-amber-700/80 dark:text-amber-200/80">
+              Review the answer and submit again, or dismiss the question if you
+              want to skip it.
+            </p>
+          </div>
+        )}
 
         {/* Progress dots for multi-step */}
         {totalSteps > 1 && (
@@ -227,14 +261,16 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
                 <div
                   key={index}
                   className={[
-                    'h-1 rounded-full transition-all duration-300',
-                    isCurrent ? 'flex-[2] bg-primary-500 dark:bg-primary-400' : 'flex-1',
+                    "h-1 rounded-full transition-all duration-300",
+                    isCurrent
+                      ? "flex-[2] bg-primary-500 dark:bg-primary-400"
+                      : "flex-1",
                     isCompleted
-                      ? 'bg-primary-400 dark:bg-primary-500'
+                      ? "bg-primary-400 dark:bg-primary-500"
                       : !isCurrent
-                        ? 'bg-gray-200 dark:bg-gray-700'
-                        : '',
-                  ].join(' ')}
+                        ? "bg-gray-200 dark:bg-gray-700"
+                        : "",
+                  ].join(" ")}
                 />
               );
             })}
@@ -248,7 +284,7 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
           </p>
           {isMultiSelect && (
             <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-              {t('BiChat.InlineQuestion.SelectAllThatApply')}
+              {t("BiChat.InlineQuestion.SelectAllThatApply")}
             </p>
           )}
         </div>
@@ -256,44 +292,49 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
         {/* Options as clickable cards */}
         <div className="px-4 pb-2 space-y-1.5">
           {options.map((option) => {
-            const isSelected = currentAnswer?.options.includes(option.id) || false;
+            const isSelected =
+              currentAnswer?.options.includes(option.id) || false;
             return (
               <label
                 key={option.id}
                 className={[
-                  'group/opt flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer',
-                  'border transition-all duration-150',
+                  "group/opt flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer",
+                  "border transition-all duration-150",
                   isSelected
-                    ? 'border-primary-300 dark:border-primary-600 bg-primary-50 dark:bg-primary-900/30 shadow-sm'
-                    : 'border-transparent hover:border-gray-200 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50',
-                ].join(' ')}
+                    ? "border-primary-300 dark:border-primary-600 bg-primary-50 dark:bg-primary-900/30 shadow-sm"
+                    : "border-transparent hover:border-gray-200 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50",
+                ].join(" ")}
               >
                 {/* Custom indicator */}
                 <span
                   className={[
-                    'flex-shrink-0 flex items-center justify-center w-5 h-5 transition-all duration-150',
-                    isMultiSelect ? 'rounded-md' : 'rounded-full',
+                    "flex-shrink-0 flex items-center justify-center w-5 h-5 transition-all duration-150",
+                    isMultiSelect ? "rounded-md" : "rounded-full",
                     isSelected
-                      ? 'bg-primary-600 dark:bg-primary-500 border-primary-600 dark:border-primary-500 text-white shadow-sm'
-                      : 'border-2 border-gray-300 dark:border-gray-600 group-hover/opt:border-gray-400 dark:group-hover/opt:border-gray-500',
-                  ].join(' ')}
+                      ? "bg-primary-600 dark:bg-primary-500 border-primary-600 dark:border-primary-500 text-white shadow-sm"
+                      : "border-2 border-gray-300 dark:border-gray-600 group-hover/opt:border-gray-400 dark:group-hover/opt:border-gray-500",
+                  ].join(" ")}
                 >
                   {isSelected && <Check size={12} weight="bold" />}
                 </span>
                 <input
-                  type={isMultiSelect ? 'checkbox' : 'radio'}
+                  type={isMultiSelect ? "checkbox" : "radio"}
                   name={`question-${currentQuestion.id}`}
                   value={option.value}
                   checked={isSelected}
-                  onChange={(e) => handleOptionChange(option.id, e.target.checked)}
+                  onChange={(e) =>
+                    handleOptionChange(option.id, e.target.checked)
+                  }
                   className="sr-only"
                 />
-                <span className={[
-                  'text-sm transition-colors duration-150',
-                  isSelected
-                    ? 'text-gray-900 dark:text-gray-100 font-medium'
-                    : 'text-gray-700 dark:text-gray-300',
-                ].join(' ')}>
+                <span
+                  className={[
+                    "text-sm transition-colors duration-150",
+                    isSelected
+                      ? "text-gray-900 dark:text-gray-100 font-medium"
+                      : "text-gray-700 dark:text-gray-300",
+                  ].join(" ")}
+                >
                   {option.label}
                 </span>
               </label>
@@ -303,39 +344,43 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
           {/* "Other" option */}
           <label
             className={[
-              'group/opt flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer',
-              'border transition-all duration-150',
+              "group/opt flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer",
+              "border transition-all duration-150",
               isOtherSelected
-                ? 'border-primary-300 dark:border-primary-600 bg-primary-50 dark:bg-primary-900/30 shadow-sm'
-                : 'border-transparent hover:border-gray-200 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50',
-            ].join(' ')}
+                ? "border-primary-300 dark:border-primary-600 bg-primary-50 dark:bg-primary-900/30 shadow-sm"
+                : "border-transparent hover:border-gray-200 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50",
+            ].join(" ")}
           >
             <span
               className={[
-                'flex-shrink-0 flex items-center justify-center w-5 h-5 transition-all duration-150',
-                isMultiSelect ? 'rounded-md' : 'rounded-full',
+                "flex-shrink-0 flex items-center justify-center w-5 h-5 transition-all duration-150",
+                isMultiSelect ? "rounded-md" : "rounded-full",
                 isOtherSelected
-                  ? 'bg-primary-600 dark:bg-primary-500 border-primary-600 dark:border-primary-500 text-white shadow-sm'
-                  : 'border-2 border-gray-300 dark:border-gray-600 group-hover/opt:border-gray-400 dark:group-hover/opt:border-gray-500',
-              ].join(' ')}
+                  ? "bg-primary-600 dark:bg-primary-500 border-primary-600 dark:border-primary-500 text-white shadow-sm"
+                  : "border-2 border-gray-300 dark:border-gray-600 group-hover/opt:border-gray-400 dark:group-hover/opt:border-gray-500",
+              ].join(" ")}
             >
               {isOtherSelected && <PencilSimpleLine size={11} weight="bold" />}
             </span>
             <input
-              type={isMultiSelect ? 'checkbox' : 'radio'}
+              type={isMultiSelect ? "checkbox" : "radio"}
               name={`question-${currentQuestion.id}`}
               value="__other__"
               checked={isOtherSelected}
-              onChange={(e) => handleOptionChange('__other__', e.target.checked)}
+              onChange={(e) =>
+                handleOptionChange("__other__", e.target.checked)
+              }
               className="sr-only"
             />
-            <span className={[
-              'text-sm transition-colors duration-150',
-              isOtherSelected
-                ? 'text-gray-900 dark:text-gray-100 font-medium'
-                : 'text-gray-700 dark:text-gray-300',
-            ].join(' ')}>
-              {t('BiChat.InlineQuestion.OtherOption')}
+            <span
+              className={[
+                "text-sm transition-colors duration-150",
+                isOtherSelected
+                  ? "text-gray-900 dark:text-gray-100 font-medium"
+                  : "text-gray-700 dark:text-gray-300",
+              ].join(" ")}
+            >
+              {t("BiChat.InlineQuestion.OtherOption")}
             </span>
           </label>
 
@@ -345,7 +390,7 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
               type="text"
               value={currentOtherText}
               onChange={(e) => handleOtherTextChange(e.target.value)}
-              placeholder={t('BiChat.InlineQuestion.TypeYourAnswer')}
+              placeholder={t("BiChat.InlineQuestion.TypeYourAnswer")}
               className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-400 dark:focus:border-primary-600 transition-shadow"
             />
           </div>
@@ -361,7 +406,7 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
                 className="cursor-pointer flex items-center gap-1 px-2.5 py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
                 <ArrowLeft size={14} weight="bold" />
-                {t('BiChat.InlineQuestion.Back')}
+                {t("BiChat.InlineQuestion.Back")}
               </button>
             )}
           </div>
@@ -370,21 +415,21 @@ export function InlineQuestionForm({ pendingQuestion }: InlineQuestionFormProps)
             type="submit"
             disabled={loading || !canProceed}
             className={[
-              'flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl transition-all duration-150',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2',
+              "flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl transition-all duration-150",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2",
               canProceed
-                ? 'cursor-pointer bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white shadow-sm hover:shadow'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed',
-            ].join(' ')}
+                ? "cursor-pointer bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white shadow-sm hover:shadow"
+                : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed",
+            ].join(" ")}
           >
             {isLastStep ? (
               <>
-                {t('BiChat.Submit')}
+                {t("BiChat.Submit")}
                 <PaperPlaneTilt size={14} weight="fill" />
               </>
             ) : (
               <>
-                {t('BiChat.InlineQuestion.Next')}
+                {t("BiChat.InlineQuestion.Next")}
                 <ArrowRight size={14} weight="bold" />
               </>
             )}

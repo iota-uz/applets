@@ -3,20 +3,33 @@
  * Styled component with slot-based customization for assistant messages
  */
 
-import { useState, useCallback, lazy, Suspense, useRef, useEffect, type ReactNode } from 'react';
-import { AnimatePresence } from 'framer-motion';
-import { Check, Copy, ArrowsClockwise, CaretRight } from '@phosphor-icons/react';
-import { formatRelativeTime } from '../utils/dateFormatting';
-import CodeOutputsPanel from './CodeOutputsPanel';
-import StreamingCursor from './StreamingCursor';
-import { ChartCard } from './ChartCard';
-import { InteractiveTableCard } from './InteractiveTableCard';
-import { TabbedTableGroup } from './TabbedTableGroup';
-import { TabbedChartGroup } from './TabbedChartGroup';
-import { SourcesPanel } from './SourcesPanel';
-import { DownloadCard } from './DownloadCard';
-import { InlineQuestionForm } from './InlineQuestionForm';
-import { RetryActionArea } from './RetryActionArea';
+import {
+  useState,
+  useCallback,
+  lazy,
+  Suspense,
+  useRef,
+  useEffect,
+  type ReactNode,
+} from "react";
+import { AnimatePresence } from "framer-motion";
+import {
+  Check,
+  Copy,
+  ArrowsClockwise,
+  CaretRight,
+} from "@phosphor-icons/react";
+import { formatRelativeTime } from "../utils/dateFormatting";
+import CodeOutputsPanel from "./CodeOutputsPanel";
+import StreamingCursor from "./StreamingCursor";
+import { ChartCard } from "./ChartCard";
+import { InteractiveTableCard } from "./InteractiveTableCard";
+import { TabbedTableGroup } from "./TabbedTableGroup";
+import { TabbedChartGroup } from "./TabbedChartGroup";
+import { SourcesPanel } from "./SourcesPanel";
+import { DownloadCard } from "./DownloadCard";
+import { InlineQuestionForm } from "./InlineQuestionForm";
+import { RetryActionArea } from "./RetryActionArea";
 import type {
   AssistantTurn,
   Citation,
@@ -25,13 +38,15 @@ import type {
   CodeOutput,
   PendingQuestion,
   RenderTableData,
-} from '../types';
-import { DebugPanel } from './DebugPanel';
-import { useTranslation } from '../hooks/useTranslation';
-import { shouldRenderInlineRetry } from '../utils/assistantTurnState';
+} from "../types";
+import { DebugPanel } from "./DebugPanel";
+import { useTranslation } from "../hooks/useTranslation";
+import { shouldRenderInlineRetry } from "../utils/assistantTurnState";
 
 const MarkdownRenderer = lazy(() =>
-  import('./MarkdownRenderer').then((module) => ({ default: module.MarkdownRenderer }))
+  import("./MarkdownRenderer").then((module) => ({
+    default: module.MarkdownRenderer,
+  })),
 );
 
 /* -------------------------------------------------------------------------------------------------
@@ -40,63 +55,63 @@ const MarkdownRenderer = lazy(() =>
 
 export interface AssistantMessageAvatarSlotProps {
   /** Default text */
-  text: string
+  text: string;
 }
 
 export interface AssistantMessageContentSlotProps {
   /** Message content (markdown) */
-  content: string
+  content: string;
   /** Citations */
-  citations?: Citation[]
+  citations?: Citation[];
   /** Whether streaming is active */
-  isStreaming: boolean
+  isStreaming: boolean;
 }
 
 export interface AssistantMessageSourcesSlotProps {
   /** Citations to display */
-  citations: Citation[]
+  citations: Citation[];
 }
 
 export interface AssistantMessageChartsSlotProps {
   /** Chart data array */
-  charts: ChartData[]
+  charts: ChartData[];
 }
 
 export interface AssistantMessageCodeOutputsSlotProps {
   /** Code execution outputs */
-  outputs: CodeOutput[]
+  outputs: CodeOutput[];
 }
 
 export interface AssistantMessageTablesSlotProps {
   /** Interactive table payloads */
-  tables: RenderTableData[]
+  tables: RenderTableData[];
 }
 
 export interface AssistantMessageArtifactsSlotProps {
   /** Downloadable artifacts */
-  artifacts: Artifact[]
+  artifacts: Artifact[];
 }
 
 export interface AssistantMessageActionsSlotProps {
   /** Copy content to clipboard */
-  onCopy: () => void
+  onCopy: () => void;
   /** Regenerate response */
-  onRegenerate?: () => void
+  onRegenerate?: () => void;
   /** Formatted timestamp */
-  timestamp: string
+  timestamp: string;
   /** Whether copy action is available */
-  canCopy: boolean
+  canCopy: boolean;
   /** Whether regenerate action is available */
-  canRegenerate: boolean
+  canRegenerate: boolean;
 }
 
 export interface AssistantMessageExplanationSlotProps {
   /** Explanation content (markdown) */
-  explanation: string
+  explanation: string;
   /** Whether expanded */
-  isExpanded: boolean
+  isExpanded: boolean;
   /** Toggle expansion */
-  onToggle: () => void
+  onToggle: () => void;
 }
 
 /* -------------------------------------------------------------------------------------------------
@@ -105,93 +120,106 @@ export interface AssistantMessageExplanationSlotProps {
 
 export interface AssistantMessageSlots {
   /** Custom avatar renderer */
-  avatar?: ReactNode | ((props: AssistantMessageAvatarSlotProps) => ReactNode)
+  avatar?: ReactNode | ((props: AssistantMessageAvatarSlotProps) => ReactNode);
   /** Custom content renderer */
-  content?: ReactNode | ((props: AssistantMessageContentSlotProps) => ReactNode)
+  content?:
+    | ReactNode
+    | ((props: AssistantMessageContentSlotProps) => ReactNode);
   /** Custom sources renderer */
-  sources?: ReactNode | ((props: AssistantMessageSourcesSlotProps) => ReactNode)
+  sources?:
+    | ReactNode
+    | ((props: AssistantMessageSourcesSlotProps) => ReactNode);
   /** Custom charts renderer */
-  charts?: ReactNode | ((props: AssistantMessageChartsSlotProps) => ReactNode)
+  charts?: ReactNode | ((props: AssistantMessageChartsSlotProps) => ReactNode);
   /** Custom code outputs renderer */
-  codeOutputs?: ReactNode | ((props: AssistantMessageCodeOutputsSlotProps) => ReactNode)
+  codeOutputs?:
+    | ReactNode
+    | ((props: AssistantMessageCodeOutputsSlotProps) => ReactNode);
   /** Custom table renderer */
-  tables?: ReactNode | ((props: AssistantMessageTablesSlotProps) => ReactNode)
+  tables?: ReactNode | ((props: AssistantMessageTablesSlotProps) => ReactNode);
   /** Custom artifacts renderer */
-  artifacts?: ReactNode | ((props: AssistantMessageArtifactsSlotProps) => ReactNode)
+  artifacts?:
+    | ReactNode
+    | ((props: AssistantMessageArtifactsSlotProps) => ReactNode);
   /** Custom actions renderer */
-  actions?: ReactNode | ((props: AssistantMessageActionsSlotProps) => ReactNode)
+  actions?:
+    | ReactNode
+    | ((props: AssistantMessageActionsSlotProps) => ReactNode);
   /** Custom explanation renderer */
-  explanation?: ReactNode | ((props: AssistantMessageExplanationSlotProps) => ReactNode)
+  explanation?:
+    | ReactNode
+    | ((props: AssistantMessageExplanationSlotProps) => ReactNode);
 }
 
 export interface AssistantMessageClassNames {
   /** Root container */
-  root?: string
+  root?: string;
   /** Inner content wrapper */
-  wrapper?: string
+  wrapper?: string;
   /** Avatar container */
-  avatar?: string
+  avatar?: string;
   /** Message bubble */
-  bubble?: string
+  bubble?: string;
   /** Code outputs container */
-  codeOutputs?: string
+  codeOutputs?: string;
   /** Charts container */
-  charts?: string
+  charts?: string;
   /** Tables container */
-  tables?: string
+  tables?: string;
   /** Artifacts container */
-  artifacts?: string
+  artifacts?: string;
   /** Sources container */
-  sources?: string
+  sources?: string;
   /** Explanation container */
-  explanation?: string
+  explanation?: string;
   /** Actions container */
-  actions?: string
+  actions?: string;
   /** Action button */
-  actionButton?: string
+  actionButton?: string;
   /** Timestamp */
-  timestamp?: string
+  timestamp?: string;
 }
 
 export interface AssistantMessageProps {
   /** Assistant turn data */
-  turn: AssistantTurn
+  turn: AssistantTurn;
   /** Turn ID for regenerate operations */
-  turnId?: string
+  turnId?: string;
   /** When true, this is the last turn (Regenerate button shown only on last assistant message) */
-  isLastTurn?: boolean
+  isLastTurn?: boolean;
   /** Whether response is being streamed */
-  isStreaming?: boolean
+  isStreaming?: boolean;
   /** Pending question for HITL */
-  pendingQuestion?: PendingQuestion | null
+  pendingQuestion?: PendingQuestion | null;
   /** Slot overrides */
-  slots?: AssistantMessageSlots
+  slots?: AssistantMessageSlots;
   /** Class name overrides */
-  classNames?: AssistantMessageClassNames
+  classNames?: AssistantMessageClassNames;
   /** Copy handler */
-  onCopy?: (content: string) => Promise<void> | void
+  onCopy?: (content: string) => Promise<void> | void;
   /** Regenerate handler */
-  onRegenerate?: (turnId: string) => Promise<void> | void
+  onRegenerate?: (turnId: string) => Promise<void> | void;
   /** Send message handler (for markdown links) */
-  onSendMessage?: (content: string) => void
+  onSendMessage?: (content: string) => void;
   /** Whether sending is disabled */
-  sendDisabled?: boolean
+  sendDisabled?: boolean;
   /** Hide avatar */
-  hideAvatar?: boolean
+  hideAvatar?: boolean;
   /** Hide actions */
-  hideActions?: boolean
+  hideActions?: boolean;
   /** Hide timestamp */
-  hideTimestamp?: boolean
+  hideTimestamp?: boolean;
   /** Show debug panel */
-  showDebug?: boolean
+  showDebug?: boolean;
 }
 
 type AssistantRenderMode =
-  | 'content'
-  | 'hitl_form'
-  | 'hitl_waiting'
-  | 'retry'
-  | 'empty'
+  | "content"
+  | "hitl_form"
+  | "hitl_resuming"
+  | "hitl_waiting"
+  | "retry"
+  | "empty";
 
 const COPY_FEEDBACK_MS = 2000;
 
@@ -200,26 +228,33 @@ const COPY_FEEDBACK_MS = 2000;
  * -----------------------------------------------------------------------------------------------*/
 
 const defaultClassNames: Required<AssistantMessageClassNames> = {
-  root: 'flex min-w-0 gap-3 group',
-  wrapper: 'flex-1 w-full min-w-0 flex flex-col gap-3 max-w-[var(--bichat-bubble-assistant-max-width,85%)]',
-  avatar: 'flex-shrink-0 w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-medium text-xs',
-  bubble: 'bg-white dark:bg-gray-800 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm',
-  codeOutputs: '',
-  charts: 'mb-1 w-full',
-  tables: 'mb-1 flex flex-col gap-3 min-w-0',
-  artifacts: 'mb-1 flex flex-wrap gap-2',
-  sources: '',
-  explanation: 'mt-4 border-t border-gray-100 dark:border-gray-700 pt-4',
-  actions: 'flex items-center gap-1 transition-opacity duration-150 group-focus-within:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100',
-  actionButton: 'cursor-pointer p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 rounded-md transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50',
-  timestamp: 'text-xs text-gray-400 dark:text-gray-500 mr-1',
+  root: "flex min-w-0 gap-3 group",
+  wrapper:
+    "flex-1 w-full min-w-0 flex flex-col gap-3 max-w-[var(--bichat-bubble-assistant-max-width,85%)]",
+  avatar:
+    "flex-shrink-0 w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white font-medium text-xs",
+  bubble:
+    "bg-white dark:bg-gray-800 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm",
+  codeOutputs: "",
+  charts: "mb-1 w-full",
+  tables: "mb-1 flex flex-col gap-3 min-w-0",
+  artifacts: "mb-1 flex flex-wrap gap-2",
+  sources: "",
+  explanation: "mt-4 border-t border-gray-100 dark:border-gray-700 pt-4",
+  actions:
+    "flex items-center gap-1 transition-opacity duration-150 group-focus-within:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100",
+  actionButton:
+    "cursor-pointer p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 rounded-md transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50",
+  timestamp: "text-xs text-gray-400 dark:text-gray-500 mr-1",
 };
 
 function mergeClassNames(
   defaults: Required<AssistantMessageClassNames>,
-  overrides?: AssistantMessageClassNames
+  overrides?: AssistantMessageClassNames,
 ): Required<AssistantMessageClassNames> {
-  if (!overrides) {return defaults;}
+  if (!overrides) {
+    return defaults;
+  }
   return {
     root: overrides.root ?? defaults.root,
     wrapper: overrides.wrapper ?? defaults.wrapper,
@@ -261,14 +296,16 @@ export function AssistantMessage({
   const { t } = useTranslation();
   const [explanationExpanded, setExplanationExpanded] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const classes = mergeClassNames(defaultClassNames, classNameOverrides);
-  const isSystemMessage = turn.role === 'system';
+  const isSystemMessage = turn.role === "system";
   const avatarClassName = isSystemMessage
-    ? 'flex-shrink-0 w-8 h-8 rounded-full bg-gray-500 dark:bg-gray-600 flex items-center justify-center text-white font-medium text-xs'
+    ? "flex-shrink-0 w-8 h-8 rounded-full bg-gray-500 dark:bg-gray-600 flex items-center justify-center text-white font-medium text-xs"
     : classes.avatar;
   const bubbleClassName = isSystemMessage
-    ? 'bg-gray-50 dark:bg-gray-900/40 rounded-2xl px-4 py-3 shadow-sm'
+    ? "bg-gray-50 dark:bg-gray-900/40 rounded-2xl px-4 py-3 shadow-sm"
     : classes.bubble;
 
   useEffect(() => {
@@ -282,16 +319,28 @@ export function AssistantMessage({
 
   const hasContent = turn.content?.trim().length > 0;
   const hasExplanation = !!turn.explanation?.trim();
-  const isAwaitingHumanInput = turn.lifecycle === 'waiting_for_human_input';
+  const isAwaitingHumanInput = turn.lifecycle === "waiting_for_human_input";
+  const pendingQuestionStatus = pendingQuestion?.status;
   const pendingQuestionMatchesTurn =
     !!pendingQuestion &&
-    pendingQuestion.status === 'PENDING' &&
-    (
-      pendingQuestion.turnId === turnId ||
+    (pendingQuestionStatus === "PENDING" ||
+      pendingQuestionStatus === "ANSWER_SUBMITTED" ||
+      pendingQuestionStatus === "REJECT_SUBMITTED" ||
+      pendingQuestionStatus === "ANSWER_RESUME_FAILED" ||
+      pendingQuestionStatus === "REJECT_RESUME_FAILED") &&
+    (pendingQuestion.turnId === turnId ||
       pendingQuestion.turnId === turn.id ||
-      (!pendingQuestion.turnId && isLastTurn)
-    );
+      (!pendingQuestion.turnId && isLastTurn));
   const hasPendingQuestion = pendingQuestionMatchesTurn && !!pendingQuestion;
+  const showQuestionForm =
+    hasPendingQuestion &&
+    (pendingQuestionStatus === "PENDING" ||
+      pendingQuestionStatus === "ANSWER_RESUME_FAILED" ||
+      pendingQuestionStatus === "REJECT_RESUME_FAILED");
+  const showResumeState =
+    hasPendingQuestion &&
+    (pendingQuestionStatus === "ANSWER_SUBMITTED" ||
+      pendingQuestionStatus === "REJECT_SUBMITTED");
   const hasCodeOutputs = !!turn.codeOutputs?.length;
   const hasChart = !!turn.charts?.length;
   const hasTables = !!turn.renderTables?.length;
@@ -305,17 +354,21 @@ export function AssistantMessage({
     hasTables ||
     hasArtifacts ||
     hasDebug;
-  const canRegenerate = !!onRegenerate && !!turnId && !isSystemMessage && isLastTurn;
-  const showInlineRetry = shouldRenderInlineRetry(turn, canRegenerate) && !hasAnyRenderedContent;
-  const renderMode: AssistantRenderMode = hasPendingQuestion
-    ? 'hitl_form'
-    : isAwaitingHumanInput
-      ? 'hitl_waiting'
-      : hasAnyRenderedContent
-        ? 'content'
-        : showInlineRetry
-          ? 'retry'
-          : 'empty';
+  const canRegenerate =
+    !!onRegenerate && !!turnId && !isSystemMessage && isLastTurn;
+  const showInlineRetry =
+    shouldRenderInlineRetry(turn, canRegenerate) && !hasAnyRenderedContent;
+  const renderMode: AssistantRenderMode = showQuestionForm
+    ? "hitl_form"
+    : showResumeState
+      ? "hitl_resuming"
+      : isAwaitingHumanInput
+        ? "hitl_waiting"
+        : hasAnyRenderedContent
+          ? "content"
+          : showInlineRetry
+            ? "retry"
+            : "empty";
 
   const handleCopyClick = useCallback(async () => {
     try {
@@ -335,7 +388,7 @@ export function AssistantMessage({
       }, COPY_FEEDBACK_MS);
     } catch (err) {
       setIsCopied(false);
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
     }
   }, [onCopy, turn.content]);
 
@@ -348,7 +401,9 @@ export function AssistantMessage({
   const timestamp = formatRelativeTime(turn.createdAt, t);
 
   // Slot props
-  const avatarSlotProps: AssistantMessageAvatarSlotProps = { text: isSystemMessage ? 'SYS' : 'AI' };
+  const avatarSlotProps: AssistantMessageAvatarSlotProps = {
+    text: isSystemMessage ? "SYS" : "AI",
+  };
   const contentSlotProps: AssistantMessageContentSlotProps = {
     content: turn.content,
     citations: turn.citations,
@@ -377,7 +432,7 @@ export function AssistantMessage({
     canRegenerate,
   };
   const explanationSlotProps: AssistantMessageExplanationSlotProps = {
-    explanation: turn.explanation || '',
+    explanation: turn.explanation || "",
     isExpanded: explanationExpanded,
     onToggle: () => setExplanationExpanded(!explanationExpanded),
   };
@@ -386,10 +441,14 @@ export function AssistantMessage({
   const renderSlot = <T,>(
     slot: ReactNode | ((props: T) => ReactNode) | undefined,
     props: T,
-    defaultContent: ReactNode
+    defaultContent: ReactNode,
   ): ReactNode => {
-    if (slot === undefined) {return defaultContent;}
-    if (typeof slot === 'function') {return slot(props);}
+    if (slot === undefined) {
+      return defaultContent;
+    }
+    if (typeof slot === "function") {
+      return slot(props);
+    }
     return slot;
   };
 
@@ -398,14 +457,25 @@ export function AssistantMessage({
       {/* Avatar */}
       {!hideAvatar && (
         <div className={avatarClassName}>
-          {renderSlot(slots?.avatar, avatarSlotProps, isSystemMessage ? 'SYS' : 'AI')}
+          {renderSlot(
+            slots?.avatar,
+            avatarSlotProps,
+            isSystemMessage ? "SYS" : "AI",
+          )}
         </div>
       )}
 
       <div className={classes.wrapper}>
         {/* Inline recovery for empty assistant responses */}
         <AnimatePresence>
-          {showInlineRetry && <RetryActionArea key="inline-retry" onRetry={() => { void handleRegenerateClick(); }} />}
+          {showInlineRetry && (
+            <RetryActionArea
+              key="inline-retry"
+              onRetry={() => {
+                void handleRegenerateClick();
+              }}
+            />
+          )}
         </AnimatePresence>
 
         {/* Code outputs */}
@@ -414,7 +484,7 @@ export function AssistantMessage({
             {renderSlot(
               slots?.codeOutputs,
               codeOutputsSlotProps,
-              <CodeOutputsPanel outputs={turn.codeOutputs} />
+              <CodeOutputsPanel outputs={turn.codeOutputs} />,
             )}
           </div>
         )}
@@ -429,7 +499,7 @@ export function AssistantMessage({
                 <ChartCard chartData={turn.charts[0]} />
               ) : (
                 <TabbedChartGroup charts={turn.charts} />
-              )
+              ),
             )}
           </div>
         )}
@@ -452,7 +522,7 @@ export function AssistantMessage({
                   onSendMessage={onSendMessage}
                   sendDisabled={sendDisabled || isStreaming}
                 />
-              )
+              ),
             )}
           </div>
         )}
@@ -467,7 +537,7 @@ export function AssistantMessage({
                 fallback={
                   <div className="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500">
                     <div className="w-4 h-4 border-2 border-gray-300 dark:border-gray-600 border-t-transparent rounded-full animate-spin" />
-                    {t('BiChat.Common.Loading')}
+                    {t("BiChat.Common.Loading")}
                   </div>
                 }
               >
@@ -477,7 +547,7 @@ export function AssistantMessage({
                   sendMessage={onSendMessage}
                   sendDisabled={sendDisabled || isStreaming}
                 />
-              </Suspense>
+              </Suspense>,
             )}
 
             {/* Streaming cursor */}
@@ -489,7 +559,7 @@ export function AssistantMessage({
                 {renderSlot(
                   slots?.sources,
                   sourcesSlotProps,
-                  <SourcesPanel citations={turn.citations} />
+                  <SourcesPanel citations={turn.citations} />,
                 )}
               </div>
             )}
@@ -503,25 +573,33 @@ export function AssistantMessage({
                   <>
                     <button
                       type="button"
-                      onClick={() => setExplanationExpanded(!explanationExpanded)}
+                      onClick={() =>
+                        setExplanationExpanded(!explanationExpanded)
+                      }
                       className="cursor-pointer flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 rounded-md p-1 -m-1"
                       aria-expanded={explanationExpanded}
                     >
                       <CaretRight
                         size={16}
                         weight="bold"
-                        className={`transition-transform duration-150 ${explanationExpanded ? 'rotate-90' : ''}`}
+                        className={`transition-transform duration-150 ${
+                          explanationExpanded ? "rotate-90" : ""
+                        }`}
                       />
-                      <span className="font-medium">{t('BiChat.Assistant.Explanation')}</span>
+                      <span className="font-medium">
+                        {t("BiChat.Assistant.Explanation")}
+                      </span>
                     </button>
                     {explanationExpanded && (
                       <div className="pt-3 text-sm text-gray-600 dark:text-gray-400">
-                        <Suspense fallback={<div>{t('BiChat.Common.Loading')}</div>}>
+                        <Suspense
+                          fallback={<div>{t("BiChat.Common.Loading")}</div>}
+                        >
                           <MarkdownRenderer content={turn.explanation!} />
                         </Suspense>
                       </div>
                     )}
-                  </>
+                  </>,
                 )}
               </div>
             )}
@@ -537,58 +615,89 @@ export function AssistantMessage({
               slots?.artifacts,
               artifactsSlotProps,
               turn.artifacts.map((artifact, index) => (
-                <DownloadCard key={`${artifact.filename}-${index}`} artifact={artifact} />
-              ))
+                <DownloadCard
+                  key={`${artifact.filename}-${index}`}
+                  artifact={artifact}
+                />
+              )),
             )}
           </div>
         )}
 
         {/* HITL waiting state */}
-        {renderMode === 'hitl_waiting' && (
+        {renderMode === "hitl_waiting" && (
           <div className="animate-slide-up rounded-2xl border border-primary-200 dark:border-primary-700/40 bg-gradient-to-b from-primary-50/70 to-white dark:from-primary-900/20 dark:to-gray-900/80 shadow-sm p-4">
             <p className="text-sm font-medium text-primary-700 dark:text-primary-300">
-              {t('BiChat.InlineQuestion.InputNeeded')}
+              {t("BiChat.InlineQuestion.InputNeeded")}
             </p>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {t('BiChat.InlineQuestion.WaitingForDetails')}
+              {t("BiChat.InlineQuestion.WaitingForDetails")}
+            </p>
+          </div>
+        )}
+
+        {renderMode === "hitl_resuming" && (
+          <div className="animate-slide-up rounded-2xl border border-emerald-200 dark:border-emerald-700/40 bg-gradient-to-b from-emerald-50/80 to-white dark:from-emerald-950/20 dark:to-gray-900/80 shadow-sm p-4">
+            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+              {pendingQuestion?.status === "REJECT_SUBMITTED"
+                ? "Dismissal submitted"
+                : "Answer submitted"}
+            </p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Continuing the run. This state will update automatically when the
+              resume finishes.
             </p>
           </div>
         )}
 
         {/* HITL question form */}
-        {renderMode === 'hitl_form' && pendingQuestion && (
+        {renderMode === "hitl_form" && pendingQuestion && (
           <InlineQuestionForm pendingQuestion={pendingQuestion} />
         )}
 
         {/* Actions */}
         {hasContent && !hideActions && (
-          <div className={`${classes.actions} ${isCopied ? 'opacity-100' : ''}`}>
+          <div
+            className={`${classes.actions} ${isCopied ? "opacity-100" : ""}`}
+          >
             {renderSlot(
               slots?.actions,
               actionsSlotProps,
               <>
-                {!hideTimestamp && <span className={classes.timestamp}>{timestamp}</span>}
+                {!hideTimestamp && (
+                  <span className={classes.timestamp}>{timestamp}</span>
+                )}
 
                 <button
                   onClick={handleCopyClick}
-                  className={`cursor-pointer ${classes.actionButton} ${isCopied ? 'text-green-600 dark:text-green-400' : ''}`}
-                  aria-label={t('BiChat.Message.CopyMessage')}
-                  title={isCopied ? t('BiChat.Message.Copied') : t('BiChat.Message.Copy')}
+                  className={`cursor-pointer ${classes.actionButton} ${
+                    isCopied ? "text-green-600 dark:text-green-400" : ""
+                  }`}
+                  aria-label={t("BiChat.Message.CopyMessage")}
+                  title={
+                    isCopied
+                      ? t("BiChat.Message.Copied")
+                      : t("BiChat.Message.Copy")
+                  }
                 >
-                  {isCopied ? <Check size={14} weight="bold" /> : <Copy size={14} weight="regular" />}
+                  {isCopied ? (
+                    <Check size={14} weight="bold" />
+                  ) : (
+                    <Copy size={14} weight="regular" />
+                  )}
                 </button>
 
                 {canRegenerate && (
                   <button
                     onClick={handleRegenerateClick}
                     className={`cursor-pointer ${classes.actionButton}`}
-                    aria-label={t('BiChat.Message.Regenerate')}
-                    title={t('BiChat.Message.Regenerate')}
+                    aria-label={t("BiChat.Message.Regenerate")}
+                    title={t("BiChat.Message.Regenerate")}
                   >
                     <ArrowsClockwise size={14} weight="regular" />
                   </button>
                 )}
-              </>
+              </>,
             )}
           </div>
         )}

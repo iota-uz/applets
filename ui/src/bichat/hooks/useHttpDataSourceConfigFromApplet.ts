@@ -49,7 +49,7 @@ export function useHttpDataSourceConfigFromApplet(
       streamEndpoint,
       csrfToken,
       rpcTimeoutMs: options?.rpcTimeoutMs ?? 120_000,
-      streamConnectTimeoutMs: options?.streamConnectTimeoutMs ?? 30_000,
+      streamConnectTimeoutMs: options?.streamConnectTimeoutMs,
     };
   }, [options?.rpcTimeoutMs, options?.streamConnectTimeoutMs]);
 }
