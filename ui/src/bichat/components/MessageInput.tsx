@@ -5,7 +5,8 @@
  */
 
 import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle, useMemo } from 'react';
-import { Paperclip, PaperPlaneRight, X, Bug, ArrowUp, ArrowDown, Stack, Stop } from '@phosphor-icons/react';
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
+import { Paperclip, PaperPlaneRight, X, Bug, ArrowUp, ArrowDown, Stack, Stop, Brain, CaretUpDown, Check } from '@phosphor-icons/react';
 import AttachmentGrid from './AttachmentGrid';
 import { MessageQueueList } from './MessageQueueList';
 import ImageModal from './ImageModal';
@@ -201,31 +202,59 @@ function ReasoningEffortSelector({ options, value, onChange, disabled }: Reasoni
   const { t } = useTranslation();
   const selected = value || options[1] || options[0];
   const label = t('BiChat.Input.ReasoningEffort');
+  const selectedLabel = t(EFFORT_LABEL_KEYS[selected] ?? selected);
 
   return (
-    <div className="flex-shrink-0 self-center flex items-center gap-1.5">
-      <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap select-none">
-        {label}
-      </span>
-      <select
-        value={selected}
+    <Menu as="div" className="relative flex-shrink-0 self-center">
+      <MenuButton
         disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
         className={[
-          'cursor-pointer h-8 rounded-lg border border-gray-200 dark:border-gray-600',
-          'bg-gray-50 dark:bg-gray-700/50 px-2.5 text-[11px] font-medium leading-none',
-          'text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500/25',
-          'disabled:opacity-40 disabled:cursor-not-allowed',
+          'cursor-pointer inline-flex h-8 items-center gap-1.5 rounded-xl border border-gray-200/80 dark:border-gray-600/70',
+          'bg-white dark:bg-gray-800 px-2.5 text-[11px] font-medium leading-none text-gray-700 dark:text-gray-200',
+          'shadow-sm transition-colors hover:border-gray-300 hover:bg-white dark:hover:border-gray-500 dark:hover:bg-gray-800',
+          'focus:outline-none focus:ring-2 focus:ring-primary-500/20',
+          'disabled:cursor-not-allowed disabled:opacity-40',
         ].join(' ')}
         aria-label={label}
+        title={`${label}: ${selectedLabel}`}
       >
-        {options.map((opt) => (
-          <option key={opt} value={opt}>
-            {t(EFFORT_LABEL_KEYS[opt] ?? opt)}
-          </option>
-        ))}
-      </select>
-    </div>
+        <Brain size={14} weight="duotone" className="text-primary-600 dark:text-primary-400" />
+        <span className="max-w-[72px] truncate">{selectedLabel}</span>
+        <CaretUpDown size={12} className="text-gray-400 dark:text-gray-500" />
+      </MenuButton>
+
+      <MenuItems
+        anchor="top end"
+        className="isolate z-30 min-w-[148px] rounded-xl border border-gray-200 bg-white p-1 shadow-xl ring-1 ring-black/5 dark:border-gray-700 dark:bg-gray-900 dark:ring-white/10 [--anchor-gap:8px]"
+      >
+        {options.map((opt) => {
+          const optionLabel = t(EFFORT_LABEL_KEYS[opt] ?? opt);
+          const isSelected = opt === selected;
+
+          return (
+            <MenuItem key={opt}>
+              {({ focus }) => (
+                <button
+                  type="button"
+                  onClick={() => onChange(opt)}
+                  className={[
+                    'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] font-medium transition-colors',
+                    focus
+                      ? 'bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-200'
+                      : 'text-gray-700 dark:text-gray-200',
+                  ].join(' ')}
+                >
+                  <span className="flex-1 truncate">{optionLabel}</span>
+                  {isSelected && (
+                    <Check size={12} weight="bold" className="text-primary-600 dark:text-primary-400" />
+                  )}
+                </button>
+              )}
+            </MenuItem>
+          );
+        })}
+      </MenuItems>
+    </Menu>
   );
 }
 

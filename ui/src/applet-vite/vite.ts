@@ -10,9 +10,9 @@ export type AppletViteOptions = {
   basePath: string
   /** Backend URL for proxy (e.g. "http://localhost:3200"). */
   backendUrl: string
-  /** Enable Vite aliases to local SDK dist for HMR when iterating on SDK (default: from IOTA_SDK_DIST) */
+  /** Enable Vite aliases to a local SDK dist during dev iteration. Rare: prefer applet dev's managed local package. */
   enableLocalSdkAliases?: boolean
-  /** Override SDK dist directory when enableLocalSdkAliases is true (default: process.env.IOTA_SDK_DIST) */
+  /** Override SDK dist directory when enableLocalSdkAliases is true. */
   sdkDistDir?: string
   /** Merge additional Vite config */
   extend?: UserConfig
@@ -55,8 +55,8 @@ export function createAppletViteConfig(opts: AppletViteOptions): UserConfig {
     resolve: {
       dedupe: DEFAULT_DEDUPE,
       alias: createLocalSdkAliases({
-        enabled: opts.enableLocalSdkAliases ?? Boolean(process.env.IOTA_SDK_DIST),
-        sdkDistDir: opts.sdkDistDir ?? process.env.IOTA_SDK_DIST,
+        enabled: opts.enableLocalSdkAliases,
+        sdkDistDir: opts.sdkDistDir,
       }),
     },
     server: {
@@ -93,14 +93,14 @@ export function createAppletBackendProxy(opts: {
 
 /**
  * Returns resolve.alias entries to point @iota-uz/sdk and @iota-uz/sdk/bichat to a local dist.
- * Use when IOTA_SDK_DIST is set or sdkDistDir is passed, so the app uses the local SDK build with HMR.
+ * Rare escape hatch for non-standard local SDK layouts. Prefer applet dev's managed local package flow.
  */
 export function createLocalSdkAliases(opts?: {
   enabled?: boolean
   sdkDistDir?: string
 }): Array<{ find: string | RegExp; replacement: string }> {
-  const enabled = opts?.enabled ?? Boolean(opts?.sdkDistDir ?? process.env.IOTA_SDK_DIST);
-  const dir = opts?.sdkDistDir ?? process.env.IOTA_SDK_DIST;
+  const dir = opts?.sdkDistDir;
+  const enabled = opts?.enabled ?? Boolean(dir);
   if (!enabled || !dir) {return [];}
   const sdkDist = path.resolve(dir);
   return [

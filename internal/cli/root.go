@@ -17,7 +17,7 @@ Run from the repo that contains the applet (e.g. iota-sdk or eai).
 Requires .applets/config.toml at the project root.`,
 		Example: `  applet doctor
   applet dev
-  applet dev bichat
+  applet dev --sdk-root ../../applets
   applet list
   applet build bichat
   applet check
@@ -25,8 +25,6 @@ Requires .applets/config.toml at the project root.`,
   applet rpc check --name bichat
   applet rpc watch --name bichat
   applet deps check
-  applet sdk local --sdk-root ../../applets
-  applet sdk local --off
   applet schema export --name bichat
   applet secrets set --name bichat --key OPENAI_API_KEY --value ...
   applet version`,
@@ -51,7 +49,6 @@ Requires .applets/config.toml at the project root.`,
 	root.AddCommand(NewCheckCommand())
 	root.AddCommand(NewRPCCommand())
 	root.AddCommand(NewDepsCommand())
-	root.AddCommand(NewSDKCommand())
 	root.AddCommand(NewSchemaCommand())
 	root.AddCommand(NewSecretsCommand())
 

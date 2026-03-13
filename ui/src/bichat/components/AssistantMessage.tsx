@@ -637,16 +637,29 @@ export function AssistantMessage({
         )}
 
         {renderMode === "hitl_resuming" && (
-          <div className="animate-slide-up rounded-2xl border border-emerald-200 dark:border-emerald-700/40 bg-gradient-to-b from-emerald-50/80 to-white dark:from-emerald-950/20 dark:to-gray-900/80 shadow-sm p-4">
-            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+          <div
+            role="status"
+            aria-live="polite"
+            className="animate-slide-up flex items-center gap-2 rounded-xl border border-emerald-100/80 bg-emerald-50/60 px-3 py-2 text-xs text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-200"
+          >
+            <span
+              className="inline-flex h-2 w-2 flex-shrink-0 rounded-full bg-emerald-500 animate-pulse"
+              aria-hidden="true"
+            />
+            <span className="font-medium">
               {pendingQuestion?.status === "REJECT_SUBMITTED"
-                ? "Dismissal submitted"
-                : "Answer submitted"}
-            </p>
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Continuing the run. This state will update automatically when the
-              resume finishes.
-            </p>
+                ? t("BiChat.InlineQuestion.DismissalSubmitted")
+                : t("BiChat.InlineQuestion.AnswerSubmitted")}
+            </span>
+            <span
+              className="text-emerald-400/80 dark:text-emerald-500/80"
+              aria-hidden="true"
+            >
+              •
+            </span>
+            <span className="text-emerald-700/80 dark:text-emerald-300/80">
+              {t("BiChat.InlineQuestion.ResumeInProgress")}
+            </span>
           </div>
         )}
 

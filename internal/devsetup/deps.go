@@ -13,17 +13,22 @@ import (
 // RefreshAppletDeps ensures applet node_modules are up to date and clears the Vite
 // cache when the local SDK bundle has changed. ctx is used for cancellation of installs.
 // webDir may be relative to root; it is resolved to an absolute path before any FS use.
-func RefreshAppletDeps(ctx context.Context, root, webDir string) error {
+func RefreshAppletDeps(ctx context.Context, root, webDir, localSDKRoot string) error {
 	if !filepath.IsAbs(webDir) {
 		webDir = filepath.Join(root, webDir)
 	}
 	nodeModules := filepath.Join(webDir, "node_modules")
 	didInstall := false
-
-	localSDKDep, err := hasLocalSDKDependency(webDir)
+	usesSDK, err := hasSDKDependency(webDir)
 	if err != nil {
 		return err
 	}
+	usingManagedLocalSDK, err := hasManagedLocalSDKPackage(webDir)
+	if err != nil {
+		return err
+	}
+
+	localSDKDistIndex := resolveLocalSDKDistIndex(localSDKRoot)
 
 	if _, err := os.Stat(nodeModules); err != nil {
 		log.Println("Installing applet dependencies...")
@@ -31,27 +36,32 @@ func RefreshAppletDeps(ctx context.Context, root, webDir string) error {
 			return err
 		}
 		didInstall = true
-	} else if localSDKDep {
-		distIndex := filepath.Join(root, "dist", "index.mjs")
-		sdkModule := filepath.Join(nodeModules, "@iota-uz", "sdk", "dist", "index.mjs")
+	}
 
-		if IsNewer(distIndex, sdkModule) {
-			log.Println("Refreshing applet deps (local @iota-uz/sdk changed)...")
-			if err := RunCommand(ctx, root, "pnpm", "-C", webDir, "install", "--prefer-frozen-lockfile"); err != nil {
-				return err
-			}
-			didInstall = true
+	if usesSDK && localSDKRoot == "" && usingManagedLocalSDK {
+		log.Println("Restoring published @iota-uz/sdk package (no local SDK source detected)...")
+		if err := RunCommand(ctx, root, "pnpm", "-C", webDir, "install", "--prefer-frozen-lockfile"); err != nil {
+			return err
 		}
+		didInstall = true
+	}
+
+	didLinkLocalSDK := false
+	if usesSDK && localSDKRoot != "" {
+		changed, err := ensureLocalSDKPackage(webDir, localSDKRoot)
+		if err != nil {
+			return err
+		}
+		didLinkLocalSDK = changed
 	}
 
 	viteCache := filepath.Join(nodeModules, ".vite")
-	if didInstall {
+	if didInstall || didLinkLocalSDK {
 		if err := os.RemoveAll(viteCache); err != nil {
 			log.Printf("warning: failed to clear Vite cache after install: %v", err)
 		}
-	} else if localSDKDep {
-		distIndex := filepath.Join(root, "dist", "index.mjs")
-		if IsNewer(distIndex, viteCache) {
+	} else if localSDKDistIndex != "" {
+		if IsNewer(localSDKDistIndex, viteCache) {
 			log.Println("Clearing Vite dep cache (SDK bundle changed)...")
 			if err := os.RemoveAll(viteCache); err != nil {
 				log.Printf("warning: failed to clear Vite cache: %v", err)
@@ -62,11 +72,18 @@ func RefreshAppletDeps(ctx context.Context, root, webDir string) error {
 	return nil
 }
 
-// hasLocalSDKDependency checks whether the applet uses a file:/link:/workspace: specifier for @iota-uz/sdk.
-func hasLocalSDKDependency(webDir string) (bool, error) {
+func resolveLocalSDKDistIndex(localSDKRoot string) string {
+	if localSDKRoot != "" {
+		return filepath.Join(localSDKRoot, "dist", "index.mjs")
+	}
+	return ""
+}
+
+// hasSDKDependency checks whether the applet declares @iota-uz/sdk at all.
+func hasSDKDependency(webDir string) (bool, error) {
 	deps, err := pkgjson.Read(webDir)
 	if err != nil {
 		return false, fmt.Errorf("applet package.json: %w", err)
 	}
-	return pkgjson.IsLocalSDKSpec(pkgjson.SDKSpec(deps)), nil
+	return pkgjson.SDKSpec(deps) != "", nil
 }

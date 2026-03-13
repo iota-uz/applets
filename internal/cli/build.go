@@ -55,7 +55,7 @@ func runBuild(cmd *cobra.Command, args []string) error {
 		applet := cfg.Applets[name]
 		webDir := applet.Web
 
-		if err := devsetup.RefreshAppletDeps(cmd.Context(), root, webDir); err != nil {
+		if err := devsetup.RefreshAppletDeps(cmd.Context(), root, webDir, ""); err != nil {
 			return fmt.Errorf("applet %s dep refresh failed: %w", name, err)
 		}
 
