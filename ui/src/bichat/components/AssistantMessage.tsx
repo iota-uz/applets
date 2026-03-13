@@ -637,7 +637,11 @@ export function AssistantMessage({
         )}
 
         {renderMode === "hitl_resuming" && (
-          <div className="animate-slide-up flex items-center gap-2 rounded-xl border border-emerald-100/80 bg-emerald-50/60 px-3 py-2 text-xs text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-200">
+          <div
+            role="status"
+            aria-live="polite"
+            className="animate-slide-up flex items-center gap-2 rounded-xl border border-emerald-100/80 bg-emerald-50/60 px-3 py-2 text-xs text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-200"
+          >
             <span
               className="inline-flex h-2 w-2 flex-shrink-0 rounded-full bg-emerald-500 animate-pulse"
               aria-hidden="true"

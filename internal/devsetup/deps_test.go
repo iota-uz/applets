@@ -56,7 +56,7 @@ func TestRefreshAppletDeps_EnsuresManagedLocalSDKPackage(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = os.Stat(filepath.Join(webDir, "node_modules", ".vite"))
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.True(t, os.IsNotExist(err))
 }
 
@@ -76,6 +76,6 @@ func TestRefreshAppletDeps_SkipsManagedLocalSDKPackageForNonConsumers(t *testing
 	require.NoError(t, err)
 
 	_, err = os.Stat(filepath.Join(webDir, "node_modules", "@iota-uz", "sdk", localSDKMarkerFile))
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.True(t, os.IsNotExist(err))
 }
