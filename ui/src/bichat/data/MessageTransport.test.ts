@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { resumeStream, sendMessage, type MessageTransportDeps } from './MessageTransport';
+import {
+  resumeStream,
+  sendMessage,
+  submitQuestionAnswers,
+  type MessageTransportDeps,
+} from './MessageTransport';
 
 const encoder = new TextEncoder();
 
@@ -84,5 +89,46 @@ describe('MessageTransport stream timeout defaults', () => {
     expect(chunks).toEqual([{ type: 'done' }]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(setTimeoutSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('submitQuestionAnswers', () => {
+  it('flattens custom text answers for RPC submission', async () => {
+    const callRPC = vi.fn(async () => ({
+      accepted: true,
+      operation: 'question_submit',
+      sessionId: 'session-1',
+      runId: 'run-1',
+      startedAt: 123,
+    }));
+
+    const result = await submitQuestionAnswers(
+      callRPC,
+      'session-1',
+      'checkpoint-1',
+      {
+        period: { options: [], customText: 'Show quarters for last year' },
+        slice: { options: ['all'] },
+      },
+    );
+
+    expect(callRPC).toHaveBeenCalledWith('bichat.question.submit', {
+      sessionId: 'session-1',
+      checkpointId: 'checkpoint-1',
+      answers: {
+        period: 'Show quarters for last year',
+        slice: 'all',
+      },
+    });
+    expect(result).toEqual({
+      success: true,
+      data: {
+        accepted: true,
+        operation: 'question_submit',
+        sessionId: 'session-1',
+        runId: 'run-1',
+        startedAt: 123,
+      },
+    });
   });
 });

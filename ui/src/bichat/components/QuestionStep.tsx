@@ -36,22 +36,23 @@ export default function QuestionStep({
   }, [question.id]);
 
   const handleOptionClick = (optionID: string) => {
+    setOtherText('');
     if (isMultiSelect) {
       // Multi-select: toggle the option
       const newOptions = selectedOptions.includes(optionID)
         ? selectedOptions.filter((a) => a !== optionID)
         : [...selectedOptions, optionID];
-      onAnswer({ options: newOptions, customText: otherText || undefined });
+      onAnswer({ options: newOptions, customText: undefined });
     } else {
-      // Single-select: replace with new selection, preserve custom text
-      onAnswer({ options: [optionID], customText: otherText || undefined });
+      // Single-select: replace with new selection and clear custom text.
+      onAnswer({ options: [optionID], customText: undefined });
     }
   };
 
   const handleOtherTextChange = (text: string) => {
     setOtherText(text);
     onAnswer({
-      options: selectedOptions,
+      options: [],
       customText: text || undefined
     });
   };
