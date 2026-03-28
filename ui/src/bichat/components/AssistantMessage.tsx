@@ -681,6 +681,12 @@ export function AssistantMessage({
                   <span className={classes.timestamp}>{timestamp}</span>
                 )}
 
+                {showDebug && turn.debug?.attempts?.[0]?.model && (
+                  <span className="inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] font-medium leading-none text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800">
+                    {turn.debug.attempts[0].model}
+                  </span>
+                )}
+
                 <button
                   onClick={handleCopyClick}
                   className={`cursor-pointer ${classes.actionButton} ${

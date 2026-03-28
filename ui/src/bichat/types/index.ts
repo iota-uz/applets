@@ -525,6 +525,7 @@ export interface SendMessageOptions {
   debugMode?: boolean;
   replaceFromMessageID?: string;
   reasoningEffort?: string;
+  model?: string;
 }
 
 // ============================================================================
@@ -705,9 +706,11 @@ export interface ChatSessionStateValue {
   debugLimits: DebugLimits | null;
   reasoningEffort: string | undefined;
   reasoningEffortOptions: string[] | undefined;
+  model: string | undefined;
   setError: (error: string | null) => void;
   retryFetchSession: () => void;
   setReasoningEffort: (effort: string) => void;
+  setModel: (model: string | undefined) => void;
 }
 
 export interface ChatMessagingStateValue {

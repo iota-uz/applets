@@ -102,6 +102,9 @@ export async function* sendMessage(
     if (options?.reasoningEffort) {
       payload.reasoningEffort = options.reasoningEffort;
     }
+    if (options?.model) {
+      payload.model = options.model;
+    }
 
     const timeoutMs = deps.streamConnectTimeoutMs ?? 0;
     if (timeoutMs > 0) {

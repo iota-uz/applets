@@ -56,6 +56,8 @@ interface ChatSessionProps {
   logoSlot?: ReactNode
   /** Custom action buttons for the header */
   actionsSlot?: ReactNode
+  /** Custom content rendered above the message input (e.g., model selector) */
+  inputHeaderSlot?: ReactNode
   /** Callback when user navigates back */
   onBack?: () => void
   /** Custom verbs for the typing indicator (e.g. ['Thinking', 'Analyzing', ...]) */
@@ -85,6 +87,7 @@ function ChatSessionCore({
   welcomeSlot,
   logoSlot,
   actionsSlot,
+  inputHeaderSlot,
   onBack,
   thinkingVerbs,
   onSessionRestored,
@@ -417,6 +420,7 @@ function ChatSessionCore({
                       />
                     </div>
                   )}
+                  {!effectiveReadOnly && inputHeaderSlot}
                   {!effectiveReadOnly && (
                     <MessageInput
                       message={message}
@@ -483,6 +487,7 @@ function ChatSessionCore({
                   />
                 </div>
               )}
+              {!effectiveReadOnly && inputHeaderSlot}
               {!effectiveReadOnly && (
                 <MessageInput
                   message={message}

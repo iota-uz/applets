@@ -10,7 +10,7 @@ import './styles.css';
 // Layer 4: Full Components
 // =============================================================================
 
-export { ChatSession } from './components/ChatSession';
+export { ChatSession, type ChatSessionProps } from './components/ChatSession';
 export { SessionArtifactsPanel } from './components/SessionArtifactsPanel';
 export { SessionArtifactList } from './components/SessionArtifactList';
 export { SessionArtifactPreview } from './components/SessionArtifactPreview';
