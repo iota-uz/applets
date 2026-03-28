@@ -301,7 +301,7 @@ export interface QuestionOption {
 export interface QuestionAnswerData {
   /** Selected predefined options (option IDs) */
   options: string[];
-  /** Custom text entered when user selects "Other" option */
+  /** Custom text entered for an "Other" answer; mutually exclusive with options */
   customText?: string;
 }
 
