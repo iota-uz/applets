@@ -83,9 +83,10 @@ func (c *Controller) RegisterRoutes(router *mux.Router) {
 	if c.devAssets != nil || config.Assets.FS != nil {
 		c.registerAssetRoutes(router, fullAssetsPath)
 	}
+	excludedPrefixes := appRouteExcludedPrefixes(c.applet.BasePath(), config)
 	pathRouter := router.PathPrefix(c.applet.BasePath()).Subrouter()
 	c.applyMiddleware(pathRouter, config.Middleware)
-	c.registerAppRoutes(pathRouter, config.RoutePatterns)
+	c.registerAppRoutes(pathRouter, config.RoutePatterns, excludedPrefixes)
 
 	for _, host := range config.Hosts {
 		host = strings.TrimSpace(host)
@@ -97,7 +98,7 @@ func (c *Controller) RegisterRoutes(router *mux.Router) {
 			c.registerAssetRoutes(hostRouter, config.Assets.BasePath)
 		}
 		c.applyMiddleware(hostRouter, config.Middleware)
-		c.registerAppRoutes(hostRouter, config.RoutePatterns)
+		c.registerAppRoutes(hostRouter, config.RoutePatterns, excludedPrefixes)
 	}
 }
 
@@ -107,7 +108,7 @@ func (c *Controller) applyMiddleware(router *mux.Router, middleware []mux.Middle
 	}
 }
 
-func (c *Controller) registerAppRoutes(router *mux.Router, routePatterns []string) {
+func (c *Controller) registerAppRoutes(router *mux.Router, routePatterns []string, excludedPrefixes []string) {
 	for _, p := range routePatterns {
 		p = strings.TrimSpace(p)
 		if p == "" {
@@ -120,5 +121,94 @@ func (c *Controller) registerAppRoutes(router *mux.Router, routePatterns []strin
 	}
 	router.HandleFunc("", c.RenderApp).Methods(http.MethodGet, http.MethodHead)
 	router.HandleFunc("/", c.RenderApp).Methods(http.MethodGet, http.MethodHead)
-	router.PathPrefix("/").HandlerFunc(c.RenderApp).Methods(http.MethodGet, http.MethodHead)
+	router.MatcherFunc(func(r *http.Request, _ *mux.RouteMatch) bool {
+		return shouldRenderAppRoute(r.URL.Path, excludedPrefixes)
+	}).HandlerFunc(c.RenderApp).Methods(http.MethodGet, http.MethodHead)
+}
+
+func appRouteExcludedPrefixes(basePath string, config api.Config) []string {
+	candidates := []string{
+		config.Assets.BasePath,
+		config.Endpoints.GraphQL,
+		config.Endpoints.Stream,
+		config.Endpoints.REST,
+	}
+	if config.RPC != nil {
+		candidates = append(candidates, config.RPC.Path)
+	}
+
+	seen := make(map[string]struct{}, len(candidates)*2)
+	excluded := make([]string, 0, len(candidates)*2)
+	for _, candidate := range candidates {
+		for _, prefix := range normalizeExcludedRoutePrefixes(basePath, candidate) {
+			if prefix == "" {
+				continue
+			}
+			if _, exists := seen[prefix]; exists {
+				continue
+			}
+			seen[prefix] = struct{}{}
+			excluded = append(excluded, prefix)
+		}
+	}
+
+	return excluded
+}
+
+func normalizeExcludedRoutePrefixes(basePath, raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	if !strings.HasPrefix(raw, "/") {
+		raw = "/" + raw
+	}
+
+	basePath = strings.TrimSpace(basePath)
+	if basePath == "" {
+		basePath = "/"
+	}
+	if !strings.HasPrefix(basePath, "/") {
+		basePath = "/" + basePath
+	}
+	basePath = path.Clean(basePath)
+	absolute := path.Clean(raw)
+
+	prefixes := make([]string, 0, 2)
+	prefixes = append(prefixes, absolute)
+
+	if absolute == basePath {
+		prefixes = append(prefixes, "/")
+		return prefixes
+	}
+
+	if strings.HasPrefix(absolute, basePath+"/") {
+		relative := strings.TrimPrefix(absolute, basePath)
+		if relative == "" {
+			relative = "/"
+		}
+		prefixes = append(prefixes, path.Clean(relative))
+	}
+
+	return prefixes
+}
+
+func shouldRenderAppRoute(requestPath string, excludedPrefixes []string) bool {
+	cleanPath := path.Clean("/" + strings.TrimPrefix(strings.TrimSpace(requestPath), "/"))
+	for _, prefix := range excludedPrefixes {
+		if pathHasPrefix(cleanPath, prefix) {
+			return false
+		}
+	}
+	return true
+}
+
+func pathHasPrefix(requestPath, prefix string) bool {
+	if prefix == "" {
+		return false
+	}
+	if prefix == "/" {
+		return requestPath == "/"
+	}
+	return requestPath == prefix || strings.HasPrefix(requestPath, prefix+"/")
 }

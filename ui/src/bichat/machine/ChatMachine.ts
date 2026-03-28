@@ -60,6 +60,7 @@ import {
 } from "./selectors";
 import {
   applyTurnLifecycleForPendingQuestion,
+  isOpenQuestionStatus,
   pendingQuestionFromInterrupt,
 } from "./hitlLifecycle";
 
@@ -1322,7 +1323,11 @@ export class ChatMachine {
     if (this.disposed) {
       return;
     }
-    if (!content.trim() || this.state.messaging.loading) {
+    if (
+      !content.trim() ||
+      this.state.messaging.loading ||
+      isOpenQuestionStatus(this.state.messaging.pendingQuestion?.status)
+    ) {
       return;
     }
 
@@ -1433,7 +1438,10 @@ export class ChatMachine {
       // Auto-drain queue on success
       if (shouldDrainQueue) {
         const queue = this.state.input.messageQueue;
-        if (queue.length > 0) {
+        if (
+          queue.length > 0 &&
+          !isOpenQuestionStatus(this.state.messaging.pendingQuestion?.status)
+        ) {
           const next = queue[0];
           this._updateInput({ messageQueue: queue.slice(1) });
           // Defer to avoid reentrant call

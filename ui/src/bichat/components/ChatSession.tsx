@@ -29,6 +29,7 @@ import { SessionArtifactsPanel } from './SessionArtifactsPanel';
 import { SessionMembersModal } from './SessionMembersModal';
 import Alert from './Alert';
 import { StreamError } from './StreamError';
+import { isOpenQuestionStatus } from '../machine/hitlLifecycle';
 
 interface ChatSessionProps {
   dataSource: ChatDataSource
@@ -122,6 +123,7 @@ function ChatSessionCore({
     isCompacting,
     retryLastMessage,
     clearStreamError,
+    pendingQuestion,
   } = useChatMessaging();
   const {
     inputError,
@@ -138,6 +140,7 @@ function ChatSessionCore({
   const isArchived = session?.status === 'archived';
   const accessReadOnly = session?.access ? !session.access.canWrite : false;
   const effectiveReadOnly = Boolean(readOnly ?? isReadOnly) || isArchived || accessReadOnly;
+  const composerDisabled = isOpenQuestionStatus(pendingQuestion?.status);
   const [restoring, setRestoring] = useState(false);
   const handleRestore = useCallback(async () => {
     if (!session?.id) {return;}
@@ -408,7 +411,7 @@ function ChatSessionCore({
               <div className="flex flex-1 items-center justify-center px-4 py-8">
                 <div className="w-full max-w-5xl">
                   {welcomeSlot || (
-                    <WelcomeContent onPromptSelect={handlePromptSelect} disabled={loading} />
+                    <WelcomeContent onPromptSelect={handlePromptSelect} disabled={loading || composerDisabled} />
                   )}
                   {streamError && (
                     <div className="px-6 pt-4">
@@ -441,6 +444,7 @@ function ChatSessionCore({
                       onCancelStreaming={cancel}
                       containerClassName="pt-6 px-6"
                       formClassName="mx-auto"
+                      disabled={composerDisabled}
                       reasoningEffortOptions={reasoningEffortOptions}
                       reasoningEffort={reasoningEffort}
                       onReasoningEffortChange={setReasoningEffort}
@@ -506,6 +510,7 @@ function ChatSessionCore({
                   onRemoveQueueItem={removeQueueItem}
                   onUpdateQueueItem={updateQueueItem}
                   onCancelStreaming={cancel}
+                  disabled={composerDisabled}
                   reasoningEffortOptions={reasoningEffortOptions}
                   reasoningEffort={reasoningEffort}
                   onReasoningEffortChange={setReasoningEffort}
