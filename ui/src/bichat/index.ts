@@ -11,6 +11,7 @@ import './styles.css';
 // =============================================================================
 
 export { ChatSession, type ChatSessionProps } from './components/ChatSession';
+export { ModelSelector } from './components/ModelSelector';
 export { SessionArtifactsPanel } from './components/SessionArtifactsPanel';
 export { SessionArtifactList } from './components/SessionArtifactList';
 export { SessionArtifactPreview } from './components/SessionArtifactPreview';
