@@ -2,6 +2,7 @@ import { useEffect, useCallback, useMemo } from 'react';
 import { Lightning, Brain } from '@phosphor-icons/react';
 import { useChatSession } from '../context/ChatContext';
 import { useIotaContext } from '../context/IotaContext';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface ModelEntry {
   id: string
@@ -12,6 +13,7 @@ interface ModelEntry {
 export function ModelSelector() {
   const { model, setModel } = useChatSession();
   const context = useIotaContext();
+  const { t } = useTranslation();
 
   const models: ModelEntry[] = useMemo(
     () => context.extensions?.llm?.models ?? [],
@@ -52,9 +54,9 @@ export function ModelSelector() {
   return (
     <div className="flex items-center justify-between px-4 pt-3 pb-1">
       <div className="inline-flex rounded-lg bg-gray-100 p-0.5 dark:bg-gray-800">
-        {models.map((m) => {
+        {models.map((m, i) => {
           const isActive = m.id === currentModel;
-          const isFast = m.label === 'Fast';
+          const isFast = i === 0;
           return (
             <button
               key={m.id}
@@ -72,7 +74,7 @@ export function ModelSelector() {
               `}
             >
               {isFast ? <Lightning size={13} weight="fill" /> : <Brain size={13} weight="fill" />}
-              <span>{m.label}</span>
+              <span>{t(m.label)}</span>
             </button>
           );
         })}
