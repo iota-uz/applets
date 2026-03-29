@@ -219,12 +219,11 @@ export default function Sidebar({
   const [internalActiveTab, setInternalActiveTab] = useState<ActiveTab>('my-chats');
   const activeTab = controlledActiveTab ?? internalActiveTab;
   const handleTabChange = useCallback((tab: ActiveTab) => {
-    if (onTabChange) {
-      onTabChange(tab);
-    } else {
+    if (controlledActiveTab === undefined) {
       setInternalActiveTab(tab);
     }
-  }, [onTabChange]);
+    onTabChange?.(tab);
+  }, [controlledActiveTab, onTabChange]);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');

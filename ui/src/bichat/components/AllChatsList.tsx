@@ -155,6 +155,18 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
     });
   }, []);
 
+  // Auto-expand the group containing the active session (e.g. deep-link)
+  useEffect(() => {
+    if (!activeSessionId || selectedUser) return;
+    const chat = chats.find(c => c.id === activeSessionId);
+    if (chat?.owner?.id) {
+      setExpandedGroups(prev => {
+        if (prev.has(chat.owner!.id)) return prev;
+        return new Set([...prev, chat.owner!.id]);
+      });
+    }
+  }, [activeSessionId, chats, selectedUser]);
+
   // Group chats by owner when no specific user is selected
   const groupedChats = useMemo(() => {
     if (selectedUser) {return null;} // flat list when user is selected
@@ -164,9 +176,9 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
     chats.forEach((chat) => {
       const owner = chat.owner ?? {
         id: '__unknown__',
-        firstName: 'Unknown',
-        lastName: 'User',
-        initials: 'U',
+        firstName: t('BiChat.Common.Untitled'),
+        lastName: '',
+        initials: '?',
       };
       const ownerId = owner.id;
 
@@ -288,7 +300,7 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
                             size="sm"
                           />
                           <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate flex-1 min-w-0">
-                            {ownerName || 'Unknown User'}
+                            {ownerName || t('BiChat.Common.Untitled')}
                           </span>
                           <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full flex-shrink-0">
                             {group.chats.length}
