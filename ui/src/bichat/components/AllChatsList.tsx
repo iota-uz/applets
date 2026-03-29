@@ -5,8 +5,8 @@
  */
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Archive } from '@phosphor-icons/react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Archive, CaretRight } from '@phosphor-icons/react';
 import { UserAvatar } from './UserAvatar';
 import { UserFilter } from './UserFilter';
 import SessionSkeleton from './SessionSkeleton';
@@ -140,6 +140,71 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
     return Array.from(userMap.values());
   }, [chats, users, dataSource.listUsers]);
 
+  // Expanded state for user groups (tracks expanded owner IDs; collapsed by default)
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+  const toggleGroup = useCallback((ownerId: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(ownerId)) {
+        next.delete(ownerId);
+      } else {
+        next.add(ownerId);
+      }
+      return next;
+    });
+  }, []);
+
+  // Auto-expand the group containing the active session (e.g. deep-link)
+  useEffect(() => {
+    if (!activeSessionId || selectedUser) { return; }
+    const chat = chats.find(c => c.id === activeSessionId);
+    if (chat?.owner?.id) {
+      setExpandedGroups(prev => {
+        if (prev.has(chat.owner!.id)) { return prev; }
+        return new Set([...prev, chat.owner!.id]);
+      });
+    }
+  }, [activeSessionId, chats, selectedUser]);
+
+  // Group chats by owner when no specific user is selected
+  const groupedChats = useMemo(() => {
+    if (selectedUser) {return null;} // flat list when user is selected
+
+    const groupMap = new Map<string, { owner: SessionUser; chats: Session[]; latestUpdatedAt: string }>();
+
+    chats.forEach((chat) => {
+      const owner = chat.owner ?? {
+        id: '__unknown__',
+        firstName: t('BiChat.Common.Untitled'),
+        lastName: '',
+        initials: '?',
+      };
+      const ownerId = owner.id;
+
+      if (!groupMap.has(ownerId)) {
+        groupMap.set(ownerId, {
+          owner,
+          chats: [],
+          latestUpdatedAt: chat.updatedAt,
+        });
+      }
+
+      const group = groupMap.get(ownerId)!;
+      group.chats.push(chat);
+
+      // Track the most recent updatedAt for sorting groups
+      if (chat.updatedAt > group.latestUpdatedAt) {
+        group.latestUpdatedAt = chat.updatedAt;
+      }
+    });
+
+    // Sort groups by most recently active first
+    return Array.from(groupMap.values()).sort(
+      (a, b) => b.latestUpdatedAt.localeCompare(a.latestUpdatedAt),
+    );
+  }, [chats, selectedUser, t]);
+
   return (
     <div
       className="flex flex-col h-full overflow-hidden"
@@ -200,72 +265,184 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
                 role="list"
                 aria-label={t('BiChat.AllChats.OrganizationChatSessions')}
               >
-                {chats.map((chat) => {
-                  const owner = chat.owner ?? {
-                    id: '',
-                    firstName: '',
-                    lastName: '',
-                    initials: 'U',
-                  };
-                  const ownerName = [owner.firstName, owner.lastName].filter(Boolean).join(' ');
-                  return (
-                    <motion.div
-                    key={chat.id}
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                  >
-                    <div
-                      role="link"
-                      tabIndex={0}
-                      onClick={() => onSessionSelect(chat.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          onSessionSelect(chat.id);
-                        }
-                      }}
-                      className={`
-                        block px-3 py-2 rounded-lg transition-smooth group cursor-pointer
-                        ${
-                          chat.id === activeSessionId
-                            ? 'bg-primary-50/50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 border-l-4 border-primary-400 dark:border-primary-600'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 border-l-4 border-transparent'
-                        }
-                      `}
-                      aria-current={chat.id === activeSessionId ? 'page' : undefined}
-                    >
-                      <div className="flex items-start gap-2">
-                        {/* Owner avatar */}
-                        <UserAvatar
-                          firstName={owner.firstName}
-                          lastName={owner.lastName}
-                          initials={owner.initials}
-                          size="sm"
-                        />
+                {groupedChats ? (
+                  /* ── Grouped view (no user selected) ── */
+                  groupedChats.map((group) => {
+                    const ownerId = group.owner.id;
+                    const ownerName = [group.owner.firstName, group.owner.lastName].filter(Boolean).join(' ');
+                    const isCollapsed = !expandedGroups.has(ownerId);
 
-                        {/* Chat info */}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {chat.title || t('BiChat.Common.Untitled')}
-                          </p>
-                          {ownerName && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                              {ownerName}
-                            </p>
-                          )}
-                          {chat.status === 'archived' && (
-                            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full text-xs">
-                              <Archive size={12} className="w-3 h-3" />
-                              {t('BiChat.Chat.Archived')}
-                            </span>
-                          )}
+                    return (
+                      <div key={ownerId} className="mb-1">
+                        {/* Group header */}
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => toggleGroup(ownerId)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              toggleGroup(ownerId);
+                            }
+                          }}
+                          className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-smooth select-none"
+                          aria-expanded={!isCollapsed}
+                        >
+                          <CaretRight
+                            size={14}
+                            weight="bold"
+                            className={`shrink-0 text-gray-500 dark:text-gray-400 transition-transform duration-150 ${isCollapsed ? '' : 'rotate-90'}`}
+                          />
+                          <UserAvatar
+                            firstName={group.owner.firstName}
+                            lastName={group.owner.lastName}
+                            initials={group.owner.initials}
+                            size="sm"
+                          />
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate flex-1 min-w-0">
+                            {ownerName || t('BiChat.Common.Untitled')}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full flex-shrink-0">
+                            {group.chats.length}
+                          </span>
                         </div>
+
+                        {/* Group items */}
+                        <AnimatePresence initial={false}>
+                          {!isCollapsed && (
+                            <motion.div
+                              key={`group-${ownerId}`}
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                              className="overflow-hidden"
+                            >
+                              <div className="space-y-0.5 pl-6">
+                                {group.chats.map((chat) => (
+                                  <motion.div
+                                    key={chat.id}
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                  >
+                                    <div
+                                      role="link"
+                                      tabIndex={0}
+                                      onClick={() => onSessionSelect(chat.id)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                          e.preventDefault();
+                                          onSessionSelect(chat.id);
+                                        }
+                                      }}
+                                      className={`
+                                        block px-3 py-2 rounded-lg transition-smooth group cursor-pointer
+                                        ${
+                                          chat.id === activeSessionId
+                                            ? 'bg-primary-50/50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 border-l-4 border-primary-400 dark:border-primary-600'
+                                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 border-l-4 border-transparent'
+                                        }
+                                      `}
+                                      aria-current={chat.id === activeSessionId ? 'page' : undefined}
+                                    >
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <p className="text-sm truncate flex-1 min-w-0">
+                                          {chat.title || t('BiChat.Common.Untitled')}
+                                        </p>
+                                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                                          {chat.isGroup && chat.memberCount && chat.memberCount > 1 && (
+                                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                                              {chat.memberCount}
+                                            </span>
+                                          )}
+                                          {chat.status === 'archived' && (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full text-xs">
+                                              <Archive size={12} className="w-3 h-3" />
+                                              {t('BiChat.Chat.Archived')}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </motion.div>
+                                ))}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
-                    </div>
-                  </motion.div>
-                  );
-                })}
+                    );
+                  })
+                ) : (
+                  /* ── Flat view (user selected) ── */
+                  chats.map((chat) => {
+                    const owner = chat.owner ?? {
+                      id: '',
+                      firstName: '',
+                      lastName: '',
+                      initials: 'U',
+                    };
+                    const ownerName = [owner.firstName, owner.lastName].filter(Boolean).join(' ');
+                    return (
+                      <motion.div
+                        key={chat.id}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                      >
+                        <div
+                          role="link"
+                          tabIndex={0}
+                          onClick={() => onSessionSelect(chat.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              onSessionSelect(chat.id);
+                            }
+                          }}
+                          className={`
+                            block px-3 py-2 rounded-lg transition-smooth group cursor-pointer
+                            ${
+                              chat.id === activeSessionId
+                                ? 'bg-primary-50/50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 border-l-4 border-primary-400 dark:border-primary-600'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 border-l-4 border-transparent'
+                            }
+                          `}
+                          aria-current={chat.id === activeSessionId ? 'page' : undefined}
+                        >
+                          <div className="flex items-start gap-2">
+                            {/* Owner avatar */}
+                            <UserAvatar
+                              firstName={owner.firstName}
+                              lastName={owner.lastName}
+                              initials={owner.initials}
+                              size="sm"
+                            />
+
+                            {/* Chat info */}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {chat.title || t('BiChat.Common.Untitled')}
+                              </p>
+                              {ownerName && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                  {ownerName}
+                                </p>
+                              )}
+                              {chat.status === 'archived' && (
+                                <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full text-xs">
+                                  <Archive size={12} className="w-3 h-3" />
+                                  {t('BiChat.Chat.Archived')}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                )}
 
                 {/* Load more trigger */}
                 {hasMore && (

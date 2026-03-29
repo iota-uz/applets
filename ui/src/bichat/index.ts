@@ -79,7 +79,7 @@ export { ActivityTrace, type ActivityTraceProps } from './components/ActivityTra
 
 // Session management components
 export { default as Sidebar } from './components/Sidebar';
-export type { SidebarProps } from './components/Sidebar';
+export type { SidebarProps, ActiveTab } from './components/Sidebar';
 export { default as SessionItem } from './components/SessionItem';
 export { default as ArchivedChatList } from './components/ArchivedChatList';
 export { default as AllChatsList } from './components/AllChatsList';

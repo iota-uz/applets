@@ -112,7 +112,7 @@ function useSidebarCollapse() {
   return { isCollapsed, isCollapsedRef, toggle, expand, collapse };
 }
 
-type ActiveTab = 'my-chats' | 'all-chats'
+export type ActiveTab = 'my-chats' | 'all-chats'
 
 export interface SidebarProps {
   dataSource: ChatDataSource
@@ -127,6 +127,10 @@ export interface SidebarProps {
   headerSlot?: React.ReactNode
   footerSlot?: React.ReactNode
   className?: string
+  /** Controlled active tab. When provided, overrides internal state. */
+  activeTab?: ActiveTab
+  /** Called when tab changes. Use with activeTab for controlled mode. */
+  onTabChange?: (tab: ActiveTab) => void
 }
 
 export default function Sidebar({
@@ -142,6 +146,8 @@ export default function Sidebar({
   headerSlot,
   footerSlot,
   className = '',
+  activeTab: controlledActiveTab,
+  onTabChange,
 }: SidebarProps) {
   const { t } = useTranslation();
   const toast = useToast();
@@ -209,8 +215,15 @@ export default function Sidebar({
     return () => clearTimeout(timer);
   }, [showCollapsed]);
 
-  // View state (my chats vs all chats)
-  const [activeTab, setActiveTab] = useState<ActiveTab>('my-chats');
+  // View state (my chats vs all chats) — controlled or uncontrolled
+  const [internalActiveTab, setInternalActiveTab] = useState<ActiveTab>('my-chats');
+  const activeTab = controlledActiveTab ?? internalActiveTab;
+  const handleTabChange = useCallback((tab: ActiveTab) => {
+    if (controlledActiveTab === undefined) {
+      setInternalActiveTab(tab);
+    }
+    onTabChange?.(tab);
+  }, [controlledActiveTab, onTabChange]);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -936,7 +949,7 @@ export default function Sidebar({
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              setActiveTab('all-chats');
+                              handleTabChange('all-chats');
                               close();
                             }}
                             className={`cursor-pointer flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-gray-600 dark:text-gray-300 transition-colors ${
@@ -957,7 +970,7 @@ export default function Sidebar({
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              setActiveTab('my-chats');
+                              handleTabChange('my-chats');
                               close();
                             }}
                             className={`cursor-pointer flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-gray-600 dark:text-gray-300 transition-colors ${
