@@ -157,11 +157,11 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
 
   // Auto-expand the group containing the active session (e.g. deep-link)
   useEffect(() => {
-    if (!activeSessionId || selectedUser) return;
+    if (!activeSessionId || selectedUser) { return; }
     const chat = chats.find(c => c.id === activeSessionId);
     if (chat?.owner?.id) {
       setExpandedGroups(prev => {
-        if (prev.has(chat.owner!.id)) return prev;
+        if (prev.has(chat.owner!.id)) { return prev; }
         return new Set([...prev, chat.owner!.id]);
       });
     }
@@ -203,7 +203,7 @@ export default function AllChatsList({ dataSource, onSessionSelect, activeSessio
     return Array.from(groupMap.values()).sort(
       (a, b) => b.latestUpdatedAt.localeCompare(a.latestUpdatedAt),
     );
-  }, [chats, selectedUser]);
+  }, [chats, selectedUser, t]);
 
   return (
     <div
