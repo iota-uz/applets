@@ -59,6 +59,11 @@ export interface Extensions {
     provider?: string
     apiKeyConfigured?: boolean
     reasoningEffortOptions?: string[]
+    models?: Array<{
+      id: string
+      label: string
+      default?: boolean
+    }>
   }
   debug?: {
     limits?: {

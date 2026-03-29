@@ -46,6 +46,7 @@ export interface SessionState {
   debugLimits: DebugLimits | null
   reasoningEffort: string | undefined
   reasoningEffortOptions?: string[]
+  model: string | undefined
 }
 
 export interface MessagingState {
@@ -98,9 +99,11 @@ export interface SessionSnapshot {
   debugLimits: DebugLimits | null
   reasoningEffort: string | undefined
   reasoningEffortOptions: string[] | undefined
+  model: string | undefined
   setError: (error: string | null) => void
   retryFetchSession: () => void
   setReasoningEffort: (effort: string) => void
+  setModel: (model: string | undefined) => void
 }
 
 /** Superset of ChatMessagingStateValue used internally by the state machine; includes internal-only fields such as generationInProgress. */

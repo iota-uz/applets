@@ -14,7 +14,7 @@ export function deriveDebugMode(state: ChatMachineState): boolean {
 
 export function deriveSessionSnapshot(
   state: ChatMachineState,
-  methods: Pick<SessionSnapshot, 'setError' | 'retryFetchSession' | 'setReasoningEffort'>
+  methods: Pick<SessionSnapshot, 'setError' | 'retryFetchSession' | 'setReasoningEffort' | 'setModel'>
 ): SessionSnapshot {
   return {
     session: state.session.session,
@@ -27,9 +27,11 @@ export function deriveSessionSnapshot(
     debugLimits: state.session.debugLimits,
     reasoningEffort: state.session.reasoningEffort,
     reasoningEffortOptions: state.session.reasoningEffortOptions,
+    model: state.session.model,
     setError: methods.setError,
     retryFetchSession: methods.retryFetchSession,
     setReasoningEffort: methods.setReasoningEffort,
+    setModel: methods.setModel,
   };
 }
 

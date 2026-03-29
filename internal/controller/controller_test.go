@@ -13,6 +13,7 @@ import (
 
 	"testing/fstest"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/iota-uz/applets/internal/api"
 	"github.com/stretchr/testify/assert"
@@ -130,6 +131,82 @@ func TestAppletController_DoesNotMountPerAppletRPCRoute(t *testing.T) {
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
+func TestAppletController_ShellCatchAll_SkipsConfiguredAPIEndpoints(t *testing.T) {
+	t.Parallel()
+
+	a := &testApplet{
+		name:     "t",
+		basePath: "/t",
+		config: api.Config{
+			WindowGlobal: "__T__",
+			Shell:        api.ShellConfig{Mode: api.ShellModeStandalone},
+			Endpoints: api.EndpointConfig{
+				Stream: "/t/stream",
+				REST:   "/t/rest",
+			},
+			Assets: api.AssetConfig{
+				FS:           fstest.MapFS{"manifest.json": {Data: []byte(`{"index.html":{"file":"a.js","isEntry":true}}`)}, "a.js": {Data: []byte("console.log('ok')")}},
+				BasePath:     "/assets",
+				ManifestPath: "manifest.json",
+				Entrypoint:   "index.html",
+			},
+			RPC: &api.RPCConfig{Path: "/t/rpc"},
+		},
+	}
+
+	c, err := New(a, nil, api.DefaultSessionConfig, nil, nil, &testHostServices{})
+	require.NoError(t, err)
+
+	r := mux.NewRouter()
+	c.RegisterRoutes(r)
+
+	r.HandleFunc("/t/stream/status", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"active":true}`))
+	}).Methods(http.MethodGet)
+	r.HandleFunc("/t/rpc", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("rpc"))
+	}).Methods(http.MethodGet)
+	r.HandleFunc("/t/rest/health", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("rest"))
+	}).Methods(http.MethodGet)
+
+	for _, tc := range []struct {
+		name         string
+		target       string
+		wantBody     string
+		wantContains string
+	}{
+		{name: "stream", target: "/t/stream/status", wantBody: `{"active":true}`},
+		{name: "rpc", target: "/t/rpc", wantBody: "rpc"},
+		{name: "rest", target: "/t/rest/health", wantBody: "rest"},
+		{name: "session route still renders app", target: "/t/session/123", wantContains: "__T__"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, tc.target, nil)
+			req = req.WithContext(context.WithValue(
+				context.WithValue(req.Context(), testUserKey, &mockUser{
+					id:        1,
+					email:     "t@example.com",
+					firstName: "Test",
+					lastName:  "User",
+				}),
+				testTenantIDKey,
+				uuid.New(),
+			))
+			r.ServeHTTP(w, req)
+
+			require.Equal(t, http.StatusOK, w.Code, w.Body.String())
+			if tc.wantBody != "" {
+				assert.Equal(t, tc.wantBody, w.Body.String())
+				return
+			}
+			assert.Contains(t, w.Body.String(), tc.wantContains)
+		})
+	}
 }
 
 func TestAppletController_RPC(t *testing.T) {

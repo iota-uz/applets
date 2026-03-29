@@ -60,6 +60,7 @@ import {
 } from "./selectors";
 import {
   applyTurnLifecycleForPendingQuestion,
+  isOpenQuestionStatus,
   pendingQuestionFromInterrupt,
 } from "./hitlLifecycle";
 
@@ -187,6 +188,7 @@ export class ChatMachine {
   readonly removeQueueItem: (index: number) => void;
   readonly updateQueueItem: (index: number, content: string) => void;
   readonly setReasoningEffort: (effort: string) => void;
+  readonly setModel: (model: string | undefined) => void;
 
   constructor(config: ChatMachineConfig) {
     this.dataSource = config.dataSource;
@@ -214,6 +216,7 @@ export class ChatMachine {
         debugLimits: readDebugLimitsFromGlobalContext(),
         reasoningEffort: initialReasoningEffort,
         reasoningEffortOptions: this.reasoningEffortOptions ?? undefined,
+        model: undefined,
       },
       messaging: {
         turns: [],
@@ -260,6 +263,7 @@ export class ChatMachine {
     this.removeQueueItem = this._removeQueueItem.bind(this);
     this.updateQueueItem = this._updateQueueItem.bind(this);
     this.setReasoningEffort = this._setReasoningEffort.bind(this);
+    this.setModel = this._setModel.bind(this);
   }
 
   private buildReasoningEffortOptions(): string[] | null {
@@ -353,6 +357,7 @@ export class ChatMachine {
         setError: this.setError,
         retryFetchSession: this.retryFetchSession,
         setReasoningEffort: this.setReasoningEffort,
+        setModel: this.setModel,
       });
       this.lastSessionSnapshotVersion = this.sessionSnapshotVersion;
     }
@@ -508,6 +513,10 @@ export class ChatMachine {
       return;
     }
     clearReasoningEffort();
+  }
+
+  private _setModel(model: string | undefined): void {
+    this._updateSession({ model });
   }
 
   // =====================================================================
@@ -1089,6 +1098,7 @@ export class ChatMachine {
     debugMode: boolean;
     replaceFromMessageID?: string;
     reasoningEffort?: string;
+    model?: string;
     tempTurnId: string;
   }): Promise<{
     createdSessionId?: string;
@@ -1102,6 +1112,7 @@ export class ChatMachine {
       debugMode,
       replaceFromMessageID,
       reasoningEffort,
+      model,
       tempTurnId,
     } = params;
 
@@ -1120,6 +1131,7 @@ export class ChatMachine {
         debugMode,
         replaceFromMessageID,
         reasoningEffort,
+        model,
       },
     )) {
       if (this.abortController?.signal.aborted) {
@@ -1311,7 +1323,11 @@ export class ChatMachine {
     if (this.disposed) {
       return;
     }
-    if (!content.trim() || this.state.messaging.loading) {
+    if (
+      !content.trim() ||
+      this.state.messaging.loading ||
+      isOpenQuestionStatus(this.state.messaging.pendingQuestion?.status)
+    ) {
       return;
     }
 
@@ -1381,6 +1397,7 @@ export class ChatMachine {
           reasoningEffort: this.sanitizeReasoningEffort(
             this.state.session.reasoningEffort,
           ),
+          model: this.state.session.model,
           tempTurnId: tempTurn.id,
         });
 
@@ -1421,7 +1438,10 @@ export class ChatMachine {
       // Auto-drain queue on success
       if (shouldDrainQueue) {
         const queue = this.state.input.messageQueue;
-        if (queue.length > 0) {
+        if (
+          queue.length > 0 &&
+          !isOpenQuestionStatus(this.state.messaging.pendingQuestion?.status)
+        ) {
           const next = queue[0];
           this._updateInput({ messageQueue: queue.slice(1) });
           // Defer to avoid reentrant call
