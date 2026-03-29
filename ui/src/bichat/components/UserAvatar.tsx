@@ -33,20 +33,21 @@ function hashString(str: string): number {
 }
 
 /**
- * Color palette using Tailwind colors
- * Selected for good contrast with white text
+ * Color palette using hex values for inline styles.
+ * Inline styles ensure colors render correctly in portaled content
+ * (e.g. Headless UI dropdowns) outside the shadow DOM.
  */
 const colorPalette = [
-  { bg: 'bg-blue-500', text: 'text-white' },
-  { bg: 'bg-green-500', text: 'text-white' },
-  { bg: 'bg-purple-500', text: 'text-white' },
-  { bg: 'bg-pink-500', text: 'text-white' },
-  { bg: 'bg-indigo-500', text: 'text-white' },
-  { bg: 'bg-teal-500', text: 'text-white' },
-  { bg: 'bg-orange-500', text: 'text-white' },
-  { bg: 'bg-cyan-500', text: 'text-white' },
-  { bg: 'bg-amber-500', text: 'text-white' },
-  { bg: 'bg-lime-500', text: 'text-white' },
+  { bg: '#3b82f6', text: '#ffffff' }, // blue-500
+  { bg: '#22c55e', text: '#ffffff' }, // green-500
+  { bg: '#a855f7', text: '#ffffff' }, // purple-500
+  { bg: '#ec4899', text: '#ffffff' }, // pink-500
+  { bg: '#6366f1', text: '#ffffff' }, // indigo-500
+  { bg: '#14b8a6', text: '#ffffff' }, // teal-500
+  { bg: '#f97316', text: '#ffffff' }, // orange-500
+  { bg: '#06b6d4', text: '#ffffff' }, // cyan-500
+  { bg: '#f59e0b', text: '#ffffff' }, // amber-500
+  { bg: '#84cc16', text: '#ffffff' }, // lime-500
 ];
 
 /**
@@ -85,8 +86,6 @@ function UserAvatar({
     <div
       className={`
         ${sizeClasses[size]}
-        ${colors.bg}
-        ${colors.text}
         ${className}
         rounded-full
         flex
@@ -96,6 +95,7 @@ function UserAvatar({
         flex-shrink-0
         select-none
       `}
+      style={{ backgroundColor: colors.bg, color: colors.text }}
       aria-label={`${firstName} ${lastName}`}
       title={`${firstName} ${lastName}`}
     >

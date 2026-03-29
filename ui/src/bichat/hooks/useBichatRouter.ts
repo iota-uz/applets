@@ -29,6 +29,12 @@ export interface UseBichatRouterReturn {
   onArchivedView: () => void;
   /** Navigate back (e.g. to home) */
   onBack: () => void;
+  /** Navigate to all-chats view */
+  onAllChatsView: () => void;
+  /** Current sidebar tab derived from URL */
+  sidebarTab: 'my-chats' | 'all-chats';
+  /** Handler to change sidebar tab (navigates to appropriate URL) */
+  onSidebarTabChange: (tab: 'my-chats' | 'all-chats') => void;
 }
 
 const SESSION_PATH_REGEX = /\/session\/([^/]+)/;
@@ -43,9 +49,16 @@ export function useBichatRouter({
   pathname,
   onNavigate,
 }: UseBichatRouterParams): UseBichatRouterReturn {
+  const isAllChats = pathname.startsWith('/all-chats');
+
   const activeSessionId = useMemo(
     () => pathname.match(SESSION_PATH_REGEX)?.[1],
     [pathname]
+  );
+
+  const sidebarTab = useMemo<'my-chats' | 'all-chats'>(
+    () => (isAllChats ? 'all-chats' : 'my-chats'),
+    [isAllChats]
   );
 
   const maybeClose = useCallback(() => {
@@ -55,22 +68,28 @@ export function useBichatRouter({
   const onSessionSelect = useCallback(
     (sessionId: string) => {
       if (sessionId) {
-        navigate(`/session/${sessionId}`);
+        const prefix = isAllChats ? '/all-chats' : '';
+        navigate(`${prefix}/session/${sessionId}`);
       } else {
-        navigate('/');
+        navigate(isAllChats ? '/all-chats' : '/');
       }
       maybeClose();
     },
-    [navigate, maybeClose]
+    [navigate, maybeClose, isAllChats]
   );
 
   const onNewChat = useCallback(() => {
-    navigate('/');
+    navigate(isAllChats ? '/all-chats' : '/');
     maybeClose();
-  }, [navigate, maybeClose]);
+  }, [navigate, maybeClose, isAllChats]);
 
   const onArchivedView = useCallback(() => {
     navigate('/archived');
+    maybeClose();
+  }, [navigate, maybeClose]);
+
+  const onAllChatsView = useCallback(() => {
+    navigate('/all-chats');
     maybeClose();
   }, [navigate, maybeClose]);
 
@@ -79,11 +98,26 @@ export function useBichatRouter({
     maybeClose();
   }, [navigate, maybeClose]);
 
+  const onSidebarTabChange = useCallback(
+    (tab: 'my-chats' | 'all-chats') => {
+      if (tab === 'all-chats') {
+        navigate('/all-chats');
+      } else {
+        navigate('/');
+      }
+      maybeClose();
+    },
+    [navigate, maybeClose]
+  );
+
   return {
     activeSessionId,
     onSessionSelect,
     onNewChat,
     onArchivedView,
     onBack,
+    onAllChatsView,
+    sidebarTab,
+    onSidebarTabChange,
   };
 }
