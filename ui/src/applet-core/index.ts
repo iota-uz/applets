@@ -11,6 +11,8 @@ export { ConfigProvider, useConfigContext } from './context/ConfigProvider';
 
 // Hooks
 export { useAppletContext as useAppletContextDirect } from './hooks/useAppletContext';
+export { useAppletExtensions } from './hooks/useAppletExtensions';
+export { useAppletRPCClient, type UseAppletRPCClientOptions } from './hooks/useAppletRPCClient';
 export { useConfig } from './hooks/useConfig';
 export { useUser } from './hooks/useUser';
 export { usePermissions } from './hooks/usePermissions';
