@@ -134,4 +134,69 @@ describe('useActiveRuns', () => {
     act(() => { vi.advanceTimersByTime(100); });
     expect(result.current.ready).toBe(true);
   });
+
+  // APL-1 regression: a stale terminal-removal timer must not wipe a
+  // newly arrived streaming snapshot for the same sessionId (the
+  // native EventSource auto-reconnect path redelivers snapshot rows).
+  it('cancels pending terminal prune when a new snapshot arrives for the same session', () => {
+    const ds = createDataSource();
+    const { result } = renderHook(() =>
+      useActiveRuns(ds, { retainTerminalMs: 1000 })
+    );
+
+    // Arm a terminal prune for s1.
+    act(() => {
+      ds.emit({ event: 'update', sessionId: 's1', runId: 'r1', status: 'cancelled', updatedAt: 1 });
+    });
+    expect(result.current.runs.s1?.status).toBe('cancelled');
+
+    // Before the 1000ms retention window elapses, a fresh snapshot
+    // arrives (reconnect or a new run starting on the same session).
+    act(() => {
+      vi.advanceTimersByTime(200);
+      ds.emit({ event: 'snapshot', sessionId: 's1', runId: 'r2', status: 'streaming', updatedAt: 2 });
+    });
+
+    // Flush the 16ms snapshot coalescer.
+    act(() => { vi.advanceTimersByTime(16); });
+    expect(result.current.runs.s1?.status).toBe('streaming');
+    expect(result.current.runs.s1?.runId).toBe('r2');
+
+    // Advance well past the original retention window. The stale
+    // prune must have been cancelled — s1 should still be present.
+    act(() => { vi.advanceTimersByTime(1500); });
+    expect(result.current.runs.s1?.status).toBe('streaming');
+    expect(result.current.runs.s1?.runId).toBe('r2');
+  });
+
+  // APL-2 regression: a rejection from subscribeActiveRuns (initial
+  // connect failure, 401/503) must surface via onError rather than
+  // leaking as an unhandled promise rejection.
+  it('routes subscribeActiveRuns rejections through onError', async () => {
+    const onError = vi.fn();
+    const subscribeActiveRuns: Subscribe = () =>
+      Promise.reject(new Error('mock connect failure'));
+    const ds = { subscribeActiveRuns } as unknown as FakeDataSource;
+
+    // Capture unhandled rejections so the test fails if we leak.
+    const unhandled: unknown[] = [];
+    const onUnhandled = (err: unknown) => unhandled.push(err);
+    process.on('unhandledRejection', onUnhandled);
+
+    try {
+      renderHook(() => useActiveRuns(ds, { onError }));
+
+      // Flush the rejected microtask queue.
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(onError.mock.calls[0][0]).toBeInstanceOf(Event);
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off('unhandledRejection', onUnhandled);
+    }
+  });
 });

@@ -1,8 +1,26 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { STREAM_EVENT_TYPES, TERMINAL_STREAM_EVENT_TYPES, isTerminalEvent } from './eventNames';
 
-const SDK_EVENTS_FILE = '/Users/diyorkhaydarov/Projects/sdk/iota-sdk/pkg/httpdto/stream_events.go';
+// Resolve the Go source of truth relative to this test file so the
+// drift guard runs on any checkout where `applets` and `iota-sdk` are
+// siblings. Five ".." hops: utils -> bichat -> src -> ui -> applets ->
+// sdk, then down into iota-sdk/pkg/httpdto/.
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const SDK_EVENTS_FILE = resolve(
+  __dirname,
+  '../../../../../iota-sdk/pkg/httpdto/stream_events.go',
+);
+const SDK_EVENTS_FILE_EXISTS = existsSync(SDK_EVENTS_FILE);
+if (!SDK_EVENTS_FILE_EXISTS) {
+  // Not silent: surface a notice so CI runs without the sibling
+  // checkout make the skipped guard visible.
+  console.warn(
+    `[eventNames.test] skipping drift guard — SDK sibling not found at ${SDK_EVENTS_FILE}`,
+  );
+}
 
 describe('STREAM_EVENT_TYPES', () => {
   it('contains a unique, non-empty set of lowercase tokens', () => {
@@ -34,7 +52,7 @@ describe('STREAM_EVENT_TYPES', () => {
 // Drift guard. Reads the Go source of truth at test time and diffs
 // the constant set against STREAM_EVENT_TYPES. Silently skipped when
 // the SDK sibling tree is not checked out next to this repo.
-describe.skipIf(!existsSync(SDK_EVENTS_FILE))('STREAM_EVENT_TYPES drift guard', () => {
+describe.skipIf(!SDK_EVENTS_FILE_EXISTS)('STREAM_EVENT_TYPES drift guard', () => {
   it('matches the Go StreamEventType constant set', () => {
     const src = readFileSync(SDK_EVENTS_FILE, 'utf8');
     const re = /StreamEvent[A-Za-z0-9_]+\s+StreamEventType\s*=\s*"([^"]+)"/g;

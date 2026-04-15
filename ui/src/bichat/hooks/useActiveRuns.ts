@@ -92,12 +92,22 @@ export function useActiveRuns(
       stagingTimer = undefined;
     };
 
-    dataSource.subscribeActiveRuns({
+    const subscription = dataSource.subscribeActiveRuns({
       signal: controller.signal,
       onError: (evt) => onErrorRef.current?.(evt),
       onEvent: (evt) => {
         if (evt.event === 'snapshot') {
           sawSnapshotRow = true;
+          // If a terminal-removal timer is pending for this sessionId
+          // (e.g. the previous run completed and we're inside the
+          // retention window), cancel it. A fresh snapshot — typically
+          // delivered after native EventSource reconnect or when the
+          // user restarts a run — must NOT be wiped by a stale prune.
+          const pending = pendingTerminalTimers.get(evt.sessionId);
+          if (pending !== undefined) {
+            clearTimeout(pending);
+            pendingTerminalTimers.delete(evt.sessionId);
+          }
           staging[evt.sessionId] = {
             runId: evt.runId,
             status: evt.status,
@@ -162,6 +172,17 @@ export function useActiveRuns(
           },
         }));
       },
+    });
+
+    // The subscription promise rejects on initial-connect failures
+    // (401/503 before the grace window elapses). Route that through
+    // onError instead of leaking an unhandled rejection to the global
+    // scope — callers expect a single failure surface.
+    subscription?.catch((err: unknown) => {
+      if (controller.signal.aborted) {return;}
+      const surface =
+        err instanceof Event ? err : new Event('error');
+      onErrorRef.current?.(surface);
     });
 
     // If the server has zero active runs on connect it never emits a
