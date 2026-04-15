@@ -21,6 +21,26 @@ import {
 } from './AttachmentUploader';
 
 // ---------------------------------------------------------------------------
+// Errors
+// ---------------------------------------------------------------------------
+
+/**
+ * Thrown by {@link subscribeRunEvents} when the underlying EventSource
+ * emits `onerror` before the first event arrives within the
+ * initial-connect grace window. Distinguishes boundary failures
+ * (401 / 404 / 503) from transient mid-run flaps, which the browser's
+ * native auto-reconnect continues to handle silently.
+ */
+export class RunEventsConnectError extends Error {
+  readonly cause?: Event;
+  constructor(message: string, cause?: Event) {
+    super(message);
+    this.name = 'RunEventsConnectError';
+    this.cause = cause;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -29,6 +49,13 @@ interface Result<T> {
   data?: T
   error?: string
 }
+
+/**
+ * Terminal SSE event names that settle the subscribeRunEvents promise.
+ * Mirrors the backend's pkg/httpdto.StreamEventType terminal set.
+ * Commit D moves this to utils/eventNames.ts alongside a drift-guard.
+ */
+const TERMINAL_STREAM_EVENT_TYPES = ['done', 'cancelled', 'error', 'failed'] as const;
 
 type RPCCaller = <TMethod extends keyof BichatRPC & string>(
   method: TMethod,
@@ -63,6 +90,15 @@ export interface MessageTransportDeps {
  *
  * The resulting id is returned inline in the POST /stream body as
  * `requestId` so the backend's SetNX dedupe can collapse duplicates.
+ *
+ * Backend contract:
+ * - Dedupe window is 30 minutes on SetNX (see SDK stream handler).
+ * - UUID v4 is expected — the backend parses the value as
+ *   `uuid.UUID` via the Go stdlib, so malformed ids are rejected
+ *   at the boundary.
+ * - A double-click or cross-tab retry that sends the same
+ *   `requestId` converges on the same run; the second call returns
+ *   the existing run's `runId` instead of spawning a duplicate.
  */
 function generateRequestId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -398,8 +434,10 @@ export function subscribeRunEvents(
     : url;
 
   return new Promise((resolve, reject) => {
+    const startedAt = Date.now();
     const es = new EventSource(withCursor, { withCredentials: true });
     let settled = false;
+    let sawEvent = false;
 
     const cleanup = () => {
       es.close();
@@ -426,10 +464,15 @@ export function subscribeRunEvents(
     // Listen on every event type we emit server-side. Unknown types
     // fall through to the default handler.
     const forward = (evt: MessageEvent) => {
+      sawEvent = true;
       try {
         const parsed = JSON.parse(evt.data) as StreamChunk;
         options.onChunk(parsed);
-        if (parsed.type === 'done' || parsed.type === 'error') {
+        if (
+          TERMINAL_STREAM_EVENT_TYPES.includes(
+            parsed.type as typeof TERMINAL_STREAM_EVENT_TYPES[number],
+          )
+        ) {
           settle();
         }
       } catch (parseErr) {
@@ -451,9 +494,12 @@ export function subscribeRunEvents(
       'text_block_end',
       'snapshot',
       'interrupt',
+      'citation',
       'usage',
       'done',
+      'cancelled',
       'error',
+      'failed',
       'stream_started',
     ];
     for (const name of eventNames) {
@@ -463,10 +509,23 @@ export function subscribeRunEvents(
 
     es.onerror = (evt) => {
       options.onError?.(evt);
+      // Initial-connect grace: if onerror fires before any event has
+      // arrived AND within 500ms of construction, treat as a boundary
+      // failure (401 / 404 / 503) and settle with a typed error
+      // instead of relying on EventSource's silent auto-reconnect
+      // loop. After the grace expires the reconnect path handles
+      // transient mid-run flaps as before.
+      if (!sawEvent && Date.now() - startedAt < 500) {
+        settle(new RunEventsConnectError(
+          'EventSource failed to connect before first event',
+          evt,
+        ));
+        return;
+      }
       // Don't settle here — EventSource auto-reconnects on transient
       // errors. The server closes the connection with a terminal
-      // `done` / `error` event when the run ends, at which point the
-      // forward() path settles the promise.
+      // `done` / `error` / `cancelled` / `failed` event when the run
+      // ends, at which point the forward() path settles the promise.
     };
   });
 }
