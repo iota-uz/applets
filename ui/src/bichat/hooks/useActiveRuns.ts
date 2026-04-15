@@ -26,6 +26,19 @@ export interface UseActiveRunsOptions {
   enabled?: boolean;
   /** Optional hook for raw SSE errors. */
   onError?: (event: Event) => void;
+  /**
+   * Keep terminal-status entries in the map for this many milliseconds
+   * before pruning them. Default 0 preserves the previous behaviour
+   * (synchronous delete). Useful when consumers want to render a
+   * "completed" pulse animation before the dot disappears.
+   */
+  retainTerminalMs?: number;
+  /**
+   * How long to wait for an initial snapshot batch before declaring
+   * the hook `ready` when the server has zero active runs.
+   * Default 250ms.
+   */
+  emptyStateTimeoutMs?: number;
 }
 
 export interface UseActiveRunsResult {
@@ -53,6 +66,8 @@ export function useActiveRuns(
   onErrorRef.current = options.onError;
 
   const enabled = options.enabled ?? true;
+  const retainTerminalMs = options.retainTerminalMs ?? 0;
+  const emptyStateTimeoutMs = options.emptyStateTimeoutMs ?? 250;
 
   useEffect(() => {
     if (!enabled) {return;}
@@ -66,6 +81,10 @@ export function useActiveRuns(
     let stagingTimer: ReturnType<typeof setTimeout> | undefined;
     const staging: Record<string, ActiveRunSnapshot> = {};
     let sawSnapshotRow = false;
+    // Pending terminal-removal timers keyed by sessionId so unmount
+    // can clear them and repeat terminals for the same session don't
+    // leak timers.
+    const pendingTerminalTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
     const flushSnapshot = () => {
       setRuns((prev) => ({ ...prev, ...staging }));
@@ -89,20 +108,59 @@ export function useActiveRuns(
           }
           return;
         }
-        // update: apply immediately, prune on terminal status.
-        setRuns((prev) => {
-          const next = { ...prev };
-          if (TERMINAL.has(evt.status)) {
-            delete next[evt.sessionId];
-          } else {
-            next[evt.sessionId] = {
+        // update: apply immediately.
+        if (TERMINAL.has(evt.status)) {
+          if (retainTerminalMs <= 0) {
+            // Legacy synchronous delete path.
+            setRuns((prev) => {
+              if (!(evt.sessionId in prev)) {return prev;}
+              const next = { ...prev };
+              delete next[evt.sessionId];
+              return next;
+            });
+            return;
+          }
+          // Retain the entry with its terminal status so the consumer
+          // can render a completion pulse, then prune after the
+          // retention window.
+          setRuns((prev) => ({
+            ...prev,
+            [evt.sessionId]: {
               runId: evt.runId,
               status: evt.status,
               updatedAt: evt.updatedAt,
-            };
-          }
-          return next;
-        });
+            },
+          }));
+          const existing = pendingTerminalTimers.get(evt.sessionId);
+          if (existing !== undefined) {clearTimeout(existing);}
+          const handle = setTimeout(() => {
+            pendingTerminalTimers.delete(evt.sessionId);
+            setRuns((prev) => {
+              if (!(evt.sessionId in prev)) {return prev;}
+              const next = { ...prev };
+              delete next[evt.sessionId];
+              return next;
+            });
+          }, retainTerminalMs);
+          pendingTerminalTimers.set(evt.sessionId, handle);
+          return;
+        }
+        // Non-terminal update: write through and cancel any pending
+        // prune for this session (run restarted before the retention
+        // timer fired).
+        const pending = pendingTerminalTimers.get(evt.sessionId);
+        if (pending !== undefined) {
+          clearTimeout(pending);
+          pendingTerminalTimers.delete(evt.sessionId);
+        }
+        setRuns((prev) => ({
+          ...prev,
+          [evt.sessionId]: {
+            runId: evt.runId,
+            status: evt.status,
+            updatedAt: evt.updatedAt,
+          },
+        }));
       },
     });
 
@@ -111,14 +169,18 @@ export function useActiveRuns(
     // spin forever.
     const readyTimeout = setTimeout(() => {
       if (!sawSnapshotRow) {setReady(true);}
-    }, 250);
+    }, emptyStateTimeoutMs);
 
     return () => {
       controller.abort();
       if (stagingTimer !== undefined) {clearTimeout(stagingTimer);}
       clearTimeout(readyTimeout);
+      for (const handle of pendingTerminalTimers.values()) {
+        clearTimeout(handle);
+      }
+      pendingTerminalTimers.clear();
     };
-  }, [dataSource, enabled]);
+  }, [dataSource, enabled, retainTerminalMs, emptyStateTimeoutMs]);
 
   const status = useCallback(
     (sessionId: string) => runs[sessionId]?.status,

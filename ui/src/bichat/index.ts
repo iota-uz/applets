@@ -277,6 +277,12 @@ export {
   readTextBlockOffsets,
   type AssistantTextBlock,
 } from './utils/textBlocks';
+export {
+  STREAM_EVENT_TYPES,
+  TERMINAL_STREAM_EVENT_TYPES,
+  isTerminalEvent,
+  type StreamEventType,
+} from './utils/eventNames';
 
 // =============================================================================
 // Types

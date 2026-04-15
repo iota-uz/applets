@@ -6,6 +6,7 @@
 
 import type { BichatRPC } from './rpc.generated';
 import type {
+  ActiveRunDelivery,
   Attachment,
   StreamChunk,
   StreamStatus,
@@ -14,6 +15,11 @@ import type {
   AsyncRunAccepted,
 } from '../types';
 import { parseBichatStream } from '../utils/sseParser';
+import {
+  STREAM_EVENT_TYPES,
+  isTerminalEvent,
+} from '../utils/eventNames';
+import { openManagedEventSource } from './openManagedEventSource';
 import {
   ensureAttachmentUpload,
   assertUploadReferences,
@@ -49,13 +55,6 @@ interface Result<T> {
   data?: T
   error?: string
 }
-
-/**
- * Terminal SSE event names that settle the subscribeRunEvents promise.
- * Mirrors the backend's pkg/httpdto.StreamEventType terminal set.
- * Commit D moves this to utils/eventNames.ts alongside a drift-guard.
- */
-const TERMINAL_STREAM_EVENT_TYPES = ['done', 'cancelled', 'error', 'failed'] as const;
 
 type RPCCaller = <TMethod extends keyof BichatRPC & string>(
   method: TMethod,
@@ -433,100 +432,58 @@ export function subscribeRunEvents(
     ? `${url}&${new URLSearchParams({ lastEventId: options.lastEventId }).toString()}`
     : url;
 
-  return new Promise((resolve, reject) => {
-    const startedAt = Date.now();
-    const es = new EventSource(withCursor, { withCredentials: true });
-    let settled = false;
-    let sawEvent = false;
-
-    const cleanup = () => {
-      es.close();
-    };
-    const settle = (err?: Error) => {
-      if (settled) {return;}
-      settled = true;
-      cleanup();
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
-      }
-    };
-
-    if (options.signal) {
-      if (options.signal.aborted) {
-        settle();
-        return;
-      }
-      options.signal.addEventListener('abort', () => settle(), { once: true });
+  // Track whether the caller has already received a terminal chunk —
+  // openManagedEventSource only closes on abort or initial-connect
+  // error, so we drive the settle handshake through AbortController.
+  const settleController = new AbortController();
+  if (options.signal) {
+    if (options.signal.aborted) {
+      settleController.abort();
+    } else {
+      options.signal.addEventListener('abort', () => settleController.abort(), {
+        once: true,
+      });
     }
+  }
 
-    // Listen on every event type we emit server-side. Unknown types
-    // fall through to the default handler.
-    const forward = (evt: MessageEvent) => {
-      sawEvent = true;
-      try {
-        const parsed = JSON.parse(evt.data) as StreamChunk;
-        options.onChunk(parsed);
-        if (
-          TERMINAL_STREAM_EVENT_TYPES.includes(
-            parsed.type as typeof TERMINAL_STREAM_EVENT_TYPES[number],
-          )
-        ) {
-          settle();
-        }
-      } catch (parseErr) {
-        // Malformed payload — surface as an error chunk but don't
-        // tear the stream down; native EventSource will reconnect.
+  return openManagedEventSource({
+    url: withCursor,
+    events: STREAM_EVENT_TYPES,
+    withCredentials: true,
+    signal: settleController.signal,
+    onError: options.onError,
+    onConnectError: (evt) =>
+      new RunEventsConnectError(
+        'EventSource failed to connect before first event',
+        evt,
+      ),
+    onMessage: (name, data) => {
+      if (
+        typeof data === 'object' &&
+        data !== null &&
+        (data as { __unparseable?: boolean }).__unparseable
+      ) {
+        // Surface parse failures as synthetic error chunks but keep
+        // the stream open — native EventSource reconnects on transient
+        // flaps.
         options.onChunk({
           type: 'error',
-          error: `Failed to parse event: ${String(parseErr)}`,
+          error: `Failed to parse event: ${(data as { raw: string }).raw}`,
         });
-      }
-    };
-
-    const eventNames = [
-      'content',
-      'chunk',
-      'thinking',
-      'tool_start',
-      'tool_end',
-      'text_block_end',
-      'snapshot',
-      'interrupt',
-      'citation',
-      'usage',
-      'done',
-      'cancelled',
-      'error',
-      'failed',
-      'stream_started',
-    ];
-    for (const name of eventNames) {
-      es.addEventListener(name, forward as EventListener);
-    }
-    es.onmessage = forward;
-
-    es.onerror = (evt) => {
-      options.onError?.(evt);
-      // Initial-connect grace: if onerror fires before any event has
-      // arrived AND within 500ms of construction, treat as a boundary
-      // failure (401 / 404 / 503) and settle with a typed error
-      // instead of relying on EventSource's silent auto-reconnect
-      // loop. After the grace expires the reconnect path handles
-      // transient mid-run flaps as before.
-      if (!sawEvent && Date.now() - startedAt < 500) {
-        settle(new RunEventsConnectError(
-          'EventSource failed to connect before first event',
-          evt,
-        ));
         return;
       }
-      // Don't settle here — EventSource auto-reconnects on transient
-      // errors. The server closes the connection with a terminal
-      // `done` / `error` / `cancelled` / `failed` event when the run
-      // ends, at which point the forward() path settles the promise.
-    };
+      // Some server payloads omit `type` because it duplicates the SSE
+      // event name; back-fill it so downstream consumers can rely on
+      // StreamChunk.type being populated.
+      const parsed = data as Partial<StreamChunk> & Record<string, unknown>;
+      if (!parsed.type) {
+        parsed.type = name as StreamChunk['type'];
+      }
+      options.onChunk(parsed as StreamChunk);
+      if (isTerminalEvent(name) || isTerminalEvent(String(parsed.type))) {
+        settleController.abort();
+      }
+    },
   });
 }
 
@@ -534,18 +491,8 @@ export function subscribeRunEvents(
 // Active-run sidebar fan-out (per-tenant status SSE)
 // ---------------------------------------------------------------------------
 
-export type ActiveRunSidebarEventType = 'snapshot' | 'update';
-
-export interface ActiveRunSidebarEvent {
-  event: ActiveRunSidebarEventType;
-  sessionId: string;
-  runId: string;
-  status: 'queued' | 'streaming' | 'completed' | 'cancelled' | 'failed';
-  updatedAt: number;
-}
-
 export interface SubscribeActiveRunsOptions {
-  onEvent: (event: ActiveRunSidebarEvent) => void;
+  onEvent: (event: ActiveRunDelivery) => void;
   onError?: (event: Event) => void;
   signal?: AbortSignal;
 }
@@ -558,42 +505,32 @@ export interface SubscribeActiveRunsOptions {
  *
  * Never resolves on its own — the caller should abort via the signal
  * when the component unmounts; the returned promise only settles on
- * signal abort.
+ * signal abort or initial-connect failure.
  */
 export function subscribeActiveRuns(
   deps: StreamEventsDeps,
   options: SubscribeActiveRunsOptions
 ): Promise<void> {
   const url = buildStreamUrl(deps, '/active-runs');
-  return new Promise((resolve) => {
-    const es = new EventSource(url, { withCredentials: true });
-
-    const close = () => {
-      es.close();
-      resolve();
-    };
-
-    if (options.signal) {
-      if (options.signal.aborted) {
-        close();
+  return openManagedEventSource({
+    url,
+    events: ['snapshot', 'update'],
+    withCredentials: true,
+    signal: options.signal,
+    onError: options.onError,
+    onMessage: (name, data) => {
+      if (
+        typeof data !== 'object' ||
+        data === null ||
+        (data as { __unparseable?: boolean }).__unparseable
+      ) {
+        // Server contract guarantees JSON; silently skip malformed
+        // frames rather than surfacing them as fake entries.
         return;
       }
-      options.signal.addEventListener('abort', close, { once: true });
-    }
-
-    const forward = (event: ActiveRunSidebarEventType) =>
-      (msg: MessageEvent) => {
-        try {
-          const body = JSON.parse(msg.data) as Omit<ActiveRunSidebarEvent, 'event'>;
-          options.onEvent({ event, ...body });
-        } catch {
-          // ignore malformed payloads — server contract guarantees JSON
-        }
-      };
-
-    es.addEventListener('snapshot', forward('snapshot') as EventListener);
-    es.addEventListener('update', forward('update') as EventListener);
-    es.onerror = (evt) => options.onError?.(evt);
+      const body = data as Omit<ActiveRunDelivery, 'event'>;
+      options.onEvent({ event: name as ActiveRunDelivery['event'], ...body });
+    },
   });
 }
 
