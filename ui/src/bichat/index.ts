@@ -282,6 +282,7 @@ export {
   TERMINAL_STREAM_EVENT_TYPES,
   isTerminalEvent,
   type StreamEventType,
+  type TerminalStreamEventType,
 } from './utils/eventNames';
 
 // =============================================================================

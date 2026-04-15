@@ -36,17 +36,21 @@ export type StreamEventType = typeof STREAM_EVENT_TYPES[number];
  * client's perspective. Callers should close the EventSource and
  * settle their promise on any of these.
  */
-export const TERMINAL_STREAM_EVENT_TYPES: readonly StreamEventType[] = [
+export const TERMINAL_STREAM_EVENT_TYPES = [
   'done',
   'cancelled',
   'error',
   'failed',
-];
+] as const satisfies readonly StreamEventType[];
+
+export type TerminalStreamEventType = typeof TERMINAL_STREAM_EVENT_TYPES[number];
 
 /**
  * Narrow + type-guard helper. Returns true when `name` is one of the
- * terminal stream event types.
+ * terminal stream event types. The guard narrows precisely to the
+ * terminal subset — callers receiving `true` get {@link TerminalStreamEventType},
+ * not the full {@link StreamEventType} union.
  */
-export function isTerminalEvent(name: string): name is StreamEventType {
-  return TERMINAL_STREAM_EVENT_TYPES.includes(name as StreamEventType);
+export function isTerminalEvent(name: string): name is TerminalStreamEventType {
+  return (TERMINAL_STREAM_EVENT_TYPES as readonly string[]).includes(name);
 }
