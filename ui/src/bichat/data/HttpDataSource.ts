@@ -268,6 +268,47 @@ export class HttpDataSource implements ChatDataSource {
     );
   }
 
+  /**
+   * Open a native EventSource against GET /stream/events for the given
+   * run. Used by components that want browser-native auto-reconnect
+   * with Last-Event-ID (tab close, wifi drop, device switch). Prefer
+   * over resumeStream when tailing an already-running generation that
+   * another tab started.
+   */
+  subscribeRunEvents(
+    sessionId: string,
+    runId: string,
+    options: Messages.SubscribeRunEventsOptions
+  ): Promise<void> {
+    return Messages.subscribeRunEvents(
+      {
+        baseUrl: this.config.baseUrl,
+        streamEndpoint: this.config.streamEndpoint!,
+      },
+      sessionId,
+      runId,
+      options
+    );
+  }
+
+  /**
+   * Subscribe to the per-tenant active-run fan-out
+   * (GET /stream/active-runs). Never resolves until the caller aborts
+   * via the signal; use from a top-level component (sidebar container)
+   * that mounts for the lifetime of the chat app.
+   */
+  subscribeActiveRuns(
+    options: Messages.SubscribeActiveRunsOptions
+  ): Promise<void> {
+    return Messages.subscribeActiveRuns(
+      {
+        baseUrl: this.config.baseUrl,
+        streamEndpoint: this.config.streamEndpoint!,
+      },
+      options
+    );
+  }
+
   async *sendMessage(
     sessionId: string,
     content: string,

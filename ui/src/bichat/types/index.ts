@@ -347,6 +347,7 @@ export type StreamEvent =
   | { type: "usage"; usage: DebugUsage }
   | { type: "user_message"; sessionId: string }
   | { type: "interrupt"; interrupt: StreamInterruptPayload; sessionId?: string }
+  | { type: "text_block_end"; seq: number }
   | { type: "done"; sessionId?: string; generationMs?: number }
   | { type: "error"; error: string };
 
@@ -389,7 +390,8 @@ export interface StreamChunk {
     | "user_message"
     | "interrupt"
     | "snapshot"
-    | "stream_started";
+    | "stream_started"
+    | "text_block_end";
   content?: string;
   error?: string;
   sessionId?: string;
@@ -401,6 +403,28 @@ export interface StreamChunk {
   snapshot?: StreamSnapshotPayload;
   /** Set when type is 'stream_started'; client should store for refresh-safe resume */
   runId?: string;
+  /**
+   * Zero-based ordinal of the assistant text segment that just ended.
+   * Populated only when type === "text_block_end". Used to split the
+   * accumulated assistant content into distinct blocks interleaved with
+   * tool_call UI (text → tool → text → tool → final_text).
+   */
+  textBlockSeq?: number;
+}
+
+/**
+ * Per-tenant active-run status event. Delivered via the
+ * GET /bi-chat/stream/active-runs SSE endpoint. The first batch after
+ * connect carries `event === "snapshot"` for each currently-running
+ * session; subsequent rows carry `event === "update"` as runs
+ * transition (queued → streaming → completed / cancelled / failed).
+ */
+export interface ActiveRunDelivery {
+  event: "snapshot" | "update";
+  sessionId: string;
+  runId: string;
+  status: "queued" | "streaming" | "completed" | "cancelled" | "failed";
+  updatedAt: number;
 }
 
 export interface StreamInterruptPayload {
@@ -526,6 +550,13 @@ export interface SendMessageOptions {
   replaceFromMessageID?: string;
   reasoningEffort?: string;
   model?: string;
+  /**
+   * Client-generated idempotency key. Duplicate sends sharing the same
+   * requestId within the backend's dedupe window (~30 min) converge on
+   * a single server-side run. Omit to disable dedupe for a particular
+   * send; the data source auto-generates one per call otherwise.
+   */
+  requestId?: string;
 }
 
 // ============================================================================
@@ -647,6 +678,36 @@ export interface ChatDataSource {
     onChunk: (chunk: StreamChunk) => void,
     signal?: AbortSignal,
   ): Promise<void>;
+  /**
+   * Tail a run via native EventSource against GET /stream/events. Honours
+   * Last-Event-ID for auto-reconnect on wifi drops / tab sleep. Prefer
+   * over resumeStream when connecting to a run that was started by
+   * another tab (same request_id) or that needs to survive a reload
+   * via cursor-based replay. Optional; data sources that don't
+   * implement it fall back to resumeStream.
+   */
+  subscribeRunEvents?(
+    sessionId: string,
+    runId: string,
+    options: {
+      lastEventId?: string;
+      onChunk: (chunk: StreamChunk) => void;
+      onError?: (event: Event) => void;
+      signal?: AbortSignal;
+    },
+  ): Promise<void>;
+  /**
+   * Subscribe to the per-tenant active-run fan-out
+   * (GET /stream/active-runs). Emits one "snapshot" event per
+   * currently-running session on connect, then live "update" deltas.
+   * Optional; data sources that don't implement it fall back to
+   * per-session polling via getStreamStatus.
+   */
+  subscribeActiveRuns?(options: {
+    onEvent: (event: ActiveRunDelivery) => void;
+    onError?: (event: Event) => void;
+    signal?: AbortSignal;
+  }): Promise<void>;
   // Session management
   listSessions(options?: {
     limit?: number;

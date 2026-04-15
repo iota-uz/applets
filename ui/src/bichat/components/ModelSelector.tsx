@@ -39,7 +39,10 @@ export function ModelSelector() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'm') {
+      const isModifierPressed = e.metaKey || e.ctrlKey;
+      const isShortcutKey = e.code === 'KeyM' || e.key.toLowerCase() === 'm';
+
+      if (isModifierPressed && e.shiftKey && !e.altKey && isShortcutKey) {
         e.preventDefault();
         rotateModel();
       }
