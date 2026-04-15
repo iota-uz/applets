@@ -52,6 +52,35 @@ export interface MessageTransportDeps {
 }
 
 // ---------------------------------------------------------------------------
+// Request-id generation
+// ---------------------------------------------------------------------------
+
+/**
+ * Generate a UUID-ish idempotency key for a single send. Prefers
+ * crypto.randomUUID when available (every evergreen browser + Node
+ * 16.7+); falls back to a Math.random-based v4 string so the feature
+ * still works in constrained WebViews.
+ *
+ * The resulting id is returned inline in the POST /stream body as
+ * `requestId` so the backend's SetNX dedupe can collapse duplicates.
+ */
+function generateRequestId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // RFC 4122 v4 fallback. Not cryptographically strong, but sufficient
+  // for idempotency keys that live < 30 min.
+  const bytes = new Uint8Array(16);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = Math.floor(Math.random() * 256);
+  }
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+// ---------------------------------------------------------------------------
 // Stream sending
 // ---------------------------------------------------------------------------
 
@@ -92,12 +121,19 @@ export async function* sendMessage(
       sessionId,
       attachmentCount: streamAttachments.length,
     });
+    // Idempotency: one request_id per send, client-generated unless
+    // the caller provided a deterministic one (e.g. retry flow). The
+    // backend dedupes duplicates within a ~30 min window so a double
+    // click / tab-level retry converges on the same run. Falls back to
+    // a stable pseudo-id on environments that lack crypto.randomUUID.
+    const requestId = options?.requestId ?? generateRequestId();
     const payload: Record<string, unknown> = {
       sessionId,
       content,
       debugMode: options?.debugMode ?? false,
       replaceFromMessageId: options?.replaceFromMessageID,
       attachments: streamAttachments,
+      requestId,
     };
     if (options?.reasoningEffort) {
       payload.reasoningEffort = options.reasoningEffort;
@@ -307,6 +343,199 @@ export async function resumeStream(
       clearTimeout(timeoutId);
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Cursor-based event tail (Last-Event-ID reconnect)
+// ---------------------------------------------------------------------------
+
+type StreamEventsDeps = Pick<
+  MessageTransportDeps,
+  'baseUrl' | 'streamEndpoint'
+>
+
+export interface SubscribeRunEventsOptions {
+  /** When set, start from the last seen event id instead of a full replay. */
+  lastEventId?: string;
+  /** Fires for every chunk (content / tool / snapshot / done / error / …). */
+  onChunk: (chunk: StreamChunk) => void;
+  /** Optional hook for raw SSE errors (connection blips, parse failures). */
+  onError?: (event: Event) => void;
+  /** AbortSignal closes the underlying EventSource. */
+  signal?: AbortSignal;
+}
+
+/**
+ * Open a native EventSource against GET /stream/events for a run. The
+ * browser handles reconnect + Last-Event-ID automatically on transient
+ * network drops; we forward each SSE event onto onChunk and resolve the
+ * returned promise when a terminal event (done / error) arrives or the
+ * caller aborts.
+ *
+ * Kept separate from sendMessage so the applet can connect to a run
+ * that was started by another tab (shared request_id) or that the
+ * current session already had in flight (tab reopen, device switch).
+ */
+export function subscribeRunEvents(
+  deps: StreamEventsDeps,
+  sessionId: string,
+  runId: string,
+  options: SubscribeRunEventsOptions
+): Promise<void> {
+  const base = buildStreamUrl(deps, '/events');
+  const qs = new URLSearchParams({ sessionId, runId });
+  const url = `${base}?${qs.toString()}`;
+
+  // EventSource ignores custom headers in most browsers, so we leave
+  // auth to the cookie that backs the session. Last-Event-ID is only
+  // honoured by native reconnects — when the caller explicitly
+  // supplies one (first connect after a known cursor) we append it as
+  // a query parameter the server reads as a fallback. Native
+  // reconnect adds the real `Last-Event-ID` header for subsequent
+  // drops.
+  const withCursor = options.lastEventId
+    ? `${url}&${new URLSearchParams({ lastEventId: options.lastEventId }).toString()}`
+    : url;
+
+  return new Promise((resolve, reject) => {
+    const es = new EventSource(withCursor, { withCredentials: true });
+    let settled = false;
+
+    const cleanup = () => {
+      es.close();
+    };
+    const settle = (err?: Error) => {
+      if (settled) {return;}
+      settled = true;
+      cleanup();
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    };
+
+    if (options.signal) {
+      if (options.signal.aborted) {
+        settle();
+        return;
+      }
+      options.signal.addEventListener('abort', () => settle(), { once: true });
+    }
+
+    // Listen on every event type we emit server-side. Unknown types
+    // fall through to the default handler.
+    const forward = (evt: MessageEvent) => {
+      try {
+        const parsed = JSON.parse(evt.data) as StreamChunk;
+        options.onChunk(parsed);
+        if (parsed.type === 'done' || parsed.type === 'error') {
+          settle();
+        }
+      } catch (parseErr) {
+        // Malformed payload — surface as an error chunk but don't
+        // tear the stream down; native EventSource will reconnect.
+        options.onChunk({
+          type: 'error',
+          error: `Failed to parse event: ${String(parseErr)}`,
+        });
+      }
+    };
+
+    const eventNames = [
+      'content',
+      'chunk',
+      'thinking',
+      'tool_start',
+      'tool_end',
+      'text_block_end',
+      'snapshot',
+      'interrupt',
+      'usage',
+      'done',
+      'error',
+      'stream_started',
+    ];
+    for (const name of eventNames) {
+      es.addEventListener(name, forward as EventListener);
+    }
+    es.onmessage = forward;
+
+    es.onerror = (evt) => {
+      options.onError?.(evt);
+      // Don't settle here — EventSource auto-reconnects on transient
+      // errors. The server closes the connection with a terminal
+      // `done` / `error` event when the run ends, at which point the
+      // forward() path settles the promise.
+    };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Active-run sidebar fan-out (per-tenant status SSE)
+// ---------------------------------------------------------------------------
+
+export type ActiveRunSidebarEventType = 'snapshot' | 'update';
+
+export interface ActiveRunSidebarEvent {
+  event: ActiveRunSidebarEventType;
+  sessionId: string;
+  runId: string;
+  status: 'queued' | 'streaming' | 'completed' | 'cancelled' | 'failed';
+  updatedAt: number;
+}
+
+export interface SubscribeActiveRunsOptions {
+  onEvent: (event: ActiveRunSidebarEvent) => void;
+  onError?: (event: Event) => void;
+  signal?: AbortSignal;
+}
+
+/**
+ * Open an EventSource to the per-tenant active-run feed. Emits one
+ * "snapshot" row per currently-running session on connect then live
+ * "update" deltas as runs transition. Used by the chat list to render
+ * a status dot without polling each session.
+ *
+ * Never resolves on its own — the caller should abort via the signal
+ * when the component unmounts; the returned promise only settles on
+ * signal abort.
+ */
+export function subscribeActiveRuns(
+  deps: StreamEventsDeps,
+  options: SubscribeActiveRunsOptions
+): Promise<void> {
+  const url = buildStreamUrl(deps, '/active-runs');
+  return new Promise((resolve) => {
+    const es = new EventSource(url, { withCredentials: true });
+
+    const close = () => {
+      es.close();
+      resolve();
+    };
+
+    if (options.signal) {
+      if (options.signal.aborted) {
+        close();
+        return;
+      }
+      options.signal.addEventListener('abort', close, { once: true });
+    }
+
+    const forward = (event: ActiveRunSidebarEventType) =>
+      (msg: MessageEvent) => {
+        try {
+          const body = JSON.parse(msg.data) as Omit<ActiveRunSidebarEvent, 'event'>;
+          options.onEvent({ event, ...body });
+        } catch {
+          // ignore malformed payloads — server contract guarantees JSON
+        }
+      };
+
+    es.addEventListener('snapshot', forward('snapshot') as EventListener);
+    es.addEventListener('update', forward('update') as EventListener);
+    es.onerror = (evt) => options.onError?.(evt);
+  });
 }
 
 // ---------------------------------------------------------------------------

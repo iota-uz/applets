@@ -92,6 +92,50 @@ describe('MessageTransport stream timeout defaults', () => {
   });
 });
 
+describe('sendMessage request_id idempotency', () => {
+  it('includes an auto-generated requestId in the POST body', async () => {
+    const fetchMock = vi.fn(async () => new Response(
+      createSSEStream([{ type: 'done' }]),
+      { status: 200, headers: { 'Content-Type': 'text/event-stream' } },
+    ));
+    vi.stubGlobal('fetch', fetchMock);
+
+    for await (const _ of sendMessage(createDeps(), 'session-1', 'hello', [])) {
+      // drain stream
+    }
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const firstCall = fetchMock.mock.calls[0] as unknown as [unknown, RequestInit];
+    const body = JSON.parse(firstCall[1].body as string);
+    expect(typeof body.requestId).toBe('string');
+    expect(body.requestId.length).toBeGreaterThan(0);
+  });
+
+  it('preserves a caller-supplied requestId verbatim', async () => {
+    const fetchMock = vi.fn(async () => new Response(
+      createSSEStream([{ type: 'done' }]),
+      { status: 200, headers: { 'Content-Type': 'text/event-stream' } },
+    ));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const explicit = '11111111-2222-4333-8444-555566667777';
+    for await (const _ of sendMessage(
+      createDeps(),
+      'session-1',
+      'hello',
+      [],
+      undefined,
+      { requestId: explicit },
+    )) {
+      // drain
+    }
+
+    const firstCall = fetchMock.mock.calls[0] as unknown as [unknown, RequestInit];
+    const body = JSON.parse(firstCall[1].body as string);
+    expect(body.requestId).toBe(explicit);
+  });
+});
+
 describe('submitQuestionAnswers', () => {
   it('flattens custom text answers for RPC submission', async () => {
     const callRPC = vi.fn(async () => ({

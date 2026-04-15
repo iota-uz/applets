@@ -156,6 +156,12 @@ export * from './primitives';
 
 // Existing hooks
 export { useStreaming } from './hooks/useStreaming';
+export {
+  useActiveRuns,
+  type UseActiveRunsOptions,
+  type UseActiveRunsResult,
+  type ActiveRunSnapshot,
+} from './hooks/useActiveRuns';
 export { useTranslation } from './hooks/useTranslation';
 export { useModalLock } from './hooks/useModalLock';
 export { useFocusTrap } from './hooks/useFocusTrap';
@@ -265,6 +271,11 @@ export { groupSteps } from './utils/activitySteps';
 export * from './utils/fileUtils';
 export { groupSessionsByDate } from './utils/sessionGrouping';
 export { toErrorDisplay, isPermissionDeniedError, type RPCErrorDisplay } from './utils/errorDisplay';
+export {
+  splitIntoTextBlocks,
+  readTextBlockOffsets,
+  type AssistantTextBlock,
+} from './utils/textBlocks';
 
 // =============================================================================
 // Types
@@ -294,6 +305,7 @@ export type {
   // Streaming types
   StreamEvent,
   StreamChunk,
+  ActiveRunDelivery,
   // Split data source interfaces
   SessionStore,
   MessageTransport,
