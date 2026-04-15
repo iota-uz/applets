@@ -156,6 +156,12 @@ export * from './primitives';
 
 // Existing hooks
 export { useStreaming } from './hooks/useStreaming';
+export {
+  useActiveRuns,
+  type UseActiveRunsOptions,
+  type UseActiveRunsResult,
+  type ActiveRunSnapshot,
+} from './hooks/useActiveRuns';
 export { useTranslation } from './hooks/useTranslation';
 export { useModalLock } from './hooks/useModalLock';
 export { useFocusTrap } from './hooks/useFocusTrap';
@@ -242,6 +248,7 @@ export { getCSRFToken, addCSRFHeader, createHeadersWithCSRF } from './api/csrf';
 
 export { HttpDataSource, createHttpDataSource } from './data/HttpDataSource';
 export type { BichatRPC } from './data/rpc.generated';
+export { RunEventsConnectError } from './data/MessageTransport';
 
 // =============================================================================
 // Machine (framework-agnostic state management)
@@ -265,6 +272,18 @@ export { groupSteps } from './utils/activitySteps';
 export * from './utils/fileUtils';
 export { groupSessionsByDate } from './utils/sessionGrouping';
 export { toErrorDisplay, isPermissionDeniedError, type RPCErrorDisplay } from './utils/errorDisplay';
+export {
+  splitIntoTextBlocks,
+  readTextBlockOffsets,
+  type AssistantTextBlock,
+} from './utils/textBlocks';
+export {
+  STREAM_EVENT_TYPES,
+  TERMINAL_STREAM_EVENT_TYPES,
+  isTerminalEvent,
+  type StreamEventType,
+  type TerminalStreamEventType,
+} from './utils/eventNames';
 
 // =============================================================================
 // Types
@@ -294,6 +313,7 @@ export type {
   // Streaming types
   StreamEvent,
   StreamChunk,
+  ActiveRunDelivery,
   // Split data source interfaces
   SessionStore,
   MessageTransport,

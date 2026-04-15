@@ -157,6 +157,10 @@ function toStreamEvent(chunk: StreamChunk): StreamEvent | null {
       return chunk.interrupt
         ? { type: 'interrupt', interrupt: chunk.interrupt, sessionId: chunk.sessionId }
         : null;
+    case 'text_block_end':
+      // seq defaults to 0 so consumers can always key on it even when
+      // the server mints the first block implicitly.
+      return { type: 'text_block_end', seq: chunk.textBlockSeq ?? 0 };
     case 'done':
       return { type: 'done', sessionId: chunk.sessionId, generationMs: chunk.generationMs };
     case 'error':
