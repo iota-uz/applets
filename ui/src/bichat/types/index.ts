@@ -733,7 +733,7 @@ export interface ChatMessagingStateValue {
   showActivityTrace: boolean;
   showTypingIndicator: boolean;
   sendMessage: (content: string, attachments?: Attachment[]) => Promise<void>;
-  handleRegenerate?: (turnId: string) => Promise<void>;
+  handleRegenerate?: (turnId: string, model?: string) => Promise<void>;
   handleEdit?: (turnId: string, newContent: string) => Promise<void>;
   handleCopy: (text: string) => Promise<void>;
   handleSubmitQuestionAnswers: (answers: QuestionAnswers) => void;
