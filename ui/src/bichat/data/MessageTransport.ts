@@ -216,12 +216,20 @@ export async function* sendMessage(
   } catch (err) {
     if (err instanceof Error) {
       if (err.name === 'AbortError') {
-        yield {
-          type: 'error',
-          error: connectionTimedOut
-            ? `Stream request timed out after ${deps.streamConnectTimeoutMs}ms`
-            : 'Stream cancelled',
-        };
+        // A connection timeout is a genuine failure — surface it as an error
+        // chunk. A user-initiated stop or a provider unmount, however, must
+        // stay an AbortError so the machine takes its soft-cancel path (restore
+        // input, no error banner) instead of treating the send as failed and
+        // discarding the turn. Re-throw to preserve the error's identity;
+        // yielding an error chunk here would flatten it into a generic Error.
+        if (connectionTimedOut) {
+          yield {
+            type: 'error',
+            error: `Stream request timed out after ${deps.streamConnectTimeoutMs}ms`,
+          };
+        } else {
+          throw err;
+        }
       } else {
         yield {
           type: 'error',

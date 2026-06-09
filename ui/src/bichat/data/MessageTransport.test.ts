@@ -338,3 +338,66 @@ describe('submitQuestionAnswers', () => {
     });
   });
 });
+
+describe('MessageTransport abort vs timeout classification', () => {
+  it('re-throws an AbortError (user/unmount cancel) instead of yielding an error chunk', async () => {
+    // A user stop / provider unmount aborts the fetch. The generator must let
+    // the AbortError propagate so the machine takes its soft-cancel path; a
+    // yielded error chunk would be re-thrown downstream as a generic Error and
+    // discard the turn (the bug fixed here).
+    const abortError = new Error('The operation was aborted');
+    abortError.name = 'AbortError';
+    const fetchMock = vi.fn(async () => {
+      throw abortError;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const chunks: unknown[] = [];
+    const iterate = (async () => {
+      for await (const chunk of sendMessage(createDeps(), 'session-1', 'hi', [])) {
+        chunks.push(chunk);
+      }
+    })();
+
+    await expect(iterate).rejects.toMatchObject({ name: 'AbortError' });
+    expect(chunks).toEqual([]);
+  });
+
+  it('yields a timeout error chunk when the connection times out', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchMock = vi.fn(
+        (_url: string, init: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init.signal?.addEventListener('abort', () => {
+              const e = new Error('aborted');
+              e.name = 'AbortError';
+              reject(e);
+            });
+          }),
+      );
+      vi.stubGlobal('fetch', fetchMock);
+
+      const chunks: Array<{ type?: string; error?: string }> = [];
+      const iterate = (async () => {
+        for await (const chunk of sendMessage(
+          createDeps({ streamConnectTimeoutMs: 50 }),
+          'session-1',
+          'hi',
+          [],
+        )) {
+          chunks.push(chunk as { type?: string; error?: string });
+        }
+      })();
+
+      await vi.advanceTimersByTimeAsync(60);
+      await iterate;
+
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0]?.type).toBe('error');
+      expect(chunks[0]?.error).toContain('timed out');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

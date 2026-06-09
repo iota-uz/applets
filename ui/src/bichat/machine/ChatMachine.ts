@@ -1279,7 +1279,13 @@ export class ChatMachine {
     });
 
     const normalized = normalizeRPCError(err, "Failed to send message");
-    this._updateInput({ inputError: normalized.userMessage });
+    // Restore the user's prompt to the input so a failed send never silently
+    // loses what they typed (mirrors the abort path above). The error banner
+    // and Retry (lastSendAttempt) remain available for re-sending.
+    this._updateInput({
+      message: content,
+      inputError: normalized.userMessage,
+    });
     this._updateMessaging({
       streamError: normalized.userMessage,
       streamErrorRetryable: normalized.retryable,
