@@ -8,8 +8,15 @@
  * For more customization, use the AssistantMessage component directly with slots.
  */
 
+import { useMemo } from 'react';
 import { useChatSession, useChatMessaging } from '../context/ChatContext';
-import { AssistantMessage, type AssistantMessageSlots, type AssistantMessageClassNames } from './AssistantMessage';
+import { useIotaContext } from '../context/IotaContext';
+import {
+  AssistantMessage,
+  type AssistantMessageSlots,
+  type AssistantMessageClassNames,
+  type RegenerateModelOption,
+} from './AssistantMessage';
 import { SystemMessage } from './SystemMessage';
 import type { ConversationTurn } from '../types';
 
@@ -47,6 +54,12 @@ export function AssistantTurnView({
 }: AssistantTurnViewProps) {
   const { debugMode } = useChatSession();
   const { handleCopy, handleRegenerate, pendingQuestion, sendMessage, loading } = useChatMessaging();
+  const iotaContext = useIotaContext();
+  const regenerateModels = useMemo<RegenerateModelOption[] | undefined>(() => {
+    const models = iotaContext.extensions?.llm?.models;
+    if (!models || models.length < 2) {return undefined;}
+    return models.map((m) => ({ id: m.id, label: m.label }));
+  }, [iotaContext.extensions?.llm?.models]);
 
   const assistantTurn = turn.assistantTurn;
   if (!assistantTurn) {return null;}
@@ -74,6 +87,7 @@ export function AssistantTurnView({
       classNames={classNames}
       onCopy={handleCopy}
       onRegenerate={allowRegenerate ? handleRegenerate : undefined}
+      regenerateModels={allowRegenerate ? regenerateModels : undefined}
       onSendMessage={sendMessage}
       sendDisabled={loading || isStreaming}
       hideAvatar={hideAvatar}

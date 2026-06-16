@@ -162,7 +162,7 @@ export class ChatMachine {
     content: string,
     attachments?: Attachment[],
   ) => Promise<void>;
-  readonly handleRegenerate: (turnId: string) => Promise<void>;
+  readonly handleRegenerate: (turnId: string, model?: string) => Promise<void>;
   readonly handleEdit: (turnId: string, newContent: string) => Promise<void>;
   readonly handleCopy: (text: string) => Promise<void>;
   readonly handleSubmitQuestionAnswers: (answers: QuestionAnswers) => void;
@@ -1576,7 +1576,10 @@ export class ChatMachine {
 
   // ── Regenerate / Edit ───────────────────────────────────────────────────
 
-  private async _handleRegenerate(turnId: string): Promise<void> {
+  private async _handleRegenerate(
+    turnId: string,
+    model?: string,
+  ): Promise<void> {
     const curSessionId = this.state.session.currentSessionId;
     if (!curSessionId || curSessionId === "new") {
       return;
@@ -1585,6 +1588,10 @@ export class ChatMachine {
     const turn = this.state.messaging.turns.find((t) => t.id === turnId);
     if (!turn) {
       return;
+    }
+
+    if (model && model !== this.state.session.model) {
+      this._setModel(model);
     }
 
     this._updateSession({ error: null, errorRetryable: false });

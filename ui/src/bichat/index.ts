@@ -140,6 +140,7 @@ export {
   type AssistantMessageArtifactsSlotProps,
   type AssistantMessageActionsSlotProps,
   type AssistantMessageExplanationSlotProps,
+  type RegenerateModelOption,
 } from './components/AssistantMessage';
 
 // =============================================================================
