@@ -1,6 +1,24 @@
 import { useEffect, RefObject } from 'react';
 
 /**
+ * Resolve the element that actually holds focus, piercing shadow boundaries.
+ *
+ * Inside a shadow tree `document.activeElement` collapses to the shadow *host*
+ * (the custom element), so it never equals an inner control. Reading
+ * `activeElement` from the container's own root — and then descending through
+ * any nested shadow roots — yields the real focused element. Without this the
+ * Tab wrap-around comparisons below never match when BiChat is embedded in its
+ * shadow-DOM host, silently disabling the trap.
+ */
+function deepActiveElement(root: DocumentOrShadowRoot): HTMLElement | null {
+  let active = root.activeElement;
+  while (active?.shadowRoot?.activeElement) {
+    active = active.shadowRoot.activeElement;
+  }
+  return active instanceof HTMLElement ? active : null;
+}
+
+/**
  * Hook to trap focus within a container (for modals, sidebars)
  * Ensures Tab and Shift+Tab cycle through focusable elements only
  *
@@ -21,7 +39,8 @@ export function useFocusTrap(
     if (!isActive || !containerRef.current) {return;}
 
     const container = containerRef.current;
-    const previouslyFocused = document.activeElement as HTMLElement;
+    const root = container.getRootNode() as unknown as DocumentOrShadowRoot;
+    const previouslyFocused = deepActiveElement(root);
 
     // Get all focusable elements
     const getFocusableElements = (): HTMLElement[] => {
@@ -37,11 +56,15 @@ export function useFocusTrap(
       return Array.from(container.querySelectorAll(selector)) as HTMLElement[];
     };
 
-    // Focus first element on activation
+    // Move focus inside on activation. Honour an explicit [data-autofocus]
+    // target (e.g. a confirm/cancel button) and otherwise fall back to the
+    // first focusable. Captured previouslyFocused above first, so focus can be
+    // restored to the trigger on deactivate.
     const focusableElements = getFocusableElements();
-    if (focusableElements.length > 0) {
-      focusableElements[0].focus();
-    }
+    const initialTarget =
+      container.querySelector<HTMLElement>('[data-autofocus]') ??
+      focusableElements[0];
+    initialTarget?.focus();
 
     // Handle Tab key to cycle focus
     const handleTabKey = (e: KeyboardEvent) => {
@@ -52,16 +75,17 @@ export function useFocusTrap(
 
       const firstElement = focusableElements[0];
       const lastElement = focusableElements[focusableElements.length - 1];
+      const active = deepActiveElement(root);
 
       if (e.shiftKey) {
         // Shift+Tab: cycle backwards
-        if (document.activeElement === firstElement) {
+        if (active === firstElement) {
           e.preventDefault();
           lastElement.focus();
         }
       } else {
         // Tab: cycle forwards
-        if (document.activeElement === lastElement) {
+        if (active === lastElement) {
           e.preventDefault();
           firstElement.focus();
         }
@@ -77,7 +101,7 @@ export function useFocusTrap(
       // Restore focus to previously focused element or custom element
       if (restoreFocusOnDeactivate) {
         restoreFocusOnDeactivate.focus();
-      } else if (previouslyFocused instanceof HTMLElement) {
+      } else if (previouslyFocused) {
         previouslyFocused.focus();
       }
     };

@@ -8,6 +8,8 @@
 
 import { useEffect, useRef } from 'react';
 import { X } from '@phosphor-icons/react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
+import { useModalLock } from '../hooks/useModalLock';
 
 interface FullscreenOverlayProps {
   title: string
@@ -21,6 +23,11 @@ export function FullscreenOverlay({ title, onClose, closeLabel, children }: Full
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
+  // Lock background scroll + trap focus inside the panel (and restore it to the
+  // trigger on close). Mounted == open for this overlay, so both stay active.
+  useModalLock(true);
+  useFocusTrap(panelRef, true);
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -29,7 +36,6 @@ export function FullscreenOverlay({ title, onClose, closeLabel, children }: Full
       }
     };
     document.addEventListener('keydown', onKeyDown);
-    panelRef.current?.focus();
     return () => document.removeEventListener('keydown', onKeyDown);
   }, []);
 

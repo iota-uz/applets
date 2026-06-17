@@ -15,6 +15,8 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
+import { useModalLock } from '../hooks/useModalLock';
 
 // ---------------------------------------------------------------------------
 // Context — passes onClose from InlineDialog to descendants
@@ -33,60 +35,32 @@ interface InlineDialogProps {
   children: ReactNode
 }
 
-const FOCUSABLE_SELECTOR =
-  'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
-
 export function InlineDialog({ open, onClose, className, children }: InlineDialogProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
 
+  // Lock background scroll + trap/restore focus. useFocusTrap resolves the
+  // focused element across the shadow boundary (document.activeElement collapses
+  // to the host here), so the trap actually holds inside BiChat's shadow DOM.
+  useModalLock(open);
+  useFocusTrap(containerRef, open);
+
+  // Escape closes the dialog. Listening on the container keeps it scoped to this
+  // dialog (focus is trapped inside) and avoids global key collisions.
   useEffect(() => {
     if (!open) {
       return;
     }
-    previousFocusRef.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const container = containerRef.current;
     if (!container) {
       return;
     }
-
-    const getFocusable = (): HTMLElement[] =>
-      Array.from(
-        container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-      );
-
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
-        return;
-      }
-      if (e.key !== 'Tab') {
-        return;
-      }
-      const focusable = getFocusable();
-      if (focusable.length === 0) {
-        e.preventDefault();
-        container.focus();
-        return;
-      }
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
       }
     };
-
-    (getFocusable()[0] ?? container)?.focus();
     container.addEventListener('keydown', handler as EventListener);
-    return () => {
-      container.removeEventListener('keydown', handler as EventListener);
-      previousFocusRef.current?.focus();
-    };
+    return () => container.removeEventListener('keydown', handler as EventListener);
   }, [open, onClose]);
 
   if (!open) {
@@ -125,23 +99,11 @@ export function InlineDialogPanel({
   onClick,
   ...rest
 }: HTMLAttributes<HTMLDivElement>) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!ref.current) {
-      return;
-    }
-    const target =
-      ref.current.querySelector<HTMLElement>('[data-autofocus]') ??
-      ref.current.querySelector<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-      );
-    target?.focus();
-  }, []);
-
+  // Initial focus (including [data-autofocus]) is owned by InlineDialog's
+  // useFocusTrap, so the panel no longer self-focuses — that previously stole
+  // focus before the trap could record the trigger to restore to on close.
   return (
     <div
-      ref={ref}
       role="dialog"
       aria-modal="true"
       onClick={(e) => {
