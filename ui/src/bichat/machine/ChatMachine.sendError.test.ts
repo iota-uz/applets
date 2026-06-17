@@ -88,11 +88,12 @@ describe('ChatMachine send error handling', () => {
     installWindowWithSessionStorage();
   });
 
-  it('restores the typed prompt and shows a banner on a genuine stream error', async () => {
+  it('keeps the user turn in history and shows a retryable banner on a genuine stream error', async () => {
     // The answer streams partially, then a terminal error arrives. The send
-    // must fail non-destructively: the optimistic turn is removed, the user's
-    // prompt is returned to the input (never silently lost), and a retryable
-    // banner is shown.
+    // must fail non-destructively: the optimistic user turn STAYS in history
+    // (so the conversation view persists and a new chat never collapses back to
+    // the welcome screen), a retryable banner is shown, and the prompt lives in
+    // the turn — so the input is cleared rather than re-populated.
     const dataSource = makeDataSource(async function* () {
       yield { type: 'content', content: 'Partial answer' } as StreamChunk;
       yield { type: 'error', error: 'boom' } as StreamChunk;
@@ -104,9 +105,38 @@ describe('ChatMachine send error handling', () => {
 
     const input = machine.getInputSnapshot();
     const messaging = machine.getMessagingSnapshot();
-    expect(input.message).toBe('Hello world');
+    expect(input.message).toBe('');
     expect(messaging.streamError).toBeTruthy();
-    expect(messaging.turns).toHaveLength(0);
+    expect(messaging.streamErrorRetryable).toBe(true);
+    expect(messaging.turns).toHaveLength(1);
+    expect(messaging.turns[0].userTurn.content).toBe('Hello world');
+  });
+
+  it('keeps the turn on a brand-new chat error and retries by replacing it (no duplicate)', async () => {
+    // Regression: a brand-new chat (no session yet) whose first message errors
+    // must not reset to the welcome screen. The turn is kept, and Retry replaces
+    // it via replaceFromMessageID instead of appending a second copy.
+    let sends = 0;
+    const dataSource = makeDataSource(async function* () {
+      sends++;
+      yield { type: 'content', content: 'Partial' } as StreamChunk;
+      yield { type: 'error', error: 'boom' } as StreamChunk;
+    });
+    const machine = new ChatMachine({ dataSource, rateLimiter });
+    machine.setSessionId('new');
+
+    await machine.sendMessage('Hello world');
+
+    let messaging = machine.getMessagingSnapshot();
+    expect(messaging.turns).toHaveLength(1);
+    expect(messaging.turns[0].userTurn.content).toBe('Hello world');
+
+    await machine.retryLastMessage();
+
+    messaging = machine.getMessagingSnapshot();
+    expect(sends).toBe(2);
+    expect(messaging.turns).toHaveLength(1);
+    expect(messaging.turns[0].userTurn.content).toBe('Hello world');
   });
 
   it('restores the prompt without an error banner when the stream is aborted', async () => {
