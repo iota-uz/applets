@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
+// Shadow-DOM-safe dialog: Headless UI Dialog portals to document.body, escaping
+// the shadow root and dropping all scoped Tailwind. InlineDialog stays inline.
+import { InlineDialog, InlineDialogBackdrop, InlineDialogPanel } from './InlineDialog';
 import { FloppyDisk, PencilSimple, Trash, X } from '@phosphor-icons/react';
 import type { SessionArtifact } from '../types';
 import { useTranslation } from '../hooks/useTranslation';
@@ -95,12 +97,12 @@ export function SessionArtifactPreviewModal({
   }
 
   return (
-    <Dialog open={isOpen} onClose={handleClose} className="relative z-50">
-      <DialogBackdrop className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
+    <InlineDialog open={isOpen} onClose={handleClose} className="relative z-50">
+      <InlineDialogBackdrop className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
 
       <div className="fixed inset-0 overflow-y-auto p-4 lg:p-6">
         <div className="mx-auto flex min-h-full w-full max-w-6xl items-center justify-center">
-          <DialogPanel className="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900">
+          <InlineDialogPanel className="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900">
             <div className="flex items-start justify-between gap-3 border-b border-gray-200 px-4 py-3 dark:border-gray-700">
               <div className="min-w-0 flex-1">
                 {isEditingName ? (
@@ -207,9 +209,9 @@ export function SessionArtifactPreviewModal({
               )}
               <SessionArtifactPreview artifact={artifact} />
             </div>
-          </DialogPanel>
+          </InlineDialogPanel>
         </div>
       </div>
-    </Dialog>
+    </InlineDialog>
   );
 }
