@@ -403,7 +403,13 @@ function ChatSessionCore({
 
       <div
         ref={layoutContainerRef}
-        className="relative flex min-h-0 flex-1 overflow-hidden"
+        // overflow-clip (not overflow-hidden): an overflow-hidden box is still a
+        // scroll container, so focusing a control near the bottom (e.g. a radio
+        // in the inline question form) lets the browser scroll this box to
+        // reveal it — and with no scrollbar the chat is shoved off-screen with
+        // no way back (blank until refresh). overflow-clip clips without
+        // creating a scroll container, so it cannot be scrolled on focus.
+        className="relative flex min-h-0 flex-1 overflow-clip"
       >
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           {showWelcome ? (

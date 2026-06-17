@@ -1254,14 +1254,16 @@ export class ChatMachine {
   private _handleSendError(
     err: unknown,
     content: string,
-    tempTurnId: string,
+    tempTurn: ConversationTurn,
   ): boolean {
     if (err instanceof Error && err.name === "AbortError") {
+      // Soft-cancel (user stop / unmount): drop the optimistic turn and return
+      // the prompt to the input so they can edit and resend.
       this._updateInput({ message: content });
       this._clearStreamError();
       this._updateMessaging({
         turns: this.state.messaging.turns.filter(
-          (turn) => turn.id !== tempTurnId,
+          (turn) => turn.id !== tempTurn.id,
         ),
       });
       const sessionId =
@@ -1272,20 +1274,24 @@ export class ChatMachine {
       return false;
     }
 
-    this._updateMessaging({
-      turns: this.state.messaging.turns.filter(
-        (turn) => turn.id !== tempTurnId,
-      ),
-    });
-
     const normalized = normalizeRPCError(err, "Failed to send message");
-    // Restore the user's prompt to the input so a failed send never silently
-    // loses what they typed (mirrors the abort path above). The error banner
-    // and Retry (lastSendAttempt) remain available for re-sending.
-    this._updateInput({
-      message: content,
-      inputError: normalized.userMessage,
-    });
+    // Genuine error: KEEP the optimistic user turn in history. Removing it would
+    // collapse a brand-new chat back to the welcome screen (showWelcome is gated
+    // on `!session && turns.length === 0`) and silently drop the message the user
+    // just sent. Instead the turn stays, the error banner + Retry let them
+    // re-send, and Retry replaces this turn (via replaceFromMessageID) rather
+    // than appending a duplicate. The prompt lives in the turn, so the input is
+    // cleared.
+    if (this.lastSendAttempt) {
+      this.lastSendAttempt = {
+        ...this.lastSendAttempt,
+        options: {
+          ...this.lastSendAttempt.options,
+          replaceFromMessageID: tempTurn.userTurn.id,
+        },
+      };
+    }
+    this._updateInput({ message: "", inputError: null });
     this._updateMessaging({
       streamError: normalized.userMessage,
       streamErrorRetryable: normalized.retryable,
@@ -1429,7 +1435,7 @@ export class ChatMachine {
         this._finalizeSuccessfulSend(targetSessionId, shouldNavigateAfter);
       }
     } catch (err) {
-      shouldDrainQueue = this._handleSendError(err, content, tempTurn.id);
+      shouldDrainQueue = this._handleSendError(err, content, tempTurn);
     } finally {
       this._updateMessaging({
         loading: false,

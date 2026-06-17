@@ -1,11 +1,12 @@
 /**
  * ImageModal Component
  * Full-screen image viewer with gallery navigation, zoom, and pan.
- * Uses @headlessui/react Dialog for accessible modal behavior.
+ * Uses the shadow-DOM-safe InlineDialog (NOT Headless UI Dialog, which portals
+ * to document.body, escapes the shadow root, and loses all scoped Tailwind).
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
+import { InlineDialog, InlineDialogBackdrop, InlineDialogPanel } from './InlineDialog';
 import {
   X,
   CaretLeft,
@@ -285,13 +286,13 @@ function ImageModal({
   const zoomPercent = Math.round(scale * 100);
 
   return (
-    <Dialog open={isOpen} onClose={onClose} className="relative" style={{ zIndex: 99999 }}>
-      <DialogBackdrop
+    <InlineDialog open={isOpen} onClose={onClose} className="relative z-[99999]">
+      <InlineDialogBackdrop
         className="fixed inset-0 bg-black/90 backdrop-blur-sm"
         style={{ zIndex: 99999 }}
       />
 
-      <DialogPanel
+      <InlineDialogPanel
         className="fixed inset-0 flex flex-col"
         style={{ zIndex: 100000 }}
         onMouseMove={handleMouseMove}
@@ -439,8 +440,8 @@ function ImageModal({
             />
           )}
         </div>
-      </DialogPanel>
-    </Dialog>
+      </InlineDialogPanel>
+    </InlineDialog>
   );
 }
 
