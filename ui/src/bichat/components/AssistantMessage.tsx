@@ -18,6 +18,8 @@ import {
   Copy,
   ArrowsClockwise,
   CaretRight,
+  Lightning,
+  Brain,
 } from "@phosphor-icons/react";
 import { formatRelativeTime } from "../utils/dateFormatting";
 import CodeOutputsPanel from "./CodeOutputsPanel";
@@ -95,14 +97,23 @@ export interface AssistantMessageArtifactsSlotProps {
 export interface AssistantMessageActionsSlotProps {
   /** Copy content to clipboard */
   onCopy: () => void;
-  /** Regenerate response */
-  onRegenerate?: () => void;
+  /** Regenerate response, optionally with a specific model id */
+  onRegenerate?: (model?: string) => void;
+  /** Available models that can be picked for regenerate */
+  regenerateModels?: RegenerateModelOption[];
   /** Formatted timestamp */
   timestamp: string;
   /** Whether copy action is available */
   canCopy: boolean;
   /** Whether regenerate action is available */
   canRegenerate: boolean;
+}
+
+export interface RegenerateModelOption {
+  /** Model id passed to onRegenerate */
+  id: string;
+  /** Translation key (or label) shown in the picker */
+  label: string;
 }
 
 export interface AssistantMessageExplanationSlotProps {
@@ -197,8 +208,13 @@ export interface AssistantMessageProps {
   classNames?: AssistantMessageClassNames;
   /** Copy handler */
   onCopy?: (content: string) => Promise<void> | void;
-  /** Regenerate handler */
-  onRegenerate?: (turnId: string) => Promise<void> | void;
+  /** Regenerate handler. The optional `model` argument is the id chosen from the
+   *  Fast/Deep picker; when omitted the current session model is used. */
+  onRegenerate?: (turnId: string, model?: string) => Promise<void> | void;
+  /** Models offered when the user clicks the regenerate button. When two or more
+   *  options are provided a Fast/Deep picker is shown; otherwise regenerate is
+   *  triggered immediately with the active model. */
+  regenerateModels?: RegenerateModelOption[];
   /** Send message handler (for markdown links) */
   onSendMessage?: (content: string) => void;
   /** Whether sending is disabled */
@@ -241,8 +257,7 @@ const defaultClassNames: Required<AssistantMessageClassNames> = {
   artifacts: "mb-1 flex flex-wrap gap-2",
   sources: "",
   explanation: "mt-4 border-t border-gray-100 dark:border-gray-700 pt-4",
-  actions:
-    "flex items-center gap-1 transition-opacity duration-150 group-focus-within:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100",
+  actions: "flex items-center gap-1",
   actionButton:
     "cursor-pointer p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 rounded-md transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50",
   timestamp: "text-xs text-gray-400 dark:text-gray-500 mr-1",
@@ -286,6 +301,7 @@ export function AssistantMessage({
   classNames: classNameOverrides,
   onCopy,
   onRegenerate,
+  regenerateModels,
   onSendMessage,
   sendDisabled = false,
   hideAvatar = false,
@@ -296,6 +312,8 @@ export function AssistantMessage({
   const { t } = useTranslation();
   const [explanationExpanded, setExplanationExpanded] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [showRegenPicker, setShowRegenPicker] = useState(false);
+  const regenPickerRef = useRef<HTMLDivElement | null>(null);
   const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -392,11 +410,62 @@ export function AssistantMessage({
     }
   }, [onCopy, turn.content]);
 
+  const hasRegenChoices = (regenerateModels?.length ?? 0) >= 2;
+
   const handleRegenerateClick = useCallback(async () => {
-    if (onRegenerate && turnId) {
-      await onRegenerate(turnId);
+    if (!onRegenerate || !turnId) {
+      return;
     }
-  }, [onRegenerate, turnId]);
+    if (hasRegenChoices) {
+      setShowRegenPicker((prev) => !prev);
+      return;
+    }
+    await onRegenerate(turnId);
+  }, [onRegenerate, turnId, hasRegenChoices]);
+
+  const handleRegenerateWithModel = useCallback(
+    async (modelId: string) => {
+      setShowRegenPicker(false);
+      if (onRegenerate && turnId) {
+        await onRegenerate(turnId, modelId);
+      }
+    },
+    [onRegenerate, turnId],
+  );
+
+  // Close picker on outside click / Escape.
+  useEffect(() => {
+    if (!showRegenPicker) {
+      return;
+    }
+    const handlePointer = (e: MouseEvent | TouchEvent) => {
+      const root = regenPickerRef.current;
+      if (!root) {return;}
+      // Use composedPath so the check works across shadow DOM boundaries
+      // (BiChat is hosted inside a shadow root; e.target gets retargeted to
+      // the shadow host and `root.contains(target)` is always false).
+      const path =
+        typeof e.composedPath === "function" ? e.composedPath() : [];
+      const insideViaPath = path.includes(root);
+      const insideViaContains = root.contains(e.target as Node);
+      if (!insideViaPath && !insideViaContains) {
+        setShowRegenPicker(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setShowRegenPicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handlePointer);
+    document.addEventListener("touchstart", handlePointer);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handlePointer);
+      document.removeEventListener("touchstart", handlePointer);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [showRegenPicker]);
 
   const timestamp = formatRelativeTime(turn.createdAt, t);
 
@@ -426,7 +495,19 @@ export function AssistantMessage({
   };
   const actionsSlotProps: AssistantMessageActionsSlotProps = {
     onCopy: handleCopyClick,
-    onRegenerate: canRegenerate ? handleRegenerateClick : undefined,
+    onRegenerate: canRegenerate
+      ? (model) => {
+          if (!onRegenerate || !turnId) {
+            return;
+          }
+          if (model) {
+            void handleRegenerateWithModel(model);
+          } else {
+            void handleRegenerateClick();
+          }
+        }
+      : undefined,
+    regenerateModels,
     timestamp,
     canCopy: hasContent,
     canRegenerate,
@@ -707,14 +788,57 @@ export function AssistantMessage({
                 </button>
 
                 {canRegenerate && (
-                  <button
-                    onClick={handleRegenerateClick}
-                    className={`cursor-pointer ${classes.actionButton}`}
-                    aria-label={t("BiChat.Message.Regenerate")}
-                    title={t("BiChat.Message.Regenerate")}
-                  >
-                    <ArrowsClockwise size={14} weight="regular" />
-                  </button>
+                  <div ref={regenPickerRef} className="relative inline-flex">
+                    <button
+                      onClick={handleRegenerateClick}
+                      className={`cursor-pointer ${classes.actionButton} ${
+                        showRegenPicker
+                          ? "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200"
+                          : ""
+                      }`}
+                      aria-label={t("BiChat.Message.Regenerate")}
+                      title={t("BiChat.Message.Regenerate")}
+                      aria-haspopup={hasRegenChoices ? "menu" : undefined}
+                      aria-expanded={
+                        hasRegenChoices ? showRegenPicker : undefined
+                      }
+                    >
+                      <ArrowsClockwise size={14} weight="regular" />
+                    </button>
+                    {hasRegenChoices && showRegenPicker && (
+                      <div
+                        role="menu"
+                        aria-label={t("BiChat.Message.Regenerate")}
+                        className="animate-slide-up absolute left-0 top-full z-20 mt-1 flex flex-col gap-0.5 rounded-lg border border-gray-200 bg-white p-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                      >
+                        {regenerateModels!.map((m, i) => {
+                          const isFast = i === 0;
+                          const Icon = isFast ? Lightning : Brain;
+                          const accent = isFast
+                            ? "text-amber-600 dark:text-amber-400"
+                            : "text-blue-600 dark:text-blue-400";
+                          return (
+                            <button
+                              key={m.id}
+                              role="menuitem"
+                              type="button"
+                              onClick={() => {
+                                void handleRegenerateWithModel(m.id);
+                              }}
+                              className="flex items-center gap-2 whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs font-medium text-gray-700 transition-colors duration-150 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+                            >
+                              <Icon
+                                size={14}
+                                weight="fill"
+                                className={accent}
+                              />
+                              <span>{t(m.label)}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 )}
               </>,
             )}
