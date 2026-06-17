@@ -130,6 +130,14 @@ export class ChatMachine {
   private lastSendAttempt: LastSendAttempt | null = null;
   /** Prevents fetchSession effect from clobbering state while stream is active. */
   private sendingSessionId: string | null = null;
+  /**
+   * Monotonic counter bumped on every real session switch. An async op (send
+   * stream, post-stream sync, queue drain, resume, HITL) captures it at start
+   * and re-checks before writing to the single shared `state.messaging`; a stale
+   * epoch means the user navigated to a different session, so the write is
+   * dropped instead of bleeding into / clobbering the now-visible session.
+   */
+  private viewEpoch = 0;
   private fetchCancelled = false;
   private disposed = false;
   private reasoningEffortOptions: string[] | null = null;
@@ -305,6 +313,29 @@ export class ChatMachine {
       return;
     }
 
+    // A different session is being shown. Invalidate any in-flight send/stream
+    // for the previous session so its chunks, post-stream sync, and queue drain
+    // can't write into this new view, and cancel the network stream + old poll.
+    this.viewEpoch++;
+    this.abortController?.abort();
+    this.sendingSessionId = null;
+    this._stopPassivePolling();
+
+    // Clear the previous session's transient streaming state so it doesn't bleed
+    // into the new view. Persisted turns/pendingQuestion are loaded by the fetch
+    // below; a background run for the new session is re-detected by its status
+    // check and re-sets these as needed.
+    this._updateMessaging({
+      streamingContent: "",
+      thinkingContent: "",
+      activeSteps: [],
+      isStreaming: false,
+      loading: false,
+      generationInProgress: false,
+      streamError: null,
+      streamErrorRetryable: false,
+    });
+
     this.state.session.currentSessionId = id;
     this._hydrateDebugModeForSession(id);
     this._notifySession();
@@ -472,6 +503,57 @@ export class ChatMachine {
       return;
     }
     saveQueue(sid, this.state.input.messageQueue);
+  }
+
+  /**
+   * True while `epoch` is still the active view — i.e. the machine has not been
+   * disposed and no session switch has happened since `epoch` was captured.
+   * Async ops gate their writes to the shared messaging state on this.
+   */
+  private _isCurrentEpoch(epoch: number): boolean {
+    return !this.disposed && this.viewEpoch === epoch;
+  }
+
+  /** A send can't start while generating, mid-resume, or with an open question. */
+  private _isBlockedForSend(): boolean {
+    return (
+      this.state.messaging.loading ||
+      this.state.messaging.generationInProgress ||
+      isOpenQuestionStatus(this.state.messaging.pendingQuestion?.status)
+    );
+  }
+
+  /**
+   * Send the next queued message, but only if we still own the view (`epoch`)
+   * and nothing is blocking (an in-flight generation or an open question). The
+   * item is dequeued optimistically and restored to the front if it turns out we
+   * can't send when the deferred tick fires — so a queued message is never
+   * silently dropped.
+   */
+  private _drainQueueIfReady(epoch: number): void {
+    if (!this._isCurrentEpoch(epoch)) {
+      return;
+    }
+    const queue = this.state.input.messageQueue;
+    if (queue.length === 0 || this._isBlockedForSend()) {
+      return;
+    }
+    const next = queue[0];
+    this._updateInput({ messageQueue: queue.slice(1) });
+    // Defer to avoid a reentrant send within the current call stack.
+    setTimeout(() => {
+      if (!this._isCurrentEpoch(epoch)) {
+        return;
+      }
+      if (this._isBlockedForSend()) {
+        // Became blocked between dequeue and now — put it back, don't drop it.
+        this._updateInput({
+          messageQueue: [next, ...this.state.input.messageQueue],
+        });
+        return;
+      }
+      this._sendMessageCore(next.content, next.attachments);
+    }, 0);
   }
 
   private _setDebugModeForSession(sessionId: string, enabled: boolean): void {
@@ -733,7 +815,9 @@ export class ChatMachine {
       return;
     }
     this.sendingSessionId = sessionId;
-    this.abortController = new AbortController();
+    const controller = new AbortController();
+    this.abortController = controller;
+    const epoch = this.viewEpoch;
     this._updateMessaging({ isStreaming: true });
 
     try {
@@ -742,6 +826,10 @@ export class ChatMachine {
         sessionId,
         runId,
         (chunk) => {
+          // Stop writing resumed chunks into the view if the user navigated away.
+          if (!this._isCurrentEpoch(epoch)) {
+            return;
+          }
           if (
             chunk.type === "snapshot" &&
             chunk.snapshot?.partialContent !== undefined
@@ -764,21 +852,25 @@ export class ChatMachine {
             // will sync below
           }
         },
-        this.abortController.signal,
+        controller.signal,
       );
       clearRunMarker(sessionId);
-      await this._syncSessionFromServer(sessionId, true);
+      await this._syncSessionFromServer(sessionId, true, epoch);
     } finally {
-      this.sendingSessionId = null;
-      this.abortController = null;
-      this._updateMessaging({
-        isStreaming: false,
-        loading: false,
-        streamingContent: "",
-        thinkingContent: "",
-        activeSteps: [],
-        generationInProgress: false,
-      });
+      if (this.abortController === controller) {
+        this.abortController = null;
+      }
+      if (this._isCurrentEpoch(epoch)) {
+        this.sendingSessionId = null;
+        this._updateMessaging({
+          isStreaming: false,
+          loading: false,
+          streamingContent: "",
+          thinkingContent: "",
+          activeSteps: [],
+          generationInProgress: false,
+        });
+      }
     }
   }
 
@@ -1078,9 +1170,15 @@ export class ChatMachine {
   private async _syncSessionFromServer(
     sessionId: string,
     allowEmptyTurns = false,
+    epoch?: number,
   ): Promise<void> {
     const fetchResult = await this.dataSource.fetchSession(sessionId);
     if (!fetchResult) {
+      return;
+    }
+    // The user may have switched sessions while the fetch was in flight; don't
+    // overwrite the now-visible session with this one's data.
+    if (epoch !== undefined && !this._isCurrentEpoch(epoch)) {
       return;
     }
 
@@ -1100,6 +1198,8 @@ export class ChatMachine {
     reasoningEffort?: string;
     model?: string;
     tempTurnId: string;
+    controller: AbortController;
+    epoch: number;
   }): Promise<{
     createdSessionId?: string;
     sessionFetched: boolean;
@@ -1114,6 +1214,8 @@ export class ChatMachine {
       reasoningEffort,
       model,
       tempTurnId,
+      controller,
+      epoch,
     } = params;
 
     let accumulatedContent = "";
@@ -1126,7 +1228,7 @@ export class ChatMachine {
       activeSessionId || "new",
       content,
       attachments,
-      this.abortController?.signal,
+      controller.signal,
       {
         debugMode,
         replaceFromMessageID,
@@ -1134,7 +1236,8 @@ export class ChatMachine {
         model,
       },
     )) {
-      if (this.abortController?.signal.aborted) {
+      // Stop if the send was cancelled or the user navigated to another session.
+      if (controller.signal.aborted || !this._isCurrentEpoch(epoch)) {
         break;
       }
 
@@ -1182,7 +1285,7 @@ export class ChatMachine {
           sessionFetched = true;
           const finalSessionId = createdSessionId || activeSessionId;
           if (finalSessionId && finalSessionId !== "new") {
-            await this._syncSessionFromServer(finalSessionId);
+            await this._syncSessionFromServer(finalSessionId, false, epoch);
           }
         }
       } else if (chunk.type === "done") {
@@ -1193,7 +1296,7 @@ export class ChatMachine {
           sessionFetched = true;
           const finalSessionId = createdSessionId || activeSessionId;
           if (finalSessionId && finalSessionId !== "new") {
-            await this._syncSessionFromServer(finalSessionId);
+            await this._syncSessionFromServer(finalSessionId, false, epoch);
           }
         }
       } else if (chunk.type === "user_message" && chunk.sessionId) {
@@ -1209,7 +1312,7 @@ export class ChatMachine {
       clearRunMarker(finalSessionId);
     }
 
-    const stopped = this.abortController?.signal.aborted ?? false;
+    const stopped = controller.signal.aborted;
     return { createdSessionId, sessionFetched, stopped };
   }
 
@@ -1217,6 +1320,7 @@ export class ChatMachine {
     activeSessionId: string | undefined,
     createdSessionId: string | undefined,
     sessionFetched: boolean,
+    epoch: number,
   ): Promise<void> {
     if (sessionFetched) {
       return;
@@ -1228,7 +1332,7 @@ export class ChatMachine {
     }
 
     try {
-      await this._syncSessionFromServer(finalSessionId, true);
+      await this._syncSessionFromServer(finalSessionId, true, epoch);
     } catch (fetchErr) {
       console.error("Failed to fetch session after stream:", fetchErr);
     }
@@ -1255,7 +1359,15 @@ export class ChatMachine {
     err: unknown,
     content: string,
     tempTurn: ConversationTurn,
+    epoch: number,
   ): boolean {
+    // The user navigated to a different session while this send was failing —
+    // none of the recovery writes (input restore, turn keep, error banner)
+    // belong to the now-visible session, so drop them.
+    if (!this._isCurrentEpoch(epoch)) {
+      return false;
+    }
+
     if (err instanceof Error && err.name === "AbortError") {
       // Soft-cancel (user stop / unmount): drop the optimistic turn and return
       // the prompt to the input so they can edit and resend.
@@ -1269,7 +1381,7 @@ export class ChatMachine {
       const sessionId =
         this.sendingSessionId ?? this.state.session.currentSessionId;
       if (sessionId && sessionId !== "new") {
-        this._syncSessionFromServer(sessionId, true).catch(() => {});
+        this._syncSessionFromServer(sessionId, true, epoch).catch(() => {});
       }
       return false;
     }
@@ -1375,7 +1487,9 @@ export class ChatMachine {
       streamingContent: "",
     });
 
-    this.abortController = new AbortController();
+    const controller = new AbortController();
+    this.abortController = controller;
+    const epoch = this.viewEpoch;
 
     const curSessionId = this.state.session.currentSessionId;
     const curDebugMode = deriveDebugMode(this.state);
@@ -1411,9 +1525,16 @@ export class ChatMachine {
           ),
           model: this.state.session.model,
           tempTurnId: tempTurn.id,
+          controller,
+          epoch,
         });
 
-      if (stopped) {
+      // If the user switched sessions mid-stream, every write below would land
+      // in the now-visible session — skip them all (the stream is already
+      // aborted; server state is intact and reloads when they return).
+      if (!this._isCurrentEpoch(epoch)) {
+        // nothing to do
+      } else if (stopped) {
         this._updateMessaging({
           turns: this.state.messaging.turns.filter(
             (turn) => turn.id !== tempTurn.id,
@@ -1423,44 +1544,42 @@ export class ChatMachine {
         this._clearStreamError();
         const syncId = createdSessionId || activeSessionId;
         if (syncId && syncId !== "new") {
-          await this._syncSessionFromServer(syncId, true).catch(() => {});
+          await this._syncSessionFromServer(syncId, true, epoch).catch(() => {});
         }
       } else {
         await this._ensureSessionSyncAfterStream(
           activeSessionId,
           createdSessionId,
           sessionFetched,
+          epoch,
         );
         const targetSessionId = createdSessionId || activeSessionId;
         this._finalizeSuccessfulSend(targetSessionId, shouldNavigateAfter);
       }
     } catch (err) {
-      shouldDrainQueue = this._handleSendError(err, content, tempTurn);
+      shouldDrainQueue = this._handleSendError(err, content, tempTurn, epoch);
     } finally {
-      this._updateMessaging({
-        loading: false,
-        streamingContent: "",
-        isStreaming: false,
-        thinkingContent: "",
-        activeSteps: [],
-      });
-      this.abortController = null;
-      this.sendingSessionId = null;
+      // Only reset the shared streaming state if we still own the view; a
+      // session switch (or a newer send) must not have its state clobbered.
+      if (this._isCurrentEpoch(epoch)) {
+        this._updateMessaging({
+          loading: false,
+          streamingContent: "",
+          isStreaming: false,
+          thinkingContent: "",
+          activeSteps: [],
+        });
+        this.sendingSessionId = null;
+      }
+      // Don't null a newer send's controller.
+      if (this.abortController === controller) {
+        this.abortController = null;
+      }
 
-      // Auto-drain queue on success
+      // Auto-drain the queue — only into the same session/view this send
+      // belonged to, and only when nothing is blocking.
       if (shouldDrainQueue) {
-        const queue = this.state.input.messageQueue;
-        if (
-          queue.length > 0 &&
-          !isOpenQuestionStatus(this.state.messaging.pendingQuestion?.status)
-        ) {
-          const next = queue[0];
-          this._updateInput({ messageQueue: queue.slice(1) });
-          // Defer to avoid reentrant call
-          setTimeout(() => {
-            this._sendMessageCore(next.content, next.attachments);
-          }, 0);
-        }
+        this._drainQueueIfReady(epoch);
       }
     }
   }
@@ -1652,6 +1771,7 @@ export class ChatMachine {
       return;
     }
 
+    const epoch = this.viewEpoch;
     this._updateMessaging({ loading: true });
     this._updateSession({ error: null, errorRetryable: false });
     const previousPendingQuestion = curPendingQuestion;
@@ -1662,7 +1782,8 @@ export class ChatMachine {
         previousPendingQuestion.id,
         answers,
       );
-      if (this.disposed) {
+      // Bail on dispose or a session switch — writes below belong to this session.
+      if (!this._isCurrentEpoch(epoch)) {
         return;
       }
 
@@ -1685,7 +1806,7 @@ export class ChatMachine {
           if (!this.state.messaging.generationInProgress) {
             const fetchResult =
               await this.dataSource.fetchSession(curSessionId);
-            if (this.disposed) {
+            if (!this._isCurrentEpoch(epoch)) {
               return;
             }
             if (fetchResult) {
@@ -1703,7 +1824,7 @@ export class ChatMachine {
           }
         } else if (curSessionId !== "new") {
           const fetchResult = await this.dataSource.fetchSession(curSessionId);
-          if (this.disposed) {
+          if (!this._isCurrentEpoch(epoch)) {
             return;
           }
           if (fetchResult) {
@@ -1726,7 +1847,7 @@ export class ChatMachine {
         });
       }
     } catch (err) {
-      if (this.disposed) {
+      if (!this._isCurrentEpoch(epoch)) {
         return;
       }
       const normalized = normalizeRPCError(err, "Failed to submit answers");
@@ -1735,8 +1856,13 @@ export class ChatMachine {
         errorRetryable: normalized.retryable,
       });
     } finally {
-      if (!this.disposed) {
+      if (this._isCurrentEpoch(epoch)) {
         this._updateMessaging({ loading: false });
+        // The question is resolved and generation finished — resume any queued
+        // messages that were stranded while the question was open.
+        if (!this.state.session.error) {
+          this._drainQueueIfReady(epoch);
+        }
       }
     }
   }
@@ -1748,9 +1874,10 @@ export class ChatMachine {
       return;
     }
 
+    const epoch = this.viewEpoch;
     try {
       const result = await this.dataSource.rejectPendingQuestion(curSessionId);
-      if (this.disposed) {
+      if (!this._isCurrentEpoch(epoch)) {
         return;
       }
       if (result.success) {
@@ -1773,7 +1900,7 @@ export class ChatMachine {
           ) {
             const fetchResult =
               await this.dataSource.fetchSession(curSessionId);
-            if (this.disposed) {
+            if (!this._isCurrentEpoch(epoch)) {
               return;
             }
             if (fetchResult) {
@@ -1791,7 +1918,7 @@ export class ChatMachine {
           }
         } else if (curSessionId !== "new") {
           const fetchResult = await this.dataSource.fetchSession(curSessionId);
-          if (this.disposed) {
+          if (!this._isCurrentEpoch(epoch)) {
             return;
           }
           if (fetchResult) {
@@ -1809,7 +1936,7 @@ export class ChatMachine {
         });
       }
     } catch (err) {
-      if (this.disposed) {
+      if (!this._isCurrentEpoch(epoch)) {
         return;
       }
       const normalized = normalizeRPCError(err, "Failed to reject question");
@@ -1817,6 +1944,11 @@ export class ChatMachine {
         error: normalized.userMessage,
         errorRetryable: normalized.retryable,
       });
+    } finally {
+      // Question resolved — resume any messages queued while it was open.
+      if (this._isCurrentEpoch(epoch) && !this.state.session.error) {
+        this._drainQueueIfReady(epoch);
+      }
     }
   }
 
