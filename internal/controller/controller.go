@@ -67,8 +67,54 @@ func (c *Controller) Register(router *mux.Router) {
 	c.RegisterRoutes(router)
 }
 
-func (c *Controller) Key() string {
-	return "applet_" + c.applet.Name()
+func (c *Controller) Descriptor() api.ControllerDescriptor {
+	config := c.applet.Config()
+	routes := make([]api.RouteSpec, 0, len(config.RoutePatterns)*2+2)
+	basePath := normalizePath(c.applet.BasePath())
+	assetPath := normalizeAssetPath(config.Assets.BasePath)
+
+	if c.devAssets != nil || config.Assets.FS != nil {
+		routes = append(routes, api.RouteSpec{
+			Path:   c.assetsBasePath,
+			Prefix: true,
+		})
+	}
+
+	for _, pattern := range config.RoutePatterns {
+		pattern = normalizePath(pattern)
+		routePath := path.Join(basePath, strings.TrimPrefix(pattern, "/"))
+		routes = append(routes,
+			api.RouteSpec{Method: http.MethodGet, Path: routePath},
+			api.RouteSpec{Method: http.MethodHead, Path: routePath},
+		)
+	}
+
+	for _, host := range config.Hosts {
+		host = strings.TrimSpace(host)
+		if host == "" {
+			continue
+		}
+		if c.devAssets != nil || config.Assets.FS != nil {
+			routes = append(routes, api.RouteSpec{
+				Host:   host,
+				Path:   assetPath,
+				Prefix: true,
+			})
+		}
+		for _, pattern := range config.RoutePatterns {
+			pattern = normalizePath(pattern)
+			routes = append(routes,
+				api.RouteSpec{Method: http.MethodGet, Host: host, Path: pattern},
+				api.RouteSpec{Method: http.MethodHead, Host: host, Path: pattern},
+			)
+		}
+	}
+
+	return api.ControllerDescriptor{
+		ID:     "applet." + c.applet.Name(),
+		Order:  -1000,
+		Routes: routes,
+	}
 }
 
 func (c *Controller) RegisterRoutes(router *mux.Router) {
@@ -106,6 +152,24 @@ func (c *Controller) applyMiddleware(router *mux.Router, middleware []mux.Middle
 	for _, mw := range middleware {
 		router.Use(mw)
 	}
+}
+
+func normalizePath(p string) string {
+	p = strings.TrimSpace(p)
+	if p == "" {
+		return "/"
+	}
+	if !strings.HasPrefix(p, "/") {
+		p = "/" + p
+	}
+	return path.Clean(p)
+}
+
+func normalizeAssetPath(p string) string {
+	if strings.TrimSpace(p) == "" {
+		return "/assets"
+	}
+	return normalizePath(p)
 }
 
 func (c *Controller) registerAppRoutes(router *mux.Router, routePatterns []string, excludedPrefixes []string) {

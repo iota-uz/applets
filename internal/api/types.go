@@ -18,6 +18,21 @@ type Applet interface {
 	Config() Config
 }
 
+type ControllerDescriptor struct {
+	ID       string
+	Order    int
+	Replaces []string
+	Routes   []RouteSpec
+}
+
+type RouteSpec struct {
+	Method         string
+	Host           string
+	Path           string
+	Prefix         bool
+	AllowCollision bool
+}
+
 // ShellMode is the rendering mode for the applet shell.
 type ShellMode string
 
