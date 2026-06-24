@@ -17,7 +17,7 @@ type AppletRouter interface {
 type AppletController interface {
 	Register(router *mux.Router)
 	RegisterRoutes(router *mux.Router)
-	Key() string
+	Descriptor() ControllerDescriptor
 }
 
 // StreamWriter is the interface for SSE writing (implemented by internal/stream).

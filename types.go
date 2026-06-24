@@ -62,8 +62,10 @@ type (
 )
 
 type (
-	AppletRouter     = api.AppletRouter
-	AppletController = api.AppletController
+	AppletRouter         = api.AppletRouter
+	AppletController     = api.AppletController
+	ControllerDescriptor = api.ControllerDescriptor
+	RouteSpec            = api.RouteSpec
 )
 
 type (
