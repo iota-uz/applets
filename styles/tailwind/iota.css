@@ -1162,3 +1162,15 @@
 .lazy-load * {
   transition: opacity 300ms ease-in;
 }
+
+/*
+ * Infinite-scroll loading spinner reveal (scaffold/table InfiniteScrollSpinner).
+ * The row stays `class="hidden"` so it is display:none at rest AND excluded from
+ * the fillGrid() `tr:not(.hidden) > td[colspan]` scroll-guard; its hx-indicator
+ * adds `.htmx-request` while the next page loads. Unlayered on purpose: Tailwind's
+ * `.hidden { display:none }` lives in @layer utilities and wins over any layered
+ * rule regardless of specificity, so the reveal must be unlayered to override it.
+ */
+#infinite-scroll-spinner.htmx-request {
+  display: table-row;
+}
