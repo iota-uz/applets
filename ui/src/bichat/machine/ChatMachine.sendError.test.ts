@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   Attachment,
   ChatDataSource,
@@ -131,6 +131,111 @@ describe("ChatMachine send error handling", () => {
       "Nearly complete answer",
     );
     expect(messaging.streamingContent).toBe("");
+  });
+
+  it("keeps a resumed snapshot when the resumed stream ends with an error", async () => {
+    const now = new Date().toISOString();
+    const dataSource = {
+      fetchSession: async () => ({
+        session: makeSession(SESSION_ID),
+        turns: [
+          {
+            id: "turn-1",
+            sessionId: SESSION_ID,
+            userTurn: {
+              id: "user-1",
+              content: "Analyze this",
+              attachments: [],
+              createdAt: now,
+            },
+            createdAt: now,
+          },
+        ],
+        pendingQuestion: null,
+      }),
+      resumeStream: async (
+        _sessionId: string,
+        _runId: string,
+        onChunk: (chunk: StreamChunk) => void,
+      ) => {
+        onChunk({
+          type: "snapshot",
+          snapshot: { partialContent: "Recovered answer" },
+        } as StreamChunk);
+        onChunk({ type: "error", error: "persist failed" } as StreamChunk);
+      },
+    } as unknown as ChatDataSource;
+    const machine = new ChatMachine({ dataSource, rateLimiter });
+    machine.setSessionId(SESSION_ID);
+    await vi.waitFor(() => {
+      expect(machine.getMessagingSnapshot().turns).toHaveLength(1);
+    });
+
+    const resumableMachine = machine as unknown as {
+      _runResumeStream: (sessionId: string, runId: string) => Promise<void>;
+    };
+    await expect(
+      resumableMachine._runResumeStream(SESSION_ID, "run-1"),
+    ).rejects.toThrow("persist failed");
+
+    const messaging = machine.getMessagingSnapshot();
+    expect(messaging.streamError).toBeTruthy();
+    expect(messaging.turns[0].assistantTurn?.content).toBe("Recovered answer");
+    expect(messaging.streamingContent).toBe("");
+  });
+
+  it("keeps the local partial answer when the server only has the user turn", async () => {
+    let fetches = 0;
+    const now = new Date().toISOString();
+    const dataSource = {
+      createSession: async () => makeSession(SESSION_ID),
+      fetchSession: async () => {
+        fetches++;
+        return {
+          session: makeSession(SESSION_ID),
+          turns:
+            fetches === 1
+              ? []
+              : [
+                  {
+                    id: "server-turn",
+                    sessionId: SESSION_ID,
+                    userTurn: {
+                      id: "server-user",
+                      content: "Analyze this",
+                      attachments: [],
+                      createdAt: now,
+                    },
+                    createdAt: now,
+                  },
+                ],
+          pendingQuestion: null,
+        };
+      },
+      sendMessage: async function* () {
+        yield { type: "content", content: "Partial answer" } as StreamChunk;
+        yield { type: "error", error: "persist failed" } as StreamChunk;
+      },
+    } as unknown as ChatDataSource;
+    const machine = new ChatMachine({ dataSource, rateLimiter });
+    machine.setSessionId(SESSION_ID);
+    await vi.waitFor(() => {
+      expect(fetches).toBe(1);
+    });
+    await machine.sendMessage("Analyze this");
+
+    const syncableMachine = machine as unknown as {
+      _syncSessionFromServer: (
+        sessionId: string,
+        allowEmptyTurns: boolean,
+      ) => Promise<void>;
+    };
+    await syncableMachine._syncSessionFromServer(SESSION_ID, true);
+
+    const messaging = machine.getMessagingSnapshot();
+    expect(messaging.turns).toHaveLength(1);
+    expect(messaging.turns[0].userTurn.id).toBe("server-user");
+    expect(messaging.turns[0].assistantTurn?.content).toBe("Partial answer");
   });
 
   it("keeps the turn on a brand-new chat error and retries by replacing it (no duplicate)", async () => {

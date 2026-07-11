@@ -690,6 +690,33 @@ export class ChatMachine {
       return;
     }
     const prev = this.state.messaging.turns;
+    const localPartialTurn = prev
+      .slice()
+      .reverse()
+      .find((turn) => turn.assistantTurn?.id.startsWith("assistant-partial-"));
+    if (localPartialTurn) {
+      if (fetchedTurns.length === 0) {
+        fetchedTurns = prev;
+      } else {
+        const correspondingIndex = fetchedTurns.findIndex(
+          (turn, index) =>
+            turn.userTurn.id === localPartialTurn.userTurn.id ||
+            (index === fetchedTurns.length - 1 &&
+              turn.userTurn.content === localPartialTurn.userTurn.content),
+        );
+        if (correspondingIndex >= 0) {
+          if (!fetchedTurns[correspondingIndex].assistantTurn) {
+            fetchedTurns = fetchedTurns.map((turn, index) =>
+              index === correspondingIndex
+                ? { ...turn, assistantTurn: localPartialTurn.assistantTurn }
+                : turn,
+            );
+          }
+        } else {
+          fetchedTurns = [...fetchedTurns, localPartialTurn];
+        }
+      }
+    }
     const hasPendingUserOnly =
       prev.length > 0 && !prev[prev.length - 1].assistantTurn;
     const patch: Partial<typeof this.state.messaging> = {};
@@ -822,8 +849,9 @@ export class ChatMachine {
     const epoch = this.viewEpoch;
     this._updateMessaging({ isStreaming: true });
 
+    let accumulatedContent = "";
     try {
-      let accumulatedContent = "";
+      let terminalError: Error | null = null;
       await this.dataSource.resumeStream!(
         sessionId,
         runId,
@@ -850,14 +878,30 @@ export class ChatMachine {
             this._handleToolStart(chunk.tool);
           } else if (chunk.type === "tool_end" && chunk.tool) {
             this._handleToolEnd(chunk.tool);
-          } else if (chunk.type === "done" || chunk.type === "error") {
-            // will sync below
+          } else if (chunk.type === "error") {
+            terminalError = new Error(chunk.error || "Stream error");
           }
         },
         controller.signal,
       );
+      if (terminalError) {
+        throw terminalError;
+      }
       clearRunMarker(sessionId);
       await this._syncSessionFromServer(sessionId, true, epoch);
+    } catch (err) {
+      if (
+        this._isCurrentEpoch(epoch) &&
+        !(err instanceof Error && err.name === "AbortError")
+      ) {
+        this._preservePartialAssistant(accumulatedContent);
+        const normalized = normalizeRPCError(err, "Failed to resume stream");
+        this._updateMessaging({
+          streamError: normalized.userMessage,
+          streamErrorRetryable: normalized.retryable,
+        });
+      }
+      throw err;
     } finally {
       if (this.abortController === controller) {
         this.abortController = null;
@@ -1410,26 +1454,10 @@ export class ChatMachine {
       };
     }
     this._updateInput({ message: "", inputError: null });
-    const partialContent = partialAssistantContent.trim();
-    const turns = partialContent
-      ? this.state.messaging.turns.map((turn) =>
-          turn.id === tempTurn.id
-            ? {
-                ...turn,
-                assistantTurn: {
-                  id: generateTempId("assistant-partial"),
-                  role: MessageRole.Assistant,
-                  content: partialContent,
-                  citations: [],
-                  artifacts: [],
-                  codeOutputs: [],
-                  lifecycle: "complete" as const,
-                  createdAt: new Date().toISOString(),
-                },
-              }
-            : turn,
-        )
-      : this.state.messaging.turns;
+    const turns = this._preservePartialAssistant(
+      partialAssistantContent,
+      tempTurn.id,
+    );
     this._updateMessaging({
       turns,
       streamError: normalized.userMessage,
@@ -1437,6 +1465,50 @@ export class ChatMachine {
     });
     console.error("Send message error:", err);
     return false;
+  }
+
+  private _preservePartialAssistant(
+    content: string,
+    targetTurnId?: string,
+  ): ConversationTurn[] {
+    if (content.trim() === "") {
+      return this.state.messaging.turns;
+    }
+
+    let targetIndex = targetTurnId
+      ? this.state.messaging.turns.findIndex((turn) => turn.id === targetTurnId)
+      : -1;
+    if (!targetTurnId) {
+      for (let i = this.state.messaging.turns.length - 1; i >= 0; i--) {
+        if (!this.state.messaging.turns[i].assistantTurn) {
+          targetIndex = i;
+          break;
+        }
+      }
+    }
+    if (targetIndex < 0) {
+      return this.state.messaging.turns;
+    }
+
+    const turns = this.state.messaging.turns.map((turn, index) =>
+      index === targetIndex
+        ? {
+            ...turn,
+            assistantTurn: {
+              id: generateTempId("assistant-partial"),
+              role: MessageRole.Assistant,
+              content,
+              citations: [],
+              artifacts: [],
+              codeOutputs: [],
+              lifecycle: "complete" as const,
+              createdAt: new Date().toISOString(),
+            },
+          }
+        : turn,
+    );
+    this._updateMessaging({ turns });
+    return turns;
   }
 
   // ── Send message ────────────────────────────────────────────────────────
