@@ -25,6 +25,7 @@ import type {
   SessionDebugUsage,
   ActivityStep,
 } from "../types";
+import { MessageRole } from "../types";
 import type { RateLimiter } from "../utils/RateLimiter";
 import { normalizeRPCError } from "../utils/errorDisplay";
 import { loadQueue, saveQueue } from "../utils/queueStorage";
@@ -39,6 +40,7 @@ import {
   ARTIFACT_TOOL_NAMES,
   createPendingTurn,
   createCompactedSystemTurn,
+  generateTempId,
   parseSlashCommand,
   readDebugLimitsFromGlobalContext,
   readReasoningEffortOptionsFromGlobalContext,
@@ -1200,6 +1202,7 @@ export class ChatMachine {
     tempTurnId: string;
     controller: AbortController;
     epoch: number;
+    onContent: (content: string) => void;
   }): Promise<{
     createdSessionId?: string;
     sessionFetched: boolean;
@@ -1216,6 +1219,7 @@ export class ChatMachine {
       tempTurnId,
       controller,
       epoch,
+      onContent,
     } = params;
 
     let accumulatedContent = "";
@@ -1253,6 +1257,7 @@ export class ChatMachine {
         chunk.content
       ) {
         accumulatedContent += chunk.content;
+        onContent(accumulatedContent);
         this._updateMessaging({ streamingContent: accumulatedContent });
       } else if (chunk.type === "thinking" && chunk.content) {
         this._handleThinkingChunk(chunk.content);
@@ -1360,6 +1365,7 @@ export class ChatMachine {
     content: string,
     tempTurn: ConversationTurn,
     epoch: number,
+    partialAssistantContent: string,
   ): boolean {
     // The user navigated to a different session while this send was failing —
     // none of the recovery writes (input restore, turn keep, error banner)
@@ -1404,7 +1410,28 @@ export class ChatMachine {
       };
     }
     this._updateInput({ message: "", inputError: null });
+    const partialContent = partialAssistantContent.trim();
+    const turns = partialContent
+      ? this.state.messaging.turns.map((turn) =>
+          turn.id === tempTurn.id
+            ? {
+                ...turn,
+                assistantTurn: {
+                  id: generateTempId("assistant-partial"),
+                  role: MessageRole.Assistant,
+                  content: partialContent,
+                  citations: [],
+                  artifacts: [],
+                  codeOutputs: [],
+                  lifecycle: "complete" as const,
+                  createdAt: new Date().toISOString(),
+                },
+              }
+            : turn,
+        )
+      : this.state.messaging.turns;
     this._updateMessaging({
+      turns,
       streamError: normalized.userMessage,
       streamErrorRetryable: normalized.retryable,
     });
@@ -1505,6 +1532,7 @@ export class ChatMachine {
     this._insertOptimisticTurn(prevTurns, tempTurn, replaceFromMessageID);
 
     let shouldDrainQueue = true;
+    let partialAssistantContent = "";
 
     try {
       const { activeSessionId, shouldNavigateAfter } =
@@ -1527,6 +1555,9 @@ export class ChatMachine {
           tempTurnId: tempTurn.id,
           controller,
           epoch,
+          onContent: (streamedContent) => {
+            partialAssistantContent = streamedContent;
+          },
         });
 
       // If the user switched sessions mid-stream, every write below would land
@@ -1544,7 +1575,9 @@ export class ChatMachine {
         this._clearStreamError();
         const syncId = createdSessionId || activeSessionId;
         if (syncId && syncId !== "new") {
-          await this._syncSessionFromServer(syncId, true, epoch).catch(() => {});
+          await this._syncSessionFromServer(syncId, true, epoch).catch(
+            () => {},
+          );
         }
       } else {
         await this._ensureSessionSyncAfterStream(
@@ -1557,7 +1590,13 @@ export class ChatMachine {
         this._finalizeSuccessfulSend(targetSessionId, shouldNavigateAfter);
       }
     } catch (err) {
-      shouldDrainQueue = this._handleSendError(err, content, tempTurn, epoch);
+      shouldDrainQueue = this._handleSendError(
+        err,
+        content,
+        tempTurn,
+        epoch,
+        partialAssistantContent,
+      );
     } finally {
       // Only reset the shared streaming state if we still own the view; a
       // session switch (or a newer send) must not have its state clobbered.
