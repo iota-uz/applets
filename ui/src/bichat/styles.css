@@ -116,6 +116,11 @@
   --bichat-color-border: var(--bichat-color-gray-200);
   --bichat-color-border-subtle: var(--bichat-color-gray-100);
   --bichat-color-border-strong: var(--bichat-color-gray-300);
+  --bichat-color-border-brand: var(--bichat-color-primary-500);
+  --bichat-color-border-danger: var(--bichat-color-error-500);
+  --bichat-color-border-warning: var(--bichat-color-warning-500);
+  --bichat-color-border-success: var(--bichat-color-success-500);
+  --bichat-color-border-disabled: var(--bichat-color-gray-200);
 
   --bichat-color-accent: var(--bichat-color-primary-600);
   --bichat-color-accent-hover: var(--bichat-color-primary-700);
@@ -286,6 +291,11 @@
   --bichat-color-border: var(--bichat-color-gray-700);
   --bichat-color-border-subtle: var(--bichat-color-gray-800);
   --bichat-color-border-strong: var(--bichat-color-gray-600);
+  --bichat-color-border-brand: var(--bichat-color-primary-400);
+  --bichat-color-border-danger: var(--bichat-color-error-600);
+  --bichat-color-border-warning: var(--bichat-color-warning-500);
+  --bichat-color-border-success: var(--bichat-color-success-600);
+  --bichat-color-border-disabled: var(--bichat-color-gray-800);
 
   --bichat-color-accent-muted: var(--bichat-color-primary-900);
 

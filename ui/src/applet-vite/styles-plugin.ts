@@ -121,6 +121,10 @@ export function createAppletStylesVirtualModulePlugin(
           } catch {
             /* ignore */
           }
+        } else if (result.error === undefined) {
+          const stderr = result.stderr?.toString().trim();
+          const detail = stderr ? `\n${stderr}` : '';
+          throw new Error(`[applet-styles] Tailwind CSS compilation failed.${detail}`);
         }
       }
 

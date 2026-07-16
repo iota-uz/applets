@@ -61,6 +61,16 @@ export const bichatTailwindPreset: TailwindPreset = {
           900: 'var(--primary-900, var(--bichat-color-primary-900, #1e3a8a))',
         },
       },
+      borderColor: {
+        subtle: 'var(--bichat-color-border-subtle)',
+        default: 'var(--bichat-color-border)',
+        strong: 'var(--bichat-color-border-strong)',
+        brand: 'var(--bichat-color-border-brand)',
+        danger: 'var(--bichat-color-border-danger)',
+        warning: 'var(--bichat-color-border-warning)',
+        success: 'var(--bichat-color-border-success)',
+        disabled: 'var(--bichat-color-border-disabled)',
+      },
       fontFamily: {
         sans: ['"Gilroy"', 'system-ui', '-apple-system', 'sans-serif'],
       },
