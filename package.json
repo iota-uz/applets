@@ -84,6 +84,7 @@
     "storybook": "pnpm run storybook:css && storybook dev -p 6006 -c ui/.storybook",
     "storybook:build": "pnpm run storybook:css && storybook build -c ui/.storybook",
     "check:dx": "node ./scripts/check-dx-guardrails.mjs",
+    "check:theme": "node ./scripts/check-theme-alpha.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ui/",
     "lint:fix": "eslint ui/ --fix"
