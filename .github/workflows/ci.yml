@@ -66,6 +66,10 @@ jobs:
         working-directory: applets
         run: pnpm run check:dx
 
+      - name: Check theme alpha invariant
+        working-directory: applets
+        run: pnpm run check:theme
+
       - name: Install JS dependencies
         working-directory: applets
         run: pnpm install --frozen-lockfile
