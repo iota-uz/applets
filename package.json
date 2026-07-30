@@ -1,6 +1,6 @@
 {
   "name": "@iota-uz/sdk",
-  "version": "0.4.41",
+  "version": "0.4.43",
   "description": "IOTA SDK UI utilities, Tailwind configuration, and React components for building IOTA SDK applets.",
   "license": "MIT",
   "private": false,
@@ -84,6 +84,7 @@
     "storybook": "pnpm run storybook:css && storybook dev -p 6006 -c ui/.storybook",
     "storybook:build": "pnpm run storybook:css && storybook build -c ui/.storybook",
     "check:dx": "node ./scripts/check-dx-guardrails.mjs",
+    "check:theme": "node ./scripts/check-theme-alpha.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ui/",
     "lint:fix": "eslint ui/ --fix"
