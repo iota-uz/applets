@@ -8,6 +8,7 @@
  * Supports customization via slots:
  * - headerSlot: Custom content above the message list
  * - welcomeSlot: Replace the default welcome screen for new chats
+ * - historyArtifactSlot: Host-owned workflow/artifact rendered in chat history
  * - logoSlot: Custom logo in the header
  * - actionsSlot: Custom action buttons in the header
  */
@@ -53,6 +54,11 @@ interface ChatSessionProps {
   headerSlot?: ReactNode
   /** Custom welcome screen component (replaces default WelcomeContent) */
   welcomeSlot?: ReactNode
+  /**
+   * Host-owned durable content rendered as part of the scrollable conversation
+   * history after persisted turns (for example, a workflow or task artifact).
+   */
+  historyArtifactSlot?: ReactNode
   /** Custom logo for the header */
   logoSlot?: ReactNode
   /** Custom action buttons for the header */
@@ -86,6 +92,7 @@ function ChatSessionCore({
   className = '',
   headerSlot,
   welcomeSlot,
+  historyArtifactSlot,
   logoSlot,
   actionsSlot,
   inputHeaderSlot,
@@ -474,6 +481,7 @@ function ChatSessionCore({
               <MessageList
                 renderUserTurn={renderUserTurn}
                 renderAssistantTurn={renderAssistantTurn}
+                historyArtifactSlot={historyArtifactSlot}
                 thinkingVerbs={thinkingVerbs}
                 readOnly={effectiveReadOnly}
               />
