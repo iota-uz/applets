@@ -4,8 +4,135 @@
  */
 
 import { motion } from 'framer-motion';
-import { Warning, ArrowClockwise, ArrowsCounterClockwise, X } from '@phosphor-icons/react';
+import { Warning, ArrowClockwise, ArrowsCounterClockwise, ArrowSquareOut, X } from '@phosphor-icons/react';
 import { useTranslation } from '../hooks/useTranslation';
+
+const OPENAI_BILLING_URL = 'https://platform.openai.com/settings/organization/billing/overview';
+const OPENAI_API_KEYS_URL = 'https://platform.openai.com/api-keys';
+const OPENAI_STATUS_URL = 'https://status.openai.com';
+
+interface ProviderErrorPresentation {
+  titleKey: string
+  descriptionKey: string
+  retryable: boolean
+  adminAction?: boolean
+  action?: {
+    href: string
+    labelKey: string
+  }
+}
+
+function providerErrorPresentation(error: string): ProviderErrorPresentation | null {
+  if (error.includes('provider_billing_balance_exhausted')) {
+    return {
+      titleKey: 'BiChat.StreamError.ProviderBalance.Title',
+      descriptionKey: 'BiChat.StreamError.ProviderBalance.Details',
+      retryable: false,
+      adminAction: true,
+      action: {
+        href: OPENAI_BILLING_URL,
+        labelKey: 'BiChat.StreamError.OpenBilling',
+      },
+    };
+  }
+  if (
+    error.includes('provider_billing_') ||
+    error.includes('provider_quota_exhausted') ||
+    error.includes('insufficient_quota') ||
+    error.includes('credit_balance_exhausted')
+  ) {
+    return {
+      titleKey: 'BiChat.StreamError.ProviderBilling.Title',
+      descriptionKey: 'BiChat.StreamError.ProviderBilling.Details',
+      retryable: false,
+      adminAction: true,
+      action: {
+        href: OPENAI_BILLING_URL,
+        labelKey: 'BiChat.StreamError.OpenBilling',
+      },
+    };
+  }
+  if (error.includes('provider_auth_') || error.includes('provider_ip_not_authorized')) {
+    return {
+      titleKey: 'BiChat.StreamError.ProviderAuth.Title',
+      descriptionKey: 'BiChat.StreamError.ProviderAuth.Details',
+      retryable: false,
+      adminAction: true,
+      action: {
+        href: OPENAI_API_KEYS_URL,
+        labelKey: 'BiChat.StreamError.OpenAPIKeys',
+      },
+    };
+  }
+  if (
+    error.includes('provider_permission_denied') ||
+    error.includes('provider_region_unsupported')
+  ) {
+    return {
+      titleKey: 'BiChat.StreamError.ProviderAccess.Title',
+      descriptionKey: 'BiChat.StreamError.ProviderAccess.Details',
+      retryable: false,
+      adminAction: true,
+    };
+  }
+  if (error.includes('provider_rate_limited') || error.includes('provider_slow_down')) {
+    return {
+      titleKey: 'BiChat.StreamError.ProviderRateLimit.Title',
+      descriptionKey: 'BiChat.StreamError.ProviderRateLimit.Details',
+      retryable: true,
+    };
+  }
+  if (error.includes('provider_context_limit')) {
+    return {
+      titleKey: 'BiChat.StreamError.ProviderContextLimit.Title',
+      descriptionKey: 'BiChat.StreamError.ProviderContextLimit.Details',
+      retryable: false,
+    };
+  }
+  if (
+    error.includes('provider_bad_request') ||
+    error.includes('provider_unprocessable') ||
+    error.includes('provider_not_found')
+  ) {
+    return {
+      titleKey: 'BiChat.StreamError.ProviderRequest.Title',
+      descriptionKey: 'BiChat.StreamError.ProviderRequest.Details',
+      retryable: false,
+      adminAction: true,
+    };
+  }
+  if (error.includes('provider_timeout') || error.includes('provider_connection')) {
+    return {
+      titleKey: 'BiChat.StreamError.ProviderConnection.Title',
+      descriptionKey: 'BiChat.StreamError.ProviderConnection.Details',
+      retryable: true,
+    };
+  }
+  if (
+    error.includes('provider_server_error') ||
+    error.includes('provider_overloaded') ||
+    error.includes('provider_response_failed') ||
+    error.includes('provider_conflict')
+  ) {
+    return {
+      titleKey: 'BiChat.StreamError.ProviderUnavailable.Title',
+      descriptionKey: 'BiChat.StreamError.ProviderUnavailable.Details',
+      retryable: true,
+      action: {
+        href: OPENAI_STATUS_URL,
+        labelKey: 'BiChat.StreamError.OpenStatus',
+      },
+    };
+  }
+  if (error.includes('provider_response_incomplete')) {
+    return {
+      titleKey: 'BiChat.StreamError.ProviderIncomplete.Title',
+      descriptionKey: 'BiChat.StreamError.ProviderIncomplete.Details',
+      retryable: true,
+    };
+  }
+  return null;
+}
 
 interface StreamErrorProps {
   /** Error message to display */
@@ -28,6 +155,8 @@ export function StreamError({
   compact = false,
 }: StreamErrorProps) {
   const { t } = useTranslation();
+  const normalizedError = error.toLowerCase();
+  const providerError = providerErrorPresentation(normalizedError);
 
   return (
     <motion.div
@@ -45,13 +174,33 @@ export function StreamError({
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-red-800 dark:text-red-200 leading-snug">
-          {t('BiChat.Error.Generic')}
+          {providerError
+            ? t(providerError.titleKey)
+            : t('BiChat.Error.Generic')}
         </p>
         <p className="mt-0.5 text-xs text-red-600/80 dark:text-red-400/70 break-words leading-relaxed">
-          {error}
+          {providerError
+            ? t(providerError.descriptionKey)
+            : error}
         </p>
+        {providerError?.adminAction && (
+          <p className="mt-1 text-xs font-medium text-red-700 dark:text-red-300 leading-relaxed">
+            {t('BiChat.StreamError.AdminAction')}
+          </p>
+        )}
         <div className="flex items-center gap-2 mt-2">
-          {onRetry && (
+          {providerError?.action && (
+            <a
+              href={providerError.action.href}
+              target="_blank"
+              rel="noreferrer"
+              className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 active:bg-red-800 dark:bg-red-700 dark:hover:bg-red-600 rounded-lg transition-colors shadow-sm"
+            >
+              <ArrowSquareOut className="w-3.5 h-3.5" />
+              {t(providerError.action.labelKey)}
+            </a>
+          )}
+          {onRetry && providerError?.retryable !== false && (
             <button
               onClick={onRetry}
               className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 active:bg-red-800 dark:bg-red-700 dark:hover:bg-red-600 rounded-lg transition-colors shadow-sm"

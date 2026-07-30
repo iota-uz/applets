@@ -33,6 +33,14 @@ export const NonRetryable: Story = {
   },
 };
 
+export const ProviderQuotaExhausted: Story = {
+  args: {
+    error: 'provider_billing_balance_exhausted',
+    onRetry: fn(),
+    onDismiss: fn(),
+  },
+};
+
 export const Stress: Story = {
   render: () => {
     const noop = () => {};

@@ -85,11 +85,19 @@ function StreamingBubble({ content, normalizedContent }: { content: string; norm
 interface MessageListProps {
   renderUserTurn?: (turn: ConversationTurn) => ReactNode
   renderAssistantTurn?: (turn: ConversationTurn) => ReactNode
+  /** Host-owned workflow/artifact placed in the scrollable conversation history. */
+  historyArtifactSlot?: ReactNode
   thinkingVerbs?: string[]
   readOnly?: boolean
 }
 
-export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs, readOnly }: MessageListProps) {
+export function MessageList({
+  renderUserTurn,
+  renderAssistantTurn,
+  historyArtifactSlot,
+  thinkingVerbs,
+  readOnly,
+}: MessageListProps) {
   const { t } = useTranslation();
   const { session, currentSessionId, fetching } = useChatSession();
   const {
@@ -139,6 +147,12 @@ export function MessageList({ renderUserTurn, renderAssistantTurn, thinkingVerbs
               </Fragment>
             );
           })}
+
+          {historyArtifactSlot && (
+            <div className="min-w-0" data-bichat-history-artifact>
+              {historyArtifactSlot}
+            </div>
+          )}
 
           {isStreaming && streamingContent && (
             <StreamingBubble content={streamingContent} normalizedContent={normalizedStreaming} />
