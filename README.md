@@ -1,6 +1,8 @@
 # Applets
 
-Go library and CLI for the applet framework, plus the **@iota-uz/sdk** npm package (applet context, host, UI components, Tailwind helpers). Consumed by [iota-sdk](https://github.com/iota-uz/iota-sdk) and EAI to build and run applets (e.g. BiChat).
+Go library and CLI for the applet framework, plus a private UI source workspace.
+The public `@iota-uz/sdk` package is owned and released by
+[iota-sdk](https://github.com/iota-uz/iota-sdk).
 
 Full architecture and development guides live in [iota-sdk docs](https://github.com/iota-uz/iota-sdk).
 
@@ -24,15 +26,11 @@ Use `Registry`, `Controller`, RPC types, context helpers, and options as needed.
 
 ---
 
-## NPM
+## UI source
 
-Install the SDK in your applet frontend (e.g. Vite/React):
-
-```bash
-pnpm add @iota-uz/sdk
-```
-
-Use applet context, host utilities, BiChat UI components, and Tailwind configuration from the package.
+The root JavaScript workspace is private and cannot be published. It remains
+available for applet UI maintenance while consumers migrate to product-owned
+code or the bounded public APIs released from `iota-sdk`.
 
 ---
 
@@ -66,14 +64,15 @@ applet secrets delete --name <applet> --key OPENAI_API_KEY
 
 - **Specific version:** `go install github.com/iota-uz/applets/cmd/applet@v0.4.4`
 - **Shell completion:** `applet completion bash`, `applet completion zsh`, or `applet completion fish` — see `applet completion --help` for install instructions.
-- **Convention-based local SDK:** when `applet dev` can see a canonical local `@iota-uz/sdk` source checkout (for example `./applets` in a monorepo), it automatically builds/watches that SDK and wires applet consumers to a managed local SDK package for dev.
+- **Convention-based local UI:** `applet dev` can build/watch this repository's private UI workspace for applet development.
 - **Explicit escape hatch:** use `applet dev --sdk-root ../../applets` only when your local SDK checkout lives in a non-conventional location.
 
 ---
 
 ## DX Migration Notes (Breaking)
 
-- `applets/` is the canonical source of `@iota-uz/sdk`; `iota-sdk/package.json` is no longer the publish source.
+- `iota-sdk` is the sole source and publisher of the public `@iota-uz/sdk` package.
+- This repository's JavaScript package is private and cannot be published.
 - Local SDK iteration prefers convention over configuration. If your repo has `./applets` (or a conventional sibling `../applets`) you should not need any manual override at all.
 - For non-conventional layouts, pass `--sdk-root` directly to `applet dev` instead of persisting local env overrides.
 - Never commit local `pnpm` overrides/workspace links for `@iota-uz/sdk`.
@@ -81,11 +80,8 @@ applet secrets delete --name <applet> --key OPENAI_API_KEY
 
 ### Release flow
 
-1. Publish SDK changes from `applets/` (bump `applets/package.json` version).
-2. Create and push a tag `iota-sdk-v<version>` where `<version>` exactly matches
-   `applets/package.json`. This triggers `publish-npm.yml`.
-3. Upgrade consumers (`eai/back`, applet web packages, etc.) to the published version.
-4. Commit only version upgrades in consumer repos; never commit local-link overrides.
+Applet Go releases remain tag-driven. Public SDK JavaScript releases are owned
+entirely by `iota-uz/iota-sdk`; this repository has no npm release workflow.
 
 ---
 

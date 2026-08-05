@@ -1,12 +1,9 @@
 {
   "name": "@iota-uz/sdk",
   "version": "0.4.44",
-  "description": "IOTA SDK UI utilities, Tailwind configuration, and React components for building IOTA SDK applets.",
+  "description": "Private source workspace for applet UI development.",
   "license": "MIT",
-  "private": false,
-  "publishConfig": {
-    "access": "public"
-  },
+  "private": true,
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
