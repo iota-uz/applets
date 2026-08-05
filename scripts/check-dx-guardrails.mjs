@@ -42,8 +42,8 @@ const pkg = readJson(packageJsonPath);
 if (pkg.name !== "@iota-uz/sdk") {
   violations.push(`package.json name must be "@iota-uz/sdk" in applets, got "${pkg.name ?? ""}".`);
 }
-if (pkg.private !== false) {
-  violations.push("package.json must remain publishable (private=false) for canonical @iota-uz/sdk.");
+if (pkg.private !== true) {
+  violations.push("package.json must remain private; public @iota-uz/sdk releases belong to iota-sdk.");
 }
 if (pkg.dependencies?.["@iota-uz/sdk"] || pkg.devDependencies?.["@iota-uz/sdk"]) {
   violations.push("package.json must not depend on @iota-uz/sdk itself.");
